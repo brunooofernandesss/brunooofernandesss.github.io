@@ -2,17 +2,56 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
   <url>
-    <loc>https://brunooofernandesss.github.io/</loc>
-    <lastmod>2025-12-13</lastmod>
-    <changefreq>weekly</changefreq>
+    <loc>https://brunooofernandesss.github.io/index.html</loc>
     <priority>1.0</priority>
   </url>
 
   <url>
-    <loc>https://brunooofernandesss.github.io/index.html</loc>
-    <lastmod>2025-12-13</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://brunooofernandesss.github.io/index.html/Sistema_Nervoso_02.html</loc>
+  </url>
+
+  <url>
+    <loc>https://brunooofernandesss.github.io/index.html/Sistema_Nervoso_01.html</loc>
+  </url>
+
+  <url>
+    <loc>https://brunooofernandesss.github.io/index.html/Metodologia_da_Pesquisa.html</loc>
+  </url>
+
+  <url>
+    <loc>https://brunooofernandesss.github.io/index.html/Monitoria_Interacao_Comunitaria01.html</loc>
+  </url>
+
+  <url>
+    <loc>https://brunooofernandesss.github.io/index.html/Tecido_Cartilagenoso.html</loc>
+  </url>
+
+  <url>
+    <loc>https://brunooofernandesss.github.io/index.html/Tecido_Conjuntivo.html</loc>
+  </url>
+
+  <url>
+    <loc>https://brunooofernandesss.github.io/index.html/Tecido_Epitelial.html</loc>
+  </url>
+
+  <url>
+    <loc>https://brunooofernandesss.github.io/index.html/Tecido_Epitelial_Glandular.html</loc>
+  </url>
+
+  <url>
+    <loc>https://brunooofernandesss.github.io/index.html/Tecido_Muscular.html</loc>
+  </url>
+
+  <url>
+    <loc>https://brunooofernandesss.github.io/index.html/Tecido_Ósseo.html</loc>
+  </url>
+
+  <url>
+    <loc>https://brunooofernandesss.github.io/index.html/01un_Interacao_Comunitaria.html</loc>
+  </url>
+
+  <url>
+    <loc>https://brunooofernandesss.github.io/index.html/Modulo01.html</loc>
   </url>
 
 </urlset>
