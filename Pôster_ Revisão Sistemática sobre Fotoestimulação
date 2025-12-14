@@ -227,7 +227,7 @@ Content-Location: http://MmlPb4uulgMlJhE:ipvaDI5GtB71oJP@localhost:11046/storage
 
 
 
-</body><script src="navegacao.js"></script></html>
+</body><script src="conexao_firebase.js"></script><script src="navegacao.js"></script></html>
 ------MultipartBoundary--p7AAEIj9I9hXls3VXWodcFJqE346peZ8GDsBRcLJQk----
 Content-Type: text/css
 Content-Transfer-Encoding: binary
