@@ -1,5 +1,14 @@
 document.addEventListener("DOMContentLoaded", function() {
-    // 1. CRIA O BOTÃO HOME IMEDIATAMENTE (Não espera nada)
+    // 🛑 1. CHECAGEM DE SEGURANÇA (O Pulo do Gato)
+    // Se a página tiver o container de cards, significa que estamos na Home (index.html).
+    // Nesse caso, PARAMOS O SCRIPT AQUI. Não cria botão, não faz nada.
+    if (document.getElementById('cardsContainer')) {
+        return; 
+    }
+
+    // Se chegou aqui, é porque NÃO é a Home (é um simulado). Pode criar os botões!
+
+    // 2. CRIA O ESTILO DOS BOTÕES
     const estilo = document.createElement('style');
     estilo.innerHTML = `
         .nav-float { 
@@ -20,39 +29,43 @@ document.addEventListener("DOMContentLoaded", function() {
     `;
     document.head.appendChild(estilo);
 
+    // 3. CRIA A BARRA DE NAVEGAÇÃO
     const container = document.createElement('div');
     container.className = 'nav-float';
     
-    // Botão Home (Garantido)
+    // Botão Home (Sempre aparece nos simulados)
     const btnHome = document.createElement('a');
     btnHome.href = "index.html";
     btnHome.className = 'btn-nav btn-home';
     btnHome.innerHTML = '🏠 Home';
     container.appendChild(btnHome);
-    document.body.appendChild(container); // Coloca na tela AGORA
-
-    // 2. DEPOIS tenta descobrir Próximo e Anterior
-    const paginaHome = "index.html";
-    const arquivoAtual = window.location.pathname.split("/").pop() || "index.html";
     
-    // Se for a home, esconde o botão que acabamos de criar
-    if(arquivoAtual === "index.html" || arquivoAtual === "") {
-        container.style.display = 'none';
-        return;
-    }
+    // Insere na página
+    document.body.appendChild(container);
+
+    // 4. LÓGICA DE PRÓXIMO / ANTERIOR
+    // Busca o index.html para saber a ordem dos simulados
+    const paginaHome = "index.html";
+    
+    // Tenta pegar o nome do arquivo atual da URL
+    // Decodifica para lidar com espaços e acentos (ex: Módulo%2001.html vira Módulo 01.html)
+    const urlAtual = window.location.pathname.split("/").pop();
+    const arquivoAtual = decodeURIComponent(urlAtual);
 
     fetch(paginaHome)
         .then(response => response.text())
         .then(html => {
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
-            const links = Array.from(doc.querySelectorAll('.card a')).map(a => a.getAttribute('href'));
+            // Pega todos os links dentro dos cards
+            const links = Array.from(doc.querySelectorAll('.container .card a')).map(a => a.getAttribute('href'));
             
-            const atualLimpo = decodeURIComponent(arquivoAtual);
-            const indexAtual = links.findIndex(link => decodeURIComponent(link) === atualLimpo);
+            // Procura onde o arquivo atual está na lista
+            // Comparamos os textos decodificados para garantir que acentos batam
+            const indexAtual = links.findIndex(link => decodeURIComponent(link) === arquivoAtual);
 
             if (indexAtual !== -1) {
-                // Adiciona Anterior (se tiver)
+                // Adiciona Anterior (se não for o primeiro)
                 if (indexAtual > 0) {
                     const btnAnt = document.createElement('a');
                     btnAnt.href = links[indexAtual - 1];
@@ -60,7 +73,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     btnAnt.innerHTML = '⬅️ Ant';
                     container.insertBefore(btnAnt, btnHome); // Coloca antes do Home
                 }
-                // Adiciona Próximo (se tiver)
+                // Adiciona Próximo (se não for o último)
                 if (indexAtual < links.length - 1) {
                     const btnProx = document.createElement('a');
                     btnProx.href = links[indexAtual + 1];
