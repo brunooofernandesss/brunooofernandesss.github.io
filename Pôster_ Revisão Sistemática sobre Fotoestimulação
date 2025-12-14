@@ -182,10 +182,10 @@ Content-Location: http://MmlPb4uulgMlJhE:ipvaDI5GtB71oJP@localhost:11046/storage
                          
                          <!-- Imagens Reais -->
                          <div class="grid grid-cols-2 gap-2 mt-4">
-                             <img src="https://brunooofernandesss.github.io/index.html/IMG-20250912-WA0012.jpg" alt="Gráfico de Resultados 1" class="w-full h-full object-cover rounded-md border">
-                             <img src="https://brunooofernandesss.github.io/index.html/IMG-20250912-WA0011.jpg" alt="Gráfico de Resultados 2" class="w-full h-full object-cover rounded-md border">
-                             <img src="https://brunooofernandesss.github.io/index.html/IMG-20250912-WA0010.jpg" alt="Gráfico de Resultados 3" class="w-full h-full object-cover rounded-md border">
-                             <img src="https://brunooofernandesss.github.io/index.html/IMG-20250831-WA0012.jpg" alt="Gráfico de Resultados 4" class="w-full h-full object-cover rounded-md border">
+                             <img src="https://brunooofernandesss.github.io/IMG-20250912-WA0012.jpg" alt="Gráfico de Resultados 1" class="w-full h-full object-cover rounded-md border">
+                             <img src="https://brunooofernandesss.github.io/IMG-20250912-WA0011.jpg" alt="Gráfico de Resultados 2" class="w-full h-full object-cover rounded-md border">
+                             <img src="https://brunooofernandesss.github.io/IMG-20250912-WA0010.jpg" alt="Gráfico de Resultados 3" class="w-full h-full object-cover rounded-md border">
+                             <img src="https://brunooofernandesss.github.io/IMG-20250831-WA0012.jpg" alt="Gráfico de Resultados 4" class="w-full h-full object-cover rounded-md border">
                          </div>
                     </div>
                 </section>
