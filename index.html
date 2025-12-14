@@ -51,25 +51,43 @@
             max-width: 1000px;
             margin: 0 auto 30px auto;
             display: flex;
-            justify-content: space-between;
+            justify-content: center; /* Centralizado */
             align-items: center;
             padding-right: 20px;
             padding-left: 20px;
+            gap: 15px; /* Espaço entre a busca e o ranking */
+            flex-wrap: wrap; /* Permite quebrar linha no mobile */
         }
 
-        .youtube-icon {
-            margin-right: 15px;
+        /* Estilo Discreto do Botão de Ranking */
+        .ranking-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: #64748b; /* Cinza azulado discreto */
+            font-weight: 600;
+            font-size: 0.95rem;
+            padding: 12px 20px;
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 25px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            white-space: nowrap;
         }
 
-        .youtube-icon img {
-            width: 80px;
-            height: auto;
-            vertical-align: middle;
+        .ranking-btn:hover {
+            background-color: #f8fafc;
+            border-color: #cbd5e1;
+            color: #0f172a; /* Azul escuro no hover */
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
 
         .search-bar {
             width: 100%;
-            max-width: 350px;
+            max-width: 400px;
         }
 
         .search-bar input {
@@ -211,18 +229,17 @@
             }
 
             .search-container {
-                padding-right: 0;
-                justify-content: center;
-                flex-direction: column;
+                flex-direction: column-reverse; /* No celular, ranking fica embaixo da busca */
+                gap: 15px;
             }
 
             .search-bar {
                 max-width: 90%;
-                margin-top: 10px;
             }
-
-            .youtube-icon {
-                margin-right: 0;
+            
+            .ranking-btn {
+                width: 90%;
+                justify-content: center;
             }
         }
     </style>
@@ -241,9 +258,10 @@
     </header>
 
     <div class="search-container">
-        <a href="https://www.youtube.com/@brunof.damasceno7936" target="_blank" class="youtube-icon">
-            <img src="YouTube_2024.svg" alt="YouTube Icon">
+        <a href="ranking.html" class="ranking-btn">
+            📊 Ver Ranking Geral
         </a>
+
         <div class="search-bar">
             <input type="text" id="searchInput" placeholder="Buscar simulados por título...">
         </div>
