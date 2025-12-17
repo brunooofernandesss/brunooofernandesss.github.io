@@ -65,6 +65,8 @@
         .student-info { padding: 0 15px; }
         .name-wrapper { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
         .student-name { display: block; font-weight: 700; font-size: 1rem; color: var(--primary); }
+        
+        /* Contador de Simulados (CORRIGIDO PARA O LOOK 'x') */
         .count-badge { font-size: 0.7rem; background: var(--primary); color: white; padding: 2px 8px; border-radius: 10px; font-weight: 600; opacity: 0.8; }
         .rank-1 .count-badge { background: var(--gold); color: black; opacity: 1; }
         .rank-1 .student-name { font-size: 1.5rem; font-weight: 900; color: #b45309; }
@@ -179,8 +181,6 @@
                     if (!alunosMap[nomeKey]) {
                         alunosMap[nomeKey] = { nomeReal: nomeExibicao, historicoBruto: [] };
                     }
-                    
-                    // Guarda TUDO (mesmo repetidos) para processar depois
                     alunosMap[nomeKey].historicoBruto.push({ nome: nomeSimulado, pct: porcentagem, acertos: acertos, total: total });
                 });
 
@@ -193,65 +193,49 @@
                     let qtdSimuladosUnicos = 0;
                     let totalTentativas = 0;
 
-                    // Itera sobre todo o histórico bruto
                     aluno.historicoBruto.forEach(tentativa => {
-                        totalTentativas++; // Conta para mostrar dedicação (3x)
-
+                        totalTentativas++; 
                         if (!simuladosUnicos[tentativa.nome]) {
-                            // Primeira vez que vemos este simulado
-                            simuladosUnicos[tentativa.nome] = {
-                                nome: tentativa.nome,
-                                menorNota: tentativa.pct, // Começa sendo a única
-                                count: 1
-                            };
-                            qtdSimuladosUnicos++; // Bônus conta apenas 1 vez por simulado diferente
+                            simuladosUnicos[tentativa.nome] = { nome: tentativa.nome, menorNota: tentativa.pct, count: 1 };
+                            qtdSimuladosUnicos++;
                         } else {
-                            // Já fez antes? Atualiza contagem
                             simuladosUnicos[tentativa.nome].count += 1;
-                            // REGRA DA MÃO DE FERRO: Mantém a MENOR nota
+                            // REGRA DA MÃO DE FERRO
                             if (tentativa.pct < simuladosUnicos[tentativa.nome].menorNota) {
                                 simuladosUnicos[tentativa.nome].menorNota = tentativa.pct;
                             }
                         }
                     });
 
-                    // Soma apenas as menores notas de cada simulado único
                     for (let key in simuladosUnicos) {
                         somaDasMenoresNotas += simuladosUnicos[key].menorNota;
                     }
 
                     aluno.qtdSimuladosUnicos = qtdSimuladosUnicos;
                     aluno.totalTentativas = totalTentativas;
-                    aluno.historicoProcessado = Object.values(simuladosUnicos); // Para exibir na tela
+                    aluno.historicoProcessado = Object.values(simuladosUnicos);
 
-                    // CÁLCULOS FINAIS
                     if (qtdSimuladosUnicos > 0) {
-                        // Média baseada nas menores notas dos únicos
                         aluno.mediaFinal = somaDasMenoresNotas / qtdSimuladosUnicos;
-                        // Score: Média + (Bônus por simulado ÚNICO)
+                        // Bônus apenas por simulados únicos
                         aluno.pontuacaoRanking = aluno.mediaFinal + (qtdSimuladosUnicos * 2.5);
                     } else {
                         aluno.mediaFinal = 0; aluno.pontuacaoRanking = 0;
                     }
                 });
 
-                // ORDENAÇÃO FINAL
                 ranking.sort((a, b) => b.pontuacaoRanking - a.pontuacaoRanking);
                 if (ranking.length > 0) setTimeout(() => abrirModal(ranking[0].nomeReal), 500);
 
                 loadingElement.style.display = 'none';
                 listaElement.innerHTML = '';
 
-                // 3. RENDERIZAÇÃO
                 ranking.forEach((aluno, index) => {
                     const posicao = index + 1;
-                    
-                    // Ordena as etiquetas: simulados feitos mais vezes aparecem primeiro
                     aluno.historicoProcessado.sort((a, b) => b.count - a.count);
 
                     let tagsHtml = '';
                     aluno.historicoProcessado.slice(0, 6).forEach(item => {
-                        // Mostra a MENOR NOTA na etiqueta
                         let notaTexto = item.menorNota.toFixed(0);
                         let labelCount = item.count > 1 ? `<span class="badge-count">${item.count}x</span>` : '';
                         
@@ -274,7 +258,7 @@
                             <div class="student-info">
                                 <div class="name-wrapper">
                                     <span class="student-name">${aluno.nomeReal}</span>
-                                    <span class="count-badge" title="Total de Simuados Únicos">${aluno.qtdSimuladosUnicos} un.</span>
+                                    <span class="count-badge" title="Simulados Únicos Realizados">${aluno.qtdSimuladosUnicos}x</span>
                                 </div>
                                 <div class="history-tags">${tagsHtml}</div>
                             </div>
