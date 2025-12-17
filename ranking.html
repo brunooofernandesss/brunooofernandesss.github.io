@@ -20,7 +20,7 @@
         h1 { font-weight: 900; font-size: 2.5rem; margin: 0; color: var(--primary); letter-spacing: -1px; }
         p.subtitle { color: var(--text-muted); font-size: 0.9rem; margin-top: 5px; }
         
-        /* --- ESTILOS DO POPUP (NOVO) --- */
+        /* --- POPUP --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px);
@@ -39,9 +39,7 @@
         .modal-title { font-weight: 900; font-size: 1.5rem; color: var(--primary); margin-bottom: 10px; }
         .modal-text { font-size: 1rem; color: #475569; line-height: 1.5; margin-bottom: 25px; }
         .highlight-name { color: var(--gold); font-weight: 900; font-size: 1.1em; }
-        .close-btn-x {
-            position: absolute; top: 15px; right: 20px; font-size: 1.5rem; color: #cbd5e1; cursor: pointer; transition: 0.2s;
-        }
+        .close-btn-x { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; color: #cbd5e1; cursor: pointer; transition: 0.2s; }
         .close-btn-x:hover { color: var(--primary); }
         .action-btn {
             background: var(--gold); color: #0f172a; font-weight: 800; border: none;
@@ -49,11 +47,10 @@
             transition: 0.2s; box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);
         }
         .action-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4); }
-
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-        /* --- RESTO DO CSS (RANKING) --- */
+        /* --- RANKING LISTA --- */
         .ranking-container { background: var(--card); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); overflow: hidden; border: 1px solid #f1f5f9; }
         .ranking-header { display: grid; grid-template-columns: 50px 1fr 100px; padding: 15px 25px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: var(--text-muted); font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; }
         .student-row { display: grid; grid-template-columns: 50px 1fr 100px; align-items: center; padding: 18px 25px; border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease; }
@@ -64,6 +61,7 @@
         .rank-3 .rank-number { color: var(--bronze); font-size: 1.6rem; }
         .rank-4 .rank-number { color: var(--rank4); font-size: 1.4rem; }
         .rank-5 .rank-number { color: var(--rank5); font-size: 1.4rem; }
+        
         .student-info { padding: 0 15px; }
         .name-wrapper { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
         .student-name { display: block; font-weight: 700; font-size: 1rem; color: var(--primary); }
@@ -72,6 +70,8 @@
         .rank-1 .student-name { font-size: 1.5rem; font-weight: 900; color: #b45309; }
         .rank-2 .student-name { font-size: 1.3rem; font-weight: 800; }
         .rank-3 .student-name { font-size: 1.3rem; font-weight: 800; }
+        
+        /* ETIQUETAS */
         .history-tags { display: flex; flex-wrap: wrap; gap: 4px; }
         .simulado-badge {
             font-size: 0.6rem; background: #f1f5f9; padding: 4px 8px; border-radius: 4px; 
@@ -81,8 +81,12 @@
             white-space: normal;
         }
         .badge-name { word-break: break-word; }
+        .badge-count { 
+            background: #e2e8f0; color: #475569; font-size: 0.55rem; 
+            padding: 1px 5px; border-radius: 8px; font-weight: 700; margin-left: 2px;
+        }
         .badge-score { font-weight: 700; color: #64748b; white-space: nowrap; } 
-        .badge-detail { font-size: 0.55rem; color: #cbd5e1; font-weight: normal; white-space: nowrap; }
+
         .score-val { display: block; font-weight: 900; font-size: 1.4rem; text-align: right; color: var(--primary); }
         .rank-1 .score-val { color: var(--gold); transform: scale(1.1); transform-origin: right; }
         .score-label { display: block; font-size: 0.6rem; color: var(--text-muted); text-align: right; font-weight: 700; letter-spacing: 1px; margin-top: 4px; }
@@ -101,10 +105,7 @@
             <span class="close-btn-x" onclick="fecharModal()">×</span>
             <span class="modal-icon">🏆</span>
             <div class="modal-title">Temos um Líder!</div>
-            <p class="modal-text" id="winnerText">
-                Parabéns ao aluno <span class="highlight-name">...</span>.<br>
-                Seu prêmio estará disponível se você participar da brincadeira.
-            </p>
+            <p class="modal-text" id="winnerText">...</p>
             <button class="action-btn" onclick="fecharModal()">Oba! Quero participar</button>
         </div>
     </div>
@@ -112,17 +113,17 @@
     <div class="container">
         <header>
             <h1>🏆 Classificação Geral</h1>
-            <p class="subtitle">Critério: Média Geral + Bônus por Participação</p>
+            <p class="subtitle">Critério: Média (Menor Nota) + Bônus (Simulados Únicos)</p>
         </header>
 
         <div class="ranking-container">
             <div class="ranking-header">
                 <span style="text-align: center;">#</span>
-                <span>Aluno & Histórico</span>
+                <span>Aluno & Histórico Agrupado</span>
                 <span style="text-align: right">Média</span>
             </div>
 
-            <div id="loading">Calculando pontuações...</div>
+            <div id="loading">Analisando tentativas...</div>
             <div id="ranking-list"></div>
         </div>
 
@@ -149,25 +150,11 @@
 
         function abrirModal(nomeVencedor) {
             const modal = document.getElementById('winnerModal');
-            const texto = document.getElementById('winnerText');
-            
-            // Injeta o HTML personalizado com o nome
-            texto.innerHTML = `Parabéns ao aluno <span class="highlight-name">${nomeVencedor}</span>.<br>Seu prêmio estará disponível se você participar da brincadeira.`;
-            
-            modal.style.display = 'flex'; // Mostra o modal
+            document.getElementById('winnerText').innerHTML = `Parabéns ao aluno <span class="highlight-name">${nomeVencedor}</span>.<br>Seu prêmio estará disponível se você participar da brincadeira.`;
+            modal.style.display = 'flex';
         }
-
-        function fecharModal() {
-            document.getElementById('winnerModal').style.display = 'none';
-        }
-
-        // Fecha se clicar fora da caixa
-        window.onclick = function(event) {
-            const modal = document.getElementById('winnerModal');
-            if (event.target == modal) {
-                fecharModal();
-            }
-        }
+        function fecharModal() { document.getElementById('winnerModal').style.display = 'none'; }
+        window.onclick = function(event) { if (event.target == document.getElementById('winnerModal')) fecharModal(); }
 
         async function carregarRanking(db) {
             const listaElement = document.getElementById('ranking-list');
@@ -178,73 +165,107 @@
                 if (snapshot.empty) { loadingElement.innerText = "Sem dados."; return; }
                 const alunosMap = {};
 
+                // 1. COLETA TODOS OS DADOS BRUTOS
                 snapshot.forEach(doc => {
                     const dados = doc.data();
-                    let acertosRaw = dados.nota !== undefined ? dados.nota : (dados.acertos !== undefined ? dados.acertos : 0);
-                    let totalRaw = dados.total_questoes !== undefined ? dados.total_questoes : (dados.total !== undefined ? dados.total : 0);
-                    let acertos = Number(acertosRaw); let total = Number(totalRaw);
-                    
-                    let porcentagem = (total > 0) ? (acertos / total) * 100 : 0;
-
                     const nomeKey = dados.aluno ? dados.aluno.trim().toUpperCase() : "ANÔNIMO";
                     const nomeExibicao = dados.aluno ? dados.aluno.trim() : "Anônimo";
                     const nomeSimulado = dados.simulado || "Quiz";
 
+                    let acertos = Number(dados.nota !== undefined ? dados.nota : dados.acertos || 0);
+                    let total = Number(dados.total_questoes !== undefined ? dados.total_questoes : dados.total || 0);
+                    let porcentagem = (total > 0) ? (acertos / total) * 100 : 0;
+
                     if (!alunosMap[nomeKey]) {
-                        alunosMap[nomeKey] = { nomeReal: nomeExibicao, somaPct: 0, qtdSimulados: 0, historico: [] };
+                        alunosMap[nomeKey] = { nomeReal: nomeExibicao, historicoBruto: [] };
                     }
-                    alunosMap[nomeKey].historico.push({ nome: nomeSimulado, pct: porcentagem, acertos: acertos, total: total });
                     
-                    // Adiciona ao cálculo mesmo se o total for zero
-                    alunosMap[nomeKey].qtdSimulados += 1;
-                    if (total > 0) {
-                        alunosMap[nomeKey].somaPct += porcentagem;
-                    }
+                    // Guarda TUDO (mesmo repetidos) para processar depois
+                    alunosMap[nomeKey].historicoBruto.push({ nome: nomeSimulado, pct: porcentagem, acertos: acertos, total: total });
                 });
 
+                // 2. PROCESSAMENTO INTELIGENTE (AGRUPAMENTO E MENOR NOTA)
                 let ranking = Object.values(alunosMap);
 
                 ranking.forEach(aluno => {
-                    if (aluno.qtdSimulados > 0) {
-                        aluno.mediaFinal = aluno.somaPct / aluno.qtdSimulados;
-                        // FÓRMULA DE PONTUAÇÃO
-                        aluno.pontuacaoRanking = aluno.mediaFinal + (aluno.qtdSimulados * 2.5);
+                    const simuladosUnicos = {};
+                    let somaDasMenoresNotas = 0;
+                    let qtdSimuladosUnicos = 0;
+                    let totalTentativas = 0;
+
+                    // Itera sobre todo o histórico bruto
+                    aluno.historicoBruto.forEach(tentativa => {
+                        totalTentativas++; // Conta para mostrar dedicação (3x)
+
+                        if (!simuladosUnicos[tentativa.nome]) {
+                            // Primeira vez que vemos este simulado
+                            simuladosUnicos[tentativa.nome] = {
+                                nome: tentativa.nome,
+                                menorNota: tentativa.pct, // Começa sendo a única
+                                count: 1
+                            };
+                            qtdSimuladosUnicos++; // Bônus conta apenas 1 vez por simulado diferente
+                        } else {
+                            // Já fez antes? Atualiza contagem
+                            simuladosUnicos[tentativa.nome].count += 1;
+                            // REGRA DA MÃO DE FERRO: Mantém a MENOR nota
+                            if (tentativa.pct < simuladosUnicos[tentativa.nome].menorNota) {
+                                simuladosUnicos[tentativa.nome].menorNota = tentativa.pct;
+                            }
+                        }
+                    });
+
+                    // Soma apenas as menores notas de cada simulado único
+                    for (let key in simuladosUnicos) {
+                        somaDasMenoresNotas += simuladosUnicos[key].menorNota;
+                    }
+
+                    aluno.qtdSimuladosUnicos = qtdSimuladosUnicos;
+                    aluno.totalTentativas = totalTentativas;
+                    aluno.historicoProcessado = Object.values(simuladosUnicos); // Para exibir na tela
+
+                    // CÁLCULOS FINAIS
+                    if (qtdSimuladosUnicos > 0) {
+                        // Média baseada nas menores notas dos únicos
+                        aluno.mediaFinal = somaDasMenoresNotas / qtdSimuladosUnicos;
+                        // Score: Média + (Bônus por simulado ÚNICO)
+                        aluno.pontuacaoRanking = aluno.mediaFinal + (qtdSimuladosUnicos * 2.5);
                     } else {
-                        aluno.mediaFinal = 0;
-                        aluno.pontuacaoRanking = 0;
+                        aluno.mediaFinal = 0; aluno.pontuacaoRanking = 0;
                     }
                 });
 
+                // ORDENAÇÃO FINAL
                 ranking.sort((a, b) => b.pontuacaoRanking - a.pontuacaoRanking);
-
-                // --- ATIVA O MODAL PARA O VENCEDOR ---
-                if (ranking.length > 0) {
-                    const campeao = ranking[0].nomeReal;
-                    // Pequeno delay para dar um efeito dramático
-                    setTimeout(() => abrirModal(campeao), 500);
-                }
+                if (ranking.length > 0) setTimeout(() => abrirModal(ranking[0].nomeReal), 500);
 
                 loadingElement.style.display = 'none';
                 listaElement.innerHTML = '';
 
+                // 3. RENDERIZAÇÃO
                 ranking.forEach((aluno, index) => {
                     const posicao = index + 1;
-                    let tagsHtml = '';
                     
-                    aluno.historico.reverse().slice(0, 6).forEach(prova => {
-                        let notaTexto = prova.pct.toFixed(0);
-                        let detalhe = `(${prova.acertos}/${prova.total})`;
+                    // Ordena as etiquetas: simulados feitos mais vezes aparecem primeiro
+                    aluno.historicoProcessado.sort((a, b) => b.count - a.count);
+
+                    let tagsHtml = '';
+                    aluno.historicoProcessado.slice(0, 6).forEach(item => {
+                        // Mostra a MENOR NOTA na etiqueta
+                        let notaTexto = item.menorNota.toFixed(0);
+                        let labelCount = item.count > 1 ? `<span class="badge-count">${item.count}x</span>` : '';
+                        
                         tagsHtml += `
                             <div class="simulado-badge">
-                                <span class="badge-name">${prova.nome}</span> 
+                                <span class="badge-name">${item.nome}</span>
+                                ${labelCount}
                                 <span class="badge-score">${notaTexto}%</span>
-                                <span class="badge-detail">${detalhe}</span>
                             </div>
                         `;
                     });
 
-                    if (aluno.historico.length > 6) {
-                        tagsHtml += `<div class="simulado-badge">+${aluno.historico.length - 6} outros</div>`;
+                    if (aluno.historicoProcessado.length > 6) {
+                        tagsHtml += `<div class="simulado-badge">+${aluno.historicoProcessado.length - 6} outros</div>`;
                     }
 
                     const html = `
@@ -253,13 +274,13 @@
                             <div class="student-info">
                                 <div class="name-wrapper">
                                     <span class="student-name">${aluno.nomeReal}</span>
-                                    <span class="count-badge" title="Bônus de Participação">${aluno.qtdSimulados}x</span>
+                                    <span class="count-badge" title="Total de Simuados Únicos">${aluno.qtdSimuladosUnicos} un.</span>
                                 </div>
                                 <div class="history-tags">${tagsHtml}</div>
                             </div>
                             <div>
                                 <span class="score-val">${aluno.mediaFinal.toFixed(1)}%</span>
-                                <span class="score-label">MÉDIA REAL</span>
+                                <span class="score-label">MÉDIA (MENOR NOTA)</span>
                             </div>
                         </div>
                     `;
