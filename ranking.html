@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ranking Geral & Histórico</title>
+    <title>Ranking Geral - Versão Robusta</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
@@ -15,52 +15,34 @@
         .container { max-width: 800px; margin: 0 auto; }
         header { text-align: center; margin-bottom: 40px; }
         h1 { font-weight: 800; font-size: 2.2rem; margin: 0; color: var(--primary); }
-        p.subtitle { color: var(--text-muted); margin-top: 8px; font-size: 1rem; }
         
         .ranking-container { background: var(--card); border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden; }
-        .ranking-header { display: grid; grid-template-columns: 60px 1fr 100px; padding: 15px 25px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; }
-        .scroll-area { max-height: 75vh; overflow-y: auto; }
+        .ranking-header { display: grid; grid-template-columns: 50px 1fr 90px; padding: 15px 20px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
         
-        /* Linha do Aluno */
-        .student-row { display: grid; grid-template-columns: 60px 1fr 100px; align-items: start; padding: 20px 25px; border-bottom: 1px solid #f1f5f9; transition: background 0.2s; }
-        .student-row:hover { background-color: #f8fafc; }
+        /* Layout da Linha */
+        .student-row { display: grid; grid-template-columns: 50px 1fr 90px; align-items: start; padding: 20px; border-bottom: 1px solid #f1f5f9; }
         
-        /* Posição e Medalhas */
-        .rank-number { font-weight: 800; font-size: 1.2rem; color: #cbd5e1; margin-top: 5px; }
-        .rank-1 .rank-number { color: #eab308; font-size: 1.6rem; }
-        .rank-2 .rank-number { color: #94a3b8; font-size: 1.4rem; }
-        .rank-3 .rank-number { color: #b45309; font-size: 1.4rem; }
+        .rank-number { font-weight: 800; font-size: 1.2rem; color: #cbd5e1; }
+        .rank-1 .rank-number { color: #eab308; }
+        .rank-2 .rank-number { color: #94a3b8; }
+        .rank-3 .rank-number { color: #b45309; }
         
-        /* Informações Centrais */
-        .student-info { padding-right: 15px; }
-        .student-name { display: block; font-weight: 700; font-size: 1.05rem; color: var(--primary); margin-bottom: 8px; }
+        .student-name { display: block; font-weight: 700; font-size: 1.1rem; margin-bottom: 10px; color: var(--primary); }
         
-        /* Etiquetas dos Simulados (VOLTARAM!) */
-        .history-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+        /* Etiquetas */
+        .history-tags { display: flex; flex-wrap: wrap; gap: 8px; }
         .simulado-badge {
-            font-size: 0.75rem; background: #f1f5f9; padding: 4px 10px; border-radius: 6px; border: 1px solid #e2e8f0; color: #475569; display: flex; align-items: center; gap: 5px;
+            font-size: 0.75rem; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; 
+            border: 1px solid #e2e8f0; color: #334155; display: inline-flex; align-items: center; gap: 5px;
         }
         .badge-score { font-weight: 800; color: var(--accent); }
-        .badge-score.bad { color: var(--warning); }
-        .badge-score.good { color: var(--success); }
-        
-        /* Detalhe Pequeno (Acertos/Total) - NOVO */
-        .badge-detail { font-size: 0.65rem; color: #94a3b8; margin-left: 3px; font-weight: normal; }
+        .badge-detail { font-size: 0.7rem; color: #94a3b8; font-weight: normal; margin-left: 2px; }
 
-        /* Coluna da Média */
-        .score-box { text-align: right; }
-        .score-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; display: block; }
-        .score-val { display: block; font-weight: 800; font-size: 1.4rem; margin: 2px 0 5px; }
-        .progress-track { background: #e2e8f0; height: 6px; width: 100%; border-radius: 3px; overflow: hidden; }
-        .progress-fill { height: 100%; width: 0%; transition: width 1s ease-out; border-radius: 3px; }
-        
-        .high-avg .progress-fill { background: var(--success); }
-        .med-avg .progress-fill { background: var(--accent); }
-        .low-avg .progress-fill { background: var(--warning); }
+        .score-val { display: block; font-weight: 800; font-size: 1.4rem; text-align: right; }
+        .score-label { display: block; font-size: 0.65rem; color: var(--text-muted); text-align: right; }
 
-        #loading { padding: 40px; text-align: center; color: var(--text-muted); }
-        .btn-home { display: block; width: fit-content; margin: 30px auto; text-decoration: none; color: var(--text-muted); border: 1px solid #cbd5e1; padding: 8px 20px; border-radius: 20px; transition: 0.3s; font-size: 0.9rem;}
-        .btn-home:hover { background: white; border-color: var(--primary); color: var(--primary); }
+        #loading { padding: 30px; text-align: center; }
+        .btn-home { display: block; width: fit-content; margin: 30px auto; text-decoration: none; color: var(--text-muted); border: 1px solid #cbd5e1; padding: 8px 20px; border-radius: 20px; }
     </style>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -71,18 +53,17 @@
     <div class="container">
         <header>
             <h1>Classificação Geral</h1>
-            <p class="subtitle">Média acumulada de todos os simulados</p>
         </header>
 
         <div class="ranking-container">
             <div class="ranking-header">
                 <span>#</span>
-                <span>Aluno & Histórico</span>
-                <span style="text-align: right">Média Geral</span>
+                <span>Aluno & Simulados</span>
+                <span style="text-align: right">Média</span>
             </div>
 
-            <div id="loading">Carregando notas...</div>
-            <div class="scroll-area" id="ranking-list"></div>
+            <div id="loading">Carregando dados...</div>
+            <div id="ranking-list"></div>
         </div>
 
         <a href="index.html" class="btn-home">⬅ Voltar ao Início</a>
@@ -104,8 +85,7 @@
             const db = firebase.firestore();
             carregarRanking(db);
         } catch (e) {
-            document.getElementById('loading').innerText = "Erro de conexão com Firebase.";
-            console.error(e);
+            document.getElementById('loading').innerText = "Erro ao conectar: " + e.message;
         }
 
         async function carregarRanking(db) {
@@ -113,125 +93,119 @@
             const loadingElement = document.getElementById('loading');
 
             try {
-                // Pega todos os resultados do banco de dados
                 const snapshot = await db.collection('resultados_alunos').get();
 
                 if (snapshot.empty) {
-                    loadingElement.innerText = "Nenhum resultado encontrado ainda.";
+                    loadingElement.innerText = "Nenhum resultado encontrado.";
                     return;
                 }
 
-                // --- 1. AGRUPAR NOTAS POR ALUNO ---
                 const alunosMap = {};
 
                 snapshot.forEach(doc => {
                     const dados = doc.data();
                     
-                    // Normaliza nome (evita 'Bruno' e 'bruno' separados)
-                    const nomeKey = dados.aluno ? dados.aluno.trim().toUpperCase() : "ANÔNIMO";
-                    const nomeExibicao = dados.aluno ? dados.aluno.trim() : "Anônimo";
-
-                    // Converte para NÚMEROS (Essencial para não dar erro de cálculo)
-                    const acertos = Number(dados.nota) || 0;
-                    const total = Number(dados.total_questoes) || 0;
+                    // 1. TENTA DESCOBRIR O NOME DOS CAMPOS (Detetive)
+                    // Verifica se é 'nota', 'acertos' ou 'pontos'
+                    let acertosRaw = dados.nota !== undefined ? dados.nota : 
+                                     (dados.acertos !== undefined ? dados.acertos : 0);
                     
-                    // Calcula % deste simulado específico
-                    let porcentagemSimulado = 0;
-                    if (total > 0) {
-                        porcentagemSimulado = (acertos / total) * 100;
+                    // Verifica se é 'total_questoes', 'total' ou se não existe
+                    let totalRaw = dados.total_questoes !== undefined ? dados.total_questoes : 
+                                   (dados.total !== undefined ? dados.total : 0);
+
+                    // Converte para número
+                    let acertos = Number(acertosRaw);
+                    let total = Number(totalRaw);
+
+                    // SE O TOTAL FOR ZERO (Erro comum), assumimos 1 para não dividir por zero, 
+                    // mas marcamos visualmente que está estranho.
+                    let totalValido = total > 0 ? total : 0; 
+                    
+                    let porcentagem = 0;
+                    if (totalValido > 0) {
+                        porcentagem = (acertos / totalValido) * 100;
                     }
 
-                    // Se é a primeira vez que vemos esse aluno, cria a ficha dele
+                    // Nome do Aluno
+                    const nomeKey = dados.aluno ? dados.aluno.trim().toUpperCase() : "ANÔNIMO";
+                    const nomeExibicao = dados.aluno ? dados.aluno.trim() : "Anônimo";
+                    const nomeSimulado = dados.simulado || "Simulado sem nome";
+
                     if (!alunosMap[nomeKey]) {
                         alunosMap[nomeKey] = {
                             nomeReal: nomeExibicao,
-                            somaDasPorcentagens: 0,
+                            somaPct: 0,
                             qtdSimulados: 0,
-                            historico: [] // Lista de provas feitas
+                            historico: []
                         };
                     }
 
-                    // Adiciona dados APENAS se o total for válido
-                    if (total > 0) {
-                        alunosMap[nomeKey].somaDasPorcentagens += porcentagemSimulado;
+                    // --- MUDANÇA: SEMPRE ADICIONA AO HISTÓRICO, MESMO SE O TOTAL FOR ZERO ---
+                    alunosMap[nomeKey].historico.push({
+                        nome: nomeSimulado,
+                        pct: porcentagem,
+                        acertos: acertos,
+                        total: total // Mostra o total original (mesmo se for 0)
+                    });
+
+                    // Só soma na média se os dados forem válidos
+                    if (totalValido > 0) {
+                        alunosMap[nomeKey].somaPct += porcentagem;
                         alunosMap[nomeKey].qtdSimulados += 1;
-                        
-                        // Guarda o histórico para mostrar na etiqueta
-                        alunosMap[nomeKey].historico.push({
-                            nomeProva: dados.simulado || "Quiz Sem Nome",
-                            notaPct: porcentagemSimulado,
-                            acertos: acertos,
-                            total: total
-                        });
                     }
                 });
 
-                // --- 2. CALCULAR MÉDIAS E ORDENAR ---
+                // Processa a lista final
                 let ranking = Object.values(alunosMap);
 
+                // Calcula Média
                 ranking.forEach(aluno => {
                     if (aluno.qtdSimulados > 0) {
-                        aluno.mediaFinal = aluno.somaDasPorcentagens / aluno.qtdSimulados;
+                        aluno.mediaFinal = aluno.somaPct / aluno.qtdSimulados;
                     } else {
                         aluno.mediaFinal = 0;
                     }
                 });
 
-                // Ordena do maior para o menor
+                // Ordena
                 ranking.sort((a, b) => b.mediaFinal - a.mediaFinal);
 
-                // --- 3. GERAR O HTML ---
+                // Renderiza
                 loadingElement.style.display = 'none';
                 listaElement.innerHTML = '';
 
                 ranking.forEach((aluno, index) => {
                     const posicao = index + 1;
-                    
-                    // Monta as etiquetas (Badges)
-                    // Inverte para mostrar o último simulado primeiro
-                    const historicoRecente = aluno.historico.reverse(); 
-                    
+
+                    // Cria as etiquetas
                     let tagsHtml = '';
-                    historicoRecente.forEach(prova => {
-                        let corClass = prova.notaPct >= 70 ? 'good' : 'bad';
-                        let notaFormatada = prova.notaPct.toFixed(0); // Sem casas decimais na etiqueta
+                    // Pega os últimos 10 para não lotar a tela
+                    aluno.historico.reverse().slice(0, 10).forEach(prova => {
+                        let notaTexto = prova.pct.toFixed(0);
+                        
+                        // Detalhe de debug: Mostra (Acertos/Total)
+                        let detalhe = `(${prova.acertos}/${prova.total})`;
 
                         tagsHtml += `
                             <div class="simulado-badge">
-                                ${prova.nomeProva} 
-                                <span class="badge-score ${corClass}">${notaFormatada}%</span>
-                                <span class="badge-detail">(${prova.acertos}/${prova.total})</span>
+                                ${prova.nome} 
+                                <span class="badge-score">${notaTexto}%</span>
+                                <span class="badge-detail">${detalhe}</span>
                             </div>
                         `;
                     });
 
-                    // Define cor da média geral
-                    let avgClass = 'low-avg';
-                    if (aluno.mediaFinal >= 80) avgClass = 'high-avg';
-                    else if (aluno.mediaFinal >= 60) avgClass = 'med-avg';
-
-                    // Formata média final (1 casa decimal se precisar)
-                    let mediaTexto = Number.isInteger(aluno.mediaFinal) ? 
-                                     aluno.mediaFinal.toFixed(0) : 
-                                     aluno.mediaFinal.toFixed(1);
-
                     const html = `
                         <div class="student-row rank-${posicao}">
                             <div class="rank-number">${posicao}º</div>
-                            
                             <div class="student-info">
                                 <span class="student-name">${aluno.nomeReal}</span>
-                                <div class="history-tags">
-                                    ${tagsHtml}
-                                </div>
+                                <div class="history-tags">${tagsHtml}</div>
                             </div>
-                            
-                            <div class="score-box ${avgClass}">
-                                <span class="score-label">Média</span>
-                                <span class="score-val">${mediaTexto}%</span>
-                                <div class="progress-track">
-                                    <div class="progress-fill" style="width: ${aluno.mediaFinal}%"></div>
-                                </div>
+                            <div>
+                                <span class="score-val">${aluno.mediaFinal.toFixed(0)}%</span>
+                                <span class="score-label">MÉDIA GERAL</span>
                             </div>
                         </div>
                     `;
@@ -239,8 +213,8 @@
                 });
 
             } catch (erro) {
-                console.error("Erro no ranking:", erro);
-                loadingElement.innerText = "Erro ao carregar dados.";
+                console.error(erro);
+                loadingElement.innerText = "Erro: " + erro.message;
             }
         }
     </script>
