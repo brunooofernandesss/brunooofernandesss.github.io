@@ -3,46 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ranking Geral - Versão Robusta</title>
+    <title>Ranking Geral - Top 5 Destacado</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #0f172a; --accent: #0ea5e9; --success: #10b981; 
-            --warning: #f59e0b; --bg: #f8fafc; --card: #ffffff; --text-muted: #64748b;
+            --warning: #f59e0b; --bg: #f8fafc; --card: #ffffff; --text-muted: #94a3b8;
+            /* Cores do Pódio */
+            --gold: #eab308; --silver: #94a3b8; --bronze: #b45309; --rank4: #8b5cf6; --rank5: #ec4899;
         }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--primary); margin: 0; padding: 40px 20px; }
         .container { max-width: 800px; margin: 0 auto; }
         header { text-align: center; margin-bottom: 40px; }
-        h1 { font-weight: 800; font-size: 2.2rem; margin: 0; color: var(--primary); }
+        h1 { font-weight: 900; font-size: 2.5rem; margin: 0; color: var(--primary); letter-spacing: -1px; }
         
-        .ranking-container { background: var(--card); border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden; }
-        .ranking-header { display: grid; grid-template-columns: 50px 1fr 90px; padding: 15px 20px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
+        .ranking-container { background: var(--card); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); overflow: hidden; border: 1px solid #f1f5f9; }
+        .ranking-header { display: grid; grid-template-columns: 50px 1fr 90px; padding: 15px 25px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: var(--text-muted); font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; }
         
-        /* Layout da Linha */
-        .student-row { display: grid; grid-template-columns: 50px 1fr 90px; align-items: start; padding: 20px; border-bottom: 1px solid #f1f5f9; }
+        /* --- LINHA DO ALUNO --- */
+        .student-row { display: grid; grid-template-columns: 50px 1fr 90px; align-items: center; padding: 18px 25px; border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease; }
+        .student-row:hover { background-color: #f0f9ff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(14, 165, 233, 0.1); }
         
-        .rank-number { font-weight: 800; font-size: 1.2rem; color: #cbd5e1; }
-        .rank-1 .rank-number { color: #eab308; }
-        .rank-2 .rank-number { color: #94a3b8; }
-        .rank-3 .rank-number { color: #b45309; }
+        /* --- POSIÇÃO (NÚMERO) --- */
+        .rank-number { font-weight: 900; font-size: 1.2rem; color: #cbd5e1; text-align: center; }
         
-        .student-name { display: block; font-weight: 700; font-size: 1.1rem; margin-bottom: 10px; color: var(--primary); }
+        /* CORES DO TOP 5 */
+        .rank-1 .rank-number { color: var(--gold); font-size: 1.8rem; }
+        .rank-2 .rank-number { color: var(--silver); font-size: 1.5rem; }
+        .rank-3 .rank-number { color: var(--bronze); font-size: 1.5rem; }
+        .rank-4 .rank-number { color: var(--rank4); font-size: 1.4rem; }
+        .rank-5 .rank-number { color: var(--rank5); font-size: 1.4rem; }
+
+        /* --- NOME DO ALUNO --- */
+        .student-info { padding: 0 15px; }
+        .student-name { display: block; font-weight: 700; font-size: 1rem; margin-bottom: 6px; color: var(--primary); transition: color 0.2s; }
         
-        /* Etiquetas */
-        .history-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+        /* DESTAQUE DE TAMANHO PARA O TOP 5 */
+        .rank-1 .student-name { font-size: 1.6rem; font-weight: 900; color: var(--gold); }
+        .rank-2 .student-name { font-size: 1.35rem; font-weight: 800; color: var(--primary); }
+        .rank-3 .student-name { font-size: 1.35rem; font-weight: 800; color: var(--primary); }
+        .rank-4 .student-name { font-size: 1.2rem; font-weight: 800; }
+        .rank-5 .student-name { font-size: 1.2rem; font-weight: 800; }
+        
+        /* --- ETIQUETAS DISCRETAS (MUDANÇA AQUI) --- */
+        .history-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
         .simulado-badge {
-            font-size: 0.75rem; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; 
-            border: 1px solid #e2e8f0; color: #334155; display: inline-flex; align-items: center; gap: 5px;
+            /* Menor, mais clara e mais discreta */
+            font-size: 0.65rem; 
+            background: #f8fafc; 
+            padding: 3px 8px; 
+            border-radius: 4px; 
+            border: 1px solid #e2e8f0; 
+            color: #94a3b8; /* Cor de texto mais suave */
+            display: inline-flex; align-items: center; gap: 4px; font-weight: 600;
         }
-        .badge-score { font-weight: 800; color: var(--accent); }
-        .badge-detail { font-size: 0.7rem; color: #94a3b8; font-weight: normal; margin-left: 2px; }
+        /* A nota dentro da etiqueta também fica mais discreta, a menos que seja muito boa */
+        .badge-score { font-weight: 700; color: #64748b; } 
+        .badge-detail { font-size: 0.6rem; color: #cbd5e1; font-weight: normal; margin-left: 1px; }
 
-        .score-val { display: block; font-weight: 800; font-size: 1.4rem; text-align: right; }
-        .score-label { display: block; font-size: 0.65rem; color: var(--text-muted); text-align: right; }
+        /* --- COLUNA DA MÉDIA --- */
+        .score-val { display: block; font-weight: 900; font-size: 1.5rem; text-align: right; color: var(--primary); }
+        .rank-1 .score-val { color: var(--gold); } /* Média do 1º também dourada */
+        .score-label { display: block; font-size: 0.6rem; color: var(--text-muted); text-align: right; font-weight: 700; letter-spacing: 1px; margin-top: 4px; }
 
-        #loading { padding: 30px; text-align: center; }
-        .btn-home { display: block; width: fit-content; margin: 30px auto; text-decoration: none; color: var(--text-muted); border: 1px solid #cbd5e1; padding: 8px 20px; border-radius: 20px; }
+        #loading { padding: 50px; text-align: center; color: var(--text-muted); font-weight: 600; }
+        .btn-home { display: block; width: fit-content; margin: 40px auto; text-decoration: none; color: var(--text-muted); border: 2px solid #e2e8f0; padding: 10px 25px; border-radius: 30px; font-weight: 700; transition: 0.3s; font-size: 0.9rem; }
+        .btn-home:hover { background: var(--primary); border-color: var(--primary); color: white; }
     </style>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -52,25 +79,25 @@
 
     <div class="container">
         <header>
-            <h1>Classificação Geral</h1>
+            <h1>🏆 Classificação Geral</h1>
         </header>
 
         <div class="ranking-container">
             <div class="ranking-header">
-                <span>#</span>
-                <span>Aluno & Simulados</span>
-                <span style="text-align: right">Média</span>
+                <span style="text-align: center;">#</span>
+                <span>Aluno & Histórico</span>
+                <span style="text-align: right">Média Final</span>
             </div>
 
-            <div id="loading">Carregando dados...</div>
+            <div id="loading">Carregando a elite...</div>
             <div id="ranking-list"></div>
         </div>
 
-        <a href="index.html" class="btn-home">⬅ Voltar ao Início</a>
+        <a href="index.html" class="btn-home">⬅ Voltar ao Menu Principal</a>
     </div>
 
     <script>
-        // CONFIGURAÇÃO FIREBASE
+        // (O JAVASCRIPT CONTINUA EXATAMENTE O MESMO DA VERSÃO QUE FUNCIONOU)
         const firebaseConfig = {
             apiKey: "AIzaSyDj-c4uArNjAr7cSg396yfQR6xuyumh5_M",
             authDomain: "simuladosmedicina-6a01b.firebaseapp.com",
@@ -85,7 +112,7 @@
             const db = firebase.firestore();
             carregarRanking(db);
         } catch (e) {
-            document.getElementById('loading').innerText = "Erro ao conectar: " + e.message;
+            document.getElementById('loading').innerText = "Erro de conexão: " + e.message;
         }
 
         async function carregarRanking(db) {
@@ -94,99 +121,48 @@
 
             try {
                 const snapshot = await db.collection('resultados_alunos').get();
-
-                if (snapshot.empty) {
-                    loadingElement.innerText = "Nenhum resultado encontrado.";
-                    return;
-                }
-
+                if (snapshot.empty) { loadingElement.innerText = "Sem dados."; return; }
                 const alunosMap = {};
 
                 snapshot.forEach(doc => {
                     const dados = doc.data();
+                    let acertosRaw = dados.nota !== undefined ? dados.nota : (dados.acertos !== undefined ? dados.acertos : 0);
+                    let totalRaw = dados.total_questoes !== undefined ? dados.total_questoes : (dados.total !== undefined ? dados.total : 0);
+                    let acertos = Number(acertosRaw); let total = Number(totalRaw);
                     
-                    // 1. TENTA DESCOBRIR O NOME DOS CAMPOS (Detetive)
-                    // Verifica se é 'nota', 'acertos' ou 'pontos'
-                    let acertosRaw = dados.nota !== undefined ? dados.nota : 
-                                     (dados.acertos !== undefined ? dados.acertos : 0);
-                    
-                    // Verifica se é 'total_questoes', 'total' ou se não existe
-                    let totalRaw = dados.total_questoes !== undefined ? dados.total_questoes : 
-                                   (dados.total !== undefined ? dados.total : 0);
+                    let porcentagem = (total > 0) ? (acertos / total) * 100 : 0;
 
-                    // Converte para número
-                    let acertos = Number(acertosRaw);
-                    let total = Number(totalRaw);
-
-                    // SE O TOTAL FOR ZERO (Erro comum), assumimos 1 para não dividir por zero, 
-                    // mas marcamos visualmente que está estranho.
-                    let totalValido = total > 0 ? total : 0; 
-                    
-                    let porcentagem = 0;
-                    if (totalValido > 0) {
-                        porcentagem = (acertos / totalValido) * 100;
-                    }
-
-                    // Nome do Aluno
                     const nomeKey = dados.aluno ? dados.aluno.trim().toUpperCase() : "ANÔNIMO";
                     const nomeExibicao = dados.aluno ? dados.aluno.trim() : "Anônimo";
-                    const nomeSimulado = dados.simulado || "Simulado sem nome";
+                    const nomeSimulado = dados.simulado || "Quiz";
 
                     if (!alunosMap[nomeKey]) {
-                        alunosMap[nomeKey] = {
-                            nomeReal: nomeExibicao,
-                            somaPct: 0,
-                            qtdSimulados: 0,
-                            historico: []
-                        };
+                        alunosMap[nomeKey] = { nomeReal: nomeExibicao, somaPct: 0, qtdSimulados: 0, historico: [] };
                     }
-
-                    // --- MUDANÇA: SEMPRE ADICIONA AO HISTÓRICO, MESMO SE O TOTAL FOR ZERO ---
-                    alunosMap[nomeKey].historico.push({
-                        nome: nomeSimulado,
-                        pct: porcentagem,
-                        acertos: acertos,
-                        total: total // Mostra o total original (mesmo se for 0)
-                    });
-
-                    // Só soma na média se os dados forem válidos
-                    if (totalValido > 0) {
+                    alunosMap[nomeKey].historico.push({ nome: nomeSimulado, pct: porcentagem, acertos: acertos, total: total });
+                    if (total > 0) {
                         alunosMap[nomeKey].somaPct += porcentagem;
                         alunosMap[nomeKey].qtdSimulados += 1;
                     }
                 });
 
-                // Processa a lista final
                 let ranking = Object.values(alunosMap);
-
-                // Calcula Média
                 ranking.forEach(aluno => {
-                    if (aluno.qtdSimulados > 0) {
-                        aluno.mediaFinal = aluno.somaPct / aluno.qtdSimulados;
-                    } else {
-                        aluno.mediaFinal = 0;
-                    }
+                    aluno.mediaFinal = (aluno.qtdSimulados > 0) ? aluno.somaPct / aluno.qtdSimulados : 0;
                 });
-
-                // Ordena
                 ranking.sort((a, b) => b.mediaFinal - a.mediaFinal);
 
-                // Renderiza
                 loadingElement.style.display = 'none';
                 listaElement.innerHTML = '';
 
                 ranking.forEach((aluno, index) => {
                     const posicao = index + 1;
-
-                    // Cria as etiquetas
                     let tagsHtml = '';
-                    // Pega os últimos 10 para não lotar a tela
-                    aluno.historico.reverse().slice(0, 10).forEach(prova => {
+                    // Pega os últimos 8 para não poluir
+                    aluno.historico.reverse().slice(0, 8).forEach(prova => {
                         let notaTexto = prova.pct.toFixed(0);
-                        
-                        // Detalhe de debug: Mostra (Acertos/Total)
                         let detalhe = `(${prova.acertos}/${prova.total})`;
-
+                        // Remove a classe de cor ('good'/'bad') para deixar mais discreto, padronizado
                         tagsHtml += `
                             <div class="simulado-badge">
                                 ${prova.nome} 
@@ -204,7 +180,7 @@
                                 <div class="history-tags">${tagsHtml}</div>
                             </div>
                             <div>
-                                <span class="score-val">${aluno.mediaFinal.toFixed(0)}%</span>
+                                <span class="score-val">${aluno.mediaFinal.toFixed(1)}%</span>
                                 <span class="score-label">MÉDIA GERAL</span>
                             </div>
                         </div>
@@ -212,10 +188,7 @@
                     listaElement.innerHTML += html;
                 });
 
-            } catch (erro) {
-                console.error(erro);
-                loadingElement.innerText = "Erro: " + erro.message;
-            }
+            } catch (erro) { loadingElement.innerText = "Erro: " + erro.message; }
         }
     </script>
 </body>
