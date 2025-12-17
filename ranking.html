@@ -3,68 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ranking Geral - Top 5 Destacado</title>
+    <title>Ranking Geral - Oficial</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #0f172a; --accent: #0ea5e9; --success: #10b981; 
-            --warning: #f59e0b; --bg: #f8fafc; --card: #ffffff; --text-muted: #94a3b8;
+            --bg: #f8fafc; --card: #ffffff; --text-muted: #94a3b8;
             /* Cores do Pódio */
-            --gold: #eab308; --silver: #94a3b8; --bronze: #b45309; --rank4: #8b5cf6; --rank5: #ec4899;
+            --gold: #fbbf24; --silver: #94a3b8; --bronze: #b45309; 
+            --rank4: #8b5cf6; --rank5: #ec4899;
         }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--primary); margin: 0; padding: 40px 20px; }
         .container { max-width: 800px; margin: 0 auto; }
         header { text-align: center; margin-bottom: 40px; }
         h1 { font-weight: 900; font-size: 2.5rem; margin: 0; color: var(--primary); letter-spacing: -1px; }
+        p.subtitle { color: var(--text-muted); font-size: 0.9rem; margin-top: 5px; }
         
         .ranking-container { background: var(--card); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); overflow: hidden; border: 1px solid #f1f5f9; }
-        .ranking-header { display: grid; grid-template-columns: 50px 1fr 90px; padding: 15px 25px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: var(--text-muted); font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .ranking-header { display: grid; grid-template-columns: 50px 1fr 100px; padding: 15px 25px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: var(--text-muted); font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; }
         
         /* --- LINHA DO ALUNO --- */
-        .student-row { display: grid; grid-template-columns: 50px 1fr 90px; align-items: center; padding: 18px 25px; border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease; }
+        .student-row { display: grid; grid-template-columns: 50px 1fr 100px; align-items: center; padding: 18px 25px; border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease; }
         .student-row:hover { background-color: #f0f9ff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(14, 165, 233, 0.1); }
         
         /* --- POSIÇÃO (NÚMERO) --- */
         .rank-number { font-weight: 900; font-size: 1.2rem; color: #cbd5e1; text-align: center; }
         
         /* CORES DO TOP 5 */
-        .rank-1 .rank-number { color: var(--gold); font-size: 1.8rem; }
-        .rank-2 .rank-number { color: var(--silver); font-size: 1.5rem; }
-        .rank-3 .rank-number { color: var(--bronze); font-size: 1.5rem; }
+        .rank-1 .rank-number { color: var(--gold); font-size: 2rem; text-shadow: 0 2px 10px rgba(251, 191, 36, 0.3); }
+        .rank-2 .rank-number { color: var(--silver); font-size: 1.6rem; }
+        .rank-3 .rank-number { color: var(--bronze); font-size: 1.6rem; }
         .rank-4 .rank-number { color: var(--rank4); font-size: 1.4rem; }
         .rank-5 .rank-number { color: var(--rank5); font-size: 1.4rem; }
 
         /* --- NOME DO ALUNO --- */
         .student-info { padding: 0 15px; }
-        .student-name { display: block; font-weight: 700; font-size: 1rem; margin-bottom: 6px; color: var(--primary); transition: color 0.2s; }
+        .name-wrapper { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .student-name { display: block; font-weight: 700; font-size: 1rem; color: var(--primary); }
         
+        /* Contador de Simulados (O segredo da justiça) */
+        .count-badge { font-size: 0.7rem; background: var(--primary); color: white; padding: 2px 8px; border-radius: 10px; font-weight: 600; opacity: 0.8; }
+        .rank-1 .count-badge { background: var(--gold); color: black; opacity: 1; }
+
         /* DESTAQUE DE TAMANHO PARA O TOP 5 */
-        .rank-1 .student-name { font-size: 1.6rem; font-weight: 900; color: var(--gold); }
-        .rank-2 .student-name { font-size: 1.35rem; font-weight: 800; color: var(--primary); }
-        .rank-3 .student-name { font-size: 1.35rem; font-weight: 800; color: var(--primary); }
-        .rank-4 .student-name { font-size: 1.2rem; font-weight: 800; }
-        .rank-5 .student-name { font-size: 1.2rem; font-weight: 800; }
+        .rank-1 .student-name { font-size: 1.5rem; font-weight: 900; color: #b45309; } /* Ouro escuro para leitura */
+        .rank-2 .student-name { font-size: 1.3rem; font-weight: 800; }
+        .rank-3 .student-name { font-size: 1.3rem; font-weight: 800; }
         
-        /* --- ETIQUETAS DISCRETAS (MUDANÇA AQUI) --- */
-        .history-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+        /* --- ETIQUETAS DISCRETAS --- */
+        .history-tags { display: flex; flex-wrap: wrap; gap: 4px; }
         .simulado-badge {
-            /* Menor, mais clara e mais discreta */
-            font-size: 0.65rem; 
-            background: #f8fafc; 
-            padding: 3px 8px; 
-            border-radius: 4px; 
-            border: 1px solid #e2e8f0; 
-            color: #94a3b8; /* Cor de texto mais suave */
-            display: inline-flex; align-items: center; gap: 4px; font-weight: 600;
+            font-size: 0.6rem; background: #f1f5f9; padding: 3px 6px; border-radius: 4px; 
+            border: 1px solid #e2e8f0; color: #94a3b8; display: inline-flex; align-items: center; 
+            gap: 4px; font-weight: 500; white-space: nowrap; overflow: hidden; max-width: 200px; text-overflow: ellipsis;
         }
-        /* A nota dentro da etiqueta também fica mais discreta, a menos que seja muito boa */
         .badge-score { font-weight: 700; color: #64748b; } 
-        .badge-detail { font-size: 0.6rem; color: #cbd5e1; font-weight: normal; margin-left: 1px; }
+        .badge-detail { font-size: 0.55rem; color: #cbd5e1; font-weight: normal; }
 
         /* --- COLUNA DA MÉDIA --- */
-        .score-val { display: block; font-weight: 900; font-size: 1.5rem; text-align: right; color: var(--primary); }
-        .rank-1 .score-val { color: var(--gold); } /* Média do 1º também dourada */
+        .score-val { display: block; font-weight: 900; font-size: 1.4rem; text-align: right; color: var(--primary); }
+        .rank-1 .score-val { color: var(--gold); transform: scale(1.1); transform-origin: right; }
         .score-label { display: block; font-size: 0.6rem; color: var(--text-muted); text-align: right; font-weight: 700; letter-spacing: 1px; margin-top: 4px; }
 
         #loading { padding: 50px; text-align: center; color: var(--text-muted); font-weight: 600; }
@@ -80,16 +79,17 @@
     <div class="container">
         <header>
             <h1>🏆 Classificação Geral</h1>
+            <p class="subtitle">Critério: Média Geral + Bônus por Participação</p>
         </header>
 
         <div class="ranking-container">
             <div class="ranking-header">
                 <span style="text-align: center;">#</span>
                 <span>Aluno & Histórico</span>
-                <span style="text-align: right">Média Final</span>
+                <span style="text-align: right">Média</span>
             </div>
 
-            <div id="loading">Carregando a elite...</div>
+            <div id="loading">Calculando pontuações...</div>
             <div id="ranking-list"></div>
         </div>
 
@@ -97,7 +97,6 @@
     </div>
 
     <script>
-        // (O JAVASCRIPT CONTINUA EXATAMENTE O MESMO DA VERSÃO QUE FUNCIONOU)
         const firebaseConfig = {
             apiKey: "AIzaSyDj-c4uArNjAr7cSg396yfQR6xuyumh5_M",
             authDomain: "simuladosmedicina-6a01b.firebaseapp.com",
@@ -140,6 +139,7 @@
                         alunosMap[nomeKey] = { nomeReal: nomeExibicao, somaPct: 0, qtdSimulados: 0, historico: [] };
                     }
                     alunosMap[nomeKey].historico.push({ nome: nomeSimulado, pct: porcentagem, acertos: acertos, total: total });
+                    
                     if (total > 0) {
                         alunosMap[nomeKey].somaPct += porcentagem;
                         alunosMap[nomeKey].qtdSimulados += 1;
@@ -147,10 +147,24 @@
                 });
 
                 let ranking = Object.values(alunosMap);
+
+                // --- AQUI ESTÁ A LÓGICA DE JUSTIÇA ---
                 ranking.forEach(aluno => {
-                    aluno.mediaFinal = (aluno.qtdSimulados > 0) ? aluno.somaPct / aluno.qtdSimulados : 0;
+                    if (aluno.qtdSimulados > 0) {
+                        aluno.mediaFinal = aluno.somaPct / aluno.qtdSimulados;
+                        
+                        // FÓRMULA DE PONTUAÇÃO (RANKING SCORE)
+                        // Score = Média + (2.5 pontos por cada simulado feito)
+                        // Isso garante que quem faz mais provas sobe no ranking
+                        aluno.pontuacaoRanking = aluno.mediaFinal + (aluno.qtdSimulados * 2.5);
+                    } else {
+                        aluno.mediaFinal = 0;
+                        aluno.pontuacaoRanking = 0;
+                    }
                 });
-                ranking.sort((a, b) => b.mediaFinal - a.mediaFinal);
+
+                // ORDENA PELA PONTUAÇÃO (JUSTA), NÃO SÓ PELA MÉDIA
+                ranking.sort((a, b) => b.pontuacaoRanking - a.pontuacaoRanking);
 
                 loadingElement.style.display = 'none';
                 listaElement.innerHTML = '';
@@ -158,11 +172,11 @@
                 ranking.forEach((aluno, index) => {
                     const posicao = index + 1;
                     let tagsHtml = '';
-                    // Pega os últimos 8 para não poluir
-                    aluno.historico.reverse().slice(0, 8).forEach(prova => {
+                    
+                    // Mostra histórico (limite de 6 etiquetas para ficar discreto)
+                    aluno.historico.reverse().slice(0, 6).forEach(prova => {
                         let notaTexto = prova.pct.toFixed(0);
                         let detalhe = `(${prova.acertos}/${prova.total})`;
-                        // Remove a classe de cor ('good'/'bad') para deixar mais discreto, padronizado
                         tagsHtml += `
                             <div class="simulado-badge">
                                 ${prova.nome} 
@@ -172,16 +186,24 @@
                         `;
                     });
 
+                    // Verifica se tem mais etiquetas escondidas
+                    if (aluno.historico.length > 6) {
+                        tagsHtml += `<div class="simulado-badge">+${aluno.historico.length - 6} outros</div>`;
+                    }
+
                     const html = `
                         <div class="student-row rank-${posicao}">
                             <div class="rank-number">${posicao}º</div>
                             <div class="student-info">
-                                <span class="student-name">${aluno.nomeReal}</span>
+                                <div class="name-wrapper">
+                                    <span class="student-name">${aluno.nomeReal}</span>
+                                    <span class="count-badge" title="Bônus de Participação">${aluno.qtdSimulados}x</span>
+                                </div>
                                 <div class="history-tags">${tagsHtml}</div>
                             </div>
                             <div>
                                 <span class="score-val">${aluno.mediaFinal.toFixed(1)}%</span>
-                                <span class="score-label">MÉDIA GERAL</span>
+                                <span class="score-label">MÉDIA REAL</span>
                             </div>
                         </div>
                     `;
