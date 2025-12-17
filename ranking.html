@@ -20,58 +20,72 @@
         h1 { font-weight: 900; font-size: 2.5rem; margin: 0; color: var(--primary); letter-spacing: -1px; }
         p.subtitle { color: var(--text-muted); font-size: 0.9rem; margin-top: 5px; }
         
+        /* --- ESTILOS DO POPUP (NOVO) --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px);
+            z-index: 9999; display: none; justify-content: center; align-items: center;
+            animation: fadeIn 0.3s ease;
+        }
+        .modal-box {
+            background: white; width: 90%; max-width: 450px;
+            border-radius: 20px; padding: 30px; text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            position: relative; transform: scale(0.9);
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            border: 2px solid var(--gold);
+        }
+        .modal-icon { font-size: 3rem; margin-bottom: 15px; display: block; }
+        .modal-title { font-weight: 900; font-size: 1.5rem; color: var(--primary); margin-bottom: 10px; }
+        .modal-text { font-size: 1rem; color: #475569; line-height: 1.5; margin-bottom: 25px; }
+        .highlight-name { color: var(--gold); font-weight: 900; font-size: 1.1em; }
+        .close-btn-x {
+            position: absolute; top: 15px; right: 20px; font-size: 1.5rem; color: #cbd5e1; cursor: pointer; transition: 0.2s;
+        }
+        .close-btn-x:hover { color: var(--primary); }
+        .action-btn {
+            background: var(--gold); color: #0f172a; font-weight: 800; border: none;
+            padding: 12px 30px; border-radius: 50px; font-size: 1rem; cursor: pointer;
+            transition: 0.2s; box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);
+        }
+        .action-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4); }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* --- RESTO DO CSS (RANKING) --- */
         .ranking-container { background: var(--card); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); overflow: hidden; border: 1px solid #f1f5f9; }
         .ranking-header { display: grid; grid-template-columns: 50px 1fr 100px; padding: 15px 25px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: var(--text-muted); font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; }
-        
-        /* --- LINHA DO ALUNO --- */
         .student-row { display: grid; grid-template-columns: 50px 1fr 100px; align-items: center; padding: 18px 25px; border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease; }
         .student-row:hover { background-color: #f0f9ff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(14, 165, 233, 0.1); }
-        
-        /* --- POSIÇÃO (NÚMERO) --- */
         .rank-number { font-weight: 900; font-size: 1.2rem; color: #cbd5e1; text-align: center; }
-        
-        /* CORES DO TOP 5 */
         .rank-1 .rank-number { color: var(--gold); font-size: 2rem; text-shadow: 0 2px 10px rgba(251, 191, 36, 0.3); }
         .rank-2 .rank-number { color: var(--silver); font-size: 1.6rem; }
         .rank-3 .rank-number { color: var(--bronze); font-size: 1.6rem; }
         .rank-4 .rank-number { color: var(--rank4); font-size: 1.4rem; }
         .rank-5 .rank-number { color: var(--rank5); font-size: 1.4rem; }
-
-        /* --- NOME DO ALUNO --- */
         .student-info { padding: 0 15px; }
         .name-wrapper { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
         .student-name { display: block; font-weight: 700; font-size: 1rem; color: var(--primary); }
-        
-        /* Contador de Simulados */
         .count-badge { font-size: 0.7rem; background: var(--primary); color: white; padding: 2px 8px; border-radius: 10px; font-weight: 600; opacity: 0.8; }
         .rank-1 .count-badge { background: var(--gold); color: black; opacity: 1; }
-
-        /* DESTAQUE DE TAMANHO PARA O TOP 5 */
         .rank-1 .student-name { font-size: 1.5rem; font-weight: 900; color: #b45309; }
         .rank-2 .student-name { font-size: 1.3rem; font-weight: 800; }
         .rank-3 .student-name { font-size: 1.3rem; font-weight: 800; }
-        
-        /* --- ETIQUETAS DISCRETAS (CORREÇÃO AQUI) --- */
         .history-tags { display: flex; flex-wrap: wrap; gap: 4px; }
         .simulado-badge {
             font-size: 0.6rem; background: #f1f5f9; padding: 4px 8px; border-radius: 4px; 
             border: 1px solid #e2e8f0; color: #94a3b8; 
             display: inline-flex; align-items: center; 
-            flex-wrap: wrap; /* Permite quebra de linha */
-            gap: 4px; font-weight: 500; 
-            white-space: normal; /* Permite que o texto quebre */
+            flex-wrap: wrap; gap: 4px; font-weight: 500; 
+            white-space: normal;
         }
-        /* Garante que o nome quebre se for longo */
         .badge-name { word-break: break-word; }
-        /* Mantém a nota e o detalhe na mesma linha se possível */
         .badge-score { font-weight: 700; color: #64748b; white-space: nowrap; } 
         .badge-detail { font-size: 0.55rem; color: #cbd5e1; font-weight: normal; white-space: nowrap; }
-
-        /* --- COLUNA DA MÉDIA --- */
         .score-val { display: block; font-weight: 900; font-size: 1.4rem; text-align: right; color: var(--primary); }
         .rank-1 .score-val { color: var(--gold); transform: scale(1.1); transform-origin: right; }
         .score-label { display: block; font-size: 0.6rem; color: var(--text-muted); text-align: right; font-weight: 700; letter-spacing: 1px; margin-top: 4px; }
-
         #loading { padding: 50px; text-align: center; color: var(--text-muted); font-weight: 600; }
         .btn-home { display: block; width: fit-content; margin: 40px auto; text-decoration: none; color: var(--text-muted); border: 2px solid #e2e8f0; padding: 10px 25px; border-radius: 30px; font-weight: 700; transition: 0.3s; font-size: 0.9rem; }
         .btn-home:hover { background: var(--primary); border-color: var(--primary); color: white; }
@@ -81,6 +95,19 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
+
+    <div id="winnerModal" class="modal-overlay">
+        <div class="modal-box">
+            <span class="close-btn-x" onclick="fecharModal()">×</span>
+            <span class="modal-icon">🏆</span>
+            <div class="modal-title">Temos um Líder!</div>
+            <p class="modal-text" id="winnerText">
+                Parabéns ao aluno <span class="highlight-name">...</span>.<br>
+                Seu prêmio estará disponível se você participar da brincadeira.
+            </p>
+            <button class="action-btn" onclick="fecharModal()">Oba! Quero participar</button>
+        </div>
+    </div>
 
     <div class="container">
         <header>
@@ -120,6 +147,28 @@
             document.getElementById('loading').innerText = "Erro de conexão: " + e.message;
         }
 
+        function abrirModal(nomeVencedor) {
+            const modal = document.getElementById('winnerModal');
+            const texto = document.getElementById('winnerText');
+            
+            // Injeta o HTML personalizado com o nome
+            texto.innerHTML = `Parabéns ao aluno <span class="highlight-name">${nomeVencedor}</span>.<br>Seu prêmio estará disponível se você participar da brincadeira.`;
+            
+            modal.style.display = 'flex'; // Mostra o modal
+        }
+
+        function fecharModal() {
+            document.getElementById('winnerModal').style.display = 'none';
+        }
+
+        // Fecha se clicar fora da caixa
+        window.onclick = function(event) {
+            const modal = document.getElementById('winnerModal');
+            if (event.target == modal) {
+                fecharModal();
+            }
+        }
+
         async function carregarRanking(db) {
             const listaElement = document.getElementById('ranking-list');
             const loadingElement = document.getElementById('loading');
@@ -146,7 +195,7 @@
                     }
                     alunosMap[nomeKey].historico.push({ nome: nomeSimulado, pct: porcentagem, acertos: acertos, total: total });
                     
-                    // Adiciona ao cálculo mesmo se o total for zero, para contabilizar a participação
+                    // Adiciona ao cálculo mesmo se o total for zero
                     alunosMap[nomeKey].qtdSimulados += 1;
                     if (total > 0) {
                         alunosMap[nomeKey].somaPct += porcentagem;
@@ -158,7 +207,7 @@
                 ranking.forEach(aluno => {
                     if (aluno.qtdSimulados > 0) {
                         aluno.mediaFinal = aluno.somaPct / aluno.qtdSimulados;
-                        // FÓRMULA DE PONTUAÇÃO: Média + (2.5 pontos por simulado)
+                        // FÓRMULA DE PONTUAÇÃO
                         aluno.pontuacaoRanking = aluno.mediaFinal + (aluno.qtdSimulados * 2.5);
                     } else {
                         aluno.mediaFinal = 0;
@@ -168,6 +217,13 @@
 
                 ranking.sort((a, b) => b.pontuacaoRanking - a.pontuacaoRanking);
 
+                // --- ATIVA O MODAL PARA O VENCEDOR ---
+                if (ranking.length > 0) {
+                    const campeao = ranking[0].nomeReal;
+                    // Pequeno delay para dar um efeito dramático
+                    setTimeout(() => abrirModal(campeao), 500);
+                }
+
                 loadingElement.style.display = 'none';
                 listaElement.innerHTML = '';
 
@@ -175,11 +231,9 @@
                     const posicao = index + 1;
                     let tagsHtml = '';
                     
-                    // Mostra histórico (limite de 6 etiquetas)
                     aluno.historico.reverse().slice(0, 6).forEach(prova => {
                         let notaTexto = prova.pct.toFixed(0);
                         let detalhe = `(${prova.acertos}/${prova.total})`;
-                        // Adicionado span em volta do nome para controlar a quebra de linha
                         tagsHtml += `
                             <div class="simulado-badge">
                                 <span class="badge-name">${prova.nome}</span> 
