@@ -35,7 +35,7 @@
         .student-info { padding-right: 15px; }
         .student-name { display: block; font-weight: 700; font-size: 1.05rem; color: var(--primary); margin-bottom: 8px; }
         
-        /* Etiquetas dos Simulados (Histórico) */
+        /* Etiquetas dos Simulados (VOLTARAM!) */
         .history-tags { display: flex; flex-wrap: wrap; gap: 6px; }
         .simulado-badge {
             font-size: 0.75rem; background: #f1f5f9; padding: 4px 10px; border-radius: 6px; border: 1px solid #e2e8f0; color: #475569; display: flex; align-items: center; gap: 5px;
@@ -44,7 +44,7 @@
         .badge-score.bad { color: var(--warning); }
         .badge-score.good { color: var(--success); }
         
-        /* Detalhe Pequeno (Acertos/Total) */
+        /* Detalhe Pequeno (Acertos/Total) - NOVO */
         .badge-detail { font-size: 0.65rem; color: #94a3b8; margin-left: 3px; font-weight: normal; }
 
         /* Coluna da Média */
@@ -81,7 +81,7 @@
                 <span style="text-align: right">Média Geral</span>
             </div>
 
-            <div id="loading">Calculando médias...</div>
+            <div id="loading">Carregando notas...</div>
             <div class="scroll-area" id="ranking-list"></div>
         </div>
 
@@ -89,6 +89,7 @@
     </div>
 
     <script>
+        // CONFIGURAÇÃO FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyDj-c4uArNjAr7cSg396yfQR6xuyumh5_M",
             authDomain: "simuladosmedicina-6a01b.firebaseapp.com",
@@ -103,7 +104,8 @@
             const db = firebase.firestore();
             carregarRanking(db);
         } catch (e) {
-            document.getElementById('loading').innerText = "Erro de conexão.";
+            document.getElementById('loading').innerText = "Erro de conexão com Firebase.";
+            console.error(e);
         }
 
         async function carregarRanking(db) {
@@ -111,103 +113,104 @@
             const loadingElement = document.getElementById('loading');
 
             try {
-                // Ordena por data (timestamp) se você tiver esse campo, senão traz tudo
+                // Pega todos os resultados do banco de dados
                 const snapshot = await db.collection('resultados_alunos').get();
 
                 if (snapshot.empty) {
-                    loadingElement.innerText = "Nenhum dado encontrado.";
+                    loadingElement.innerText = "Nenhum resultado encontrado ainda.";
                     return;
                 }
 
+                // --- 1. AGRUPAR NOTAS POR ALUNO ---
                 const alunosMap = {};
 
                 snapshot.forEach(doc => {
                     const dados = doc.data();
                     
-                    // Normaliza nome (Maiúsculo e sem espaços extras)
+                    // Normaliza nome (evita 'Bruno' e 'bruno' separados)
                     const nomeKey = dados.aluno ? dados.aluno.trim().toUpperCase() : "ANÔNIMO";
-                    
-                    // Garante que são números
+                    const nomeExibicao = dados.aluno ? dados.aluno.trim() : "Anônimo";
+
+                    // Converte para NÚMEROS (Essencial para não dar erro de cálculo)
                     const acertos = Number(dados.nota) || 0;
                     const total = Number(dados.total_questoes) || 0;
                     
-                    let porcentagem = 0;
+                    // Calcula % deste simulado específico
+                    let porcentagemSimulado = 0;
                     if (total > 0) {
-                        porcentagem = (acertos / total) * 100;
+                        porcentagemSimulado = (acertos / total) * 100;
                     }
 
+                    // Se é a primeira vez que vemos esse aluno, cria a ficha dele
                     if (!alunosMap[nomeKey]) {
                         alunosMap[nomeKey] = {
-                            nomeReal: dados.aluno || "Anônimo",
-                            somaNotas: 0,
+                            nomeReal: nomeExibicao,
+                            somaDasPorcentagens: 0,
                             qtdSimulados: 0,
-                            historico: []
+                            historico: [] // Lista de provas feitas
                         };
                     }
 
-                    // Só conta para a média se o total de questões for válido (>0)
+                    // Adiciona dados APENAS se o total for válido
                     if (total > 0) {
-                        alunosMap[nomeKey].somaNotas += porcentagem;
+                        alunosMap[nomeKey].somaDasPorcentagens += porcentagemSimulado;
                         alunosMap[nomeKey].qtdSimulados += 1;
                         
+                        // Guarda o histórico para mostrar na etiqueta
                         alunosMap[nomeKey].historico.push({
-                            nomeProva: dados.simulado || "Quiz",
-                            porcentagem: porcentagem,
+                            nomeProva: dados.simulado || "Quiz Sem Nome",
+                            notaPct: porcentagemSimulado,
                             acertos: acertos,
                             total: total
                         });
                     }
                 });
 
-                // Converte mapa em array
+                // --- 2. CALCULAR MÉDIAS E ORDENAR ---
                 let ranking = Object.values(alunosMap);
 
-                // Calcula Médias
                 ranking.forEach(aluno => {
-                    if(aluno.qtdSimulados > 0) {
-                        aluno.mediaFinal = aluno.somaNotas / aluno.qtdSimulados;
+                    if (aluno.qtdSimulados > 0) {
+                        aluno.mediaFinal = aluno.somaDasPorcentagens / aluno.qtdSimulados;
                     } else {
                         aluno.mediaFinal = 0;
                     }
                 });
 
-                // Ordena: Maior média primeiro
+                // Ordena do maior para o menor
                 ranking.sort((a, b) => b.mediaFinal - a.mediaFinal);
 
+                // --- 3. GERAR O HTML ---
                 loadingElement.style.display = 'none';
-                listaElement.innerHTML = ''; // Limpa antes de preencher
+                listaElement.innerHTML = '';
 
                 ranking.forEach((aluno, index) => {
                     const posicao = index + 1;
                     
-                    // Gera etiquetas com DETALHES (Acertos/Total)
-                    let tagsHtml = '';
-                    
-                    // Pega apenas os últimos 5 exames para não poluir, ou todos se preferir
+                    // Monta as etiquetas (Badges)
+                    // Inverte para mostrar o último simulado primeiro
                     const historicoRecente = aluno.historico.reverse(); 
-
+                    
+                    let tagsHtml = '';
                     historicoRecente.forEach(prova => {
-                        let corNota = prova.porcentagem >= 70 ? 'good' : 'bad';
-                        
-                        // Formatação inteligente: se for inteiro mostra sem casa decimal, senão mostra 1 casa
-                        let percTexto = Number.isInteger(prova.porcentagem) ? 
-                                        prova.porcentagem.toFixed(0) : 
-                                        prova.porcentagem.toFixed(1);
+                        let corClass = prova.notaPct >= 70 ? 'good' : 'bad';
+                        let notaFormatada = prova.notaPct.toFixed(0); // Sem casas decimais na etiqueta
 
                         tagsHtml += `
                             <div class="simulado-badge">
                                 ${prova.nomeProva} 
-                                <span class="badge-score ${corNota}">${percTexto}%</span>
+                                <span class="badge-score ${corClass}">${notaFormatada}%</span>
                                 <span class="badge-detail">(${prova.acertos}/${prova.total})</span>
                             </div>
                         `;
                     });
 
-                    // Define cor da barra de progresso
+                    // Define cor da média geral
                     let avgClass = 'low-avg';
                     if (aluno.mediaFinal >= 80) avgClass = 'high-avg';
                     else if (aluno.mediaFinal >= 60) avgClass = 'med-avg';
 
+                    // Formata média final (1 casa decimal se precisar)
                     let mediaTexto = Number.isInteger(aluno.mediaFinal) ? 
                                      aluno.mediaFinal.toFixed(0) : 
                                      aluno.mediaFinal.toFixed(1);
