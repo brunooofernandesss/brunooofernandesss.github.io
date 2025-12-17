@@ -1,101 +1,97 @@
-document.addEventListener('DOMContentLoaded', async function() {
-    
-    // --- 1. IDENTIFICAÇÃO DA PÁGINA ---
-    // Pega o nome do arquivo atual (ex: 'Modulo06 (1).html') e decodifica os %20
-    let pathAtual = decodeURIComponent(window.location.pathname.split('/').pop());
-    
-    // Se estiver vazio (raiz) ou for index.html ou ranking.html, NÃO RODA O SCRIPT DE QUIZ
-    if (pathAtual === "" || pathAtual === "index.html" || pathAtual === "ranking.html") {
-        return; // Sai do script para não dar erro na Home
+document.addEventListener("DOMContentLoaded", function() {
+
+    // 🛑 1. CHECAGEM DE SEGURANÇA (Proteção da Home)
+    // Se estiver na Home (tem cardsContainer), o script para aqui.
+    if (document.getElementById('cardsContainer')) {
+        return; 
     }
 
-    const storageKey = 'progresso_maximo_' + pathAtual;
-
-    // --- 2. SELEÇÃO DE ELEMENTOS DO QUIZ ---
-    const btnAnt = document.getElementById('btnAnt');
-    const btnProx = document.getElementById('btnProx');
-    const btnHome = document.getElementById('btnHome');
-    
-    // Seleciona os cards de questão (Lista Corrida)
-    // Filtra para não pegar botões, placares ou áreas de diagnóstico
+    // --- 2. PREPARAÇÃO DO LAYOUT (LISTA INFINITA) ---
+    // Seleciona todos os cards de questões, ignorando placares ou diagnósticos
     const allCards = document.querySelectorAll('.card');
     const cards = Array.from(allCards).filter(card => 
-        !card.contains(btnProx) && 
-        !card.contains(btnAnt) && 
         !card.classList.contains('results') && 
         !card.classList.contains('generated-questions-section') &&
         !card.classList.contains('error-diagnosis-section')
     );
-
     // Garante que todas as questões apareçam (rolagem vertical)
     cards.forEach(card => card.style.display = 'block');
 
-    // --- 3. CONFIGURAÇÃO AUTOMÁTICA DA PLAYLIST (Lendo seu Index) ---
-    async function configurarBotoesNavegacao() {
-        if (!btnAnt && !btnProx) return;
 
-        try {
-            // Busca o conteúdo do index.html
-            const response = await fetch('index.html');
-            if (!response.ok) throw new Error("Erro ao ler index");
-            
-            const text = await response.text();
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(text, 'text/html');
-            
-            // Pega APENAS os links que estão dentro da div .container (os cards de simulado)
-            // Isso ignora o botão de Ranking que está no header
-            const containerLinks = doc.querySelectorAll('.container .card a');
-            
-            // Cria a lista limpa de arquivos
-            const playlist = Array.from(containerLinks)
-                .map(a => a.getAttribute('href')) // Pega o href cru (ex: Modulo06%20(1).html)
-                .filter(href => href && href.endsWith('.html')) // Garante que é HTML
-                .map(href => decodeURIComponent(href)); // Decodifica para comparar (tira os %20)
-
-            // Descobre em qual posição estamos
-            const indiceAtual = playlist.indexOf(pathAtual);
-
-            if (indiceAtual !== -1) {
-                // Configura Botão ANTERIOR
-                if (btnAnt) {
-                    if (indiceAtual > 0) {
-                        btnAnt.innerText = "Quiz Anterior";
-                        // Re-codifica para URL correta ao clicar
-                        btnAnt.onclick = () => window.location.href = encodeURI(playlist[indiceAtual - 1]);
-                    } else {
-                        btnAnt.style.display = 'none'; // Primeiro da lista
-                    }
-                }
-
-                // Configura Botão PRÓXIMO
-                if (btnProx) {
-                    if (indiceAtual < playlist.length - 1) {
-                        btnProx.innerText = "Próximo Quiz";
-                        btnProx.onclick = () => window.location.href = encodeURI(playlist[indiceAtual + 1]);
-                    } else {
-                        btnProx.innerText = "Finalizar (Menu)";
-                        btnProx.onclick = () => window.location.href = "index.html";
-                    }
-                }
-            } else {
-                // Se não achou na lista (ex: arquivo novo), joga pro menu
-                if(btnProx) {
-                    btnProx.innerText = "Voltar ao Menu";
-                    btnProx.onclick = () => window.location.href = "index.html";
-                }
-                if(btnAnt) btnAnt.style.display = 'none';
-            }
-
-        } catch (erro) {
-            console.error("Erro ao configurar playlist:", erro);
+    // --- 3. CRIAÇÃO DOS BOTÕES FLUTUANTES (Seu código que funcionou) ---
+    
+    // Cria o estilo CSS dinamicamente
+    const estilo = document.createElement('style');
+    estilo.innerHTML = `
+        .nav-float { 
+            position: fixed; bottom: 20px; right: 20px; display: flex; gap: 10px; z-index: 99999; 
         }
-    }
+        .btn-nav { 
+            padding: 10px 15px; background: #4f46e5; color: white; text-decoration: none; 
+            border-radius: 50px; font-family: sans-serif; font-weight: bold; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: 0.2s; font-size: 14px; 
+            display: flex; align-items: center; border: 2px solid white; cursor: pointer;
+        }
+        .btn-nav:hover { background: #3730a3; transform: translateY(-2px); }
+        .btn-home { background: #2c3e50; } 
+        @media (max-width: 600px) { 
+            .nav-float { bottom: 10px; right: 10px; left: 10px; justify-content: center; } 
+            .btn-nav { flex: 1; justify-content: center; font-size: 13px; } 
+        }
+    `;
+    document.head.appendChild(estilo);
 
-    // Executa a configuração
-    configurarBotoesNavegacao();
+    // Cria a barra de navegação no HTML
+    const container = document.createElement('div');
+    container.className = 'nav-float';
+    
+    // Botão Home
+    const btnHome = document.createElement('a');
+    btnHome.href = "index.html";
+    btnHome.className = 'btn-nav btn-home';
+    btnHome.innerHTML = '🏠 Home';
+    container.appendChild(btnHome);
+    
+    document.body.appendChild(container);
 
-    // --- 4. SISTEMA DE PROGRESSO (Onde Parei) ---
+    // --- 4. LÓGICA DE PLAYLIST (Descobre Ant/Prox lendo o Index) ---
+    const urlAtual = window.location.pathname.split("/").pop();
+    const arquivoAtual = decodeURIComponent(urlAtual);
+
+    fetch("index.html")
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            // Pega links APENAS dos cards de simulados (ignora ranking)
+            const links = Array.from(doc.querySelectorAll('.container .card a')).map(a => a.getAttribute('href'));
+            
+            const indexAtual = links.findIndex(link => decodeURIComponent(link) === arquivoAtual);
+
+            if (indexAtual !== -1) {
+                // Botão Anterior
+                if (indexAtual > 0) {
+                    const btnAnt = document.createElement('a');
+                    btnAnt.href = links[indexAtual - 1];
+                    btnAnt.className = 'btn-nav';
+                    btnAnt.innerHTML = '⬅️ Ant';
+                    container.insertBefore(btnAnt, btnHome);
+                }
+                // Botão Próximo
+                if (indexAtual < links.length - 1) {
+                    const btnProx = document.createElement('a');
+                    btnProx.href = links[indexAtual + 1];
+                    btnProx.className = 'btn-nav';
+                    btnProx.innerHTML = 'Prox ➡️';
+                    container.appendChild(btnProx);
+                }
+            }
+        })
+        .catch(err => console.log("Erro ao buscar links:", err));
+
+
+    // --- 5. SISTEMA DE MEMÓRIA (Salvar onde parou) ---
+    const storageKey = 'progresso_maximo_' + arquivoAtual;
     let maiorQuestaoRespondida = parseInt(localStorage.getItem(storageKey)) || -1;
 
     function atualizarProgresso(index) {
@@ -105,7 +101,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // Monitora os cliques nas bolinhas
     cards.forEach((card, index) => {
         const inputs = card.querySelectorAll('input[type="radio"]');
         inputs.forEach(input => {
@@ -113,27 +108,27 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     });
 
-    // Pergunta se quer retomar (com delay para carregar imagens)
+    // Pergunta se quer retomar
     if (maiorQuestaoRespondida > 0 && maiorQuestaoRespondida < cards.length) {
         setTimeout(() => {
-            const retomar = confirm(`Você já respondeu até a questão ${maiorQuestaoRespondida + 1}. Quer rolar até lá?`);
-            if (retomar) {
-                cards[maiorQuestaoRespondida].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Verifica se o usuário já não está lá embaixo (pra não perguntar à toa)
+            if (window.scrollY < 100) {
+                const retomar = confirm(`Você parou na questão ${maiorQuestaoRespondida + 1}. Quer rolar até lá?`);
+                if (retomar) {
+                    cards[maiorQuestaoRespondida].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
             }
         }, 800);
     }
 
-    // Botão Home
-    if (btnHome) {
-        btnHome.addEventListener('click', () => window.location.href = "index.html");
-    }
 
-    // --- 5. CORREÇÃO BLINDADA (Resolve o Bug do 0%) ---
+    // --- 6. CORREÇÃO BLINDADA (Resolve o Bug do 0% no Ranking) ---
     const btnVerificar = document.getElementById('btnVerificar') || 
                          document.querySelector('.btn-verificar') ||
                          document.getElementById('verifyAnswersBtn');
 
-    // Só roda a correção padrão se NÃO for o quiz avançado (que tem ID específico)
+    // Só aplica a correção padrão se NÃO for o quiz avançado (que tem ID 'verifyAnswersBtn')
+    // Se for o quiz avançado, ele usa a lógica dele mesmo (que você já consertou)
     if (btnVerificar && btnVerificar.id !== 'verifyAnswersBtn') {
         
         btnVerificar.addEventListener('click', function() {
@@ -149,7 +144,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const valor = inputSelecionado.value;
                     const labelPai = inputSelecionado.parentElement;
 
-                    // TRIPLA CHECAGEM DE RESPOSTA (Manual + Gemini)
+                    // TRIPLA CHECAGEM (Manual + Gemini + Label)
                     if (
                         valor === "certa" || 
                         inputSelecionado.getAttribute('data-answer') === 'true' || 
@@ -161,13 +156,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                     // PINTURA
                     if (acertouNessa) {
                         acertos++;
-                        if (labelPai) labelPai.style.backgroundColor = "#d4edda"; // Verde
+                        if (labelPai) labelPai.style.backgroundColor = "#d4edda";
                     } else {
-                        if (labelPai) labelPai.style.backgroundColor = "#f8d7da"; // Vermelho
+                        if (labelPai) labelPai.style.backgroundColor = "#f8d7da";
                     }
                 }
 
-                // GABARITO VISUAL (Sempre mostra a certa)
+                // GABARITO (Sempre mostra a certa)
                 const inputCerto = questao.querySelector('input[value="certa"], input[data-answer="true"]');
                 const labelCerto = questao.querySelector('label[data-answer="true"]');
                 
@@ -178,11 +173,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
 
-            // CÁLCULO DA NOTA
+            // RESULTADO
             const notaFinal = total > 0 ? ((acertos / total) * 100).toFixed(1) : 0;
             alert(`Você acertou ${acertos} de ${total} questões.\nAproveitamento: ${notaFinal}%`);
 
-            // SALVAR NO FIREBASE
+            // ENVIA PRO RANKING
             if (typeof salvarResultadoNoFirebase === "function") {
                 salvarResultadoNoFirebase(acertos, total);
             } else if (typeof calcularESalvarAutomatico === "function") {
