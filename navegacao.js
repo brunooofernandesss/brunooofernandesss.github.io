@@ -1,97 +1,167 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     
-    // --- 1. LÓGICA DE NAVEGAÇÃO (ANT/PROX) ---
+    // Identificação da página atual (ex: 'simulado01.html')
+    // Decodifica para lidar com espaços (%20) e acentos
+    const pathAtual = decodeURIComponent(window.location.pathname.split('/').pop());
+    const storageKey = 'progresso_maximo_' + pathAtual;
+
+    // --- 1. SELEÇÃO DE ELEMENTOS ---
     const btnAnt = document.getElementById('btnAnt');
     const btnProx = document.getElementById('btnProx');
     const btnHome = document.getElementById('btnHome');
     
-    // Seleciona APENAS os cards que são questões (ignora cards de navegação/botões)
-    // Filtramos para pegar apenas cards que NÃO contenham o botão 'btnProx' dentro deles
+    // Seleciona os cards de questão (Layout de Lista Corrida)
     const allCards = document.querySelectorAll('.card');
-    const cards = Array.from(allCards).filter(card => !card.contains(btnProx) && !card.contains(btnAnt));
+    const cards = Array.from(allCards).filter(card => 
+        !card.contains(btnProx) && 
+        !card.contains(btnAnt) && 
+        !card.classList.contains('results') &&
+        !card.classList.contains('generated-questions-section') &&
+        !card.classList.contains('error-diagnosis-section')
+    );
 
-    // Se existirem botões E cards de questão, ativa o modo slide
-    if ((btnAnt || btnProx) && cards.length > 0) {
-        let currentCard = 0;
+    // Garante que todas as questões apareçam (rolagem vertical)
+    cards.forEach(card => card.style.display = 'block');
 
-        function showCard(index) {
-            cards.forEach((card, i) => {
-                card.style.display = i === index ? 'block' : 'none';
-            });
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+    // --- 2. INTELIGÊNCIA DE NAVEGAÇÃO ENTRE QUIZZES (PLAYLIST) ---
+    // Esta função lê o index.html para descobrir quem vem antes e depois
+    
+    async function configurarBotoesNavegacao() {
+        if (!btnAnt && !btnProx) return;
 
-        // Inicia mostrando o primeiro
-        showCard(currentCard);
+        try {
+            // 1. Busca o conteúdo do index.html
+            const response = await fetch('index.html');
+            const text = await response.text();
+            
+            // 2. Transforma texto em HTML virtual para ler os links
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(text, 'text/html');
+            
+            // 3. Pega todos os links que estão dentro de cards ou listas no index
+            // Filtra apenas links que terminam em .html e não são o próprio index ou ranking
+            const links = Array.from(doc.querySelectorAll('a'))
+                .map(a => a.getAttribute('href'))
+                .filter(href => href && href.includes('.html') && !href.includes('index.html') && !href.includes('ranking.html'));
 
-        if (btnAnt) {
-            btnAnt.addEventListener('click', () => {
-                if (currentCard > 0) {
-                    currentCard--;
-                    showCard(currentCard);
+            // 4. Limpa os links (remove ./ ou caminhos absolutos para comparar apenas nomes)
+            const playlist = links.map(link => decodeURIComponent(link.split('/').pop()));
+
+            // 5. Descobre onde estamos na lista
+            const indiceAtual = playlist.indexOf(pathAtual);
+
+            if (indiceAtual !== -1) {
+                // Configura Botão ANTERIOR
+                if (btnAnt) {
+                    if (indiceAtual > 0) {
+                        btnAnt.innerText = "Quiz Anterior"; // Muda o texto para ficar claro
+                        btnAnt.onclick = () => window.location.href = links[indiceAtual - 1];
+                    } else {
+                        btnAnt.style.display = 'none'; // Se for o primeiro, esconde
+                    }
                 }
-            });
-        }
 
-        if (btnProx) {
-            btnProx.addEventListener('click', () => {
-                if (currentCard < cards.length - 1) {
-                    currentCard++;
-                    showCard(currentCard);
+                // Configura Botão PRÓXIMO
+                if (btnProx) {
+                    if (indiceAtual < playlist.length - 1) {
+                        btnProx.innerText = "Próximo Quiz"; // Muda o texto para ficar claro
+                        btnProx.onclick = () => window.location.href = links[indiceAtual + 1];
+                    } else {
+                        btnProx.innerText = "Finalizar (Voltar ao Início)";
+                        btnProx.onclick = () => window.location.href = "index.html";
+                    }
                 }
-            });
+            } else {
+                // Se a página atual não estiver no index, esconde os botões de navegação lateral
+                if(btnAnt) btnAnt.style.display = 'none';
+                if(btnProx) btnProx.innerText = "Voltar ao Menu";
+                if(btnProx) btnProx.onclick = () => window.location.href = "index.html";
+            }
+
+        } catch (erro) {
+            console.error("Erro ao carregar lista de quizzes do index:", erro);
         }
     }
 
+    // Executa a configuração da playlist
+    configurarBotoesNavegacao();
+
+
+    // --- 3. INTELIGÊNCIA DE PROGRESSO (MÁXIMO ALCANÇADO) ---
+    
+    // Recupera o máximo anterior
+    let maiorQuestaoRespondida = parseInt(localStorage.getItem(storageKey)) || -1;
+
+    // Função inteligente: Só atualiza se o aluno foi MAIS LONGE do que antes
+    function atualizarProgresso(index) {
+        if (index > maiorQuestaoRespondida) {
+            maiorQuestaoRespondida = index;
+            localStorage.setItem(storageKey, maiorQuestaoRespondida);
+        }
+    }
+
+    // Adiciona os "espiões" nas bolinhas
+    cards.forEach((card, index) => {
+        const inputs = card.querySelectorAll('input[type="radio"]');
+        inputs.forEach(input => {
+            input.addEventListener('change', () => atualizarProgresso(index));
+        });
+    });
+
+    // --- 4. RECUPERAÇÃO (RESUME) ---
+    // Verifica se existe progresso salvo
+    if (maiorQuestaoRespondida > 0 && maiorQuestaoRespondida < cards.length) {
+        // Pequeno delay para garantir que imagens carregaram
+        setTimeout(() => {
+            // A pergunta é: "Você avançou até a questão X. Quer ir lá?"
+            const retomar = confirm(`Seu progresso salvo vai até a questão ${maiorQuestaoRespondida + 1}. Deseja rolar até lá?`);
+            if (retomar) {
+                cards[maiorQuestaoRespondida].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 600);
+    }
+
+    // Botão Home Padrão
     if (btnHome) {
         btnHome.addEventListener('click', () => {
             window.location.href = "index.html";
         });
     }
 
-    // --- 2. LÓGICA DE CORREÇÃO (CORRIGIDA PARA GEMINI) ---
-    const btnVerificar = document.getElementById('btnVerificar') || document.querySelector('.btn-verificar');
+    // --- 5. LÓGICA DE CORREÇÃO (MANTIDA) ---
+    const btnVerificar = document.getElementById('btnVerificar') || 
+                         document.querySelector('.btn-verificar') ||
+                         document.getElementById('verifyAnswersBtn');
 
-    if (btnVerificar) {
+    if (btnVerificar && btnVerificar.id !== 'verifyAnswersBtn') {
         btnVerificar.addEventListener('click', function() {
             let acertos = 0;
             let total = 0;
             
-            // Usa a mesma lista filtrada de cards (questões)
             cards.forEach(questao => {
                 total++;
-                
-                // 1. Pega a bolinha marcada
                 const inputSelecionado = questao.querySelector('input[type="radio"]:checked');
-                
-                // 2. Procura ONDE está a marca de 'certa' (pode estar no input OU no label pai)
                 let ehCorreta = false;
                 
                 if (inputSelecionado) {
                     const valorInput = inputSelecionado.value;
-                    const labelPai = inputSelecionado.parentElement; // O elemento <label> em volta
+                    const labelPai = inputSelecionado.parentElement; 
                     
-                    // Verifica 3 lugares: 
-                    // A. Valor do input é "certa"
-                    // B. O input tem data-answer="true"
-                    // C. O LABEL pai tem data-answer="true" (Padrão Gemini)
                     if (valorInput === "certa" || 
                         inputSelecionado.getAttribute('data-answer') === 'true' || 
                         (labelPai && labelPai.getAttribute('data-answer') === 'true')) {
                         ehCorreta = true;
                     }
 
-                    // PINTURA (Feedback Visual)
                     if (ehCorreta) {
                         acertos++;
-                        if (labelPai) labelPai.style.backgroundColor = "#d4edda"; // Verde
+                        if (labelPai) labelPai.style.backgroundColor = "#d4edda";
                     } else {
-                        if (labelPai) labelPai.style.backgroundColor = "#f8d7da"; // Vermelho
+                        if (labelPai) labelPai.style.backgroundColor = "#f8d7da";
                     }
                 }
 
-                // 3. SEMPRE MOSTRAR QUAL ERA A CERTA (Gabarito Visual)
-                // Procura inputs ou labels que tenham a marca de correta
+                // Gabarito visual
                 const inputCerto = questao.querySelector('input[value="certa"], input[data-answer="true"]');
                 const labelCerto = questao.querySelector('label[data-answer="true"]');
                 
@@ -102,11 +172,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
 
-            // RESULTADO
             const notaFinal = total > 0 ? ((acertos / total) * 100).toFixed(1) : 0;
             alert(`Você acertou ${acertos} de ${total} questões.\nAproveitamento: ${notaFinal}%`);
 
-            // ENVIA PRO RANKING (Se existir a função)
             if (typeof salvarResultadoNoFirebase === "function") {
                 salvarResultadoNoFirebase(acertos, total);
             } else if (typeof calcularESalvarAutomatico === "function") {
