@@ -1,87 +1,115 @@
-document.addEventListener("DOMContentLoaded", function() {
-    // 🛑 1. CHECAGEM DE SEGURANÇA (O Pulo do Gato)
-    // Se a página tiver o container de cards, significa que estamos na Home (index.html).
-    // Nesse caso, PARAMOS O SCRIPT AQUI. Não cria botão, não faz nada.
-    if (document.getElementById('cardsContainer')) {
-        return; 
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // --- 1. LÓGICA DE NAVEGAÇÃO (ANT/PROX) ---
+    const cards = document.querySelectorAll('.card');
+    let currentCard = 0;
+
+    const btnAnt = document.getElementById('btnAnt');
+    const btnProx = document.getElementById('btnProx');
+    const btnHome = document.getElementById('btnHome');
+
+    function showCard(index) {
+        cards.forEach((card, i) => {
+            card.style.display = i === index ? 'block' : 'none';
+        });
+        
+        // Rola suavemente para o topo da questão
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // Se chegou aqui, é porque NÃO é a Home (é um simulado). Pode criar os botões!
+    if (cards.length > 0) {
+        showCard(currentCard);
+    }
 
-    // 2. CRIA O ESTILO DOS BOTÕES
-    const estilo = document.createElement('style');
-    estilo.innerHTML = `
-        .nav-float { 
-            position: fixed; bottom: 20px; right: 20px; display: flex; gap: 10px; z-index: 99999; 
-        }
-        .btn-nav { 
-            padding: 10px 15px; background: #4f46e5; color: white; text-decoration: none; 
-            border-radius: 50px; font-family: sans-serif; font-weight: bold; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: 0.2s; font-size: 14px; 
-            display: flex; align-items: center; border: 2px solid white;
-        }
-        .btn-nav:hover { background: #3730a3; transform: translateY(-2px); }
-        .btn-home { background: #2c3e50; } 
-        @media (max-width: 600px) { 
-            .nav-float { bottom: 10px; right: 10px; left: 10px; justify-content: center; } 
-            .btn-nav { flex: 1; justify-content: center; font-size: 13px; } 
-        }
-    `;
-    document.head.appendChild(estilo);
-
-    // 3. CRIA A BARRA DE NAVEGAÇÃO
-    const container = document.createElement('div');
-    container.className = 'nav-float';
-    
-    // Botão Home (Sempre aparece nos simulados)
-    const btnHome = document.createElement('a');
-    btnHome.href = "index.html";
-    btnHome.className = 'btn-nav btn-home';
-    btnHome.innerHTML = '🏠 Home';
-    container.appendChild(btnHome);
-    
-    // Insere na página
-    document.body.appendChild(container);
-
-    // 4. LÓGICA DE PRÓXIMO / ANTERIOR
-    // Busca o index.html para saber a ordem dos simulados
-    const paginaHome = "index.html";
-    
-    // Tenta pegar o nome do arquivo atual da URL
-    // Decodifica para lidar com espaços e acentos (ex: Módulo%2001.html vira Módulo 01.html)
-    const urlAtual = window.location.pathname.split("/").pop();
-    const arquivoAtual = decodeURIComponent(urlAtual);
-
-    fetch(paginaHome)
-        .then(response => response.text())
-        .then(html => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            // Pega todos os links dentro dos cards
-            const links = Array.from(doc.querySelectorAll('.container .card a')).map(a => a.getAttribute('href'));
-            
-            // Procura onde o arquivo atual está na lista
-            // Comparamos os textos decodificados para garantir que acentos batam
-            const indexAtual = links.findIndex(link => decodeURIComponent(link) === arquivoAtual);
-
-            if (indexAtual !== -1) {
-                // Adiciona Anterior (se não for o primeiro)
-                if (indexAtual > 0) {
-                    const btnAnt = document.createElement('a');
-                    btnAnt.href = links[indexAtual - 1];
-                    btnAnt.className = 'btn-nav';
-                    btnAnt.innerHTML = '⬅️ Ant';
-                    container.insertBefore(btnAnt, btnHome); // Coloca antes do Home
-                }
-                // Adiciona Próximo (se não for o último)
-                if (indexAtual < links.length - 1) {
-                    const btnProx = document.createElement('a');
-                    btnProx.href = links[indexAtual + 1];
-                    btnProx.className = 'btn-nav';
-                    btnProx.innerHTML = 'Prox ➡️';
-                    container.appendChild(btnProx); // Coloca depois do Home
-                }
+    if (btnAnt) {
+        btnAnt.addEventListener('click', () => {
+            if (currentCard > 0) {
+                currentCard--;
+                showCard(currentCard);
             }
-        })
-        .catch(err => console.log("Erro ao buscar links:", err));
+        });
+    }
+
+    if (btnProx) {
+        btnProx.addEventListener('click', () => {
+            if (currentCard < cards.length - 1) {
+                currentCard++;
+                showCard(currentCard);
+            }
+        });
+    }
+
+    if (btnHome) {
+        btnHome.addEventListener('click', () => {
+            window.location.href = "index.html";
+        });
+    }
+
+    // --- 2. LÓGICA DE CORREÇÃO (BLINDADA) ---
+    
+    // Tenta achar o botão de verificar por ID ou Classe
+    const btnVerificar = document.getElementById('btnVerificar') || document.querySelector('.btn-verificar');
+
+    if (btnVerificar) {
+        btnVerificar.addEventListener('click', function() {
+            let acertos = 0;
+            let total = 0;
+            
+            // Seleciona todas as perguntas (divs com classe card)
+            const questoes = document.querySelectorAll('.card');
+            
+            questoes.forEach(questao => {
+                total++;
+                
+                // Procura a opção marcada (input radio checado)
+                const opcaoSelecionada = questao.querySelector('input[type="radio"]:checked');
+                
+                // Procura a opção correta (pelo value="certa" ou atributo data-answer="true")
+                // Isso cobre os dois formatos que você usa no site
+                const opcaoCorreta = questao.querySelector('input[value="certa"]') || 
+                                     questao.querySelector('input[data-answer="true"]') ||
+                                     questao.querySelector('input[data-correta="true"]');
+
+                // --- AQUI ESTÁ A CORREÇÃO DO ERRO DE 0% ---
+                if (opcaoSelecionada) {
+                    // O aluno marcou algo. Vamos ver se acertou.
+                    
+                    // Verifica se o valor é "certa" OU se tem o atributo data-answer='true'
+                    if (opcaoSelecionada.value === "certa" || opcaoSelecionada.getAttribute('data-answer') === 'true') {
+                        acertos++;
+                        // Pinta o pai (label) de verde
+                        if(opcaoSelecionada.parentElement) opcaoSelecionada.parentElement.style.backgroundColor = "#d4edda";
+                    } else {
+                        // Errou: Pinta de vermelho
+                        if(opcaoSelecionada.parentElement) opcaoSelecionada.parentElement.style.backgroundColor = "#f8d7da";
+                    }
+                } else {
+                    // SE ESTIVER EM BRANCO:
+                    // Não faz nada (não soma ponto), mas o código NÃO TRAVA.
+                    // Apenas segue para a próxima questão.
+                }
+
+                // Opcional: Sempre mostrar qual era a correta (mesmo se errou ou deixou em branco)
+                if (opcaoCorreta && opcaoCorreta.parentElement) {
+                    // Adiciona uma borda verde na resposta certa para o aluno saber qual era
+                    opcaoCorreta.parentElement.style.border = "2px solid #28a745";
+                }
+            });
+
+            // Mostra o alerta simples
+            const notaFinal = ((acertos / total) * 100).toFixed(1);
+            alert(`Você acertou ${acertos} de ${total} questões.\nAproveitamento: ${notaFinal}%`);
+
+            // --- 3. INTEGRAÇÃO COM RANKING ---
+            // Verifica se a função de salvar do Firebase existe antes de chamar
+            if (typeof salvarResultadoNoFirebase === "function") {
+                salvarResultadoNoFirebase(acertos, total);
+            } else if (typeof calcularESalvarAutomatico === "function") {
+                calcularESalvarAutomatico(acertos, total); // Nome antigo que usamos
+            } else {
+                console.log("Sistema de Ranking não detectado neste simulado.");
+            }
+
+        });
+    }
 });
