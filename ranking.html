@@ -42,24 +42,30 @@
         .name-wrapper { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
         .student-name { display: block; font-weight: 700; font-size: 1rem; color: var(--primary); }
         
-        /* Contador de Simulados (O segredo da justiça) */
+        /* Contador de Simulados */
         .count-badge { font-size: 0.7rem; background: var(--primary); color: white; padding: 2px 8px; border-radius: 10px; font-weight: 600; opacity: 0.8; }
         .rank-1 .count-badge { background: var(--gold); color: black; opacity: 1; }
 
         /* DESTAQUE DE TAMANHO PARA O TOP 5 */
-        .rank-1 .student-name { font-size: 1.5rem; font-weight: 900; color: #b45309; } /* Ouro escuro para leitura */
+        .rank-1 .student-name { font-size: 1.5rem; font-weight: 900; color: #b45309; }
         .rank-2 .student-name { font-size: 1.3rem; font-weight: 800; }
         .rank-3 .student-name { font-size: 1.3rem; font-weight: 800; }
         
-        /* --- ETIQUETAS DISCRETAS --- */
+        /* --- ETIQUETAS DISCRETAS (CORREÇÃO AQUI) --- */
         .history-tags { display: flex; flex-wrap: wrap; gap: 4px; }
         .simulado-badge {
-            font-size: 0.6rem; background: #f1f5f9; padding: 3px 6px; border-radius: 4px; 
-            border: 1px solid #e2e8f0; color: #94a3b8; display: inline-flex; align-items: center; 
-            gap: 4px; font-weight: 500; white-space: nowrap; overflow: hidden; max-width: 200px; text-overflow: ellipsis;
+            font-size: 0.6rem; background: #f1f5f9; padding: 4px 8px; border-radius: 4px; 
+            border: 1px solid #e2e8f0; color: #94a3b8; 
+            display: inline-flex; align-items: center; 
+            flex-wrap: wrap; /* Permite quebra de linha */
+            gap: 4px; font-weight: 500; 
+            white-space: normal; /* Permite que o texto quebre */
         }
-        .badge-score { font-weight: 700; color: #64748b; } 
-        .badge-detail { font-size: 0.55rem; color: #cbd5e1; font-weight: normal; }
+        /* Garante que o nome quebre se for longo */
+        .badge-name { word-break: break-word; }
+        /* Mantém a nota e o detalhe na mesma linha se possível */
+        .badge-score { font-weight: 700; color: #64748b; white-space: nowrap; } 
+        .badge-detail { font-size: 0.55rem; color: #cbd5e1; font-weight: normal; white-space: nowrap; }
 
         /* --- COLUNA DA MÉDIA --- */
         .score-val { display: block; font-weight: 900; font-size: 1.4rem; text-align: right; color: var(--primary); }
@@ -140,22 +146,19 @@
                     }
                     alunosMap[nomeKey].historico.push({ nome: nomeSimulado, pct: porcentagem, acertos: acertos, total: total });
                     
+                    // Adiciona ao cálculo mesmo se o total for zero, para contabilizar a participação
+                    alunosMap[nomeKey].qtdSimulados += 1;
                     if (total > 0) {
                         alunosMap[nomeKey].somaPct += porcentagem;
-                        alunosMap[nomeKey].qtdSimulados += 1;
                     }
                 });
 
                 let ranking = Object.values(alunosMap);
 
-                // --- AQUI ESTÁ A LÓGICA DE JUSTIÇA ---
                 ranking.forEach(aluno => {
                     if (aluno.qtdSimulados > 0) {
                         aluno.mediaFinal = aluno.somaPct / aluno.qtdSimulados;
-                        
-                        // FÓRMULA DE PONTUAÇÃO (RANKING SCORE)
-                        // Score = Média + (2.5 pontos por cada simulado feito)
-                        // Isso garante que quem faz mais provas sobe no ranking
+                        // FÓRMULA DE PONTUAÇÃO: Média + (2.5 pontos por simulado)
                         aluno.pontuacaoRanking = aluno.mediaFinal + (aluno.qtdSimulados * 2.5);
                     } else {
                         aluno.mediaFinal = 0;
@@ -163,7 +166,6 @@
                     }
                 });
 
-                // ORDENA PELA PONTUAÇÃO (JUSTA), NÃO SÓ PELA MÉDIA
                 ranking.sort((a, b) => b.pontuacaoRanking - a.pontuacaoRanking);
 
                 loadingElement.style.display = 'none';
@@ -173,20 +175,20 @@
                     const posicao = index + 1;
                     let tagsHtml = '';
                     
-                    // Mostra histórico (limite de 6 etiquetas para ficar discreto)
+                    // Mostra histórico (limite de 6 etiquetas)
                     aluno.historico.reverse().slice(0, 6).forEach(prova => {
                         let notaTexto = prova.pct.toFixed(0);
                         let detalhe = `(${prova.acertos}/${prova.total})`;
+                        // Adicionado span em volta do nome para controlar a quebra de linha
                         tagsHtml += `
                             <div class="simulado-badge">
-                                ${prova.nome} 
+                                <span class="badge-name">${prova.nome}</span> 
                                 <span class="badge-score">${notaTexto}%</span>
                                 <span class="badge-detail">${detalhe}</span>
                             </div>
                         `;
                     });
 
-                    // Verifica se tem mais etiquetas escondidas
                     if (aluno.historico.length > 6) {
                         tagsHtml += `<div class="simulado-badge">+${aluno.historico.length - 6} outros</div>`;
                     }
