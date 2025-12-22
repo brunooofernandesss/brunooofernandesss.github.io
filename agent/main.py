@@ -2,31 +2,47 @@ import os
 from pdf_reader import ler_pdf
 from quiz_generator import gerar_quiz
 from html_builder import criar_html
-from index_updater import atualizar_index
+from index_updater import reconstruir_index
 
-PDFS = "pdfs"
-QUIZZES = "quizzes"
+PDFS_DIR = "pdfs"
+QUIZZES_DIR = "quizzes"
 
-os.makedirs(QUIZZES, exist_ok=True)
+os.makedirs(QUIZZES_DIR, exist_ok=True)
 
-for pdf in os.listdir(PDFS):
-    if not pdf.lower().endswith(".pdf"):
-        continue
+# 🔹 PDFs atuais (fonte da verdade)
+pdfs_atuais = {
+    f.replace(".pdf", "")
+    for f in os.listdir(PDFS_DIR)
+    if f.lower().endswith(".pdf")
+}
 
-    nome = pdf.replace(".pdf", "")
-    quiz_path = f"{QUIZZES}/{nome}.html"
+# 🔹 Quizzes existentes
+quizzes_existentes = {
+    f.replace(".html", "")
+    for f in os.listdir(QUIZZES_DIR)
+    if f.lower().endswith(".html")
+}
+
+# 🧹 1️⃣ APAGAR quizzes órfãos
+for quiz in quizzes_existentes - pdfs_atuais:
+    quiz_path = os.path.join(QUIZZES_DIR, quiz + ".html")
+    print(f"🗑️ Removendo quiz órfão: {quiz_path}")
+    os.remove(quiz_path)
+
+# ✍️ 2️⃣ GERAR quizzes que faltam
+for nome in pdfs_atuais:
+    quiz_path = os.path.join(QUIZZES_DIR, nome + ".html")
 
     if os.path.exists(quiz_path):
-        print(f"Quiz já existe: {quiz_path}")
         continue
 
-    texto = ler_pdf(f"{PDFS}/{pdf}")
+    print(f"🧠 Gerando quiz para: {nome}")
+    texto = ler_pdf(os.path.join(PDFS_DIR, nome + ".pdf"))
     quiz = gerar_quiz(texto)
     html = criar_html(nome, quiz)
 
     with open(quiz_path, "w", encoding="utf-8") as f:
         f.write(html)
 
-    atualizar_index(nome, quiz_path)
-
-print("✅ Agente finalizado com sucesso")
+# 📄 3️⃣ RECONSTRUIR INDEX
+reconstruir_index(sorted(pdfs_atuais))
