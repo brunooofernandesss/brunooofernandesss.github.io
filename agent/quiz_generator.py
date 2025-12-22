@@ -1,33 +1,30 @@
 import os
 import requests
 
-API_KEY = os.environ["GEMINI_API_KEY"]
-API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent"
+API_KEY = os.getenv("GEMINI_API_KEY")
 
-def gerar_quiz(texto):
-    prompt = f"""
-Crie um quiz com 40 questões de múltipla escolha,
-baseado no texto abaixo.
-Retorne em JSON com:
-- pergunta
-- alternativas (A–D)
-- resposta correta
+API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent"
 
-Texto:
-{texto[:12000]}
-"""
+headers = {
+    "Content-Type": "application/json"
+}
 
-    payload = {
-        "contents": [{
-            "parts": [{"text": prompt}]
-        }]
-    }
+payload = {
+    "contents": [
+        {
+            "parts": [
+                {"text": "Gere um quiz com 40 questões baseado no texto abaixo:\n\n" + texto_pdf}
+            ]
+        }
+    ]
+}
 
-    r = requests.post(
-        f"{API_URL}?key={API_KEY}",
-        json=payload,
-        timeout=60
-    )
+response = requests.post(
+    f"{API_URL}?key={API_KEY}",
+    headers=headers,
+    json=payload,
+    timeout=60
+)
 
-    r.raise_for_status()
-    return r.json()["candidates"][0]["content"]["parts"][0]["text"]
+response.raise_for_status()
+data = response.json()
