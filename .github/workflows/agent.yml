@@ -1,0 +1,36 @@
+name: Quiz Agent
+
+on:
+  push:
+    paths:
+      - 'pdfs/*.pdf'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        pip install pymupdf google-generativeai
+
+    - name: Run agent
+      env:
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      run: |
+        python agent/main.py
+
+    - name: Commit results
+      run: |
+        git config user.name "quiz-agent"
+        git config user.email "agent@github.com"
+        git add .
+        git commit -m "Quiz gerado automaticamente" || echo "Nada novo"
+        git push
