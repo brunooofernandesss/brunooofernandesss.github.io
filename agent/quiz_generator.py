@@ -1,26 +1,33 @@
-import google.generativeai as genai
 import os
+import requests
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+API_KEY = os.environ["GEMINI_API_KEY"]
+API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent"
 
 def gerar_quiz(texto):
     prompt = f"""
-Crie 10 perguntas de múltipla escolha com 4 alternativas,
-apenas uma correta, baseadas no texto abaixo.
-
-Formato JSON:
-[
-  {{
-    "pergunta": "...",
-    "alternativas": ["A", "B", "C", "D"],
-    "correta": 0
-  }}
-]
+Crie um quiz com 40 questões de múltipla escolha,
+baseado no texto abaixo.
+Retorne em JSON com:
+- pergunta
+- alternativas (A–D)
+- resposta correta
 
 Texto:
 {texto[:12000]}
 """
 
-    model = genai.GenerativeModel("gemini-1.5-flash")
-    resposta = model.generate_content(prompt)
-    return resposta.text
+    payload = {
+        "contents": [{
+            "parts": [{"text": prompt}]
+        }]
+    }
+
+    r = requests.post(
+        f"{API_URL}?key={API_KEY}",
+        json=payload,
+        timeout=60
+    )
+
+    r.raise_for_status()
+    return r.json()["candidates"][0]["content"]["parts"][0]["text"]
