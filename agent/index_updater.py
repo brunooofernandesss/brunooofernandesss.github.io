@@ -14,9 +14,8 @@ def atualizar_index(lista_quizzes):
         html = f.read()
 
     if INICIO not in html or FIM not in html:
-        raise Exception("Marcadores de quizzes automáticos não encontrados no index.html")
+        raise Exception("Marcadores automáticos não encontrados no index.html")
 
-    # 🔹 Reconstrói SOMENTE os cards válidos
     cards = ""
     for nome in lista_quizzes:
         cards += f"""
@@ -34,4 +33,4 @@ def atualizar_index(lista_quizzes):
     with open(index_path, "w", encoding="utf-8") as f:
         f.write(html_final)
 
-    print("✅ Index sincronizado com PDFs atuais")
+    print("✅ Index sincronizado com PDFs")
