@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Login - Simulados Medicina</title>
+<script type="module" src="js/firebase.js"></script>
+</head>
+<body>
+<h1>Login</h1>
+<input id="email" placeholder="Email" type="email">
+<input id="senha" placeholder="Senha" type="password">
+<button id="btnLogin">Entrar</button>
+<p id="status"></p>
+
+<script type="module">
+import { auth } from './firebase.js';
+import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+
+const btn = document.getElementById("btnLogin");
+const status = document.getElementById("status");
+
+btn.addEventListener("click", async () => {
+  const email = document.getElementById("email").value;
+  const senha = document.getElementById("senha").value;
+  try {
+    await signInWithEmailAndPassword(auth, email, senha);
+    status.textContent = "✅ Login bem-sucedido!";
+    window.location.href = "index.html"; // Redireciona para o site
+  } catch (e) {
+    status.textContent = "❌ Erro no login: " + e.message;
+  }
+});
+</script>
+</body>
+</html>
