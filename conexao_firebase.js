@@ -1,13 +1,13 @@
-// conexao_firebase.js - Versão Inteligente com Proteção
+// conexao_firebase.js - Registro obrigatório com nome do Google
 
-// Importa Firebase (compat)
+// Importa Firebase
 document.write('<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>');
 document.write('<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>');
 document.write('<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>');
 document.write('<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>');
 
 window.addEventListener('load', function() {
-    // 1. CONFIGURAÇÃO (Suas Chaves)
+    // Configuração Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyDj-c4uArNjAr7cSg396yfQR6xuyumh5_M",
         authDomain: "simuladosmedicina-6a01b.firebaseapp.com",
@@ -21,36 +21,35 @@ window.addEventListener('load', function() {
     if (!firebase.apps.length) {
         firebase.initializeApp(firebaseConfig);
     }
-    
-    const auth = firebase.auth();
+
     const db = firebase.firestore();
     const analytics = firebase.analytics();
+    const auth = firebase.auth();
 
-    // 🔐 Proteção da Página
+    // PROTEÇÃO DE PÁGINA
     auth.onAuthStateChanged(user => {
         if (!user) {
-            // Não está logado → redireciona para login
             window.location.href = "login.html";
         }
     });
 
-    // 2. O ESPIÃO DE BOTÃO 🕵️‍♂️
+    // Botão de verificar respostas
     const btnVerificar = document.getElementById("verifyAnswersBtn");
-
     if (btnVerificar) {
         console.log("🔥 Firebase pronto para capturar nota.");
+
         btnVerificar.addEventListener("click", function() {
             setTimeout(() => {
-                calcularESalvarAutomatico(db);
+                calcularESalvarAutomatico(db, auth);
             }, 1000); 
         });
     }
 });
 
-// =================== FUNÇÕES AUXILIARES ===================
-function calcularESalvarAutomatico(db) {
+// Calcula a nota e salva automaticamente
+function calcularESalvarAutomatico(db, auth) {
     let totalQuestoes = document.querySelectorAll('.card').length || document.querySelectorAll('.question').length;
-    
+
     let textoResultado = document.body.innerText.match(/acertou (\d+) de (\d+)/i) || 
                          document.body.innerText.match(/Score: (\d+)\/(\d+)/i);
 
@@ -60,20 +59,24 @@ function calcularESalvarAutomatico(db) {
         acertos = parseInt(textoResultado[1]);
         if (!totalQuestoes) totalQuestoes = parseInt(textoResultado[2]);
     } else {
-        const inputNota = prompt("O sistema não leu a nota automática.\nQuantas questões você acertou?");
-        if(inputNota) acertos = parseInt(inputNota);
-        else return;
+        alert("❌ Não foi possível ler a nota automaticamente.");
+        return;
     }
 
     if (totalQuestoes > 0) {
-        salvarNoBanco(db, acertos, totalQuestoes);
+        salvarNoBanco(db, auth, acertos, totalQuestoes);
     }
 }
 
-function salvarNoBanco(db, acertos, total) {
-    const nome = prompt("📝 Registro de Simulados\nDigite seu Nome ou Matrícula:");
-    if (!nome) return;
+// Salva a nota obrigatoriamente usando o nome do usuário logado
+function salvarNoBanco(db, auth, acertos, total) {
+    const user = auth.currentUser;
+    if (!user) {
+        alert("❌ Usuário não logado. Não foi possível salvar a nota.");
+        return;
+    }
 
+    const nome = user.displayName || user.email; // Nome do Google ou email se não houver
     db.collection("resultados_alunos").add({
         aluno: nome,
         nota: acertos,
@@ -81,5 +84,5 @@ function salvarNoBanco(db, acertos, total) {
         porcentagem: ((acertos/total)*100).toFixed(0) + "%",
         simulado: document.title,
         data: new Date().toLocaleString("pt-BR")
-    }).then(() => alert("✅ Nota Salva com Sucesso!"));
+    }).then(() => alert(`✅ Nota salva automaticamente para ${nome}!`));
 }
