@@ -3,23 +3,19 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/fireba
 import { 
   getAuth, 
   signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
-  signOut, 
-  onAuthStateChanged,
-  GoogleAuthProvider,
-  GithubAuthProvider,
-  signInWithPopup
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  GithubAuthProvider, 
+  onAuthStateChanged 
 } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 
-// ======================
 // Configuração do Firebase
-// ======================
 const firebaseConfig = {
   apiKey: "AIzaSyDj-c4uArNjAr7cSg396yfQR6xuyumh5_M",
   authDomain: "simuladosmedicina-6a01b.firebaseapp.com",
   projectId: "simuladosmedicina-6a01b",
-  storageBucket: "simuladosmedicina-6a01b.firebasestorage.app",
+  storageBucket: "simuladosmedicina-6a01b.appspot.com",
   messagingSenderId: "577452734306",
   appId: "1:577452734306:web:5926d087a27a216a97de3b",
   measurementId: "G-F125W28J18"
@@ -30,74 +26,59 @@ export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-// ======================
-// Provedores de login
-// ======================
-export const googleProvider = new GoogleAuthProvider();
-export const githubProvider = new GithubAuthProvider();
-
-// ======================
-// Funções de login
-// ======================
-
-// Login com Email e Senha
-export async function loginEmail(email, senha) {
-  return await signInWithEmailAndPassword(auth, email, senha);
-}
-
-// Criar usuário com Email e Senha
-export async function criarUsuario(email, senha) {
-  return await createUserWithEmailAndPassword(auth, email, senha);
-}
-
-// Login com Google
+// Função para login Google
 export async function loginGoogle() {
-  return await signInWithPopup(auth, googleProvider);
+  const provider = new GoogleAuthProvider();
+  const result = await signInWithPopup(auth, provider);
+  await registrarUsuario(result.user);
+  return result.user;
 }
 
-// Login com GitHub
+// Função para login GitHub
 export async function loginGitHub() {
-  return await signInWithPopup(auth, githubProvider);
+  const provider = new GithubAuthProvider();
+  const result = await signInWithPopup(auth, provider);
+  await registrarUsuario(result.user);
+  return result.user;
 }
 
-// Logout
-export async function logout() {
-  return await signOut(auth);
+// Registrar usuário no Firestore
+async function registrarUsuario(user) {
+  const userRef = doc(db, "usuarios", user.email);
+  const userSnap = await getDoc(userRef);
+  if (!userSnap.exists()) {
+    await setDoc(userRef, {
+      nome: user.displayName || "",
+      email: user.email,
+      ultimaRevisao: null
+    });
+  }
 }
 
-// ======================
-// Controle de última revisão
-// ======================
-
-// Verifica se usuário pode revisar (7 dias)
+// Revisão espaçada
 export async function podeRevisar(email) {
   const userRef = doc(db, "usuarios", email);
   const userSnap = await getDoc(userRef);
-
   if (!userSnap.exists()) {
     await setDoc(userRef, { ultimaRevisao: null });
     return true;
   }
-
   const ultima = userSnap.data().ultimaRevisao;
   if (!ultima) return true;
-
-  const ultimaData = new Date(ultima);
-  const hoje = new Date();
-  const diffDias = (hoje - ultimaData) / (1000 * 60 * 60 * 24);
-
+  const diffDias = (new Date() - new Date(ultima)) / (1000*60*60*24);
   return diffDias >= 7;
 }
 
-// Atualiza data da última revisão
 export async function registrarRevisao(email) {
   const userRef = doc(db, "usuarios", email);
   await setDoc(userRef, { ultimaRevisao: new Date().toISOString() }, { merge: true });
 }
 
-// ======================
-// Observador de login
-// ======================
-export function observarUsuario(callback) {
-  onAuthStateChanged(auth, callback);
-}
+// Observa estado do usuário
+onAuthStateChanged(auth, user => {
+  if (user) {
+    console.log("Usuário logado:", user.email);
+  } else {
+    console.log("Nenhum usuário logado");
+  }
+});
