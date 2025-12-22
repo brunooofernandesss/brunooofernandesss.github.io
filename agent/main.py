@@ -4,35 +4,23 @@ from quiz_generator import gerar_quiz
 from html_builder import criar_html
 from index_updater import atualizar_index
 
-PDFS_DIR = "pdfs"
-QUIZZES_DIR = "quizzes"
+PDFS = "pdfs"
+QUIZZES = "quizzes"
 
-os.makedirs(QUIZZES_DIR, exist_ok=True)
+os.makedirs(QUIZZES, exist_ok=True)
 
-pdfs = [
-    f for f in os.listdir(PDFS_DIR)
-    if f.lower().endswith(".pdf")
-]
+for pdf in os.listdir(PDFS):
+    if not pdf.lower().endswith(".pdf"):
+        continue
 
-if not pdfs:
-    print("Nenhum PDF encontrado.")
-    exit(0)
-
-for pdf in pdfs:
     nome = pdf.replace(".pdf", "")
-    quiz_path = f"{QUIZZES_DIR}/{nome}.html"
+    quiz_path = f"{QUIZZES}/{nome}.html"
 
     if os.path.exists(quiz_path):
         print(f"Quiz já existe: {quiz_path}")
         continue
 
-    print(f"Lendo PDF: {pdf}")
-    texto = ler_pdf(os.path.join(PDFS_DIR, pdf))
-
-    if not texto.strip():
-        print(f"PDF vazio ou não legível: {pdf}")
-        continue
-
+    texto = ler_pdf(f"{PDFS}/{pdf}")
     quiz = gerar_quiz(texto)
     html = criar_html(nome, quiz)
 
@@ -40,3 +28,5 @@ for pdf in pdfs:
         f.write(html)
 
     atualizar_index(nome, quiz_path)
+
+print("✅ Agente finalizado com sucesso")
