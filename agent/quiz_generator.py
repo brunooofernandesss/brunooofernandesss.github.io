@@ -7,10 +7,33 @@ API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:
 
 def gerar_quiz(texto_pdf):
     prompt = f"""
-Gere um quiz com 40 questões de múltipla escolha baseado no texto abaixo.
-Cada questão deve ter 5 alternativas (A–E) e indicar a correta.
+Gere exatamente 40 questões no formato JavaScript abaixo.
 
-Texto:
+REGRAS OBRIGATÓRIAS:
+- NÃO use JSON
+- NÃO use markdown
+- NÃO escreva explicações
+- NÃO escreva texto fora do bloco
+- NÃO coloque const questions =
+- Cada questão deve seguir exatamente este formato:
+
+{{
+  question: "Texto da pergunta",
+  options: [
+    "A) ...",
+    "B) ...",
+    "C) ...",
+    "D) ..."
+  ],
+  correctAnswer: "B) ...",
+  comment: "Comentário explicativo",
+  topic: "Tema"
+}}
+
+- Todas as 40 questões devem estar separadas por vírgula
+- NÃO coloque vírgula após a última questão
+
+Texto base:
 {texto_pdf}
 """
 
