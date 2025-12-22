@@ -1,36 +1,37 @@
-def atualizar_index(nome, quiz_path):
+import os
+import re
+
+INICIO = "<!-- QUIZZES_AUTOMATICOS_INICIO -->"
+FIM = "<!-- QUIZZES_AUTOMATICOS_FIM -->"
+
+def atualizar_index(lista_quizzes):
     index_path = "index.html"
+
+    if not os.path.exists(index_path):
+        raise FileNotFoundError("index.html não encontrado")
 
     with open(index_path, "r", encoding="utf-8") as f:
         html = f.read()
 
-    inicio = "<!-- QUIZZES_AUTOMATICOS_INICIO -->"
-    fim = "<!-- QUIZZES_AUTOMATICOS_FIM -->"
-
-    if inicio not in html or fim not in html:
+    if INICIO not in html or FIM not in html:
         raise Exception("Marcadores de quizzes automáticos não encontrados no index.html")
 
-    novo_card = f"""
+    # 🔹 Reconstrói SOMENTE os cards válidos
+    cards = ""
+    for nome in lista_quizzes:
+        cards += f"""
         <div class="card">
-            <a href="{quiz_path}">{nome}</a>
+            <a href="quizzes/{nome}.html">{nome}</a>
         </div>
-    """
+        """
 
-    bloco_atual = html.split(inicio)[1].split(fim)[0]
-
-    # Evita duplicar
-    if quiz_path in bloco_atual:
-        print("Quiz já está no index.")
-        return
-
-    novo_bloco = bloco_atual + novo_card
-
-    html_final = html.replace(
-        inicio + bloco_atual + fim,
-        inicio + novo_bloco + fim
+    html_final = re.sub(
+        f"{INICIO}[\\s\\S]*?{FIM}",
+        f"{INICIO}{cards}\n{FIM}",
+        html
     )
 
     with open(index_path, "w", encoding="utf-8") as f:
         f.write(html_final)
 
-    print(f"Index atualizado com quiz: {nome}")
+    print("✅ Index sincronizado com PDFs atuais")
