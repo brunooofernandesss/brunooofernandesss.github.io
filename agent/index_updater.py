@@ -1,31 +1,29 @@
-def atualizar_index(nome, caminho):
+def atualizar_index(titulo, caminho):
+    novo_card = f'''
+        <div class="card">
+            <a href="{caminho}">{titulo}</a>
+        </div>
+'''
+
     with open("index.html", "r", encoding="utf-8") as f:
         html = f.read()
+
+    # Evita duplicação
+    if caminho in html:
+        return
 
     inicio = "<!-- QUIZZES_AUTOMATICOS_INICIO -->"
     fim = "<!-- QUIZZES_AUTOMATICOS_FIM -->"
 
     if inicio not in html or fim not in html:
-        print("Marcadores não encontrados. Nenhuma alteração feita.")
-        return
+        raise Exception("Marcadores de quizzes automáticos não encontrados no index.html")
 
-    novo_card = f'''
-        <div class="card">
-            <a href="{caminho}">{nome}</a>
-        </div>
-    '''
+    antes, resto = html.split(inicio)
+    meio, depois = resto.split(fim)
 
-    bloco = html.split(inicio)[1].split(fim)[0]
+    meio = meio.strip() + novo_card
 
-    if novo_card.strip() in bloco:
-        return  # já existe
-
-    novo_bloco = bloco + novo_card
-
-    html_novo = html.replace(
-        inicio + bloco + fim,
-        inicio + novo_bloco + fim
-    )
+    novo_html = antes + inicio + "\n" + meio + "\n" + fim + depois
 
     with open("index.html", "w", encoding="utf-8") as f:
-        f.write(html_novo)
+        f.write(novo_html)
