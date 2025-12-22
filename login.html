@@ -6,28 +6,60 @@
 <script type="module" src="js/firebase.js"></script>
 </head>
 <body>
-<h1>Login</h1>
+<h1>Login - Simulados Medicina</h1>
+
+<!-- Login Email/Password -->
 <input id="email" placeholder="Email" type="email">
 <input id="senha" placeholder="Senha" type="password">
 <button id="btnLogin">Entrar</button>
 <p id="status"></p>
 
+<!-- Login Social -->
+<button id="btnGoogle">Entrar com Google</button>
+<button id="btnGitHub">Entrar com GitHub</button>
+
 <script type="module">
-import { auth } from './firebase.js';
+import { 
+  auth, 
+  loginGoogle, 
+  loginGitHub 
+} from './firebase.js';
 import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
-const btn = document.getElementById("btnLogin");
 const status = document.getElementById("status");
 
-btn.addEventListener("click", async () => {
+// Login Email/Password
+document.getElementById("btnLogin").addEventListener("click", async () => {
   const email = document.getElementById("email").value;
   const senha = document.getElementById("senha").value;
   try {
     await signInWithEmailAndPassword(auth, email, senha);
     status.textContent = "✅ Login bem-sucedido!";
-    window.location.href = "index.html"; // Redireciona para o site
+    window.location.href = "index.html";
   } catch (e) {
     status.textContent = "❌ Erro no login: " + e.message;
+  }
+});
+
+// Login Google
+document.getElementById("btnGoogle").addEventListener("click", async () => {
+  try {
+    await loginGoogle();
+    status.textContent = "✅ Login com Google bem-sucedido!";
+    window.location.href = "index.html";
+  } catch (e) {
+    status.textContent = "❌ Erro no login Google: " + e.message;
+  }
+});
+
+// Login GitHub
+document.getElementById("btnGitHub").addEventListener("click", async () => {
+  try {
+    await loginGitHub();
+    status.textContent = "✅ Login com GitHub bem-sucedido!";
+    window.location.href = "index.html";
+  } catch (e) {
+    status.textContent = "❌ Erro no login GitHub: " + e.message;
   }
 });
 </script>
