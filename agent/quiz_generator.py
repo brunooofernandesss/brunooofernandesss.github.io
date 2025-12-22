@@ -27,7 +27,7 @@ REGRAS OBRIGATÓRIAS:
   ],
   correctAnswer: "B) ...",
   comment: "Comentário explicativo",
-  topic: "Tema"
+  topic: "Tema específico da pergunta relacionada ao texto"
 }}
 
 - Todas as 40 questões devem estar separadas por vírgula
