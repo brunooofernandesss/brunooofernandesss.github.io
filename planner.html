@@ -1,476 +1,550 @@
-
-<html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planner Avançado</title>
+    <title>Planner Medicina | Notion Clone</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
     <style>
+        /* --- CSS ESTILO NOTION --- */
+        :root {
+            --bg-body: #FFFFFF;
+            --bg-sidebar: #F7F7F5;
+            --text-main: #37352F;
+            --text-light: #9B9A97;
+            --border: #E9E9E9;
+            --hover: #EFEFEF;
+            --shadow-card: rgba(15, 15, 15, 0.1) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 2px 4px;
+            --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif;
+            
+            /* Cores das Tags */
+            --tag-gray-bg: rgba(155,154,151,0.2); --tag-gray-text: #5A5A55;
+            --tag-blue-bg: rgba(35,131,226,0.2); --tag-blue-text: #185EAC;
+            --tag-green-bg: rgba(77,171,154,0.2); --tag-green-text: #2B593F;
+            --tag-red-bg: rgba(235, 87, 87, 0.1); --tag-red-text: #D44C47;
+        }
+
+        * { box-sizing: border-box; }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f4f7f9;
-            color: #333;
             margin: 0;
-            padding: 20px;
+            font-family: var(--font-stack);
+            color: var(--text-main);
             display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
+            height: 100vh;
+            overflow: hidden; /* Evita scroll na página toda, apenas nas áreas específicas */
         }
-        .container {
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 700px;
-        }
-        h1, h2 {
-            text-align: center;
-            color: #2c3e50;
-            margin-bottom: 20px;
-        }
-        h2 {
-            font-size: 1.2em;
-            color: #34495e;
-            border-bottom: 2px solid #ecf0f1;
-            padding-bottom: 10px;
-        }
-        .planner-section {
-            margin-top: 30px;
-        }
-        .input-group {
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: 240px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            padding: 20px 12px;
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            flex-direction: column;
+            transition: width 0.3s ease;
+        }
+
+        .user-profile {
+            display: flex;
             align-items: center;
-        }
-        input[type="text"] { flex-grow: 1; }
-        input[type="time"] { flex-basis: 110px; }
-        input[type="text"], input[type="date"], input[type="time"] {
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            font-size: 16px;
-        }
-        button {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            background-color: #3498db;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            height: 100%;
-        }
-        button:hover {
-            background-color: #2980b9;
-        }
-        #date-tabs {
-            display: flex;
-            flex-wrap: wrap;
             gap: 10px;
-            margin-bottom: 20px;
-        }
-        .date-tab {
-            padding: 8px 15px;
-            background-color: #ecf0f1;
-            border-radius: 20px;
+            margin-bottom: 24px;
+            padding: 6px;
             cursor: pointer;
-            transition: all 0.3s;
-            font-size: 14px;
+            border-radius: 4px;
+            transition: background 0.2s;
         }
-        .date-tab.active {
-            background-color: #3498db;
+        .user-profile:hover { background: rgba(0,0,0,0.05); }
+
+        .avatar {
+            width: 22px;
+            height: 22px;
+            background: #E16259;
             color: white;
-            font-weight: bold;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+            font-weight: 600;
         }
-        #taskList {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
+
+        .user-info { display: flex; flex-direction: column; }
+        .user-info span { font-weight: 500; font-size: 14px; }
+        .user-info .status { font-weight: 400; font-size: 12px; color: var(--text-light); }
+
+        .menu a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            color: var(--text-main);
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-bottom: 2px;
+            transition: background 0.1s;
         }
-        #taskList li {
-            background-color: #f8f9f9;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 8px;
+        .menu a:hover { background: rgba(0,0,0,0.05); }
+        .menu a.active { background: rgba(0,0,0,0.08); font-weight: 600; }
+        .menu i { width: 18px; color: var(--text-light); text-align: center; }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            flex: 1;
+            overflow-y: auto; /* Scroll vertical apenas aqui */
+            padding: 0 60px 40px;
+            position: relative;
+        }
+
+        /* HEADER & COVER */
+        .cover-image {
+            height: 160px;
+            background: linear-gradient(120deg, #FFC0CB 0%, #87CEEB 100%);
+            margin: 0 -60px 40px; /* Estende para as bordas */
+            opacity: 0.8;
+        }
+
+        .page-icon { 
+            font-size: 78px; 
+            margin-top: -80px; 
+            margin-bottom: 10px; 
+            padding-left: 4px;
+        }
+
+        .page-title { 
+            font-size: 40px; 
+            font-weight: 700; 
+            margin: 0 0 10px 0; 
+            letter-spacing: -0.02em; 
+        }
+
+        .page-controls {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            word-break: break-word;
-            transition: all 0.3s;
-            border-left: 5px solid #3498db;
-            cursor: grab;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 20px;
+            margin-bottom: 24px;
         }
-        #taskList li:active { cursor: grabbing; }
-        #taskList li.completed {
-            border-left-color: #2ecc71;
-            background-color: #e8f8ef;
+        .last-edited { color: var(--text-light); font-size: 12px; }
+
+        /* QUICK ACTIONS */
+        .quick-actions { display: flex; gap: 12px; margin-bottom: 32px; }
+        
+        .btn-primary, .upload-label {
+            background: #2383E2;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s;
         }
-        #taskList li.completed .task-content {
-            text-decoration: line-through;
-            color: #777;
+        .upload-label { background: transparent; border: 1px solid #E9E9E9; color: var(--text-main); }
+        .upload-label:hover { background: var(--hover); }
+        .btn-primary:hover { background: #1a6fb0; }
+
+        /* --- KANBAN BOARD --- */
+        .kanban-board {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            padding-bottom: 20px;
+            min-height: 400px;
         }
-        #taskList li.dragging {
-            opacity: 0.5;
-            background-color: #bdc3c7;
-        }
-        .task-content {
+
+        .column {
+            min-width: 260px;
+            width: 260px;
             display: flex;
             flex-direction: column;
-            gap: 5px;
         }
-        .task-time {
-            font-weight: bold;
-            font-size: 0.9em;
-            color: #34495e;
+
+        .column-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 0 4px;
         }
-        .task-actions { display: flex; gap: 10px; align-items: center; }
-        .task-actions button {
-            background-color: transparent; border: none; cursor: pointer;
-            font-size: 20px; padding: 5px; color: #7f8c8d;
+
+        .tag {
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 500;
         }
-        .task-actions button:hover { color: #34495e; }
-        .delete-btn { color: #e74c3c !important; }
-        .delete-btn:hover { color: #c0392b !important; }
-        .file-buttons {
-            display: flex; justify-content: center; gap: 15px;
-            margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;
+        .tag-gray { background: var(--tag-gray-bg); color: var(--tag-gray-text); }
+        .tag-blue { background: var(--tag-blue-bg); color: var(--tag-blue-text); }
+        .tag-green { background: var(--tag-green-bg); color: var(--tag-green-text); }
+        .tag-red { background: var(--tag-red-bg); color: var(--tag-red-text); }
+
+        .count { color: var(--text-light); font-size: 12px; }
+
+        .task-container {
+            flex: 1;
+            padding: 4px;
+            min-height: 100px; /* Área de drop sempre visível */
         }
-        .file-buttons button { background-color: #2ecc71; }
-        .file-buttons .upload-btn { background-color: #9b59b6; }
+
+        /* CARDS */
+        .card {
+            background: white;
+            padding: 12px 14px;
+            border-radius: 4px;
+            box-shadow: var(--shadow-card);
+            margin-bottom: 10px;
+            cursor: grab;
+            transition: box-shadow 0.2s, transform 0.1s;
+            position: relative;
+            border: 1px solid transparent;
+        }
+        .card:hover { background: #FCFCFC; }
+        .card:active { cursor: grabbing; transform: scale(0.99); }
+
+        .card-title { font-size: 14px; font-weight: 500; color: var(--text-main); margin-bottom: 8px; line-height: 1.4; }
+        
+        .card-meta { 
+            font-size: 11px; 
+            color: var(--text-light); 
+            display: flex; 
+            gap: 8px; 
+            align-items: center; 
+            flex-wrap: wrap;
+        }
+        
+        .pill { 
+            padding: 2px 6px; 
+            border-radius: 3px; 
+            font-size: 10px; 
+            display: flex; 
+            align-items: center; 
+            gap: 4px;
+        }
+        .pill-pdf { background: rgba(235, 87, 87, 0.1); color: #EB5757; }
+        .pill-date { background: rgba(35, 131, 226, 0.1); color: #2383E2; }
+
+        .add-task-ghost {
+            padding: 8px;
+            color: var(--text-light);
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .add-task-ghost:hover { background: rgba(0,0,0,0.05); color: var(--text-main); }
+
+        /* GRÁFICO */
+        .stats-section {
+            margin-top: 40px;
+            border-top: 1px solid var(--border);
+            padding-top: 30px;
+        }
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .sidebar { width: 0; padding: 0; overflow: hidden; }
+            .main-content { padding: 0 20px 40px; }
+            .cover-image { margin: 0 -20px 40px; }
+        }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>Planner Avançado</h1>
+    <aside class="sidebar">
+        <div class="user-profile">
+            <div class="avatar">M</div>
+            <div class="user-info">
+                <span id="userName">Medicina UNIP</span>
+                <span class="status">Internato</span>
+            </div>
+        </div>
+        <nav class="menu">
+            <a href="#" class="active"><i class="fas fa-columns"></i> Planner Semanal</a>
+            <a href="#"><i class="fas fa-book-medical"></i> Resumos</a>
+            <a href="#"><i class="fas fa-file-pdf"></i> Biblioteca PDF</a>
+            <a href="#"><i class="fas fa-chart-line"></i> Desempenho</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="page-header">
+            <div class="cover-image"></div>
+            <div class="page-icon">🩺</div>
+            <h1 class="page-title">Planner de Estudos</h1>
+            <div class="page-controls">
+                <span class="last-edited">Sincronizado agora mesmo</span>
+                <button class="upload-label" style="border:none; font-size:14px; color:var(--text-light);">
+                    <i class="fas fa-ellipsis-h"></i>
+                </button>
+            </div>
+        </header>
+
+        <section class="quick-actions">
+            <button class="btn-primary" onclick="addNewTask('todo')">
+                <i class="fas fa-plus"></i> Novo Estudo
+            </button>
+            <div style="position: relative;">
+                <input type="file" id="pdfInput" hidden onchange="alert('Simulação: PDF Carregado!')">
+                <label for="pdfInput" class="upload-label">
+                    <i class="fas fa-cloud-upload-alt"></i> Upload PDF
+                </label>
+            </div>
+        </section>
+
+        <section class="kanban-board">
+            
+            <div class="column" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <div class="column-header">
+                    <span class="tag tag-gray">A Fazer</span>
+                    <span class="count">0</span>
+                </div>
+                <div class="task-container" id="col-todo">
+                    </div>
+                <div class="add-task-ghost" onclick="addNewTask('todo')">
+                    <i class="fas fa-plus"></i> Novo
+                </div>
+            </div>
+
+            <div class="column" id="doing" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <div class="column-header">
+                    <span class="tag tag-blue">Estudando</span>
+                    <span class="count">0</span>
+                </div>
+                <div class="task-container" id="col-doing"></div>
+            </div>
+
+            <div class="column" id="review" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <div class="column-header">
+                    <span class="tag tag-red">Revisão Espaçada</span>
+                    <span class="count">0</span>
+                </div>
+                <div class="task-container" id="col-review"></div>
+            </div>
+
+            <div class="column" id="done" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <div class="column-header">
+                    <span class="tag tag-green">Concluído</span>
+                    <span class="count">0</span>
+                </div>
+                <div class="task-container" id="col-done"></div>
+            </div>
+
+        </section>
         
-        <h2>Datas com Tarefas</h2>
-        <div id="date-tabs"></div>
-
-        <div class="planner-section">
-            <h2>Planner do Dia</h2>
-            <div class="input-group">
-                <input type="date" id="date-input">
+        <section class="stats-section">
+            <h3 style="font-size:18px; font-weight:600; margin-bottom:16px;">Progresso da Semana</h3>
+            <div class="chart-container">
+                <canvas id="studyChart"></canvas>
             </div>
+        </section>
+    </main>
 
-            <div class="input-group">
-                <input type="text" id="task-input" placeholder="Nova tarefa...">
-                <input type="time" id="start-time-input" title="Horário de início">
-                <input type="time" id="end-time-input" title="Horário de término">
-                <button onclick="addTask()">Adicionar</button>
-            </div>
-
-            <ul id="taskList"></ul>
-        </div>
-
-        <div class="file-buttons">
-            <button onclick="downloadJSON()">Baixar Tudo (JSON)</button>
-            <button class="upload-btn" onclick="document.getElementById('file-input').click()">Carregar (JSON)</button>
-            <input type="file" id="file-input" style="display: none;" onchange="uploadJSON(event)">
-        </div>
-    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        let plannerData = {};
-        let selectedDate = null;
-        let draggedItem = null;
+        // Dados simulados iniciais
+        let tasks = [
+            { id: 't1', title: 'Fisiologia Renal: Néfron', column: 'todo', pdf: 'Guyton_Cap26.pdf' },
+            { id: 't2', title: 'Farmacologia: Anti-hipertensivos', column: 'doing', pdf: null },
+            { id: 't3', title: 'Anatomia: Plexo Braquial', column: 'review', date: '2023-12-20' },
+            { id: 't4', title: 'Patologia: Inflamação Aguda', column: 'done', pdf: 'Robbins.pdf' }
+        ];
 
-        // Mapeamento de elementos do DOM
-        const taskInput = document.getElementById('task-input');
-        const startTimeInput = document.getElementById('start-time-input');
-        const endTimeInput = document.getElementById('end-time-input');
-        const taskList = document.getElementById('taskList');
-        const dateInput = document.getElementById('date-input');
-        const dateTabsContainer = document.getElementById('date-tabs');
-
-        // Inicialização
         document.addEventListener('DOMContentLoaded', () => {
-            const today = new Date().toISOString().split('T')[0];
-            selectDate(today);
-
-            dateInput.addEventListener('change', () => selectDate(dateInput.value));
-            taskInput.addEventListener('keyup', (event) => {
-                if (event.key === 'Enter') addTask();
-            });
-
-            // Eventos de Drag and Drop
-            taskList.addEventListener('dragstart', (e) => {
-                draggedItem = e.target;
-                setTimeout(() => e.target.classList.add('dragging'), 0);
-            });
-            taskList.addEventListener('dragend', () => {
-                if (draggedItem) draggedItem.classList.remove('dragging');
-                draggedItem = null;
-            });
-            taskList.addEventListener('dragover', e => {
-                e.preventDefault();
-                const afterElement = getDragAfterElement(taskList, e.clientY);
-                const currentDragged = document.querySelector('.dragging');
-                if (afterElement == null) {
-                    taskList.appendChild(currentDragged);
-                } else {
-                    taskList.insertBefore(currentDragged, afterElement);
-                }
-            });
-            taskList.addEventListener('drop', e => {
-                e.preventDefault();
-                updateTaskOrder();
-            });
+            renderBoard();
+            initChart();
         });
 
-        // Lógica de Drag and Drop
-        function getDragAfterElement(container, y) {
-            const draggableElements = [...container.querySelectorAll('li:not(.dragging)')];
-            return draggableElements.reduce((closest, child) => {
-                const box = child.getBoundingClientRect();
-                const offset = y - box.top - box.height / 2;
-                if (offset < 0 && offset > closest.offset) {
-                    return { offset: offset, element: child };
-                } else {
-                    return closest;
-                }
-            }, { offset: Number.NEGATIVE_INFINITY }).element;
-        }
-
-        function updateTaskOrder() {
-            const currentTasks = plannerData[selectedDate];
-            const newOrderIndices = [...taskList.children].map(li => parseInt(li.dataset.index, 10));
-            
-            if (currentTasks) {
-                const reorderedTasks = newOrderIndices.map(index => currentTasks[index]);
-                plannerData[selectedDate] = reorderedTasks;
-            }
-
-            renderTasksForDate(selectedDate); // Re-render para atualizar os índices
-        }
-        
-        // Gerenciamento de Datas e Tarefas
-        function selectDate(date) {
-            if (!date) return;
-            selectedDate = date;
-            if (!plannerData[selectedDate]) plannerData[selectedDate] = [];
-            dateInput.value = selectedDate;
-            renderDateTabs();
-            renderTasksForDate(selectedDate);
-        }
-
-        function addTask() {
-            const taskText = taskInput.value.trim();
-            if (taskText === '') { alert('Por favor, digite o nome da tarefa.'); return; }
-            if (!selectedDate) { alert('Por favor, selecione uma data válida.'); return; }
-            
-            plannerData[selectedDate].push({
-                text: taskText,
-                startTime: startTimeInput.value,
-                endTime: endTimeInput.value,
-                completed: false
+        // --- FUNÇÕES DE RENDERIZAÇÃO ---
+        function renderBoard() {
+            // Limpa as colunas visualmente
+            ['todo', 'doing', 'review', 'done'].forEach(col => {
+                const container = document.getElementById(`col-${col}`);
+                container.innerHTML = '';
+                updateCount(col);
             });
 
-            taskInput.value = '';
-            startTimeInput.value = '';
-            endTimeInput.value = '';
-            renderDateTabs();
-            renderTasksForDate(selectedDate);
+            // Recria os cards
+            tasks.forEach(task => {
+                const card = createCardElement(task);
+                document.getElementById(`col-${task.column}`).appendChild(card);
+            });
         }
-        
-        // **********************************************
-        // FUNÇÃO DE INTEGRAÇÃO COM O GOOGLE CALENDAR (CORRIGIDA)
-        // **********************************************
-        function generateGoogleCalendarLink(task, date) {
-            const baseURL = 'https://www.google.com/calendar/render?action=TEMPLATE';
-            const text = encodeURIComponent(task.text);
+
+        function createCardElement(task) {
+            const el = document.createElement('div');
+            el.className = 'card';
+            el.draggable = true;
+            el.id = task.id;
             
-            // Formato de data e hora para o Google Calendar: YYYYMMDDTHHMMSS (sem Z para hora local)
-            let datesParam = '';
+            // Adiciona evento de início do arraste
+            el.addEventListener('dragstart', drag);
+
+            // Conteúdo condicional (ícones de PDF ou Data)
+            let pdfHtml = task.pdf 
+                ? `<span class="pill pill-pdf"><i class="far fa-file-pdf"></i> ${task.pdf}</span>` 
+                : '';
             
-            const dateOnlyFormatted = date.replace(/-/g, '');
+            let dateHtml = task.column === 'review' 
+                ? `<span class="pill pill-date"><i class="far fa-clock"></i> Revisar: +3 dias</span>` 
+                : '';
+
+            el.innerHTML = `
+                <div class="card-title">${task.title}</div>
+                <div class="card-meta">
+                    ${pdfHtml}
+                    ${dateHtml}
+                </div>
+            `;
+            return el;
+        }
+
+        // --- LÓGICA DE DRAG & DROP ---
+        function allowDrop(ev) {
+            ev.preventDefault(); // Permite soltar
+        }
+
+        function drag(ev) {
+            ev.dataTransfer.setData("text", ev.target.id);
+            ev.target.style.opacity = "0.5"; // Efeito visual ao arrastar
+        }
+
+        // Corrige a opacidade se o arraste terminar sem soltar
+        document.addEventListener("dragend", (ev) => {
+            ev.target.style.opacity = "1";
+        });
+
+        function drop(ev) {
+            ev.preventDefault();
+            const data = ev.dataTransfer.getData("text");
+            const card = document.getElementById(data);
             
-            if (task.startTime && task.endTime) {
-                // Evento com início e fim exatos. Remove o 'Z' para tratar como hora local.
-                const startDateTime = dateOnlyFormatted + 'T' + task.startTime.replace(/:/g, '') + '00';
-                const endDateTime = dateOnlyFormatted + 'T' + task.endTime.replace(/:/g, '') + '00';
-                datesParam = `&dates=${startDateTime}/${endDateTime}`;
-            } 
-            else if (task.startTime) {
-                // Evento com apenas início. Define 1 hora de duração.
-                const startTimeFormatted = task.startTime.replace(/:/g, '') + '00';
+            // Restaura opacidade
+            if(card) card.style.opacity = "1";
 
-                // Cálculo para a hora de término (garantindo que se mantenha no mesmo dia)
-                const startHour = parseInt(task.startTime.split(':')[0]);
-                const startMinute = parseInt(task.startTime.split(':')[1]);
-                let endHour = startHour + 1;
-                let endMinute = startMinute;
-
-                // Caso o horário ultrapasse a meia-noite (raro, mas evita erro)
-                if (endHour >= 24) {
-                    endHour = 23;
-                    endMinute = 59; 
-                }
-
-                const endHourFormatted = String(endHour).padStart(2, '0');
-                const endMinuteFormatted = String(endMinute).padStart(2, '0');
-                const endTimeFormatted = endHourFormatted + endMinuteFormatted + '00';
-
-                const startDateTime = dateOnlyFormatted + 'T' + startTimeFormatted;
-                const endDateTime = dateOnlyFormatted + 'T' + endTimeFormatted;
+            // Encontra a coluna alvo (mesmo que solte em cima de outro card ou título)
+            let targetCol = ev.target.closest('.column');
+            
+            if (targetCol) {
+                const newStatus = targetCol.id;
+                const container = targetCol.querySelector('.task-container');
                 
-                datesParam = `&dates=${startDateTime}/${endDateTime}`;
-            }
-            else {
-                // Evento de dia inteiro (dia inicial / dia seguinte)
-                const nextDay = new Date(date);
-                nextDay.setDate(nextDay.getDate() + 1);
-                const endDateOnly = nextDay.toISOString().split('T')[0].replace(/-/g, '');
-                datesParam = `&dates=${dateOnlyFormatted}/${endDateOnly}`;
-            }
-            
-            const details = encodeURIComponent("Tarefa do Planner Avançado.");
+                // Atualiza o DOM
+                container.appendChild(card);
 
-            return `${baseURL}&text=${text}${datesParam}&details=${details}`;
+                // Atualiza os dados (Array Local)
+                const taskIndex = tasks.findIndex(t => t.id === data);
+                if(taskIndex > -1) {
+                    tasks[taskIndex].column = newStatus;
+                    
+                    // Lógica de Repetição Espaçada (Simulação)
+                    if (newStatus === 'review') {
+                        // Renderiza novamente para mostrar a tag de data criada
+                        renderBoard(); 
+                    } else {
+                        // Remove a data se sair de revisão
+                        renderBoard();
+                    }
+                }
+                updateAllCounts();
+            }
         }
 
+        // --- UTILITÁRIOS ---
+        function addNewTask(columnId) {
+            const title = prompt("O que você vai estudar?");
+            if(title) {
+                const newTask = { 
+                    id: 't' + Date.now(), 
+                    title: title, 
+                    column: columnId, 
+                    pdf: null 
+                };
+                tasks.push(newTask);
+                renderBoard();
+            }
+        }
 
-        // Funções de Renderização (UI)
-        function renderDateTabs() {
-            dateTabsContainer.innerHTML = '';
-            const sortedDates = Object.keys(plannerData).sort();
-            sortedDates.forEach(date => {
-                if (plannerData[date].length > 0) {
-                    const tab = document.createElement('div');
-                    tab.className = 'date-tab';
-                    tab.textContent = new Date(date + 'T00:00:00').toLocaleDateString();
-                    tab.dataset.date = date;
-                    if (date === selectedDate) tab.classList.add('active');
-                    tab.onclick = () => selectDate(date);
-                    dateTabsContainer.appendChild(tab);
+        function updateCount(colId) {
+            const count = tasks.filter(t => t.column === colId).length;
+            const counterEl = document.querySelector(`#${colId} .count`);
+            if(counterEl) counterEl.textContent = count;
+        }
+
+        function updateAllCounts() {
+            ['todo', 'doing', 'review', 'done'].forEach(c => updateCount(c));
+        }
+
+        // --- GRÁFICO (CHART.JS) ---
+        function initChart() {
+            const ctx = document.getElementById('studyChart').getContext('2d');
+            
+            // Gradiente bonito para o gráfico
+            let gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(35, 131, 226, 0.5)');
+            gradient.addColorStop(1, 'rgba(35, 131, 226, 0.0)');
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'],
+                    datasets: [{
+                        label: 'Conteúdos Revisados',
+                        data: [2, 4, 3, 5, 2, 6, 4],
+                        borderColor: '#2383E2',
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        tension: 0.4, // Curva suave
+                        fill: true,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#2383E2',
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#37352F',
+                            titleFont: { family: 'Inter' },
+                            bodyFont: { family: 'Inter' },
+                            padding: 10,
+                            cornerRadius: 4
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            grid: { color: '#f0f0f0', borderDash: [4, 4] },
+                            ticks: { font: { family: 'Inter', size: 10 } }
+                        },
+                        x: { 
+                            grid: { display: false },
+                            ticks: { font: { family: 'Inter', size: 10 } }
+                        }
+                    }
                 }
             });
-        }
-
-        function renderTasksForDate(date) {
-            taskList.innerHTML = '';
-            if (plannerData[date]) {
-                plannerData[date].forEach((task, index) => {
-                    createTaskElement(task, index, date);
-                });
-            }
-        }
-
-        function createTaskElement(task, index, date) {
-            const li = document.createElement('li');
-            li.draggable = true;
-            li.dataset.index = index; // Armazena o índice para o reordenamento
-            if (task.completed) li.classList.add('completed');
-
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'task-content';
-            
-            // Lógica para exibir o horário
-            let timeString = '';
-            if (task.startTime && task.endTime) {
-                timeString = `${task.startTime} - ${task.endTime}`;
-            } else if (task.startTime) {
-                timeString = `A partir de ${task.startTime}`;
-            } else if (task.endTime) {
-                timeString = `Até ${task.endTime}`;
-            }
-
-            if (timeString) {
-                const timeSpan = document.createElement('span');
-                timeSpan.className = 'task-time';
-                timeSpan.textContent = timeString;
-                contentDiv.appendChild(timeSpan);
-            }
-
-            const taskTextSpan = document.createElement('span');
-            taskTextSpan.textContent = task.text;
-            contentDiv.appendChild(taskTextSpan);
-            li.appendChild(contentDiv);
-
-            const actionsDiv = document.createElement('div');
-            actionsDiv.className = 'task-actions';
-            
-            // NOVO BOTÃO: ADICIONAR AO GOOGLE CALENDAR
-            const calendarBtn = document.createElement('button');
-            calendarBtn.innerHTML = '🗓️';
-            calendarBtn.title = 'Adicionar ao Google Calendar';
-            calendarBtn.onclick = () => {
-                const calLink = generateGoogleCalendarLink(task, date);
-                if (calLink) {
-                    // Abre o link em uma nova aba
-                    window.open(calLink, '_blank'); 
-                } else {
-                    alert('Não foi possível gerar o link do Google Calendar para esta tarefa.');
-                }
-            };
-            actionsDiv.appendChild(calendarBtn);
-
-
-            const completeBtn = document.createElement('button');
-            completeBtn.innerHTML = '✔';
-            completeBtn.title = 'Marcar como concluída';
-            completeBtn.onclick = () => {
-                plannerData[date][index].completed = !plannerData[date][index].completed;
-                renderTasksForDate(date);
-            };
-            actionsDiv.appendChild(completeBtn);
-
-            const deleteBtn = document.createElement('button');
-            deleteBtn.innerHTML = '✖';
-            deleteBtn.title = 'Remover tarefa';
-            deleteBtn.className = 'delete-btn';
-            deleteBtn.onclick = () => {
-                plannerData[date].splice(index, 1);
-                renderTasksForDate(date);
-                renderDateTabs();
-            };
-            actionsDiv.appendChild(deleteBtn);
-            
-            li.appendChild(actionsDiv);
-            taskList.appendChild(li);
-        }
-
-        // Lógica de Arquivos (JSON)
-        function downloadJSON() {
-            const dataToSave = {};
-            for (const date in plannerData) {
-                if (plannerData[date].length > 0) dataToSave[date] = plannerData[date];
-            }
-            if (Object.keys(dataToSave).length === 0) { alert("Não há tarefas para salvar."); return; }
-            const dataStr = JSON.stringify(dataToSave, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `planner-dados.json`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        }
-
-        function uploadJSON(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    plannerData = data;
-                    const firstDate = Object.keys(plannerData).sort()[0] || new Date().toISOString().split('T')[0];
-                    selectDate(firstDate);
-                } catch (error) {
-                    alert('Erro ao ler o arquivo JSON.');
-                    console.error("Erro no parsing do JSON:", error);
-                }
-            };
-            reader.readAsText(file);
-            event.target.value = '';
         }
     </script>
-
 </body>
-<script src="conexao_firebase.js"></script><script src="navegacao.js"></script></html>
+</html>
