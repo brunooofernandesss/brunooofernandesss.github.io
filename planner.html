@@ -3,368 +3,422 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planner Medicina | Notion Clone</title>
+    <title>Planner de Estudos | Medicina UNIP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
-        /* --- CSS ESTILO NOTION --- */
         :root {
-            --bg-body: #FFFFFF;
+            /* Paleta Enterprise */
+            --bg-body: #f3f4f6;
+            --bg-white: #ffffff;
+            --border-color: #e5e7eb;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --brand-color: #0f172a;
+            --accent-color: #2563eb;
+            --hover-bg: #f9fafb;
+
+            /* Paleta Notion */
             --bg-sidebar: #F7F7F5;
-            --text-main: #37352F;
-            --text-light: #9B9A97;
-            --border: #E9E9E9;
-            --hover: #EFEFEF;
             --shadow-card: rgba(15, 15, 15, 0.1) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 2px 4px;
-            --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif;
             
-            /* Cores das Tags */
+            /* Tags do Kanban */
             --tag-gray-bg: rgba(155,154,151,0.2); --tag-gray-text: #5A5A55;
             --tag-blue-bg: rgba(35,131,226,0.2); --tag-blue-text: #185EAC;
             --tag-green-bg: rgba(77,171,154,0.2); --tag-green-text: #2B593F;
             --tag-red-bg: rgba(235, 87, 87, 0.1); --tag-red-text: #D44C47;
         }
 
-        * { box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            margin: 0;
-            font-family: var(--font-stack);
-            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
             display: flex;
+            flex-direction: column;
             height: 100vh;
-            overflow: hidden; /* Evita scroll na página toda, apenas nas áreas específicas */
+            overflow: hidden;
         }
 
-        /* --- SIDEBAR --- */
+        /* --- NAVBAR SUPERIOR --- */
+        .navbar {
+            background-color: var(--bg-white);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 32px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            z-index: 1000;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.125rem;
+            color: var(--brand-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+        .navbar-brand i { color: var(--accent-color); }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+        .user-profile:hover { background-color: var(--hover-bg); }
+
+        .user-avatar {
+            width: 32px; height: 32px;
+            background-color: var(--brand-color);
+            color: white; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.875rem; font-weight: 600;
+        }
+
+        .user-info-text {
+            display: flex; flex-direction: column;
+            line-height: 1.2; text-align: right;
+        }
+        .user-name { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
+        .user-meta { font-size: 0.75rem; color: var(--text-secondary); }
+
+        /* --- APP CONTAINER --- */
+        .app-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* --- SIDEBAR LATERAL --- */
         .sidebar {
             width: 240px;
             background: var(--bg-sidebar);
-            border-right: 1px solid var(--border);
+            border-right: 1px solid var(--border-color);
             padding: 20px 12px;
             display: flex;
             flex-direction: column;
-            transition: width 0.3s ease;
+            flex-shrink: 0;
         }
 
-        .user-profile {
+        .sidebar-profile {
             display: flex;
             align-items: center;
             gap: 10px;
             margin-bottom: 24px;
             padding: 6px;
-            cursor: pointer;
             border-radius: 4px;
-            transition: background 0.2s;
+            color: var(--text-secondary);
+            cursor: default;
         }
-        .user-profile:hover { background: rgba(0,0,0,0.05); }
+        .sidebar-profile:hover { background-color: rgba(0,0,0,0.04); }
 
-        .avatar {
-            width: 22px;
-            height: 22px;
-            background: #E16259;
-            color: white;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .sidebar-avatar {
+            width: 20px; height: 20px;
+            background: #E16259; color: white;
+            font-size: 12px; display: flex; align-items: center; justify-content: center;
             border-radius: 3px;
-            font-weight: 600;
+            flex-shrink: 0;
         }
-
-        .user-info { display: flex; flex-direction: column; }
-        .user-info span { font-weight: 500; font-size: 14px; }
-        .user-info .status { font-weight: 400; font-size: 12px; color: var(--text-light); }
+        
+        .sidebar-user-info {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .sidebar-user-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .sidebar-user-status {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
 
         .menu a {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 6px 10px;
-            color: var(--text-main);
-            text-decoration: none;
-            border-radius: 4px;
-            font-size: 14px;
-            margin-bottom: 2px;
+            display: flex; align-items: center; gap: 10px;
+            padding: 6px 10px; color: var(--text-primary);
+            text-decoration: none; border-radius: 4px;
+            font-size: 14px; margin-bottom: 2px;
             transition: background 0.1s;
         }
         .menu a:hover { background: rgba(0,0,0,0.05); }
         .menu a.active { background: rgba(0,0,0,0.08); font-weight: 600; }
-        .menu i { width: 18px; color: var(--text-light); text-align: center; }
+        .menu i { width: 18px; color: var(--text-secondary); text-align: center; }
 
         /* --- MAIN CONTENT --- */
         .main-content {
             flex: 1;
-            overflow-y: auto; /* Scroll vertical apenas aqui */
-            padding: 0 60px 40px;
+            overflow-y: auto;
+            padding: 20px 60px 40px;
             position: relative;
+            background-color: var(--bg-white);
         }
 
-        /* HEADER & COVER */
+        /* Nav Tags */
+        .nav-tags {
+            display: flex; gap: 8px; margin-bottom: 30px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px;
+        }
+        .nav-tag {
+            display: inline-flex; align-items: center;
+            padding: 6px 12px;
+            background-color: transparent;
+            border-radius: 4px;
+            color: var(--text-secondary);
+            font-size: 0.85rem; font-weight: 500;
+            text-decoration: none; transition: all 0.15s ease;
+        }
+        .nav-tag:hover { color: var(--text-primary); background-color: rgba(0, 0, 0, 0.05); }
+        .nav-tag.active { background-color: #e5e7eb; color: var(--brand-color); font-weight: 600; cursor: default; }
+
+        /* Notion Header */
         .cover-image {
-            height: 160px;
+            height: 140px;
             background: linear-gradient(120deg, #FFC0CB 0%, #87CEEB 100%);
-            margin: 0 -60px 40px; /* Estende para as bordas */
+            margin: -20px -60px 40px;
             opacity: 0.8;
         }
-
-        .page-icon { 
-            font-size: 78px; 
-            margin-top: -80px; 
-            margin-bottom: 10px; 
-            padding-left: 4px;
-        }
-
-        .page-title { 
-            font-size: 40px; 
-            font-weight: 700; 
-            margin: 0 0 10px 0; 
-            letter-spacing: -0.02em; 
-        }
-
-        .page-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 20px;
-            margin-bottom: 24px;
-        }
-        .last-edited { color: var(--text-light); font-size: 12px; }
-
-        /* QUICK ACTIONS */
-        .quick-actions { display: flex; gap: 12px; margin-bottom: 32px; }
+        .page-icon { font-size: 78px; margin-top: -80px; margin-bottom: 10px; padding-left: 4px; }
+        .page-title { font-size: 40px; font-weight: 700; margin: 0 0 10px 0; letter-spacing: -0.02em; }
         
+        .page-controls {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 24px; padding-bottom: 10px;
+        }
+        .last-edited { color: var(--text-secondary); font-size: 12px; }
+
+        /* Quick Actions */
+        .quick-actions { display: flex; gap: 12px; margin-bottom: 32px; }
         .btn-primary, .upload-label {
-            background: #2383E2;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            font-size: 14px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            background: var(--accent-color); color: white; border: none;
+            padding: 8px 16px; border-radius: 4px; font-size: 14px;
+            cursor: pointer; display: flex; align-items: center; gap: 6px;
             transition: background 0.2s;
         }
-        .upload-label { background: transparent; border: 1px solid #E9E9E9; color: var(--text-main); }
-        .upload-label:hover { background: var(--hover); }
+        .upload-label { background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); }
+        .upload-label:hover { background: var(--hover-bg); }
         .btn-primary:hover { background: #1a6fb0; }
 
-        /* --- KANBAN BOARD --- */
+        /* Kanban Board */
         .kanban-board {
-            display: flex;
-            gap: 16px;
-            overflow-x: auto;
-            padding-bottom: 20px;
-            min-height: 400px;
+            display: flex; gap: 16px; overflow-x: auto;
+            padding-bottom: 20px; min-height: 400px;
         }
-
-        .column {
-            min-width: 260px;
-            width: 260px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .column-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            padding: 0 4px;
-        }
-
-        .tag {
-            padding: 2px 8px;
-            border-radius: 3px;
-            font-size: 12px;
-            font-weight: 500;
-        }
+        .column { min-width: 260px; width: 260px; display: flex; flex-direction: column; }
+        .column-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 4px; }
+        .tag { padding: 2px 8px; border-radius: 3px; font-size: 12px; font-weight: 500; }
+        
+        /* Tag Colors */
         .tag-gray { background: var(--tag-gray-bg); color: var(--tag-gray-text); }
         .tag-blue { background: var(--tag-blue-bg); color: var(--tag-blue-text); }
         .tag-green { background: var(--tag-green-bg); color: var(--tag-green-text); }
         .tag-red { background: var(--tag-red-bg); color: var(--tag-red-text); }
 
-        .count { color: var(--text-light); font-size: 12px; }
+        .count { color: var(--text-secondary); font-size: 12px; }
+        .task-container { flex: 1; padding: 4px; min-height: 100px; }
 
-        .task-container {
-            flex: 1;
-            padding: 4px;
-            min-height: 100px; /* Área de drop sempre visível */
-        }
-
-        /* CARDS */
+        /* Cards */
         .card {
-            background: white;
-            padding: 12px 14px;
-            border-radius: 4px;
-            box-shadow: var(--shadow-card);
-            margin-bottom: 10px;
-            cursor: grab;
-            transition: box-shadow 0.2s, transform 0.1s;
-            position: relative;
-            border: 1px solid transparent;
+            background: white; padding: 12px 14px;
+            border-radius: 4px; box-shadow: var(--shadow-card);
+            margin-bottom: 10px; cursor: grab; position: relative;
+            border: 1px solid transparent; transition: box-shadow 0.2s;
         }
         .card:hover { background: #FCFCFC; }
-        .card:active { cursor: grabbing; transform: scale(0.99); }
-
-        .card-title { font-size: 14px; font-weight: 500; color: var(--text-main); margin-bottom: 8px; line-height: 1.4; }
+        .card:active { cursor: grabbing; }
+        .card-title { font-size: 14px; font-weight: 500; color: var(--text-primary); margin-bottom: 8px; line-height: 1.4; }
         
-        .card-meta { 
-            font-size: 11px; 
-            color: var(--text-light); 
-            display: flex; 
-            gap: 8px; 
-            align-items: center; 
-            flex-wrap: wrap;
-        }
-        
-        .pill { 
-            padding: 2px 6px; 
-            border-radius: 3px; 
-            font-size: 10px; 
-            display: flex; 
-            align-items: center; 
-            gap: 4px;
-        }
+        .card-meta { font-size: 11px; color: var(--text-secondary); display: flex; gap: 8px; flex-wrap: wrap; }
+        .pill { padding: 2px 6px; border-radius: 3px; font-size: 10px; display: flex; align-items: center; gap: 4px; }
         .pill-pdf { background: rgba(235, 87, 87, 0.1); color: #EB5757; }
         .pill-date { background: rgba(35, 131, 226, 0.1); color: #2383E2; }
 
         .add-task-ghost {
-            padding: 8px;
-            color: var(--text-light);
-            font-size: 14px;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            padding: 8px; color: var(--text-secondary); font-size: 14px;
+            cursor: pointer; border-radius: 4px; transition: 0.2s;
+            display: flex; align-items: center; gap: 6px;
         }
-        .add-task-ghost:hover { background: rgba(0,0,0,0.05); color: var(--text-main); }
+        .add-task-ghost:hover { background: rgba(0,0,0,0.05); color: var(--text-primary); }
 
-        /* GRÁFICO */
-        .stats-section {
-            margin-top: 40px;
-            border-top: 1px solid var(--border);
-            padding-top: 30px;
-        }
-        .chart-container {
-            position: relative;
-            height: 250px;
-            width: 100%;
-        }
-
-        /* Responsividade */
+        /* Mobile */
         @media (max-width: 768px) {
-            .sidebar { width: 0; padding: 0; overflow: hidden; }
-            .main-content { padding: 0 20px 40px; }
-            .cover-image { margin: 0 -20px 40px; }
+            .sidebar { display: none; }
+            .main-content { padding: 20px 20px 40px; }
+            .cover-image { margin: -20px -20px 30px; }
+            .navbar { padding: 0 16px; }
+            .user-info-text { display: none; }
         }
     </style>
 </head>
 <body>
 
-    <aside class="sidebar">
-        <div class="user-profile">
-            <div class="avatar">M</div>
-            <div class="user-info">
-                <span id="userName">Medicina UNIP</span>
-                <span class="status">Internato</span>
+    <nav class="navbar">
+        <a href="index.html" class="navbar-brand">
+            <i class="fas fa-graduation-cap"></i> Medicina UNIP
+        </a>
+
+        <div class="user-profile" id="userProfileArea">
+            <div class="user-info-text">
+                <span class="user-name" id="displayUser">Carregando...</span>
+                <div class="user-meta">
+                    <span id="displayEmail">Verificando...</span>
+                </div>
+            </div>
+            <div class="user-avatar" id="userAvatar">
+                <i class="fas fa-user"></i>
             </div>
         </div>
-        <nav class="menu">
-            <a href="#" class="active"><i class="fas fa-columns"></i> Planner Semanal</a>
-            <a href="#"><i class="fas fa-book-medical"></i> Resumos</a>
-            <a href="#"><i class="fas fa-file-pdf"></i> Biblioteca PDF</a>
-            <a href="#"><i class="fas fa-chart-line"></i> Desempenho</a>
-        </nav>
-    </aside>
+    </nav>
 
-    <main class="main-content">
-        <header class="page-header">
+    <div class="app-container">
+        
+        <aside class="sidebar">
+            <div class="sidebar-profile">
+                <div class="sidebar-avatar" id="sidebarAvatar">U</div>
+                <div class="sidebar-user-info">
+                    <span class="sidebar-user-name" id="sidebarUser">Carregando...</span>
+                    <span class="sidebar-user-status" id="sidebarStatus">Estudante</span>
+                </div>
+            </div>
+            <nav class="menu">
+                <a href="#" class="active"><i class="fas fa-columns"></i> Board de Estudos</a>
+                <a href="#"><i class="fas fa-book-medical"></i> Meus Resumos</a>
+                <a href="#"><i class="fas fa-file-pdf"></i> Biblioteca PDF</a>
+                <a href="#"><i class="fas fa-chart-line"></i> Desempenho</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            
+            <div class="nav-tags">
+                <a href="index.html" class="nav-tag">Simulados</a>
+                <a href="resumos.html" class="nav-tag">Resumos</a>
+                <a href="planner.html" class="nav-tag active">Planner de Estudos</a>
+            </div>
+
             <div class="cover-image"></div>
             <div class="page-icon">🩺</div>
-            <h1 class="page-title">Planner de Estudos</h1>
-            <div class="page-controls">
-                <span class="last-edited">Sincronizado agora mesmo</span>
-                <button class="upload-label" style="border:none; font-size:14px; color:var(--text-light);">
-                    <i class="fas fa-ellipsis-h"></i>
-                </button>
-            </div>
-        </header>
-
-        <section class="quick-actions">
-            <button class="btn-primary" onclick="addNewTask('todo')">
-                <i class="fas fa-plus"></i> Novo Estudo
-            </button>
-            <div style="position: relative;">
-                <input type="file" id="pdfInput" hidden onchange="alert('Simulação: PDF Carregado!')">
-                <label for="pdfInput" class="upload-label">
-                    <i class="fas fa-cloud-upload-alt"></i> Upload PDF
-                </label>
-            </div>
-        </section>
-
-        <section class="kanban-board">
             
-            <div class="column" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)">
-                <div class="column-header">
-                    <span class="tag tag-gray">A Fazer</span>
-                    <span class="count">0</span>
+            <header>
+                <h1 class="page-title">Planner Semanal</h1>
+                <div class="page-controls">
+                    <span class="last-edited">Sincronizado automaticamente</span>
+                    <button class="upload-label" style="border:none; color:var(--text-secondary);">
+                        <i class="fas fa-ellipsis-h"></i>
+                    </button>
                 </div>
-                <div class="task-container" id="col-todo">
+            </header>
+
+            <section class="quick-actions">
+                <button class="btn-primary" onclick="addNewTask('todo')">
+                    <i class="fas fa-plus"></i> Novo Card
+                </button>
+                <div style="position: relative;">
+                    <input type="file" id="pdfInput" hidden onchange="alert('Simulação: PDF vinculado!')">
+                    <label for="pdfInput" class="upload-label">
+                        <i class="fas fa-cloud-upload-alt"></i> Anexar PDF
+                    </label>
+                </div>
+            </section>
+
+            <section class="kanban-board">
+                <div class="column" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div class="column-header">
+                        <span class="tag tag-gray">A Fazer</span>
+                        <span class="count">0</span>
                     </div>
-                <div class="add-task-ghost" onclick="addNewTask('todo')">
-                    <i class="fas fa-plus"></i> Novo
+                    <div class="task-container" id="col-todo"></div>
+                    <div class="add-task-ghost" onclick="addNewTask('todo')"><i class="fas fa-plus"></i> Novo</div>
                 </div>
-            </div>
 
-            <div class="column" id="doing" ondrop="drop(event)" ondragover="allowDrop(event)">
-                <div class="column-header">
-                    <span class="tag tag-blue">Estudando</span>
-                    <span class="count">0</span>
+                <div class="column" id="doing" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div class="column-header">
+                        <span class="tag tag-blue">Estudando</span>
+                        <span class="count">0</span>
+                    </div>
+                    <div class="task-container" id="col-doing"></div>
                 </div>
-                <div class="task-container" id="col-doing"></div>
-            </div>
 
-            <div class="column" id="review" ondrop="drop(event)" ondragover="allowDrop(event)">
-                <div class="column-header">
-                    <span class="tag tag-red">Revisão Espaçada</span>
-                    <span class="count">0</span>
+                <div class="column" id="review" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div class="column-header">
+                        <span class="tag tag-red">Revisão Espaçada</span>
+                        <span class="count">0</span>
+                    </div>
+                    <div class="task-container" id="col-review"></div>
                 </div>
-                <div class="task-container" id="col-review"></div>
-            </div>
 
-            <div class="column" id="done" ondrop="drop(event)" ondragover="allowDrop(event)">
-                <div class="column-header">
-                    <span class="tag tag-green">Concluído</span>
-                    <span class="count">0</span>
+                <div class="column" id="done" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div class="column-header">
+                        <span class="tag tag-green">Concluído</span>
+                        <span class="count">0</span>
+                    </div>
+                    <div class="task-container" id="col-done"></div>
                 </div>
-                <div class="task-container" id="col-done"></div>
-            </div>
+            </section>
 
-        </section>
-        
-        <section class="stats-section">
-            <h3 style="font-size:18px; font-weight:600; margin-bottom:16px;">Progresso da Semana</h3>
-            <div class="chart-container">
-                <canvas id="studyChart"></canvas>
-            </div>
-        </section>
-    </main>
+            <section style="margin-top:40px; border-top:1px solid var(--border-color); padding-top:20px;">
+                <h3 style="font-size:18px; font-weight:600; margin-bottom:16px;">Progresso</h3>
+                <div style="height:250px; width:100%;">
+                    <canvas id="studyChart"></canvas>
+                </div>
+            </section>
+        </main>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <script type="module">
+        import { auth } from './firebase.js'; 
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                alert("Acesso restrito. Faça login para ver seu Planner.");
+                window.location.href = "login.html";
+            } else {
+                const name = user.displayName || "Estudante";
+                const email = user.email || "";
+                const initials = name.split(" ").map(n => n[0]).join("").substring(0,2).toUpperCase();
+
+                // 1. Atualiza Navbar Superior
+                document.getElementById('displayUser').textContent = name;
+                document.getElementById('displayEmail').textContent = email;
+                document.getElementById('userAvatar').textContent = initials;
+
+                // 2. Atualiza Sidebar (Latera)
+                // Aqui substituímos o "Medicina UNIP" pelo nome do usuário
+                const sbUser = document.getElementById('sidebarUser');
+                const sbStatus = document.getElementById('sidebarStatus');
+                const sbAvatar = document.getElementById('sidebarAvatar');
+
+                if(sbUser) sbUser.textContent = name;
+                if(sbStatus) sbStatus.textContent = "Online"; // Ou email
+                if(sbAvatar) sbAvatar.textContent = initials;
+            }
+        });
+    </script>
+
     <script>
-        // Dados simulados iniciais
         let tasks = [
-            { id: 't1', title: 'Fisiologia Renal: Néfron', column: 'todo', pdf: 'Guyton_Cap26.pdf' },
+            { id: 't1', title: 'Fisiologia Renal: Néfron', column: 'todo', pdf: 'Guyton.pdf' },
             { id: 't2', title: 'Farmacologia: Anti-hipertensivos', column: 'doing', pdf: null },
-            { id: 't3', title: 'Anatomia: Plexo Braquial', column: 'review', date: '2023-12-20' },
-            { id: 't4', title: 'Patologia: Inflamação Aguda', column: 'done', pdf: 'Robbins.pdf' }
+            { id: 't3', title: 'Anatomia: Plexo Braquial', column: 'review', date: '2023-12-25' },
+            { id: 't4', title: 'Patologia: Inflamação', column: 'done', pdf: null }
         ];
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -372,175 +426,88 @@
             initChart();
         });
 
-        // --- FUNÇÕES DE RENDERIZAÇÃO ---
         function renderBoard() {
-            // Limpa as colunas visualmente
             ['todo', 'doing', 'review', 'done'].forEach(col => {
                 const container = document.getElementById(`col-${col}`);
                 container.innerHTML = '';
-                updateCount(col);
-            });
-
-            // Recria os cards
-            tasks.forEach(task => {
-                const card = createCardElement(task);
-                document.getElementById(`col-${task.column}`).appendChild(card);
+                const colTasks = tasks.filter(t => t.column === col);
+                colTasks.forEach(task => container.appendChild(createCard(task)));
+                document.querySelector(`#${col} .count`).textContent = colTasks.length;
             });
         }
 
-        function createCardElement(task) {
+        function createCard(task) {
             const el = document.createElement('div');
             el.className = 'card';
             el.draggable = true;
             el.id = task.id;
-            
-            // Adiciona evento de início do arraste
             el.addEventListener('dragstart', drag);
 
-            // Conteúdo condicional (ícones de PDF ou Data)
-            let pdfHtml = task.pdf 
-                ? `<span class="pill pill-pdf"><i class="far fa-file-pdf"></i> ${task.pdf}</span>` 
-                : '';
-            
-            let dateHtml = task.column === 'review' 
-                ? `<span class="pill pill-date"><i class="far fa-clock"></i> Revisar: +3 dias</span>` 
-                : '';
+            let metaHtml = '';
+            if(task.pdf) metaHtml += `<span class="pill pill-pdf"><i class="far fa-file-pdf"></i> PDF</span>`;
+            if(task.column === 'review') metaHtml += `<span class="pill pill-date"><i class="far fa-clock"></i> +3 dias</span>`;
 
             el.innerHTML = `
                 <div class="card-title">${task.title}</div>
-                <div class="card-meta">
-                    ${pdfHtml}
-                    ${dateHtml}
-                </div>
+                <div class="card-meta">${metaHtml}</div>
             `;
             return el;
         }
 
-        // --- LÓGICA DE DRAG & DROP ---
-        function allowDrop(ev) {
-            ev.preventDefault(); // Permite soltar
-        }
-
-        function drag(ev) {
+        window.allowDrop = (ev) => ev.preventDefault();
+        window.drag = (ev) => {
             ev.dataTransfer.setData("text", ev.target.id);
-            ev.target.style.opacity = "0.5"; // Efeito visual ao arrastar
-        }
+            ev.target.style.opacity = "0.5";
+        };
+        document.addEventListener("dragend", (ev) => ev.target.style.opacity = "1");
 
-        // Corrige a opacidade se o arraste terminar sem soltar
-        document.addEventListener("dragend", (ev) => {
-            ev.target.style.opacity = "1";
-        });
-
-        function drop(ev) {
+        window.drop = (ev) => {
             ev.preventDefault();
             const data = ev.dataTransfer.getData("text");
-            const card = document.getElementById(data);
-            
-            // Restaura opacidade
-            if(card) card.style.opacity = "1";
-
-            // Encontra a coluna alvo (mesmo que solte em cima de outro card ou título)
-            let targetCol = ev.target.closest('.column');
-            
-            if (targetCol) {
-                const newStatus = targetCol.id;
-                const container = targetCol.querySelector('.task-container');
-                
-                // Atualiza o DOM
-                container.appendChild(card);
-
-                // Atualiza os dados (Array Local)
-                const taskIndex = tasks.findIndex(t => t.id === data);
-                if(taskIndex > -1) {
-                    tasks[taskIndex].column = newStatus;
-                    
-                    // Lógica de Repetição Espaçada (Simulação)
-                    if (newStatus === 'review') {
-                        // Renderiza novamente para mostrar a tag de data criada
-                        renderBoard(); 
-                    } else {
-                        // Remove a data se sair de revisão
-                        renderBoard();
-                    }
+            const targetCol = ev.target.closest('.column');
+            if(targetCol) {
+                const task = tasks.find(t => t.id === data);
+                if(task) {
+                    task.column = targetCol.id;
+                    renderBoard();
                 }
-                updateAllCounts();
             }
-        }
+        };
 
-        // --- UTILITÁRIOS ---
-        function addNewTask(columnId) {
-            const title = prompt("O que você vai estudar?");
+        window.addNewTask = (col) => {
+            const title = prompt("Nova tarefa:");
             if(title) {
-                const newTask = { 
-                    id: 't' + Date.now(), 
-                    title: title, 
-                    column: columnId, 
-                    pdf: null 
-                };
-                tasks.push(newTask);
+                tasks.push({ id: 't'+Date.now(), title, column: col });
                 renderBoard();
             }
-        }
+        };
 
-        function updateCount(colId) {
-            const count = tasks.filter(t => t.column === colId).length;
-            const counterEl = document.querySelector(`#${colId} .count`);
-            if(counterEl) counterEl.textContent = count;
-        }
-
-        function updateAllCounts() {
-            ['todo', 'doing', 'review', 'done'].forEach(c => updateCount(c));
-        }
-
-        // --- GRÁFICO (CHART.JS) ---
         function initChart() {
             const ctx = document.getElementById('studyChart').getContext('2d');
-            
-            // Gradiente bonito para o gráfico
             let gradient = ctx.createLinearGradient(0, 0, 0, 400);
-            gradient.addColorStop(0, 'rgba(35, 131, 226, 0.5)');
-            gradient.addColorStop(1, 'rgba(35, 131, 226, 0.0)');
+            gradient.addColorStop(0, 'rgba(37, 99, 235, 0.2)');
+            gradient.addColorStop(1, 'rgba(37, 99, 235, 0)');
 
             new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'],
+                    labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
                     datasets: [{
-                        label: 'Conteúdos Revisados',
+                        label: 'Revisões',
                         data: [2, 4, 3, 5, 2, 6, 4],
-                        borderColor: '#2383E2',
+                        borderColor: '#2563eb',
                         backgroundColor: gradient,
-                        borderWidth: 2,
-                        tension: 0.4, // Curva suave
                         fill: true,
-                        pointBackgroundColor: '#fff',
-                        pointBorderColor: '#2383E2',
-                        pointRadius: 4
+                        tension: 0.4
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { 
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: '#37352F',
-                            titleFont: { family: 'Inter' },
-                            bodyFont: { family: 'Inter' },
-                            padding: 10,
-                            cornerRadius: 4
-                        }
-                    },
+                    plugins: { legend: {display:false} },
                     scales: {
-                        y: { 
-                            beginAtZero: true, 
-                            grid: { color: '#f0f0f0', borderDash: [4, 4] },
-                            ticks: { font: { family: 'Inter', size: 10 } }
-                        },
-                        x: { 
-                            grid: { display: false },
-                            ticks: { font: { family: 'Inter', size: 10 } }
-                        }
+                        x: { grid: {display:false} },
+                        y: { beginAtZero: true, border: {dash: [4,4]} }
                     }
                 }
             });
