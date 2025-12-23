@@ -16,92 +16,168 @@
     
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', 'Arial', sans-serif; background-color: #f0f4f8; color: #333; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; }
+        body { 
+            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; 
+            background-color: #f8fafc; /* Fundo levemente mais claro e frio */
+            color: #334155; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            min-height: 100vh; 
+            padding: 20px; 
+            position: relative; /* Necessário para o posicionamento absoluto do user info */
+        }
         
-        header { text-align: center; margin-bottom: 25px; width: 100%; display: flex; flex-direction: column; align-items: center; }
-        h1 { font-size: 2.5em; color: #2c3e50; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1); margin-bottom: 25px; font-weight: 700; letter-spacing: -0.5px; }
+        /* HEADER E TÍTULO */
+        header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            width: 100%; 
+            margin-top: 20px; /* Espaço para não colar no topo em telas pequenas */
+        }
         
-        /* ESTILO PROFISSIONAL DO USUÁRIO (MEDICAL DASHBOARD STYLE) */
-        #userInfo { 
-            display: inline-flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 15px;
-            background-color: #ffffff;
-            padding: 12px 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.08);
-            border: 1px solid #e2e8f0;
-            margin-bottom: 20px;
-            max-width: 90%;
-            animation: fadeIn 0.5s ease-in;
+        h1 { 
+            font-size: 2.2em; 
+            color: #1e293b; 
+            text-shadow: none;
+            margin-bottom: 10px; 
+            font-weight: 700; 
+            letter-spacing: -0.5px; 
         }
 
-        .info-pill {
+        /* --- ESTILO DE PERFIL (PROFISSIONAL & DISCRETO) --- */
+        #userInfo { 
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            text-align: right;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(5px);
+            padding: 10px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        #userInfo:hover {
+            background: #ffffff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        /* Linhas de informação */
+        .user-row {
             display: flex;
             align-items: center;
+            justify-content: flex-end;
             gap: 8px;
-            font-size: 0.95rem;
-            color: #475569;
-            padding: 5px 10px;
-            border-radius: 6px;
-            background-color: #f8fafc;
-            border: 1px solid #f1f5f9;
+            margin-bottom: 4px;
+            font-size: 0.85rem;
+            color: #64748b; /* Cinza suave */
         }
 
-        .info-pill i {
-            color: #4f46e5; /* Azul médico/tecnológico */
-            font-size: 1.1em;
-        }
-
-        .info-label {
-            font-weight: 600;
+        /* Destaque para o nome */
+        .user-name-row {
             color: #334155;
-            margin-right: 4px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 6px;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .user-row i {
+            color: #94a3b8; /* Ícones discretos */
+            width: 16px;
+            text-align: center;
         }
 
-        /* Search Container */
-        .search-container { width: 100%; max-width: 1000px; margin: 0 auto 30px auto; display: flex; justify-content: center; align-items: center; padding-right: 20px; padding-left: 20px; gap: 15px; flex-wrap: wrap; }
+        .user-name-row i {
+            color: #4f46e5; /* Ícone do usuário com cor de destaque sutil */
+        }
+
+        /* SEARCH CONTAINER & RANKING */
+        .search-container { 
+            width: 100%; 
+            max-width: 1000px; 
+            margin: 0 auto 30px auto; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            padding: 0 20px; 
+            gap: 15px; 
+            flex-wrap: wrap; 
+        }
         
-        /* Ranking Button */
-        .ranking-btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: #64748b; font-weight: 600; font-size: 0.95rem; padding: 12px 20px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 25px; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.02); white-space: nowrap; }
-        .ranking-btn:hover { background-color: #f8fafc; border-color: #cbd5e1; color: #0f172a; transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .ranking-btn { 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 8px; 
+            text-decoration: none; 
+            color: #475569; 
+            font-weight: 600; 
+            font-size: 0.9rem; 
+            padding: 10px 20px; 
+            background-color: #ffffff; 
+            border: 1px solid #e2e8f0; 
+            border-radius: 8px; 
+            transition: all 0.2s ease; 
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02); 
+        }
+        .ranking-btn:hover { 
+            background-color: #f1f5f9; 
+            border-color: #cbd5e1; 
+            color: #0f172a; 
+            transform: translateY(-1px); 
+        }
         
-        /* Search Bar */
         .search-bar { width: 100%; max-width: 400px; }
-        .search-bar input { width: 100%; padding: 12px 20px; border: 2px solid #e2e8f0; border-radius: 25px; font-size: 1.1em; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02); transition: all 0.3s; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%2394a3b8" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>'); background-repeat: no-repeat; background-position: 15px center; padding-left: 45px; }
-        .search-bar input:focus { outline: none; border-color: #4f46e5; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15); }
+        .search-bar input { 
+            width: 100%; 
+            padding: 12px 20px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 8px; 
+            font-size: 1rem; 
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); 
+            transition: all 0.3s; 
+        }
+        .search-bar input:focus { 
+            outline: none; 
+            border-color: #4f46e5; 
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); 
+        }
         
+        /* CARDS */
         .container { max-width: 1000px; width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
-        .card { background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); overflow: hidden; transition: transform 0.3s, box-shadow 0.3s; text-align: center; border: 1px solid #f1f5f9; }
-        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); border-color: #e2e8f0; }
-        .card a { display: block; padding: 25px 20px; text-decoration: none; color: #334155; font-size: 1.15em; font-weight: 600; line-height: 1.4; }
+        .card { background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border: 1px solid #f1f5f9; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; text-align: center; }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-color: #e2e8f0; }
+        .card a { display: block; padding: 25px 20px; text-decoration: none; color: #334155; font-size: 1.1em; font-weight: 600; line-height: 1.5; }
         .card a:hover { background-color: #4f46e5; color: #ffffff; }
         
-        footer { margin-top: 50px; text-align: center; color: #94a3b8; font-size: 0.9em; padding-bottom: 20px; }
+        footer { margin-top: 60px; text-align: center; color: #94a3b8; font-size: 0.85em; padding-bottom: 20px; }
         
-        /* Alert Box */
+        /* AVISO */
         .alert-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; display: none; backdrop-filter: blur(2px); }
-        .alert-box { background-color: #ffffff; color: #333; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2); max-width: 500px; width: 90%; text-align: center; position: relative; border-top: 5px solid #ff8c00; }
-        .alert-box h2 { margin-top: 0; font-size: 1.8em; margin-bottom: 15px; color: #d97706; }
-        .alert-box p { font-size: 1em; line-height: 1.6; margin-bottom: 0; color: #4b5563; }
+        .alert-box { background-color: #ffffff; color: #333; padding: 30px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); max-width: 500px; width: 90%; text-align: center; position: relative; border-top: 4px solid #f59e0b; }
+        .alert-box h2 { margin-top: 0; font-size: 1.5em; margin-bottom: 15px; color: #b45309; }
+        .alert-box p { font-size: 0.95em; line-height: 1.6; color: #4b5563; }
         .alert-close { position: absolute; top: 10px; right: 15px; font-size: 1.5em; font-weight: bold; cursor: pointer; color: #9ca3af; transition: color 0.2s; }
-        .alert-close:hover { color: #4b5563; }
+        .alert-close:hover { color: #1f2937; }
         
-        @media (max-width: 600px) {
-            h1 { font-size: 1.8em; padding: 0 10px; }
-            .card a { font-size: 1em; padding: 20px 15px; }
+        /* MOBILE RESPONSE */
+        @media (max-width: 768px) {
+            h1 { font-size: 1.8em; margin-top: 10px; }
+            
+            /* No mobile, removemos a posição absoluta e centralizamos */
+            #userInfo { 
+                position: static; 
+                text-align: center; 
+                margin: 0 auto 20px auto; 
+                background: transparent;
+                padding: 0;
+            }
+            .user-row { justify-content: center; font-size: 0.9rem; }
+            
             .search-container { flex-direction: column-reverse; gap: 15px; }
-            .search-bar { max-width: 100%; width: 100%; }
-            .search-bar input { width: 100%; }
             .ranking-btn { width: 100%; justify-content: center; }
-            #userInfo { flex-direction: column; align-items: flex-start; gap: 10px; padding: 15px; width: 100%; }
-            .info-pill { width: 100%; }
+            .search-bar { max-width: 100%; }
         }
     </style>
 </head>
@@ -115,12 +191,12 @@
         </div>
     </div>
 
+    <div id="userInfo">
+        <div class="user-row"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>
+    </div>
+
     <header>
         <h1>Simulados de Medicina Unip</h1>
-        
-        <div id="userInfo">
-            <span class="info-pill"><i class="fas fa-spinner fa-spin"></i> Carregando dados...</span>
-        </div>
     </header>
 
     <div class="search-container">
@@ -274,36 +350,27 @@
                 const nomeUsuario = user.displayName || "Estudante";
                 const emailUsuario = user.email || "Sem e-mail";
 
-                // Placeholder inicial elegante
-                userInfoDiv.innerHTML = '<span class="info-pill"><i class="fas fa-spinner fa-spin"></i> Conectando...</span>';
-
                 // Pega o IP do usuário usando a API pública
-                let ipUsuario = "Carregando...";
+                let ipUsuario = "...";
                 try {
                     const response = await fetch('https://api.ipify.org?format=json');
                     const data = await response.json();
                     ipUsuario = data.ip;
                 } catch (err) {
                     console.error("Erro ao obter IP:", err);
-                    ipUsuario = "Não detectado";
+                    ipUsuario = "N/A";
                 }
 
-                // Renderiza o HTML Profissional com Ícones
-                // Ícone de Doutor (fa-user-md) para o usuário
-                // Ícone de Envelope (fa-envelope) para o e-mail
-                // Ícone de Globo/Rede (fa-network-wired) para o IP
+                // Renderiza o HTML Discreto (Sem labels, apenas ícones e valores)
                 userInfoDiv.innerHTML = `
-                    <div class="info-pill" title="Usuário Logado">
-                        <i class="fas fa-user-md"></i> 
-                        <span class="info-label">Usuário:</span> ${nomeUsuario}
+                    <div class="user-row user-name-row" title="Usuário Logado">
+                        ${nomeUsuario} <i class="fas fa-user-circle"></i> 
                     </div>
-                    <div class="info-pill" title="E-mail Cadastrado">
-                        <i class="fas fa-envelope"></i> 
-                        <span class="info-label">E-mail:</span> ${emailUsuario}
+                    <div class="user-row" title="E-mail">
+                        ${emailUsuario} <i class="fas fa-envelope"></i> 
                     </div>
-                    <div class="info-pill" title="Endereço IP Atual">
-                        <i class="fas fa-network-wired"></i> 
-                        <span class="info-label">IP:</span> ${ipUsuario}
+                    <div class="user-row" title="IP: ${ipUsuario}">
+                        ${ipUsuario} <i class="fas fa-wifi"></i> 
                     </div>
                 `;
             }
