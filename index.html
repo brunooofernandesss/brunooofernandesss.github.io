@@ -437,60 +437,77 @@
     <script src="navegacao.js?v=2"></script>
     
     <script type="module">
-    import { auth } from './firebase.js';
+    import { auth, db } from './firebase.js'; // Importe o db também
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 
     onAuthStateChanged(auth, async (user) => {
         if (!user) {
-            // Se não estiver logado, redireciona
             alert("Você precisa estar logado para acessar esta página!");
             window.location.href = "login.html";
             return;
         }
 
-        /* =========================
-           DADOS DO USUÁRIO
-        ========================= */
-        const displayName = user.displayName || "Estudante";
-        const email = user.email || "";
+        const email = user.email;
+        let nomeExibicao = user.displayName; // Tenta pegar do Google/Auth primeiro
 
-        // Nome na navbar
-        const displayUser = document.getElementById('displayUser');
-        if (displayUser) {
-            displayUser.textContent = displayName;
+        // ==================================================
+        // BUSCAR NOME NO FIRESTORE (BANCO DE DADOS)
+        // ==================================================
+        try {
+            const docRef = doc(db, "usuarios", email);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                const dados = docSnap.data();
+                // Se tiver nome no banco, usa ele (pois é mais confiável que o do Auth)
+                if (dados.nome) {
+                    nomeExibicao = dados.nome;
+                }
+            }
+        } catch (error) {
+            console.log("Erro ao buscar dados do usuário:", error);
         }
 
-        // Avatar (iniciais)
+        // Se ainda assim não tiver nome, usa um genérico
+        if (!nomeExibicao) nomeExibicao = "Estudante";
+
+        // ==================================================
+        // ATUALIZAR A TELA
+        // ==================================================
+        
+        // 1. Nome na navbar
+        const displayUser = document.getElementById('displayUser');
+        if (displayUser) {
+            displayUser.textContent = nomeExibicao;
+        }
+
+        // 2. Avatar (Iniciais)
         const avatar = document.getElementById('userAvatar');
         if (avatar) {
-            const initials = displayName
+            const iniciais = nomeExibicao
                 .split(" ")
                 .map(n => n[0])
                 .join("")
                 .substring(0, 2)
                 .toUpperCase();
-            avatar.textContent = initials;
+            avatar.textContent = iniciais;
         }
 
-        /* =========================
-           IP (DISCRETO)
-        ========================= */
+        // 3. IP (Mantido igual)
         try {
             const res = await fetch('https://api.ipify.org?format=json');
             const data = await res.json();
-
             const ipElem = document.getElementById('displayIp');
             if (ipElem) {
                 ipElem.textContent = data.ip;
                 ipElem.title = `Logado como: ${email}`;
             }
         } catch (e) {
-            const ipElem = document.getElementById('displayIp');
-            if (ipElem) {
-                ipElem.style.display = 'none';
-            }
+            // Silencioso se falhar o IP
         }
     });
 </script>
+
 </body>
 </html>
