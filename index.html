@@ -437,44 +437,60 @@
     <script src="navegacao.js?v=2"></script>
     
     <script type="module">
-        import { auth } from './firebase.js';
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+    import { auth } from './firebase.js';
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
-        onAuthStateChanged(auth, async (user) => {
-            if (!user) {
-                // Se não estiver logado, redireciona
-                alert("Você precisa estar logado para acessar esta página!");
-                window.location.href = "login.html";
-            } else {
-                const displayName = user.displayName || "Estudante";
-                const email = user.email || "";
-                
-                // Preenche o nome na navbar
-                const displayUser = document.getElementById('displayUser');
-                if (displayUser) displayUser.textContent = displayName;
-                
-                // Avatar (Iniciais)
-                const avatar = document.getElementById('userAvatar');
-                if (avatar) {
-                    const initials = displayName.split(" ").map((n)=>n[0]).join("").substring(0,2).toUpperCase();
-                    avatar.textContent = initials;
-                }
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+            // Se não estiver logado, redireciona
+            alert("Você precisa estar logado para acessar esta página!");
+            window.location.href = "login.html";
+            return;
+        }
 
-                // IP (Discreto)
-                try {
-                    const res = await fetch('https://api.ipify.org?format=json');
-                    const data = await res.json();
-                    const ipElem = document.getElementById('displayIp');
-                    if(ipElem) {
-                        ipElem.textContent = data.ip;
-                        ipElem.title = `Logado como: ${email}`;
-                    }
-                } catch {
-                    const ipElem = document.getElementById('displayIp');
-                    if(ipElem) ipElem.style.display = 'none';
-                }
+        /* =========================
+           DADOS DO USUÁRIO
+        ========================= */
+        const displayName = user.displayName || "Estudante";
+        const email = user.email || "";
+
+        // Nome na navbar
+        const displayUser = document.getElementById('displayUser');
+        if (displayUser) {
+            displayUser.textContent = displayName;
+        }
+
+        // Avatar (iniciais)
+        const avatar = document.getElementById('userAvatar');
+        if (avatar) {
+            const initials = displayName
+                .split(" ")
+                .map(n => n[0])
+                .join("")
+                .substring(0, 2)
+                .toUpperCase();
+            avatar.textContent = initials;
+        }
+
+        /* =========================
+           IP (DISCRETO)
+        ========================= */
+        try {
+            const res = await fetch('https://api.ipify.org?format=json');
+            const data = await res.json();
+
+            const ipElem = document.getElementById('displayIp');
+            if (ipElem) {
+                ipElem.textContent = data.ip;
+                ipElem.title = `Logado como: ${email}`;
             }
-        });
-    </script>
+        } catch (e) {
+            const ipElem = document.getElementById('displayIp');
+            if (ipElem) {
+                ipElem.style.display = 'none';
+            }
+        }
+    });
+</script>
 </body>
 </html>
