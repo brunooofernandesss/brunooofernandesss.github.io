@@ -1,23 +1,30 @@
 import { auth } from './firebase.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
-// --- 1. CSS BLINDADO (Fixação e Layout) ---
+// --- 1. CSS ---
 const style = document.createElement('style');
 style.textContent = `
-    /* RESET GERAL */
+    /* RESET DO BODY:
+       Removemos padding/margin para a barra encostar nas bordas.
+       Definimos position relative para ser a referência do absolute.
+    */
     html, body {
         margin: 0 !important;
         padding: 0 !important;
         width: 100% !important;
-        height: auto !important;
+        min-height: 100vh !important;
         background-color: #f3f4f6 !important;
         font-family: 'Inter', -apple-system, sans-serif !important;
-        overflow-x: hidden !important; /* Evita rolagem lateral indesejada */
+        overflow-x: hidden !important;
+        position: relative !important; 
     }
 
-    /* NAVBAR FIXA NO TOPO (A solução do problema) */
+    /* NAVBAR ABSOLUTE:
+       - Absolute: Fica no topo (top:0), mas rola junto com a página.
+       - Width 100%: Preenche a largura total.
+    */
     .navbar {
-        position: fixed !important; /* Fixa na tela */
+        position: absolute !important; 
         top: 0 !important;
         left: 0 !important;
         width: 100% !important;
@@ -28,14 +35,16 @@ style.textContent = `
         display: flex !important;
         align-items: center !important;
         justify-content: space-between !important;
-        z-index: 99999 !important; /* Garante que fique acima de tudo */
+        z-index: 1000 !important;
         box-sizing: border-box !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.03) !important;
     }
 
-    /* ESPAÇAMENTO PARA O CONTEÚDO NÃO FICAR ESCONDIDO ATRÁS DA BARRA */
+    /* ESPAÇO NO BODY:
+       Adicionamos padding no topo do body igual à altura da barra (64px) + um respiro (20px).
+       Isso empurra o simulado para baixo para ele não começar escondido atrás da barra.
+    */
     body {
-        padding-top: 84px !important; /* 64px da barra + 20px de respiro */
+        padding-top: 84px !important; 
     }
 
     /* ESTILOS DA NAVBAR */
@@ -62,18 +71,15 @@ style.textContent = `
     .user-name { font-size: 0.875rem; font-weight: 600; color: #111827; }
     .user-meta { font-size: 0.75rem; color: #6b7280; }
 
-    /* LAYOUT DO CONTEÚDO (Simulado) */
+    /* LAYOUT DO CONTEÚDO */
     .quiz-container {
         max-width: 800px;
         width: 100%;
-        margin: 0 auto 40px auto !important; /* Centraliza */
+        margin: 0 auto 40px auto !important;
         padding: 0 20px !important;
         box-sizing: border-box !important;
-        position: relative !important;
-        z-index: 1 !important; /* Fica abaixo da navbar */
     }
 
-    /* TAGS DE NAVEGAÇÃO */
     .nav-tags {
         display: flex; gap: 8px; margin-bottom: 24px; justify-content: center; flex-wrap: wrap;
     }
@@ -86,17 +92,16 @@ style.textContent = `
     .nav-tag:hover { color: #111827; background-color: rgba(0, 0, 0, 0.05); }
     .nav-tag.active { background-color: #e5e7eb; color: #0f172a; font-weight: 600; cursor: default; }
 
-    /* CSS DO QUIZ (Mantendo visual limpo) */
+    /* CSS GERAL */
     .card, .card-bloco {
         background-color: #ffffff; border: 1px solid #e5e7eb;
         border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
-    h1 { color: #0f172a; font-size: 1.8rem; margin-bottom: 30px; text-align: center; }
+    h1 { color: #0f172a; font-size: 1.8rem; margin-bottom: 30px; text-align: center; font-family: 'Inter', sans-serif; }
     
     .submit-btn { background-color: #2563eb; border-radius: 6px; font-weight: 600; }
     .submit-btn:hover { background-color: #1d4ed8; }
 
-    /* MOBILE */
     @media (max-width: 640px) {
         .navbar { padding: 0 16px !important; }
         .user-info-text { display: none; }
@@ -114,7 +119,7 @@ if (!document.querySelector('link[href*="font-awesome"]')) {
 
 // 3. INJEÇÃO DA ESTRUTURA
 document.addEventListener("DOMContentLoaded", () => {
-    // A) NAVBAR (Inserida diretamente no body como primeiro elemento)
+    // Navbar
     const navbarHTML = `
         <nav class="navbar">
             <a href="index.html" class="navbar-brand">
@@ -131,7 +136,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
     document.body.insertAdjacentHTML('afterbegin', navbarHTML);
 
-    // B) TAGS (Dentro do container do quiz)
+    // Tags
     const quizContainer = document.querySelector('.quiz-container');
     const title = quizContainer ? quizContainer.querySelector('h1') : null;
     
@@ -148,7 +153,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-// 4. AUTENTICAÇÃO E DADOS
+// 4. AUTH
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         const displayName = user.displayName || "Estudante";
