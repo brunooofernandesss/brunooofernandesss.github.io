@@ -9,7 +9,6 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-  /* Reset e Estilos Gerais */
   * {
     box-sizing: border-box;
     margin: 0;
@@ -26,7 +25,6 @@
     color: #333;
   }
 
-  /* Container do Cartão de Login */
   .login-card {
     background-color: white;
     padding: 2.5rem;
@@ -39,7 +37,7 @@
 
   .login-header h1 {
     font-size: 1.5rem;
-    color: #0056b3; /* Azul "Médico" */
+    color: #0056b3;
     margin-bottom: 0.5rem;
   }
 
@@ -49,7 +47,6 @@
     margin-bottom: 2rem;
   }
 
-  /* Estilos dos Inputs */
   .input-group {
     margin-bottom: 1rem;
     text-align: left;
@@ -70,7 +67,6 @@
     box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.1);
   }
 
-  /* Botão Principal */
   #btnLogin {
     width: 100%;
     padding: 12px;
@@ -89,7 +85,6 @@
     background-color: #004494;
   }
 
-  /* Divisória */
   .divider {
     display: flex;
     align-items: center;
@@ -108,7 +103,6 @@
     padding: 0 10px;
   }
 
-  /* Botões Sociais */
   .social-login {
     display: flex;
     gap: 15px;
@@ -131,7 +125,7 @@
   }
 
   .social-btn i {
-    font-size: 1.2rem; /* Ícones Redimensionados */
+    font-size: 1.2rem;
     margin-right: 8px;
   }
 
@@ -141,10 +135,10 @@
     transform: translateY(-2px);
   }
 
+  /* NÃO ALTERAR CORES */
   .btn-google i { color: #DB4437; }
   .btn-github i { color: #333; }
 
-  /* Mensagem de Status */
   #status {
     margin-top: 1rem;
     font-size: 0.9rem;
@@ -169,9 +163,9 @@
   <div class="input-group">
     <input id="senha" placeholder="Sua senha" type="password">
   </div>
-  
+
   <button id="btnLogin">Entrar</button>
-  
+
   <div class="divider">
     <span>ou continue com</span>
   </div>
@@ -189,62 +183,58 @@
 </div>
 
 <script type="module">
-import { 
-  auth, 
-  loginGoogle, 
-  loginGitHub 
-} from './firebase.js';
+import { auth, loginGoogle, loginGitHub } from './firebase.js';
 import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
 const status = document.getElementById("status");
 
-// Função auxiliar para mostrar status com cor
 function showStatus(message, type) {
-    status.textContent = message;
-    status.style.color = type === 'error' ? '#d32f2f' : '#2e7d32';
+  status.textContent = message;
+  status.style.color = type === 'error' ? '#d32f2f' : '#2e7d32';
 }
 
-// Login Email/Password
+// EMAIL / SENHA
 document.getElementById("btnLogin").addEventListener("click", async () => {
   const email = document.getElementById("email").value;
   const senha = document.getElementById("senha").value;
-  
-  if(!email || !senha) {
-      showStatus("Preencha todos os campos.", "error");
-      return;
+
+  if (!email || !senha) {
+    showStatus("Preencha todos os campos.", "error");
+    return;
   }
 
   try {
-    status.textContent = "Autenticando...";
+    showStatus("Autenticando...");
     await signInWithEmailAndPassword(auth, email, senha);
-    showStatus("✅ Login bem-sucedido!", "success");
-    setTimeout(() => window.location.href = "index.html", 1000);
+    showStatus("✅ Login autorizado!", "success");
+    setTimeout(() => window.location.href = "index.html", 800);
   } catch (e) {
-    showStatus("❌ Erro: " + e.message, "error");
+    showStatus("❌ Acesso negado ou dados inválidos.", "error");
   }
 });
 
-// Login Google
+// GOOGLE
 document.getElementById("btnGoogle").addEventListener("click", async () => {
   try {
     await loginGoogle();
-    showStatus("✅ Login com Google bem-sucedido!", "success");
+    showStatus("✅ Login autorizado!", "success");
     window.location.href = "index.html";
   } catch (e) {
-    showStatus("❌ Erro Google: " + e.message, "error");
+    showStatus("❌ Seu e-mail não está autorizado.", "error");
   }
 });
 
-// Login GitHub
+// GITHUB
 document.getElementById("btnGitHub").addEventListener("click", async () => {
   try {
     await loginGitHub();
-    showStatus("✅ Login com GitHub bem-sucedido!", "success");
+    showStatus("✅ Login autorizado!", "success");
     window.location.href = "index.html";
   } catch (e) {
-    showStatus("❌ Erro GitHub: " + e.message, "error");
+    showStatus("❌ Seu e-mail não está autorizado.", "error");
   }
 });
 </script>
+
 </body>
 </html>
