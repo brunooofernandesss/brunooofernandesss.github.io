@@ -15,19 +15,22 @@ style.textContent = `
         --hover-bg: #f9fafb;
     }
     
-    /* Reseta e define fonte */
+    /* RESET E LAYOUT DO BODY */
     body {
         font-family: 'Inter', -apple-system, sans-serif;
         background-color: var(--bg-body);
         color: var(--text-primary);
-        margin: 0;
-        padding: 0;
+        margin: 0 !important;   /* Força margem zero */
+        padding: 0 !important;  /* Força padding zero */
         display: flex;
         flex-direction: column;
         min-height: 100vh;
+        align-items: stretch !important; /* ISSO É O SEGREDO: Força os filhos (Navbar) a esticar 100% */
+        width: 100vw;
+        overflow-x: hidden;
     }
 
-    /* Navbar Fixa */
+    /* NAVBAR FIXA E FULL WIDTH */
     .navbar {
         background-color: var(--bg-white);
         border-bottom: 1px solid var(--border-color);
@@ -39,6 +42,8 @@ style.textContent = `
         position: sticky;
         top: 0;
         z-index: 1000;
+        width: 100%;             /* Garante largura total */
+        box-sizing: border-box;  /* Garante que o padding não estoure a largura */
         flex-shrink: 0;
     }
 
@@ -72,15 +77,17 @@ style.textContent = `
     .user-name { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
     .user-meta { font-size: 0.75rem; color: var(--text-secondary); }
 
-    /* Container do Quiz */
+    /* CONTAINER DO QUIZ */
     .quiz-container {
         max-width: 800px;
         width: 100%;
         margin: 40px auto;
         padding: 0 20px;
+        box-sizing: border-box;
+        flex-grow: 1; /* Faz o conteúdo ocupar o espaço restante */
     }
 
-    /* Tags de Navegação */
+    /* TAGS DE NAVEGAÇÃO */
     .nav-tags {
         display: flex; gap: 8px; margin-bottom: 24px; justify-content: center;
     }
@@ -93,7 +100,7 @@ style.textContent = `
     .nav-tag:hover { color: var(--text-primary); background-color: rgba(0, 0, 0, 0.05); }
     .nav-tag.active { background-color: #e5e7eb; color: var(--brand-color); font-weight: 600; cursor: default; }
 
-    /* Ajustes dos Cards e Botões existentes */
+    /* ESTILOS GERAIS */
     .card, .card-bloco {
         background-color: var(--bg-white);
         border: 1px solid var(--border-color);
@@ -109,7 +116,7 @@ style.textContent = `
     }
     .submit-btn:hover { background-color: #1d4ed8; }
 
-    /* Mobile */
+    /* MOBILE */
     @media (max-width: 640px) {
         .navbar { padding: 0 16px; }
         .user-info-text { display: none; }
@@ -117,7 +124,7 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// 2. INJEÇÃO DO FONTAWESOME (Se não existir)
+// 2. INJEÇÃO DO FONTAWESOME
 if (!document.querySelector('link[href*="font-awesome"]')) {
     const fa = document.createElement('link');
     fa.rel = 'stylesheet';
@@ -144,7 +151,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
     document.body.insertAdjacentHTML('afterbegin', navbarHTML);
 
-    // B) Inserir Tags dentro do Quiz Container (antes do título)
+    // B) Inserir Tags
     const quizContainer = document.querySelector('.quiz-container');
     const title = quizContainer ? quizContainer.querySelector('h1') : null;
     
@@ -156,7 +163,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 <a href="planner.html" class="nav-tag">Planner</a>
             </div>
         `;
-        // Insere antes do título H1, ou no começo do container se não achar H1
         if (title) {
             title.insertAdjacentHTML('beforebegin', tagsHTML);
         } else {
@@ -195,9 +201,5 @@ onAuthStateChanged(auth, async (user) => {
             const ipEl = document.getElementById('displayIp');
             if(ipEl) ipEl.style.display = 'none';
         }
-    } else {
-        // Opcional: Descomente se quiser forçar login em todos os simulados
-        // alert("Faça login para acessar.");
-        // window.location.href = "login.html";
     }
 });
