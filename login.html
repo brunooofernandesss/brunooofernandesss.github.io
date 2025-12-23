@@ -4,10 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login - Simulados Medicina</title>
-
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
 <style>
   * {
     box-sizing: border-box;
@@ -15,7 +13,7 @@
     padding: 0;
     font-family: 'Roboto', sans-serif;
   }
-
+  
   body {
     background: linear-gradient(135deg, #e0f7fa 0%, #ffffff 100%);
     height: 100vh;
@@ -24,7 +22,7 @@
     align-items: center;
     color: #333;
   }
-
+  
   .login-card {
     background-color: white;
     padding: 2.5rem;
@@ -34,24 +32,24 @@
     max-width: 400px;
     text-align: center;
   }
-
+  
   .login-header h1 {
     font-size: 1.5rem;
     color: #0056b3;
     margin-bottom: 0.5rem;
   }
-
+  
   .login-header p {
     font-size: 0.9rem;
     color: #666;
     margin-bottom: 2rem;
   }
-
+  
   .input-group {
     margin-bottom: 1rem;
     text-align: left;
   }
-
+  
   input {
     width: 100%;
     padding: 12px 15px;
@@ -61,12 +59,12 @@
     transition: border-color 0.3s;
     outline: none;
   }
-
+  
   input:focus {
     border-color: #0056b3;
     box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.1);
   }
-
+  
   #btnLogin {
     width: 100%;
     padding: 12px;
@@ -80,11 +78,11 @@
     transition: background-color 0.3s;
     margin-top: 0.5rem;
   }
-
+  
   #btnLogin:hover {
     background-color: #004494;
   }
-
+  
   .divider {
     display: flex;
     align-items: center;
@@ -92,23 +90,23 @@
     color: #999;
     font-size: 0.85rem;
   }
-
+  
   .divider::before, .divider::after {
     content: "";
     flex: 1;
     border-bottom: 1px solid #eee;
   }
-
+  
   .divider span {
     padding: 0 10px;
   }
-
+  
   .social-login {
     display: flex;
     gap: 15px;
     justify-content: center;
   }
-
+  
   .social-btn {
     flex: 1;
     display: flex;
@@ -123,53 +121,51 @@
     font-size: 0.9rem;
     color: #555;
   }
-
+  
   .social-btn i {
     font-size: 1.2rem;
     margin-right: 8px;
   }
-
+  
   .social-btn:hover {
     background-color: #f8f9fa;
     border-color: #ccc;
     transform: translateY(-2px);
   }
-
+  
   /* NÃO ALTERAR CORES */
   .btn-google i { color: #DB4437; }
   .btn-github i { color: #333; }
-
+  
   #status {
     margin-top: 1rem;
     font-size: 0.9rem;
     min-height: 1.2rem;
   }
 </style>
-
 <script type="module" src="js/firebase.js"></script>
 </head>
 <body>
-
 <div class="login-card">
   <div class="login-header">
     <i class="fa-solid fa-user-doctor" style="font-size: 3rem; color: #0056b3; margin-bottom: 10px;"></i>
     <h1>Simulados Medicina</h1>
     <p>Bem-vindo de volta! Acesse sua conta.</p>
   </div>
-
+  
   <div class="input-group">
     <input id="email" placeholder="Seu email" type="email">
   </div>
   <div class="input-group">
     <input id="senha" placeholder="Sua senha" type="password">
   </div>
-
+  
   <button id="btnLogin">Entrar</button>
 
   <div class="divider">
     <span>ou continue com</span>
   </div>
-
+  
   <div class="social-login">
     <button id="btnGoogle" class="social-btn btn-google">
       <i class="fab fa-google"></i> Google
@@ -178,14 +174,14 @@
       <i class="fab fa-github"></i> GitHub
     </button>
   </div>
-
+  
   <p id="status"></p>
 </div>
 
 <script type="module">
-import { auth, loginGoogle, loginGitHub } from './firebase.js';
-import { signInWithEmailAndPassword } from 
-  "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+import { auth, db, loginGoogle, loginGitHub } from './firebase.js'; // Importando DB também
+import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 
 const status = document.getElementById("status");
 
@@ -194,48 +190,107 @@ function showStatus(message, type) {
   status.style.color = type === 'error' ? '#d32f2f' : '#2e7d32';
 }
 
-// EMAIL / SENHA → apenas autentica
+// ============================================
+// 1. VERIFICAÇÃO AUTOMÁTICA AO CARREGAR
+// ============================================
+// Isso resolve o problema de você ter que "forçar" a ida ao index.
+// Se o usuário já tiver sessão válida, ele redireciona sozinho.
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    // Usuário detectado, verificar se é autorizado no Firestore
+    try {
+      showStatus("Verificando credenciais...", "success");
+      const isAuth = await checkFirestorePermission(user);
+      if (isAuth) {
+        showStatus("✅ Redirecionando...", "success");
+        window.location.href = "index.html";
+      } else {
+        // Logado mas não autorizado no banco
+        showStatus("❌ Usuário não autorizado.", "error");
+        await signOut(auth);
+      }
+    } catch (error) {
+      console.error(error);
+      showStatus("Erro ao verificar conta.", "error");
+    }
+  }
+});
+
+// Função auxiliar para verificar permissão (mesma lógica do seu firebase.js)
+async function checkFirestorePermission(user) {
+  const email = user.email.toLowerCase();
+  const userRef = doc(db, "usuarios", email);
+  const snap = await getDoc(userRef);
+
+  if (!snap.exists() || snap.data().autorizado !== true) {
+    return false;
+  }
+  return true;
+}
+
+// ============================================
+// 2. BOTÕES DE LOGIN
+// ============================================
+
+// EMAIL / SENHA
 document.getElementById("btnLogin").addEventListener("click", async () => {
   const email = document.getElementById("email").value;
   const senha = document.getElementById("senha").value;
-
+  
   if (!email || !senha) {
     showStatus("Preencha todos os campos.", "error");
     return;
   }
-
+  
   try {
-    showStatus("Autenticando...");
-    await signInWithEmailAndPassword(auth, email, senha);
-    showStatus("✅ Login realizado com sucesso!", "success");
-    setTimeout(() => window.location.href = "index.html", 700);
+    showStatus("Autenticando...", "success");
+    const userCredential = await signInWithEmailAndPassword(auth, email, senha);
+    
+    // Adicionada a verificação de segurança aqui também
+    const autorizado = await checkFirestorePermission(userCredential.user);
+    
+    if (autorizado) {
+      showStatus("✅ Login autorizado!", "success");
+      // O redirecionamento será tratado pelo onAuthStateChanged acima,
+      // mas podemos forçar aqui para garantir rapidez na UX
+      window.location.href = "index.html";
+    } else {
+      throw new Error("Não autorizado");
+    }
+    
   } catch (e) {
-    showStatus("❌ Email ou senha inválidos.", "error");
+    console.error(e);
+    showStatus("❌ Acesso negado ou dados inválidos.", "error");
+    await signOut(auth); // Desloga se falhar na verificação
   }
 });
 
-// GOOGLE → apenas autentica
+// GOOGLE
 document.getElementById("btnGoogle").addEventListener("click", async () => {
   try {
-    showStatus("Autenticando com Google...");
+    showStatus("Aguardando Google...", "success");
     await loginGoogle();
+    showStatus("✅ Login autorizado!", "success");
+    // Redirecionamento acontece via onAuthStateChanged ou aqui
     window.location.href = "index.html";
   } catch (e) {
-    showStatus("❌ Erro ao autenticar com Google.", "error");
+    console.error(e); // Útil para ver o erro real no console (F12)
+    showStatus("❌ Não autorizado ou janela fechada.", "error");
   }
 });
 
-// GITHUB → apenas autentica
+// GITHUB
 document.getElementById("btnGitHub").addEventListener("click", async () => {
   try {
-    showStatus("Autenticando com GitHub...");
+    showStatus("Aguardando GitHub...", "success");
     await loginGitHub();
+    showStatus("✅ Login autorizado!", "success");
     window.location.href = "index.html";
   } catch (e) {
-    showStatus("❌ Erro ao autenticar com GitHub.", "error");
+    console.error(e);
+    showStatus("❌ Não autorizado ou janela fechada.", "error");
   }
 });
 </script>
-
 </body>
 </html>
