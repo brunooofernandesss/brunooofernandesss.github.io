@@ -184,7 +184,8 @@
 
 <script type="module">
 import { auth, loginGoogle, loginGitHub } from './firebase.js';
-import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+import { signInWithEmailAndPassword } from 
+  "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
 const status = document.getElementById("status");
 
@@ -193,7 +194,7 @@ function showStatus(message, type) {
   status.style.color = type === 'error' ? '#d32f2f' : '#2e7d32';
 }
 
-// EMAIL / SENHA
+// EMAIL / SENHA → apenas autentica
 document.getElementById("btnLogin").addEventListener("click", async () => {
   const email = document.getElementById("email").value;
   const senha = document.getElementById("senha").value;
@@ -206,32 +207,32 @@ document.getElementById("btnLogin").addEventListener("click", async () => {
   try {
     showStatus("Autenticando...");
     await signInWithEmailAndPassword(auth, email, senha);
-    showStatus("✅ Login autorizado!", "success");
-    setTimeout(() => window.location.href = "index.html", 800);
+    showStatus("✅ Login realizado com sucesso!", "success");
+    setTimeout(() => window.location.href = "index.html", 700);
   } catch (e) {
-    showStatus("❌ Acesso negado ou dados inválidos.", "error");
+    showStatus("❌ Email ou senha inválidos.", "error");
   }
 });
 
-// GOOGLE
+// GOOGLE → apenas autentica
 document.getElementById("btnGoogle").addEventListener("click", async () => {
   try {
+    showStatus("Autenticando com Google...");
     await loginGoogle();
-    showStatus("✅ Login autorizado!", "success");
     window.location.href = "index.html";
   } catch (e) {
-    showStatus("❌ Seu e-mail não está autorizado.", "error");
+    showStatus("❌ Erro ao autenticar com Google.", "error");
   }
 });
 
-// GITHUB
+// GITHUB → apenas autentica
 document.getElementById("btnGitHub").addEventListener("click", async () => {
   try {
+    showStatus("Autenticando com GitHub...");
     await loginGitHub();
-    showStatus("✅ Login autorizado!", "success");
     window.location.href = "index.html";
   } catch (e) {
-    showStatus("❌ Seu e-mail não está autorizado.", "error");
+    showStatus("❌ Erro ao autenticar com GitHub.", "error");
   }
 });
 </script>
