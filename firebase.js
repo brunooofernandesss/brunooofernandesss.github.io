@@ -1,16 +1,23 @@
 // firebase.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-import { 
-  getAuth, 
-  signInWithEmailAndPassword, 
-  signInWithPopup, 
-  GoogleAuthProvider, 
-  GithubAuthProvider, 
-  onAuthStateChanged 
-} from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 
-// Configuração do Firebase
+import {
+  getAuth,
+  signInWithPopup,
+  GoogleAuthProvider,
+  GithubAuthProvider,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc
+} from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+
+// ================= CONFIG FIREBASE =================
 const firebaseConfig = {
   apiKey: "AIzaSyDj-c4uArNjAr7cSg396yfQR6xuyumh5_M",
   authDomain: "simuladosmedicina-6a01b.firebaseapp.com",
@@ -21,64 +28,107 @@ const firebaseConfig = {
   measurementId: "G-F125W28J18"
 };
 
-// Inicializa Firebase
+// ================= INIT =================
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-// Função para login Google
+// ================= LOGIN GOOGLE =================
 export async function loginGoogle() {
   const provider = new GoogleAuthProvider();
   const result = await signInWithPopup(auth, provider);
-  await registrarUsuario(result.user);
+
+  const autorizado = await verificarAutorizacao(result.user);
+
+  if (!autorizado) {
+    await signOut(auth);
+    throw new Error("Usuário não autorizado");
+  }
+
   return result.user;
 }
 
-// Função para login GitHub
+// ================= LOGIN GITHUB =================
 export async function loginGitHub() {
   const provider = new GithubAuthProvider();
   const result = await signInWithPopup(auth, provider);
-  await registrarUsuario(result.user);
+
+  const autorizado = await verificarAutorizacao(result.user);
+
+  if (!autorizado) {
+    await signOut(auth);
+    throw new Error("Usuário não autorizado");
+  }
+
   return result.user;
 }
 
-// Registrar usuário no Firestore
-async function registrarUsuario(user) {
-  const userRef = doc(db, "usuarios", user.email);
-  const userSnap = await getDoc(userRef);
-  if (!userSnap.exists()) {
-    await setDoc(userRef, {
-      nome: user.displayName || "",
-      email: user.email,
-      ultimaRevisao: null
-    });
+// ================= REGISTRO / AUTORIZAÇÃO =================
+async function verificarAutorizacao(user) {
+  const email = user.email.toLowerCase();
+  const userRef = doc(db, "usuarios", email);
+  const snap = await getDoc(userRef);
+
+  // ❌ não cadastrado
+  if (!snap.exists()) {
+    return false;
   }
+
+  // ❌ cadastrado mas não autorizado
+  if (snap.data().autorizado !== true) {
+    return false;
+  }
+
+  // ✅ autorizado → atualiza dados
+  await setDoc(
+    userRef,
+    {
+      nome: user.displayName || "",
+      email: email,
+      ultimoLogin: new Date().toISOString()
+    },
+    { merge: true }
+  );
+
+  return true;
 }
 
-// Revisão espaçada
+// ================= REVISÃO ESPAÇADA =================
 export async function podeRevisar(email) {
-  const userRef = doc(db, "usuarios", email);
-  const userSnap = await getDoc(userRef);
-  if (!userSnap.exists()) {
-    await setDoc(userRef, { ultimaRevisao: null });
-    return true;
-  }
-  const ultima = userSnap.data().ultimaRevisao;
+  const ref = doc(db, "usuarios", email.toLowerCase());
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) return true;
+
+  const ultima = snap.data().ultimaRevisao;
   if (!ultima) return true;
-  const diffDias = (new Date() - new Date(ultima)) / (1000*60*60*24);
+
+  const diffDias =
+    (new Date() - new Date(ultima)) / (1000 * 60 * 60 * 24);
+
+  // regra atual: revisar a cada 7 dias
   return diffDias >= 7;
 }
 
 export async function registrarRevisao(email) {
-  const userRef = doc(db, "usuarios", email);
-  await setDoc(userRef, { ultimaRevisao: new Date().toISOString() }, { merge: true });
+  const ref = doc(db, "usuarios", email.toLowerCase());
+  await setDoc(
+    ref,
+    { ultimaRevisao: new Date().toISOString() },
+    { merge: true }
+  );
 }
 
-// Observa estado do usuário
-onAuthStateChanged(auth, user => {
-  if (user) {
-    console.log("Usuário logado:", user.email);
-  } else {
-    console.log("Nenhum usuário logado");
+// ================= OBSERVADOR GLOBAL =================
+onAuthStateChanged(auth, async (user) => {
+  if (!user) return;
+
+  const email = user.email.toLowerCase();
+  const ref = doc(db, "usuarios", email);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists() || snap.data().autorizado !== true) {
+    await signOut(auth);
+    window.location.href = "login.html";
   }
 });
