@@ -566,6 +566,28 @@ onAuthStateChanged(auth, user => {
   }
 });
 </script>
+    <script type="module">
+import { auth } from './firebase.js';
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+
+// Observa se o usuário está logado
+onAuthStateChanged(auth, user => {
+  if (!user) {
+    alert("Você precisa estar logado para acessar esta página!");
+    window.location.href = "login.html";
+  } else {
+    // Aqui você pode mostrar o nome do usuário na página
+    const header = document.querySelector('header');
+    const nomeUsuario = user.displayName || "Usuário";
+    const nomeElem = document.createElement('p');
+    nomeElem.textContent = `Logado como: ${nomeUsuario}`;
+    nomeElem.style.fontSize = "1em";
+    nomeElem.style.marginTop = "5px";
+    nomeElem.style.color = "#4f46e5";
+    header.appendChild(nomeElem);
+  }
+});
+</script>
 </body>
 </html>
 
