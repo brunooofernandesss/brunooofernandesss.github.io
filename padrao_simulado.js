@@ -1,7 +1,20 @@
 import { auth } from './firebase.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
-// 1. INJEÇÃO DE ESTILOS (CSS)
+// --- 1. LIMPEZA E PREPARAÇÃO (A Mágica acontece aqui) ---
+// Isso remove forçadamente os estilos que estão "estragando" o layout no arquivo original
+window.addEventListener('load', () => {
+    document.body.style.setProperty('margin', '0', 'important');
+    document.body.style.setProperty('padding', '0', 'important');
+    document.body.style.setProperty('display', 'flex', 'important');
+    document.body.style.setProperty('flex-direction', 'column', 'important');
+    document.body.style.setProperty('align-items', 'stretch', 'important'); // Estica a navbar
+    document.body.style.setProperty('justify-content', 'flex-start', 'important');
+    document.body.style.setProperty('min-height', '100vh', 'important');
+    document.body.style.setProperty('background-color', '#f3f4f6', 'important');
+});
+
+// --- 2. INJEÇÃO DE CSS NOVO ---
 const style = document.createElement('style');
 style.textContent = `
     :root {
@@ -14,23 +27,8 @@ style.textContent = `
         --accent-color: #2563eb;
         --hover-bg: #f9fafb;
     }
-    
-    /* RESET E LAYOUT DO BODY */
-    body {
-        font-family: 'Inter', -apple-system, sans-serif;
-        background-color: var(--bg-body);
-        color: var(--text-primary);
-        margin: 0 !important;   /* Força margem zero */
-        padding: 0 !important;  /* Força padding zero */
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;
-        align-items: stretch !important; /* ISSO É O SEGREDO: Força os filhos (Navbar) a esticar 100% */
-        width: 100vw;
-        overflow-x: hidden;
-    }
 
-    /* NAVBAR FIXA E FULL WIDTH */
+    /* NAVBAR FULL WIDTH */
     .navbar {
         background-color: var(--bg-white);
         border-bottom: 1px solid var(--border-color);
@@ -42,8 +40,8 @@ style.textContent = `
         position: sticky;
         top: 0;
         z-index: 1000;
-        width: 100%;             /* Garante largura total */
-        box-sizing: border-box;  /* Garante que o padding não estoure a largura */
+        width: 100%;
+        box-sizing: border-box;
         flex-shrink: 0;
     }
 
@@ -77,14 +75,13 @@ style.textContent = `
     .user-name { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
     .user-meta { font-size: 0.75rem; color: var(--text-secondary); }
 
-    /* CONTAINER DO QUIZ */
+    /* CONTEÚDO CENTRALIZADO */
     .quiz-container {
         max-width: 800px;
         width: 100%;
-        margin: 40px auto;
+        margin: 40px auto; /* Centraliza e dá espaço do topo */
         padding: 0 20px;
         box-sizing: border-box;
-        flex-grow: 1; /* Faz o conteúdo ocupar o espaço restante */
     }
 
     /* TAGS DE NAVEGAÇÃO */
@@ -100,14 +97,14 @@ style.textContent = `
     .nav-tag:hover { color: var(--text-primary); background-color: rgba(0, 0, 0, 0.05); }
     .nav-tag.active { background-color: #e5e7eb; color: var(--brand-color); font-weight: 600; cursor: default; }
 
-    /* ESTILOS GERAIS */
+    /* CSS GERAL DO SIMULADO (Ajustes visuais) */
     .card, .card-bloco {
         background-color: var(--bg-white);
         border: 1px solid var(--border-color);
         border-radius: 8px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
-    h1 { color: var(--brand-color); font-size: 1.8rem; margin-bottom: 30px; text-align: center; }
+    h1 { color: var(--brand-color); font-size: 1.8rem; margin-bottom: 30px; text-align: center; font-family: 'Inter', sans-serif; }
     
     .submit-btn {
         background-color: var(--accent-color);
@@ -124,7 +121,7 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// 2. INJEÇÃO DO FONTAWESOME
+// 3. INJEÇÃO DO FONTAWESOME
 if (!document.querySelector('link[href*="font-awesome"]')) {
     const fa = document.createElement('link');
     fa.rel = 'stylesheet';
@@ -132,9 +129,9 @@ if (!document.querySelector('link[href*="font-awesome"]')) {
     document.head.appendChild(fa);
 }
 
-// 3. INJEÇÃO DA NAVBAR E TAGS
+// 4. INSERÇÃO DO HTML (Navbar + Tags)
 document.addEventListener("DOMContentLoaded", () => {
-    // A) Inserir Navbar no topo do Body
+    // A) Navbar
     const navbarHTML = `
         <nav class="navbar">
             <a href="index.html" class="navbar-brand">
@@ -149,9 +146,10 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
         </nav>
     `;
+    // Insere no TOPO absoluto do body
     document.body.insertAdjacentHTML('afterbegin', navbarHTML);
 
-    // B) Inserir Tags
+    // B) Tags de Navegação (dentro do quiz container)
     const quizContainer = document.querySelector('.quiz-container');
     const title = quizContainer ? quizContainer.querySelector('h1') : null;
     
@@ -171,24 +169,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-// 4. LÓGICA DE AUTENTICAÇÃO E IP
+// 5. LOGIN E DADOS
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         const displayName = user.displayName || "Estudante";
         const email = user.email || "";
         
-        // Nome
         const nameEl = document.getElementById('displayUser');
         if (nameEl) nameEl.textContent = displayName;
         
-        // Avatar
         const avatarEl = document.getElementById('userAvatar');
         if (avatarEl) {
             const initials = displayName.split(" ").map((n)=>n[0]).join("").substring(0,2).toUpperCase();
             avatarEl.textContent = initials;
         }
 
-        // IP
         try {
             const res = await fetch('https://api.ipify.org?format=json');
             const data = await res.json();
