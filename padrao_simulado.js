@@ -1,43 +1,44 @@
 import { auth } from './firebase.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
-// 1. CSS FORCE (Ajustes agressivos)
+// --- 1. CSS BLINDADO (Fixação e Layout) ---
 const style = document.createElement('style');
 style.textContent = `
-    /* RESET TOTAL NO HTML E BODY */
+    /* RESET GERAL */
     html, body {
         margin: 0 !important;
         padding: 0 !important;
         width: 100% !important;
-        overflow-x: hidden !important; /* Evita rolagem lateral */
+        height: auto !important;
         background-color: #f3f4f6 !important;
-        font-family: 'Inter', sans-serif !important;
+        font-family: 'Inter', -apple-system, sans-serif !important;
+        overflow-x: hidden !important; /* Evita rolagem lateral indesejada */
     }
 
-    /* NAVBAR: POSITION FIXED (A Mudança Principal) */
+    /* NAVBAR FIXA NO TOPO (A solução do problema) */
     .navbar {
-        position: fixed !important; /* Fixa na tela, não move ao rolar */
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 64px;
-        background-color: #ffffff;
-        border-bottom: 1px solid #e5e7eb;
-        padding: 0 32px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        z-index: 9999; /* Fica acima de tudo */
-        box-sizing: border-box;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        position: fixed !important; /* Fixa na tela */
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 64px !important;
+        background-color: #ffffff !important;
+        border-bottom: 1px solid #e5e7eb !important;
+        padding: 0 32px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        z-index: 99999 !important; /* Garante que fique acima de tudo */
+        box-sizing: border-box !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.03) !important;
     }
 
-    /* ESPAÇO PARA NÃO ESCONDER O CONTEÚDO ATRÁS DA BARRA */
+    /* ESPAÇAMENTO PARA O CONTEÚDO NÃO FICAR ESCONDIDO ATRÁS DA BARRA */
     body {
-        padding-top: 80px !important; /* 64px da barra + respiro */
+        padding-top: 84px !important; /* 64px da barra + 20px de respiro */
     }
 
-    /* ELEMENTOS DA NAVBAR */
+    /* ESTILOS DA NAVBAR */
     .navbar-brand {
         font-weight: 700; font-size: 1.125rem; color: #0f172a;
         text-decoration: none; display: flex; align-items: center; gap: 10px;
@@ -61,18 +62,20 @@ style.textContent = `
     .user-name { font-size: 0.875rem; font-weight: 600; color: #111827; }
     .user-meta { font-size: 0.75rem; color: #6b7280; }
 
-    /* TAGS E LAYOUT CENTRAL */
+    /* LAYOUT DO CONTEÚDO (Simulado) */
     .quiz-container {
         max-width: 800px;
         width: 100%;
-        margin: 0 auto 40px auto; /* Margem ajustada */
-        padding: 0 20px;
-        box-sizing: border-box;
+        margin: 0 auto 40px auto !important; /* Centraliza */
+        padding: 0 20px !important;
+        box-sizing: border-box !important;
+        position: relative !important;
+        z-index: 1 !important; /* Fica abaixo da navbar */
     }
 
+    /* TAGS DE NAVEGAÇÃO */
     .nav-tags {
-        display: flex; gap: 8px; margin-bottom: 24px; justify-content: center;
-        flex-wrap: wrap;
+        display: flex; gap: 8px; margin-bottom: 24px; justify-content: center; flex-wrap: wrap;
     }
     .nav-tag {
         display: inline-flex; align-items: center; padding: 6px 12px;
@@ -83,18 +86,19 @@ style.textContent = `
     .nav-tag:hover { color: #111827; background-color: rgba(0, 0, 0, 0.05); }
     .nav-tag.active { background-color: #e5e7eb; color: #0f172a; font-weight: 600; cursor: default; }
 
-    /* CSS GERAL (Mantido) */
+    /* CSS DO QUIZ (Mantendo visual limpo) */
     .card, .card-bloco {
         background-color: #ffffff; border: 1px solid #e5e7eb;
-        border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
-    h1 { color: #0f172a; font-size: 1.8rem; margin-bottom: 30px; text-align: center; font-family: 'Inter', sans-serif; }
+    h1 { color: #0f172a; font-size: 1.8rem; margin-bottom: 30px; text-align: center; }
     
     .submit-btn { background-color: #2563eb; border-radius: 6px; font-weight: 600; }
     .submit-btn:hover { background-color: #1d4ed8; }
 
+    /* MOBILE */
     @media (max-width: 640px) {
-        .navbar { padding: 0 16px; }
+        .navbar { padding: 0 16px !important; }
         .user-info-text { display: none; }
     }
 `;
@@ -108,9 +112,9 @@ if (!document.querySelector('link[href*="font-awesome"]')) {
     document.head.appendChild(fa);
 }
 
-// 3. INJEÇÃO DO HTML
+// 3. INJEÇÃO DA ESTRUTURA
 document.addEventListener("DOMContentLoaded", () => {
-    // A) NAVBAR (Inserida no topo)
+    // A) NAVBAR (Inserida diretamente no body como primeiro elemento)
     const navbarHTML = `
         <nav class="navbar">
             <a href="index.html" class="navbar-brand">
@@ -127,7 +131,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
     document.body.insertAdjacentHTML('afterbegin', navbarHTML);
 
-    // B) TAGS (Dentro do container)
+    // B) TAGS (Dentro do container do quiz)
     const quizContainer = document.querySelector('.quiz-container');
     const title = quizContainer ? quizContainer.querySelector('h1') : null;
     
@@ -144,7 +148,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-// 4. AUTH
+// 4. AUTENTICAÇÃO E DADOS
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         const displayName = user.displayName || "Estudante";
