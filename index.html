@@ -208,24 +208,40 @@
     <script src="conexao_firebase.js"></script>
     <script src="navegacao.js?v=2"></script>
     
+    // Mostra o IP, usuário e email
+    
     <script type="module">
-        import { auth } from './firebase.js';
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+    import { auth } from './firebase.js';
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
-        // Verifica o estado de autenticação
-        onAuthStateChanged(auth, user => {
-            if (!user) {
-                alert("Você precisa estar logado para acessar esta página!");
-                window.location.href = "login.html";
-            } else {
-                // Usuário está logado: atualiza a div userInfo
-                const userInfoDiv = document.getElementById('userInfo');
-                const nomeUsuario = user.displayName || "Usuário";
-                
-                // Limpa o conteúdo anterior (se houver) e insere o texto
-                userInfoDiv.innerHTML = `Logado como: <strong>${nomeUsuario}</strong>`;
+    // Verifica o estado de autenticação
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+            alert("Você precisa estar logado para acessar esta página!");
+            window.location.href = "login.html";
+        } else {
+            const userInfoDiv = document.getElementById('userInfo');
+            const nomeUsuario = user.displayName || "Usuário";
+            const emailUsuario = user.email || "Sem e-mail";
+
+            // Pega o IP do usuário usando a API pública
+            let ipUsuario = "Desconhecido";
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                ipUsuario = data.ip;
+            } catch (err) {
+                console.error("Erro ao obter IP:", err);
             }
-        });
-    </script>
+
+            // Atualiza a div com nome, e-mail e IP
+            userInfoDiv.innerHTML = `
+                👤 ${nomeUsuario} <br>
+                📧 ${emailUsuario} <br>
+                🌐 ${ipUsuario}
+            `;
+        }
+    });
+</script>
 </body>
 </html>
