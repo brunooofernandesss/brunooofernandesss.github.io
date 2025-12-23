@@ -1,253 +1,68 @@
-<html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-br">
 <head>
-    <meta name="google-site-verification" content="YWtx4y_u3uFdfIZy9uX3mM7n_RCaQjbrRZvL47d3WLU" />
-
     <link rel="canonical" href="https://brunooofernandesss.github.io/" />
     <meta name="robots" content="index, follow">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
     <title>Simulados de Medicina Unip | Estude Online</title>
     <meta name="description" content="Acesse simulados gratuitos de Medicina baseados na ementa da UNIP. Questões de Anatomia, Fisiologia, Histologia e muito mais para complementar seus estudos.">
-
     <meta property="og:title" content="Simulados de Medicina Unip">
     <meta property="og:description" content="Simulados gratuitos para estudantes de medicina. Teste seus conhecimentos agora!">
     <meta property="og:url" content="https://brunooofernandesss.github.io/">
     <meta property="og:type" content="website">
-
+    
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Arial', sans-serif; background-color: #f0f4f8; color: #333; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; }
+        header { text-align: center; margin-bottom: 20px; width: 100%; }
+        h1 { font-size: 2.5em; color: #2c3e50; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1); margin-bottom: 20px; }
+        
+        /* User Info Style */
+        #userInfo { margin-bottom: 20px; font-size: 1.1em; color: #4f46e5; font-weight: 600; }
 
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f0f4f8;
-            color: #333;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 20px;
-            width: 100%;
-        }
-
-        h1 {
-            font-size: 2.5em;
-            color: #2c3e50;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-        }
-
-        .search-container {
-            width: 100%;
-            max-width: 1000px;
-            margin: 0 auto 30px auto;
-            display: flex;
-            justify-content: center; /* Centralizado */
-            align-items: center;
-            padding-right: 20px;
-            padding-left: 20px;
-            gap: 15px; /* Espaço entre a busca e o ranking */
-            flex-wrap: wrap; /* Permite quebrar linha no mobile */
-        }
-
-        /* Estilo Discreto do Botão de Ranking */
-        .ranking-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-            color: #64748b; /* Cinza azulado discreto */
-            font-weight: 600;
-            font-size: 0.95rem;
-            padding: 12px 20px;
-            background-color: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 25px;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-            white-space: nowrap;
-        }
-
-        .ranking-btn:hover {
-            background-color: #f8fafc;
-            border-color: #cbd5e1;
-            color: #0f172a; /* Azul escuro no hover */
-            transform: translateY(-1px);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-
-        .search-bar {
-            width: 100%;
-            max-width: 400px;
-        }
-
-        .search-bar input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #ccc;
-            border-radius: 25px;
-            font-size: 1.1em;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-            transition: border-color 0.3s, box-shadow 0.3s;
-        }
-
-        .search-bar input:focus {
-            outline: none;
-            border-color: #4f46e5;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .container {
-            max-width: 1000px;
-            width: 100%;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-        }
-
-        .card {
-            background-color: #ffffff;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            transition: transform 0.3s, box-shadow 0.3s;
-            text-align: center;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-        }
-
-        .card a {
-            display: block;
-            padding: 20px;
-            text-decoration: none;
-            color: #34495e;
-            font-size: 1.2em;
-            font-weight: bold;
-        }
-
-        .card a:hover {
-            background-color: #4f46e5;
-            color: #ffffff;
-        }
-
-        footer {
-            margin-top: 40px;
-            text-align: center;
-            color: #7f8c8d;
-            font-size: 0.9em;
-        }
-
-        .alert-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            display: none;
-        }
-
-        .alert-box {
-            background-color: #ff8c00;
-            color: #ffffff;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            max-width: 500px;
-            width: 90%;
-            text-align: center;
-            position: relative;
-        }
-
-        .alert-box h2 {
-            margin-top: 0;
-            font-size: 2em;
-            margin-bottom: 15px;
-        }
-
-        .alert-box p {
-            font-size: 1.1em;
-            line-height: 1.5;
-            margin-bottom: 0;
-        }
-
-        .alert-close {
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            font-size: 1.8em;
-            font-weight: bold;
-            cursor: pointer;
-            color: #ffffff;
-            transition: color 0.2s;
-        }
-
-        .alert-close:hover {
-            color: #eeeeee;
-        }
-
+        .search-container { width: 100%; max-width: 1000px; margin: 0 auto 30px auto; display: flex; justify-content: center; align-items: center; padding-right: 20px; padding-left: 20px; gap: 15px; flex-wrap: wrap; }
+        
+        .ranking-btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: #64748b; font-weight: 600; font-size: 0.95rem; padding: 12px 20px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 25px; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.02); white-space: nowrap; }
+        .ranking-btn:hover { background-color: #f8fafc; border-color: #cbd5e1; color: #0f172a; transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        
+        .search-bar { width: 100%; max-width: 400px; }
+        .search-bar input { width: 100%; padding: 12px 15px; border: 2px solid #ccc; border-radius: 25px; font-size: 1.1em; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); transition: border-color 0.3s, box-shadow 0.3s; }
+        .search-bar input:focus { outline: none; border-color: #4f46e5; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
+        
+        .container { max-width: 1000px; width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .card { background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); overflow: hidden; transition: transform 0.3s, box-shadow 0.3s; text-align: center; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); }
+        .card a { display: block; padding: 20px; text-decoration: none; color: #34495e; font-size: 1.2em; font-weight: bold; }
+        .card a:hover { background-color: #4f46e5; color: #ffffff; }
+        
+        footer { margin-top: 40px; text-align: center; color: #7f8c8d; font-size: 0.9em; }
+        
+        .alert-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; display: none; }
+        .alert-box { background-color: #ff8c00; color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); max-width: 500px; width: 90%; text-align: center; position: relative; }
+        .alert-box h2 { margin-top: 0; font-size: 2em; margin-bottom: 15px; }
+        .alert-box p { font-size: 1.1em; line-height: 1.5; margin-bottom: 0; }
+        .alert-close { position: absolute; top: 10px; right: 15px; font-size: 1.8em; font-weight: bold; cursor: pointer; color: #ffffff; transition: color 0.2s; }
+        .alert-close:hover { color: #eeeeee; }
+        
         @media (max-width: 600px) {
-            h1 {
-                font-size: 1.8em;
-            }
-
-            .card a {
-                font-size: 1em;
-                padding: 15px;
-            }
-
-            .alert-box {
-                padding: 20px;
-            }
-
-            .alert-box h2 {
-                font-size: 1.5em;
-            }
-
-            .alert-box p {
-                font-size: 0.9em;
-            }
-
-            .alert-close {
-                font-size: 1.5em;
-            }
-
-            .search-container {
-                flex-direction: column-reverse; /* No celular, ranking fica embaixo da busca */
-                gap: 15px;
-            }
-
-            .search-bar {
-                max-width: 90%;
-            }
-            
-            .ranking-btn {
-                width: 90%;
-                justify-content: center;
-            }
+            h1 { font-size: 1.8em; }
+            .card a { font-size: 1em; padding: 15px; }
+            .alert-box { padding: 20px; }
+            .alert-box h2 { font-size: 1.5em; }
+            .alert-box p { font-size: 0.9em; }
+            .alert-close { font-size: 1.5em; }
+            .search-container { flex-direction: column-reverse; gap: 15px; }
+            .search-bar { max-width: 90%; }
+            .ranking-btn { width: 90%; justify-content: center; }
         }
     </style>
 </head>
 <body>
-    <div class="alert-overlay" id="alertOverlay">
+
+    <div id="alertOverlay" class="alert-overlay">
         <div class="alert-box">
-            <span class="alert-close" id="alertClose">×</span>
+            <span id="alertClose" class="alert-close">&times;</span>
             <h2>Aviso</h2>
             <p>Essa página foi desenvolvida por mim, Bruno Fernandes Damasceno, com o intuito de ajudar colegas de faculdade e profissão a terem um complemento na faculdade. Declaro que não tenho finalidade lucrativa nessa página e que os questionários são feitos com base na ementa do curso. Utilizo bancos de dados de questões como o USP, UNIFAL, Universidade do Michigan, Uneb, etc. Também utilizo inteligências artificiais para formularem as questões. Caso detectem erros, vocês podem livremente me contactar para que eu possa corrigir.</p>
         </div>
@@ -255,263 +70,98 @@
 
     <header>
         <h1>Simulados de Medicina Unip</h1>
+        <div id="userInfo"></div>
     </header>
 
-    <!-- Local para mostrar usuário logado -->
-    <div id="userInfo" style="margin-bottom:20px; font-size:1.1em; color:#2c3e50;"></div>
-
     <div class="search-container">
-        <a href="ranking.html" class="ranking-btn">
-            📊 Ver Ranking Geral
-        </a>
-
+        <a href="ranking.html" class="ranking-btn"> 📊 Ver Ranking Geral </a>
         <div class="search-bar">
             <input type="text" id="searchInput" placeholder="Buscar simulados por título...">
         </div>
     </div>
 
     <div class="container" id="cardsContainer">
-        <div class="card">
-            <a href="galeriaanatomia.html">Atlas de Anatomia (Universidade do Michigan, UNEB, peças plásticas)</a>
-        </div>
-        <div class="card">
-            <a href="Modulo06%20(1).html">Módulo 06 (Simulado 01)</a>
-        </div>
-        <div class="card">
-            <a href="teoricorafaeltudo.html">Habilidades Clínicas: Teoria de Neuro e Locomotor</a>
-        </div>
-        <div class="card">
-            <a href="marchas.html">Habilidades Clínicas: Marchas Patológicas</a>
-        </div>
-        <div class="card">
-            <a href="manobras.html">Habilidades Clínicas: Manobras Semiológicas</a>
-        </div>
-        <div class="card">
-            <a href="Simuladotoxoplasmoseecriptosporiase.html">Módulo 05: Toxoplasmose e Criptosporíase</a>
-        </div>
-        <div class="card">
-            <a href="Simuladoesquistossomose.html">Módulo 05: Simulado de Esquistossomose</a>
-        </div>
-        <div class="card">
-            <a href="Simuladoascaridiaseeoxiuriase.html">Módulo 05: Simulado sobre Ascaridíase e Enterobiose (oxiuríase)</a>
-        </div>
-        <div class="card">
-            <a href="Simuladodapartedeflavia.html">Módulo 05: Simulado Revisão Geral de Flávia</a>
-        </div>
-        <div class="card">
-            <a href="SimuladodaAuladeDevandir.html">Módulo 05: Simulado da Aula de Devandir</a>
-        </div>
-        <div class="card">
-            <a href="Orgaoslinfoidesparte01.html">Módulo 05: Órgãos Linfoides Parte 01</a>
-        </div>
-        <div class="card">
-            <a href="Orgaoslinfoidesparte02.html">Módulo 05: Órgãos Linfoides Parte 02</a>
-        </div>
-        <div class="card">
-            <a href="Imunologia01.html">Módulo 05: Imunologia Parte 01</a>
-        </div>
-        <div class="card">
-            <a href="Imunologia02.html">Módulo 05: Imunologia Parte 02</a>
-        </div>
-        <div class="card">
-            <a href="Mhcesistemacomplemento.html">Módulo 05: MHC e Sistema Complemento</a>
-        </div>
-        <div class="card">
-            <a href="Imunologia03.html">Módulo 05: Imunologia Parte 03</a>
-        </div>
-        <div class="card">
-            <a href="Imunologia04.html">Módulo 05: Imunologia Parte 04</a>
-        </div>
-        <div class="card">
-            <a href="Endocrinorafael.html">Módulo 05: Simulado de Endócrino (Fácil)</a>
-        </div>
-        <div class="card">
-            <a href="Simuladorafaelsouza.html">Módulo 04: Simulado Rafael</a>
-        </div>
-        <div class="card">
-            <a href="Direitoeeticamedica02.html">Módulo 04: Direito e Ética Médica (Prova)</a>
-        </div>
-        <div class="card">
-            <a href="aula02georgia.html">Módulo 4: Aula 02 Geórgia</a>
-        </div>
-        <div class="card">
-            <a href="aula01georgia.html">Módulo 4: Aula 01 Geórgia</a>
-        </div>
-        <div class="card">
-            <a href="Simuladomodulo04 (2).html">Módulo 4: Prova</a>
-        </div>
-        <div class="card">
-            <a href="Simuladomonitoriainteracao.html">Módulo 4: Monitoria de Interação Comunitária</a>
-        </div>
-        <div class="card">
-            <a href="Anatomia.html">Módulo 4: Anatomiada Cavidade Abdominal (nível dificil)</a>
-        </div>
-        <div class="card">
-            <a href="Interacaocomunitaria02.html">Módulo 4: Interação Comunitária 02</a>
-        </div>
-        <div class="card">
-            <a href="Metabolismo02.html">Módulo 4: Metabolismo 02</a>
-        </div>
-        <div class="card">
-            <a href="Anamneseabdomen01.html">Módulo 4: Anamnese do Abdômen</a>
-        </div>
-        <div class="card">
-            <a href="Histologiadosistemadigestorio01.html">Módulo 4: Histologia do Sistema Digestório 01</a>
-        </div>
-        <div class="card">
-            <a href="Metabolismo01.html">Módulo 4: Metabolismo 01</a>
-        </div>
-        <div class="card">
-            <a href="Semiologiacardiaca02 (1).html">Módulo 4: Semiologia Cardíaca 02</a>
-        </div>
-        <div class="card">
-            <a href="Aula_de_Michele01.html">Módulo 4: Aula de Michele 01</a>
-        </div>
-        <div class="card">
-            <a href="Semiologia_cardiaca01.html">Módulo 4: Semiologia Cardíaca 01</a>
-        </div>
-        <div class="card">
-            <a href="sistema_digestorio01.html">Módulo 4: Anatomia do Sistema Digestório</a>
-        </div>
-        <div class="card">
-            <a href="Etica_e_direito_medico002.html">Módulo 4: Direito e Ética Médica: Dilema do Bonde</a>
-        </div>
-        <div class="card">
-            <a href="Anatomia_Parede_Abdominal,_ Peritônio_ e_Intestinos.html">Férias 2025-Segundo Semestre: Anatomia da Parede Abdominal, Peritônio e Intestinos</a>
-        </div>
-        <div class="card">
-            <a href="Fisiologia_das_funcoes_superiores_do_SNC.html">Férias 2025-Primeiro Semestre: Fisiologia das Funções Superiores do Sistema Nervoso Central</a>
-        </div>
-        <div class="card">
-            <a href="Fisiologia_do_Controle_Neuroendrocrino.html">Férias 2025-Primeiro Semestre: Fisiologia do Controle Neuroendócrino</a>
-        </div>
-        <div class="card">
-            <a href="Fisiologia_do_Sistema_Nervoso_Autonomo.html">Férias 2025-Primeiro Semestre: Fisiologia Sistema Nervoso Autônomo</a>
-        </div>
-        <div class="card">
-            <a href="Fisiologia_dos_Sistemas_Geradores_de_Movimento.html">Férias 2025-Primeiro Semestre: Fisiologia dos Sistemas Geradores de Movimento</a>
-        </div>
-        <div class="card">
-            <a href="Neurofisiologia_02.html">Férias 2025-Primeiro Semestre: Organização Geral dos Sistemas Sensoriais</a>
-        </div>
-        <div class="card">
-            <a href="NeuroFisiologia.html">Férias 2025-Primeiro Semestre: Potencial de Ação e Transmissão Sináptica</a>
-        </div>
-        <div class="card">
-            <a href="Vias_de_Sinalizacao.html">Férias 2025-Primeiro Semestre: Vias de Sinalização</a>
-        </div>
-        <div class="card">
-            <a href="Fisiologia_Celular.html">Férias 2025-Primeiro Semestre: Fisiologia Celular</a>
-        </div>
-        <div class="card">
-            <a href="Fisiologia_Respiratoria.html">Módulo 3: Fisiologia Respiratória</a>
-        </div>
-        <div class="card">
-            <a href="Fisiologia_controle_da_ventilacao.html">Módulo 3: Fisiologia do Controle da Ventilação</a>
-        </div>
-        <div class="card">
-            <a href="Fisiologia_Controle_Ingestao_Excrecaoo_Liquidos.html">Módulo 3: Fisiologia do Controle da Ingestão e Excreção de Líquidos</a>
-        </div>
-        <div class="card">
-            <a href="Fisiologia_Controle_Temperatura_Corporal.html">Módulo 3: Fisiologia do Controle da Temperatura Corporal</a>
-        </div>
-        <div class="card">
-            <a href="Fisiologia_Equilíbrio_Ácido_Base.html">Módulo 3: Fisiologia do Equilíbrio Ácido-Base</a>
-        </div>
-        <div class="card">
-            <a href="Sistema_Urinario.html">Módulo 3: Sistema Urinário</a>
-        </div>
-        <div class="card">
-            <a href="Sinapse02.html">Módulo 3: Sinapse 02</a>
-        </div>
-        <div class="card">
-            <a href="Sinapse01.html">Módulo 3: Sinapse 01</a>
-        </div>
-        <div class="card">
-            <a href="Potencial_Eletrico.html">Módulo 3: Potencial Elétrico</a>
-        </div>
-        <div class="card">
-            <a href="Comunicacao_Celular02.html">Módulo 3: Diferenciação Celular 02</a>
-        </div>
-        <div class="card">
-            <a href="Diferenciacao_Celular.html">Módulo 3: Diferenciação Celular 01</a>
-        </div>
-        <div class="card">
-            <a href="Comunicacao_Celular02.html">Módulo 3: Comunicação Celular 02</a>
-        </div>
-        <div class="card">
-            <a href="Comunicacao_Celular01.html">Módulo 3: Comunicação Celular 01</a>
-        </div>
-        <div class="card">
-            <a href="Etica_e_Direito_Medico_Publicidade.html">Direito e Ética Médica: Publicidade Médica (Segundo Trimestre)</a>
-        </div>
-        <div class="card">
-            <a href="Interação_Comunitária(SOAP_e_PTS).html">Interação Comunitária: PTS e SOAP (Segundo Trimestre)</a>
-        </div>
-        <div class="card">
-            <a href="Metodologia_da_Pesquisa(Ética_em_Pesquisa).html">Metodologia da Pesquisa 05 (Ética em Pesquisa)</a>
-        </div>
-        <div class="card">
-            <a href="Habilidades_Clicas_Torax.html">Habilidades Clínicas, Exame Físico (Tórax)</a>
-        </div>
-        <div class="card">
-            <a href="Habilidades_Clicas_Pressao.html">Habilidades Clínicas, Exame Físico (Pressão)</a>
-        </div>
-        <div class="card">
-            <a href="Metodologia_da_Pesquisa_04.html">Metodologia da Pesquisa 04 (Revisão Sistemática)</a>
-        </div>
-        <div class="card">
-            <a href="Metodologia_da_Pesquisa_03.html">Metodologia da Pesquisa 03 (Variáveis)</a>
-        </div>
-        <div class="card">
-            <a href="Metodologia_da_Pesquisa_02.html">Metodologia da Pesquisa 02 (Segundo Trimestre)</a>
-        </div>
-        <div class="card">
-            <a href="Interacao_Comunitaria02.html">Interação Comunitária 02 (Nível Fácil)</a>
-        </div>
-        <div class="card">
-            <a href="Sistema_Cardiovascular.html">Módulo 3: Sistema Cardiovascular 01 (Nível Fácil)</a>
-        </div>
-        <div class="card">
-            <a href="Sistema_Nervoso_02.html">Módulo 3: Histologia do Sistema Nervoso 02</a>
-        </div>
-        <div class="card">
-            <a href="Sistema_Nervoso_01.html">Módulo 3: Histologia do Sistema Nervoso 01</a>
-        </div>
-        <div class="card">
-            <a href="Metodologia_da_Pesquisa.html">Metodologia da Pesquisa (Primeiro Trimestre)</a>
-        </div>
-        <div class="card">
-            <a href="Monitoria_Interacao_Comunitaria01.html">Exercícios 01 da Monitoria de Interação Comunitária</a>
-        </div>
-        <div class="card">
-            <a href="Tecido_Cartilagenoso.html">Módulo 2: Tecido Cartilaginoso</a>
-        </div>
-        <div class="card">
-            <a href="Tecido_Conjuntivo.html">Módulo 2: Tecido Conjuntivo</a>
-        </div>
-        <div class="card">
-            <a href="Tecido_Epitelial.html">Módulo 2: Tecido Epitelial</a>
-        </div>
-        <div class="card">
-            <a href="Tecido_Epitelial_Glandular.html">Módulo 2: Tecido Epitelial Glandular</a>
-        </div>
-        <div class="card">
-            <a href="Tecido_Muscular.html">Módulo 2: Tecido Muscular</a>
-        </div>
-        <div class="card">
-            <a href="Tecido_Ósseo.html">Módulo 2: Tecido Ósseo</a>
-        </div>
-        <div class="card">
-            <a href="01un_Interacao_Comunitaria.html">Interação Comunitária (Primeiro Bimestre)</a>
-        </div>
-        <div class="card">
-            <a href="Modulo01.html">Simulado Módulo 01</a>
-        </div>
-        <!-- QUIZZES_AUTOMATICOS_INICIO -->
-<!-- QUIZZES_AUTOMATICOS_FIM -->
+        <div class="card"><a href="galeriaanatomia.html">Atlas de Anatomia (Universidade do Michigan, UNEB, peças plásticas)</a></div>
+        <div class="card"><a href="Modulo06%20(1).html">Módulo 06 (Simulado 01)</a></div>
+        <div class="card"><a href="teoricorafaeltudo.html">Habilidades Clínicas: Teoria de Neuro e Locomotor</a></div>
+        <div class="card"><a href="marchas.html">Habilidades Clínicas: Marchas Patológicas</a></div>
+        <div class="card"><a href="manobras.html">Habilidades Clínicas: Manobras Semiológicas</a></div>
+        <div class="card"><a href="Simuladotoxoplasmoseecriptosporiase.html">Módulo 05: Toxoplasmose e Criptosporíase</a></div>
+        <div class="card"><a href="Simuladoesquistossomose.html">Módulo 05: Simulado de Esquistossomose</a></div>
+        <div class="card"><a href="Simuladoascaridiaseeoxiuriase.html">Módulo 05: Simulado sobre Ascaridíase e Enterobiose (oxiuríase)</a></div>
+        <div class="card"><a href="Simuladodapartedeflavia.html">Módulo 05: Simulado Revisão Geral de Flávia</a></div>
+        <div class="card"><a href="SimuladodaAuladeDevandir.html">Módulo 05: Simulado da Aula de Devandir</a></div>
+        <div class="card"><a href="Orgaoslinfoidesparte01.html">Módulo 05: Órgãos Linfoides Parte 01</a></div>
+        <div class="card"><a href="Orgaoslinfoidesparte02.html">Módulo 05: Órgãos Linfoides Parte 02</a></div>
+        <div class="card"><a href="Imunologia01.html">Módulo 05: Imunologia Parte 01</a></div>
+        <div class="card"><a href="Imunologia02.html">Módulo 05: Imunologia Parte 02</a></div>
+        <div class="card"><a href="Mhcesistemacomplemento.html">Módulo 05: MHC e Sistema Complemento</a></div>
+        <div class="card"><a href="Imunologia03.html">Módulo 05: Imunologia Parte 03</a></div>
+        <div class="card"><a href="Imunologia04.html">Módulo 05: Imunologia Parte 04</a></div>
+        <div class="card"><a href="Endocrinorafael.html">Módulo 05: Simulado de Endócrino (Fácil)</a></div>
+        <div class="card"><a href="Simuladorafaelsouza.html">Módulo 04: Simulado Rafael</a></div>
+        <div class="card"><a href="Direitoeeticamedica02.html">Módulo 04: Direito e Ética Médica (Prova)</a></div>
+        <div class="card"><a href="aula02georgia.html">Módulo 4: Aula 02 Geórgia</a></div>
+        <div class="card"><a href="aula01georgia.html">Módulo 4: Aula 01 Geórgia</a></div>
+        <div class="card"><a href="Simuladomodulo04 (2).html">Módulo 4: Prova</a></div>
+        <div class="card"><a href="Simuladomonitoriainteracao.html">Módulo 4: Monitoria de Interação Comunitária</a></div>
+        <div class="card"><a href="Anatomia.html">Módulo 4: Anatomiada Cavidade Abdominal (nível dificil)</a></div>
+        <div class="card"><a href="Interacaocomunitaria02.html">Módulo 4: Interação Comunitária 02</a></div>
+        <div class="card"><a href="Metabolismo02.html">Módulo 4: Metabolismo 02</a></div>
+        <div class="card"><a href="Anamneseabdomen01.html">Módulo 4: Anamnese do Abdômen</a></div>
+        <div class="card"><a href="Histologiadosistemadigestorio01.html">Módulo 4: Histologia do Sistema Digestório 01</a></div>
+        <div class="card"><a href="Metabolismo01.html">Módulo 4: Metabolismo 01</a></div>
+        <div class="card"><a href="Semiologiacardiaca02 (1).html">Módulo 4: Semiologia Cardíaca 02</a></div>
+        <div class="card"><a href="Aula_de_Michele01.html">Módulo 4: Aula de Michele 01</a></div>
+        <div class="card"><a href="Semiologia_cardiaca01.html">Módulo 4: Semiologia Cardíaca 01</a></div>
+        <div class="card"><a href="sistema_digestorio01.html">Módulo 4: Anatomia do Sistema Digestório</a></div>
+        <div class="card"><a href="Etica_e_direito_medico002.html">Módulo 4: Direito e Ética Médica: Dilema do Bonde</a></div>
+        <div class="card"><a href="Anatomia_Parede_Abdominal,_ Peritônio_ e_Intestinos.html">Férias 2025-Segundo Semestre: Anatomia da Parede Abdominal, Peritônio e Intestinos</a></div>
+        <div class="card"><a href="Fisiologia_das_funcoes_superiores_do_SNC.html">Férias 2025-Primeiro Semestre: Fisiologia das Funções Superiores do Sistema Nervoso Central</a></div>
+        <div class="card"><a href="Fisiologia_do_Controle_Neuroendrocrino.html">Férias 2025-Primeiro Semestre: Fisiologia do Controle Neuroendócrino</a></div>
+        <div class="card"><a href="Fisiologia_do_Sistema_Nervoso_Autonomo.html">Férias 2025-Primeiro Semestre: Fisiologia Sistema Nervoso Autônomo</a></div>
+        <div class="card"><a href="Fisiologia_dos_Sistemas_Geradores_de_Movimento.html">Férias 2025-Primeiro Semestre: Fisiologia dos Sistemas Geradores de Movimento</a></div>
+        <div class="card"><a href="Neurofisiologia_02.html">Férias 2025-Primeiro Semestre: Organização Geral dos Sistemas Sensoriais</a></div>
+        <div class="card"><a href="NeuroFisiologia.html">Férias 2025-Primeiro Semestre: Potencial de Ação e Transmissão Sináptica</a></div>
+        <div class="card"><a href="Vias_de_Sinalizacao.html">Férias 2025-Primeiro Semestre: Vias de Sinalização</a></div>
+        <div class="card"><a href="Fisiologia_Celular.html">Férias 2025-Primeiro Semestre: Fisiologia Celular</a></div>
+        <div class="card"><a href="Fisiologia_Respiratoria.html">Módulo 3: Fisiologia Respiratória</a></div>
+        <div class="card"><a href="Fisiologia_controle_da_ventilacao.html">Módulo 3: Fisiologia do Controle da Ventilação</a></div>
+        <div class="card"><a href="Fisiologia_Controle_Ingestao_Excrecaoo_Liquidos.html">Módulo 3: Fisiologia do Controle da Ingestão e Excreção de Líquidos</a></div>
+        <div class="card"><a href="Fisiologia_Controle_Temperatura_Corporal.html">Módulo 3: Fisiologia do Controle da Temperatura Corporal</a></div>
+        <div class="card"><a href="Fisiologia_Equilíbrio_Ácido_Base.html">Módulo 3: Fisiologia do Equilíbrio Ácido-Base</a></div>
+        <div class="card"><a href="Sistema_Urinario.html">Módulo 3: Sistema Urinário</a></div>
+        <div class="card"><a href="Sinapse02.html">Módulo 3: Sinapse 02</a></div>
+        <div class="card"><a href="Sinapse01.html">Módulo 3: Sinapse 01</a></div>
+        <div class="card"><a href="Potencial_Eletrico.html">Módulo 3: Potencial Elétrico</a></div>
+        <div class="card"><a href="Comunicacao_Celular02.html">Módulo 3: Diferenciação Celular 02</a></div>
+        <div class="card"><a href="Diferenciacao_Celular.html">Módulo 3: Diferenciação Celular 01</a></div>
+        <div class="card"><a href="Comunicacao_Celular02.html">Módulo 3: Comunicação Celular 02</a></div>
+        <div class="card"><a href="Comunicacao_Celular01.html">Módulo 3: Comunicação Celular 01</a></div>
+        <div class="card"><a href="Etica_e_Direito_Medico_Publicidade.html">Direito e Ética Médica: Publicidade Médica (Segundo Trimestre)</a></div>
+        <div class="card"><a href="Interação_Comunitária(SOAP_e_PTS).html">Interação Comunitária: PTS e SOAP (Segundo Trimestre)</a></div>
+        <div class="card"><a href="Metodologia_da_Pesquisa(Ética_em_Pesquisa).html">Metodologia da Pesquisa 05 (Ética em Pesquisa)</a></div>
+        <div class="card"><a href="Habilidades_Clicas_Torax.html">Habilidades Clínicas, Exame Físico (Tórax)</a></div>
+        <div class="card"><a href="Habilidades_Clicas_Pressao.html">Habilidades Clínicas, Exame Físico (Pressão)</a></div>
+        <div class="card"><a href="Metodologia_da_Pesquisa_04.html">Metodologia da Pesquisa 04 (Revisão Sistemática)</a></div>
+        <div class="card"><a href="Metodologia_da_Pesquisa_03.html">Metodologia da Pesquisa 03 (Variáveis)</a></div>
+        <div class="card"><a href="Metodologia_da_Pesquisa_02.html">Metodologia da Pesquisa 02 (Segundo Trimestre)</a></div>
+        <div class="card"><a href="Interacao_Comunitaria02.html">Interação Comunitária 02 (Nível Fácil)</a></div>
+        <div class="card"><a href="Sistema_Cardiovascular.html">Módulo 3: Sistema Cardiovascular 01 (Nível Fácil)</a></div>
+        <div class="card"><a href="Sistema_Nervoso_02.html">Módulo 3: Histologia do Sistema Nervoso 02</a></div>
+        <div class="card"><a href="Sistema_Nervoso_01.html">Módulo 3: Histologia do Sistema Nervoso 01</a></div>
+        <div class="card"><a href="Metodologia_da_Pesquisa.html">Metodologia da Pesquisa (Primeiro Trimestre)</a></div>
+        <div class="card"><a href="Monitoria_Interacao_Comunitaria01.html">Exercícios 01 da Monitoria de Interação Comunitária</a></div>
+        <div class="card"><a href="Tecido_Cartilagenoso.html">Módulo 2: Tecido Cartilaginoso</a></div>
+        <div class="card"><a href="Tecido_Conjuntivo.html">Módulo 2: Tecido Conjuntivo</a></div>
+        <div class="card"><a href="Tecido_Epitelial.html">Módulo 2: Tecido Epitelial</a></div>
+        <div class="card"><a href="Tecido_Epitelial_Glandular.html">Módulo 2: Tecido Epitelial Glandular</a></div>
+        <div class="card"><a href="Tecido_Muscular.html">Módulo 2: Tecido Muscular</a></div>
+        <div class="card"><a href="Tecido_Ósseo.html">Módulo 2: Tecido Ósseo</a></div>
+        <div class="card"><a href="01un_Interacao_Comunitaria.html">Interação Comunitária (Primeiro Bimestre)</a></div>
+        <div class="card"><a href="Modulo01.html">Simulado Módulo 01</a></div>
     </div>
-    
+
     <footer>
         <p>© 2025 Simulados de Medicina Unip. Todos os direitos reservados.</p>
     </footer>
@@ -554,41 +204,28 @@
             });
         });
     </script>
-    <script src="conexao_firebase.js"></script><script src="navegacao.js?v=2"></script>
-    <script type="module">
-import { auth } from './firebase.js';
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
-onAuthStateChanged(auth, user => {
-  if (!user) {
-    alert("Você precisa estar logado para acessar esta página!");
-    window.location.href = "login.html";
-  }
-});
-</script>
+    <script src="conexao_firebase.js"></script>
+    <script src="navegacao.js?v=2"></script>
+    
     <script type="module">
-import { auth } from './firebase.js';
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+        import { auth } from './firebase.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
-// Observa se o usuário está logado
-onAuthStateChanged(auth, user => {
-  if (!user) {
-    alert("Você precisa estar logado para acessar esta página!");
-    window.location.href = "login.html";
-  } else {
-    // Aqui você pode mostrar o nome do usuário na página
-    const header = document.querySelector('header');
-    const nomeUsuario = user.displayName || "Usuário";
-    const nomeElem = document.createElement('p');
-    nomeElem.textContent = `Logado como: ${nomeUsuario}`;
-    nomeElem.style.fontSize = "1em";
-    nomeElem.style.marginTop = "5px";
-    nomeElem.style.color = "#4f46e5";
-    header.appendChild(nomeElem);
-  }
-});
-</script>
+        // Verifica o estado de autenticação
+        onAuthStateChanged(auth, user => {
+            if (!user) {
+                alert("Você precisa estar logado para acessar esta página!");
+                window.location.href = "login.html";
+            } else {
+                // Usuário está logado: atualiza a div userInfo
+                const userInfoDiv = document.getElementById('userInfo');
+                const nomeUsuario = user.displayName || "Usuário";
+                
+                // Limpa o conteúdo anterior (se houver) e insere o texto
+                userInfoDiv.innerHTML = `Logado como: <strong>${nomeUsuario}</strong>`;
+            }
+        });
+    </script>
 </body>
 </html>
-
-
