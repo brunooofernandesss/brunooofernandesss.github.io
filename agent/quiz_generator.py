@@ -10,9 +10,11 @@ API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:
 
 def gerar_quiz(texto_pdf: str) -> str:
     prompt = f"""
-Gere exatamente 40 questões no formato JavaScript abaixo.
+Gere exatamente 40 questões de Medicima no formato JavaScript abaixo.
 
 REGRAS OBRIGATÓRIAS:
+
+- Se for uma transcrição de áudio em texto, NÃO fale que foi uma transcrição 
 - NÃO use JSON
 - NÃO use markdown
 - NÃO escreva explicações
