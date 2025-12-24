@@ -1,0 +1,789 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Com base na transcrição do arquivo, que é uma aul-7</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; background-color: #f4f4f4; }
+        .quiz-container { max-width: 800px; width: 100%; }
+        h1 { color: #333; text-align: center; margin-bottom: 30px; }
+        .card { background-color: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); }
+        .question { font-weight: bold; margin-bottom: 10px; color: #333; }
+        .options { margin-top: 15px; }
+        
+        /* Estilos das opções */
+        .option, label.option, label, #newQuestionsContent label { display: flex; align-items: center; margin-bottom: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; transition: background-color 0.2s ease; position: relative; }
+        
+        /* Ocultar Radio inputs */
+        .option input[type="radio"], label input[type="radio"], #newQuestionsContent input[type="radio"], #newQuestionsContent label input[type="radio"] { display: none !important; visibility: hidden !important; opacity: 0 !important; position: absolute !important; left: -9999px !important; }
+        
+        .option:hover, label.option:hover, label:hover, #newQuestionsContent label:hover { background-color: #e9e9e9; }
+        .option.selected, label.option.selected, label.selected, #newQuestionsContent label.selected { background-color: #d1e7dd; border-color: #28a745; }
+        .option.correct, label.option.correct, label.correct, #newQuestionsContent label.correct { background-color: #d4edda; border-color: #28a745; }
+        .option.incorrect, label.option.incorrect, label.incorrect, #newQuestionsContent label.incorrect { background-color: #f8d7da; border-color: #dc3545; }
+        
+        .submit-btn { display: block; width: 100%; padding: 15px; background-color: #007bff; color: white; border: none; border-radius: 5px; font-size: 18px; cursor: pointer; transition: background-color 0.3s ease; margin-top: 30px; }
+        .submit-btn:hover { background-color: #0056b3; }
+        
+        .results { text-align: center; margin-top: 30px; font-size: 20px; font-weight: bold; color: #333; }
+        .scissor-icon { margin-right: 10px; width: 20px; height: 20px; opacity: 0.5; cursor: pointer; }
+        .scissor-icon.hidden { display: none; }
+        .struck-through { text-decoration: line-through; color: #888; }
+        
+        .comment { margin-top: 10px; padding: 10px; background-color: #f0f0f0; border-left: 4px solid #007bff; font-style: italic; color: #555; display: none; }
+        .comment.show { display: block; }
+        
+        .card-bloco { border: 1px solid #ddd; border-radius: 6px; padding: 10px; background: #fff; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        
+        /* Diagnóstico e Erros */
+        .error-diagnosis-section { margin-top: 50px; padding: 30px; background-color: #ffe0b2; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.15); display: none; text-align: center; font-size: 1.1em; color: #333; }
+        .error-diagnosis-section h2 { color: #e65100; margin-bottom: 20px; font-size: 1.8em; }
+        .error-diagnosis-section ul { list-style: none; padding: 0; margin: 0; }
+        .error-diagnosis-section li { background-color: #ff9800; color: white; padding: 8px 15px; margin: 8px 0; border-radius: 5px; display: inline-block; margin-right: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container" id="quiz-container">
+        <h1>Com base na transcrição do arquivo, que é uma aul-7</h1>
+        
+        <div id="quiz"></div>
+        
+        <button class="submit-btn" id="verifyAnswersBtn">Verificar Respostas</button>
+        <button class="generate-questions-btn submit-btn" id="generateNewQuestionsBtn" style="display:none;">Gerar Novas Perguntas</button>
+        
+        <div class="results card-bloco" id="results"></div>
+        <div id="statusMessage" style="text-align: center; margin-top: 10px; font-weight: bold; color: #007bff;"></div>
+        
+        <div class="error-diagnosis-section card-bloco" id="errorDiagnosis">
+            <h2>Diagnóstico de Erros</h2>
+            <p>Parece que você precisa revisar os seguintes assuntos:</p>
+            <ul id="topicsToReview"></ul>
+        </div>
+        
+        <div class="generated-questions-section card-bloco" id="generatedQuestionsSection" style="display:none;">
+            <h2>Novas Perguntas Geradas</h2>
+            <div id="newQuestionsContent"></div>
+        </div>
+    </div>
+
+<script>
+    const quizContainer = document.getElementById("quiz");
+    const resultsContainer = document.getElementById("results");
+    const errorDiagnosisSection = document.getElementById("errorDiagnosis");
+    const topicsToReviewList = document.getElementById("topicsToReview");
+    const generateNewQuestionsBtn = document.getElementById("generateNewQuestionsBtn");
+    const generatedQuestionsSection = document.getElementById("generatedQuestionsSection");
+    const newQuestionsContent = document.getElementById("newQuestionsContent");
+    const statusMessage = document.getElementById("statusMessage");
+
+    let wrongQuestionIndices = [];
+    let errorCountByTopic = {};  // CORRIGIDO: chaves duplas para objeto JS vazio
+    let totalAnsweredQuestionsByTopic = {}; // CORRIGIDO
+    let currentWrongQuestionIndex = -1;
+    let hasErrors = false;
+
+    // Inicializa display
+    errorDiagnosisSection.style.display = 'none';
+    topicsToReviewList.innerHTML = '';
+    statusMessage.textContent = '';
+
+    // AQUI entra a variável Python, então usamos chaves simples:
+    const questions = [ {
+  question: "Qual é a característica distintiva do sistema genital feminino em comparação com outros sistemas do corpo, mencionada na introdução da aula?",
+  options: [
+    "A) Funciona continuamente desde o nascimento.",
+    "B) Permanece 'adormecido' até a puberdade.",
+    "C) É o único sistema com função reprodutiva.",
+    "D) Não possui órgãos externos."
+  ],
+  correctAnswer: "B) Permanece 'adormecido' até a puberdade.",
+  comment: "O sistema genital, ao contrário de outros sistemas que funcionam continuamente, permanece 'adormecido' até a puberdade.",
+  topic: "Introdução ao Sistema Genital Feminino"
+},
+{
+  question: "Qual é a função primordial do sistema genital feminino, compartilhada com o sistema masculino?",
+  options: [
+    "A) Produção de hormônios exclusivamente.",
+    "B) Regulação da temperatura corporal.",
+    "C) Reprodução.",
+    "D) Filtragem de resíduos metabólicos."
+  ],
+  correctAnswer: "C) Reprodução.",
+  comment: "A função primordial compartilhada com o sistema masculino é a reprodução.",
+  topic: "Função do Sistema Genital Feminino"
+},
+{
+  question: "Anatomicamente, como o sistema genital feminino é dividido?",
+  options: [
+    "A) Apenas em órgãos internos.",
+    "B) Em órgãos superiores e inferiores.",
+    "C) Em órgãos externos (períneo) e internos (cavidade pélvica).",
+    "D) Em órgãos endócrinos e exócrinos."
+  ],
+  correctAnswer: "C) Em órgãos externos (períneo) e internos (cavidade pélvica).",
+  comment: "Anatomicamente, o sistema é dividido em órgãos externos (localizados no períneo, externos à pelve) e órgãos internos (situados no interior da cavidade pélvica).",
+  topic: "Divisão Anatômica do Sistema Genital Feminino"
+},
+{
+  question: "Quais são os órgãos internos do sistema genital feminino, de acordo com o texto?",
+  options: [
+    "A) Monte do púbis, lábios maiores e menores.",
+    "B) Ovários, tubas uterinas, útero e vagina.",
+    "C) Clitóris, vestíbulo e glândulas vestibulares.",
+    "D) Uretra, bexiga e reto."
+  ],
+  correctAnswer: "B) Ovários, tubas uterinas, útero e vagina.",
+  comment: "Os órgãos internos incluem os ovários (gônadas), as tubas uterinas, o útero e a vagina, que funcionam como ductos acessórios.",
+  topic: "Órgãos Internos do Sistema Genital Feminino"
+},
+{
+  question: "Qual é a dupla função dos ovários, conforme descrito no texto?",
+  options: [
+    "A) Produção de urina e de oócitos.",
+    "B) Desenvolvimento de oócitos e produção de hormônios sexuais.",
+    "C) Condução de oócitos e filtração sanguínea.",
+    "D) Armazenamento de sêmen e produção de muco."
+  ],
+  correctAnswer: "B) Desenvolvimento de oócitos e produção de hormônios sexuais.",
+  comment: "Eles têm dupla função: o desenvolvimento dos oócitos (gametas) e a função de glândula endócrina, produzindo hormônios sexuais.",
+  topic: "Função dos Ovários"
+},
+{
+  question: "Qual é o peso e a medida aproximada dos ovários?",
+  options: [
+    "A) Pesam entre 2 a 4g e medem de 7 a 14 cm.",
+    "B) Pesam entre 7 a 14g e medem de 2 a 4 cm.",
+    "C) Pesam entre 14 a 28g e medem de 4 a 8 cm.",
+    "D) Pesam menos de 1g e medem cerca de 1 cm."
+  ],
+  correctAnswer: "B) Pesam entre 7 a 14g e medem de 2 a 4 cm.",
+  comment: "Os ovários... pesando entre 7 a 14g e medindo de 2 a 4 cm.",
+  topic: "Características dos Ovários"
+},
+{
+  question: "Posteriormente, com quais estruturas os ovários se relacionam, em termos de sintopia?",
+  options: [
+    "A) Com a bexiga e o útero.",
+    "B) Com o ureter e o nervo obturatório.",
+    "C) Com o reto e o canal anal.",
+    "D) Com o ligamento largo e o mesovário."
+  ],
+  correctAnswer: "B) Com o ureter e o nervo obturatório.",
+  comment: "Em termos de sintopia (relações anatômicas), os ovários relacionam-se posteriormente com o ureter e o nervo obturatório.",
+  topic: "Sintopia dos Ovários"
+},
+{
+  question: "Com quais estruturas o ovário direito e o ovário esquerdo se relacionam, respectivamente, de acordo com o texto?",
+  options: [
+    "A) Direito com colo sigmoide; Esquerdo com ápice do apêndice vermiforme.",
+    "B) Direito com bexiga; Esquerdo com reto.",
+    "C) Direito com ápice do apêndice vermiforme; Esquerdo com colo sigmoide.",
+    "D) Direito com ureter; Esquerdo com nervo obturatório."
+  ],
+  correctAnswer: "C) Direito com ápice do apêndice vermiforme; Esquerdo com colo sigmoide.",
+  comment: "Do lado direito, relacionam-se com o ápice do apêndice vermiforme; do lado esquerdo, com o colo sigmoide.",
+  topic: "Sintopia dos Ovários"
+},
+{
+  question: "Qual estrutura peritoneal é uma dupla camada horizontal e posterior que sustenta o ovário?",
+  options: [
+    "A) Mesométrio.",
+    "B) Ligamento Suspensor do Ovário.",
+    "C) Mesovário.",
+    "D) Ligamento Útero-ovárico."
+  ],
+  correctAnswer: "C) Mesovário.",
+  comment: "É fundamental compreender as relações peritoneais, especificamente o Mesovário, que é uma dupla camada peritoneal horizontal e posterior.",
+  topic: "Sustentação Ovariana"
+},
+{
+  question: "Qual ligamento ovariano é uma prega peritoneal por onde passam vasos sanguíneos (artéria e veia ováricas), linfáticos e nervos?",
+  options: [
+    "A) Ligamento Útero-ovárico.",
+    "B) Ligamento Largo do Útero.",
+    "C) Mesovário.",
+    "D) Ligamento Suspensor do Ovário."
+  ],
+  correctAnswer: "D) Ligamento Suspensor do Ovário.",
+  comment: "Ligamento Suspensor do Ovário: Uma prega peritoneal por onde passam os vasos sanguíneos (artéria e veia ováricas), linfáticos e nervos.",
+  topic: "Ligamentos do Ovário"
+},
+{
+  question: "Qual ligamento curto fixa o ovário à parede lateral do útero, posicionado medialmente no mesovário?",
+  options: [
+    "A) Ligamento Suspensor do Ovário.",
+    "B) Ligamento Útero-ovárico (ou próprio do ovário).",
+    "C) Ligamento Largo do Útero.",
+    "D) Ligamento Redondo do Útero."
+  ],
+  correctAnswer: "B) Ligamento Útero-ovárico (ou próprio do ovário).",
+  comment: "Ligamento Útero-ovárico (ou próprio do ovário): Um ligamento curto que fixa o ovário à parede lateral do útero, posicionado medialmente no mesovário.",
+  topic: "Ligamentos do Ovário"
+},
+{
+  question: "Qual é a medida aproximada das tubas uterinas e de onde elas se estendem?",
+  options: [
+    "A) Medem cerca de 5 cm e se estendem dos ovários.",
+    "B) Medem cerca de 10 cm e se estendem lateralmente a partir dos cornos uterinos.",
+    "C) Medem cerca de 15 cm e se estendem da vagina.",
+    "D) Medem cerca de 20 cm e se estendem da bexiga."
+  ],
+  correctAnswer: "B) Medem cerca de 10 cm e se estendem lateralmente a partir dos cornos uterinos.",
+  comment: "As tubas uterinas (antigas trompas de Falópio) medem cerca de 10 cm e estendem-se lateralmente a partir dos cornos uterinos.",
+  topic: "Tubas Uterinas"
+},
+{
+  question: "Qual é a principal função das tubas uterinas e onde ocorre habitualmente a fertilização?",
+  options: [
+    "A) Produzir hormônios; no ovário.",
+    "B) Captar o oócito e conduzi-lo ao útero; na tuba uterina.",
+    "C) Armazenar espermatozoides; no útero.",
+    "D) Regular o fluxo menstrual; na vagina."
+  ],
+  correctAnswer: "B) Captar o oócito e conduzi-lo ao útero; na tuba uterina.",
+  comment: "Sua função é captar o oócito liberado pelo ovário e conduzi-lo até a cavidade uterina, sendo também o local habitual da fertilização.",
+  topic: "Função das Tubas Uterinas"
+},
+{
+  question: "Qual estrutura peritoneal reveste as tubas uterinas e compõe a margem livre superior do ligamento largo?",
+  options: [
+    "A) Mesométrio.",
+    "B) Mesovário.",
+    "C) Mesossalpinge.",
+    "D) Perimétrio."
+  ],
+  correctAnswer: "C) Mesossalpinge.",
+  comment: "As tubas são revestidas pelo mesossalpinge, que compõe a margem livre superior do ligamento largo.",
+  topic: "Anatomia das Tubas Uterinas"
+},
+{
+  question: "Em quantas partes as tubas uterinas são divididas anatomicamente?",
+  options: [
+    "A) Duas.",
+    "B) Três.",
+    "C) Quatro.",
+    "D) Cinco."
+  ],
+  correctAnswer: "C) Quatro.",
+  comment: "elas são divididas anatomicamente em quatro partes.",
+  topic: "Segmentos das Tubas Uterinas"
+},
+{
+  question: "Qual segmento da tuba uterina é a extremidade distal em forma de funil, que possui fímbrias, incluindo uma que se fixa ao ovário?",
+  options: [
+    "A) Ampola.",
+    "B) Istmo.",
+    "C) Parte Uterina.",
+    "D) Infundíbulo."
+  ],
+  correctAnswer: "D) Infundíbulo.",
+  comment: "Infundíbulo: A extremidade distal em forma de funil que se abre na cavidade peritoneal através do óstio abdominal. Possui processos digitiformes chamados fímbrias, sendo que uma delas, a fímbria ovárica, fixa-se diretamente ao ovário para facilitar a captação do oócito.",
+  topic: "Segmentos das Tubas Uterinas"
+},
+{
+  question: "Qual é a parte mais longa e larga da tuba uterina, onde geralmente ocorre a fertilização?",
+  options: [
+    "A) Istmo.",
+    "B) Infundíbulo.",
+    "C) Ampola.",
+    "D) Parte Uterina."
+  ],
+  correctAnswer: "C) Ampola.",
+  comment: "Ampola: A parte mais longa e larga da tuba, local onde geralmente ocorre a fertilização.",
+  topic: "Segmentos das Tubas Uterinas"
+},
+{
+  question: "Qual segmento da tuba uterina é uma porção de parede espessa e lúmen estreito que se conecta ao útero?",
+  options: [
+    "A) Infundíbulo.",
+    "B) Ampola.",
+    "C) Istmo.",
+    "D) Parte Uterina."
+  ],
+  correctAnswer: "C) Istmo.",
+  comment: "Istmo: Uma porção de parede espessa e lúmen estreito que se conecta ao útero.",
+  topic: "Segmentos das Tubas Uterinas"
+},
+{
+  question: "Qual segmento da tuba uterina atravessa a parede muscular do útero e se abre no óstio uterino da tuba?",
+  options: [
+    "A) Ampola.",
+    "B) Infundíbulo.",
+    "C) Istmo.",
+    "D) Parte Uterina (Intramural)."
+  ],
+  correctAnswer: "D) Parte Uterina (Intramural).",
+  comment: "Parte Uterina (Intramural): O segmento curto que atravessa a parede muscular do útero, abrindo-se no óstio uterino da tuba.",
+  topic: "Segmentos das Tubas Uterinas"
+},
+{
+  question: "Como o peritônio recobre o ovário, e qual é a razão para essa cobertura incompleta?",
+  options: [
+    "A) Totalmente recoberto; para proteção.",
+    "B) Não recoberto; para facilitar a vascularização.",
+    "C) Não totalmente recoberto; para permitir a ovulação.",
+    "D) Parcialmente recoberto; para suporte estrutural."
+  ],
+  correctAnswer: "C) Não totalmente recoberto; para permitir a ovulação.",
+  comment: "embora o ovário tenha uma posição 'intraperitoneal' (dentro da cavidade), ele não é totalmente recoberto por peritônio visceral para permitir a ovulação, diferentemente do útero.",
+  topic: "Relações Peritoneais do Ovário"
+},
+{
+  question: "Qual é o formato e o comprimento aproximado do útero?",
+  options: [
+    "A) Formato de amêndoa, 4 cm.",
+    "B) Formato de pera, 8 cm.",
+    "C) Formato cilíndrico, 10 cm.",
+    "D) Formato esférico, 2 cm."
+  ],
+  correctAnswer: "B) Formato de pera, 8 cm.",
+  comment: "O útero é um órgão muscular oco, com formato de pera, medindo aproximadamente 8 cm de comprimento.",
+  topic: "Anatomia do Útero"
+},
+{
+  question: "Em uma mulher não grávida, onde o útero se situa inteiramente?",
+  options: [
+    "A) Na pelve maior (falsa).",
+    "B) Na cavidade abdominal.",
+    "C) Na pelve menor (verdadeira).",
+    "D) No períneo."
+  ],
+  correctAnswer: "C) Na pelve menor (verdadeira).",
+  comment: "Em uma mulher não grávida, o útero situa-se inteiramente na pelve menor (verdadeira).",
+  topic: "Localização do Útero"
+},
+{
+  question: "Quais são as três principais divisões do útero?",
+  options: [
+    "A) Fundo, corpo e ampola.",
+    "B) Corpo, istmo do útero e colo (cérvice).",
+    "C) Perimétrio, miométrio e endométrio.",
+    "D) Ligamento largo, mesovário e mesossalpinge."
+  ],
+  correctAnswer: "B) Corpo, istmo do útero e colo (cérvice).",
+  comment: "O útero divide-se em: Corpo, Istmo do Útero, Colo (Cérvice).",
+  topic: "Divisões do Útero"
+},
+{
+  question: "Qual parte do útero corresponde aos 2/3 superiores e possui uma face anterior (vesical) e uma face posterior (intestinal)?",
+  options: [
+    "A) Fundo do útero.",
+    "B) Colo (Cérvice).",
+    "C) Istmo do Útero.",
+    "D) Corpo do útero."
+  ],
+  correctAnswer: "D) Corpo do útero.",
+  comment: "Corpo: Os 2/3 superiores. Possui uma face anterior (vesical) e uma face posterior (intestinal).",
+  topic: "Anatomia do Corpo do Útero"
+},
+{
+  question: "Qual é a parte superior arredondada do útero, localizada acima das tubas?",
+  options: [
+    "A) Corpo do útero.",
+    "B) Istmo do útero.",
+    "C) Colo do útero.",
+    "D) Fundo do útero."
+  ],
+  correctAnswer: "D) Fundo do útero.",
+  comment: "A parte superior arredondada acima das tubas é o Fundo do útero.",
+  topic: "Anatomia do Fundo do Útero"
+},
+{
+  question: "Como é definida a posição normal do útero?",
+  options: [
+    "A) Retroversão e retroflexão.",
+    "B) Lateralização e inversão.",
+    "C) Anteversão e anteflexão.",
+    "D) Verticalização e retificação."
+  ],
+  correctAnswer: "C) Anteversão e anteflexão.",
+  comment: "Normalmente, o útero encontra-se em anteversão (inclinado anteriormente sobre a vagina) e anteflexão (o corpo flexionado sobre o colo).",
+  topic: "Posição do Útero"
+},
+{
+  question: "Quais são os fatores que podem variar a posição do útero?",
+  options: [
+    "A) Apenas o ciclo menstrual.",
+    "B) O enchimento da bexiga e do reto.",
+    "C) Apenas a idade da mulher.",
+    "D) Apenas o peso corporal."
+  ],
+  correctAnswer: "B) O enchimento da bexiga e do reto.",
+  comment: "Essa posição varia com o enchimento da bexiga (que o empurra para trás) e do reto.",
+  topic: "Posição do Útero"
+},
+{
+  question: "Qual é o nome do recesso peritoneal localizado entre o útero e o reto, considerado o ponto mais baixo da cavidade peritoneal onde líquidos e infecções podem se acumular?",
+  options: [
+    "A) Escavação Vesicouterina.",
+    "B) Saco Peritoneal Anterior.",
+    "C) Escavação Retouterina (Saco de Douglas).",
+    "D) Fórnice da Vagina."
+  ],
+  correctAnswer: "C) Escavação Retouterina (Saco de Douglas).",
+  comment: "Escavação Retouterina (Saco de Douglas): Entre o útero e o reto. É o ponto mais baixo da cavidade peritoneal, onde líquidos e infecções podem se acumular.",
+  topic: "Relações Peritoneais do Útero"
+},
+{
+  question: "Qual das camadas da parede do útero é a mais externa, formada por peritônio e tecido conjuntivo?",
+  options: [
+    "A) Miométrio.",
+    "B) Endométrio.",
+    "C) Perimétrio.",
+    "D) Mesométrio."
+  ],
+  correctAnswer: "C) Perimétrio.",
+  comment: "Perimétrio: A camada mais externa, uma túnica serosa formada por peritônio e tecido conjuntivo.",
+  topic: "Camadas do Útero"
+},
+{
+  question: "Qual camada da parede do útero é a camada intermédia espessa de músculo liso, responsável pelas contrações no parto e cólicas menstruais?",
+  options: [
+    "A) Endométrio.",
+    "B) Perimétrio.",
+    "C) Miométrio.",
+    "D) Serosa."
+  ],
+  correctAnswer: "C) Miométrio.",
+  comment: "Miométrio: A camada intermédia espessa de músculo liso, onde se encontram os principais vasos sanguíneos. Responsável pelas contrações no parto e cólicas menstruais.",
+  topic: "Camadas do Útero"
+},
+{
+  question: "Qual camada da parede do útero é a mucosa interna que participa ativamente do ciclo menstrual, sofrendo modificações para receber o blastocisto ou descamar?",
+  options: [
+    "A) Perimétrio.",
+    "B) Miométrio.",
+    "C) Endométrio.",
+    "D) Adventícia."
+  ],
+  correctAnswer: "C) Endométrio.",
+  comment: "Endométrio: A camada mucosa interna, que adere ao miométrio. Participa ativamente do ciclo menstrual, sofrendo modificações estruturais para receber o blastocisto ou descamar durante a menstruação.",
+  topic: "Camadas do Útero"
+},
+{
+  question: "Qual ligamento do colo do útero se estende da porção supravaginal até as paredes laterais da pelve?",
+  options: [
+    "A) Ligamento Útero-ovárico.",
+    "B) Ligamento Redondo do Útero.",
+    "C) Ligamento Suspensor do Ovário.",
+    "D) Ligamento transverso do colo (ou cardinal)."
+  ],
+  correctAnswer: "D) Ligamento transverso do colo (ou cardinal).",
+  comment: "Além dos ligamentos já citados, o útero é sustentado pelo ligamento transverso do colo (ou cardinal), que se estende da porção supravaginal até as paredes laterais da pelve.",
+  topic: "Ligamentos do Colo do Útero"
+},
+{
+  question: "Quais ligamentos ligam o colo do útero ao sacro e são essenciais para mantê-lo centralizado?",
+  options: [
+    "A) Ligamento Largo do Útero.",
+    "B) Ligamentos Uterossacros.",
+    "C) Ligamentos Redondos.",
+    "D) Ligamentos Cardinais."
+  ],
+  correctAnswer: "B) Ligamentos Uterossacros.",
+  comment: "Existem também os ligamentos uterossacros, que ligam o colo ao sacro, sendo palpáveis ao toque retal e essenciais para manter o útero centralizado.",
+  topic: "Ligamentos do Colo do Útero"
+},
+{
+  question: "Quais são as funções da vagina?",
+  options: [
+    "A) Apenas canal para o fluxo menstrual.",
+    "B) Apenas recepção do pênis/sêmen.",
+    "C) Canal para fluxo menstrual, parte do canal do parto e recepção do pênis/sêmen.",
+    "D) Produção de oócitos e hormônios."
+  ],
+  correctAnswer: "C) Canal para fluxo menstrual, parte do canal do parto e recepção do pênis/sêmen.",
+  comment: "Funções incluem canal para fluxo menstrual, parte do canal do parto e recepção do pênis/sêmen.",
+  topic: "Funções da Vagina"
+},
+{
+  question: "Com quais estruturas a vagina se relaciona anteriormente, de acordo com o texto?",
+  options: [
+    "A) Com o canal anal e reto.",
+    "B) Com o fundo da bexiga e uretra.",
+    "C) Com o músculo levantador do ânus.",
+    "D) Com o colo sigmoide e ovário."
+  ],
+  correctAnswer: "B) Com o fundo da bexiga e uretra.",
+  comment: "Anteriormente relaciona-se com o fundo da bexiga e uretra.",
+  topic: "Sintopia da Vagina"
+},
+{
+  question: "O que é o fórnice da vagina?",
+  options: [
+    "A) A parte mais distal da vagina.",
+    "B) O recesso formado ao redor do colo do útero, dividido em partes anterior, posterior e laterais.",
+    "C) A porção da vagina que se abre no vestíbulo.",
+    "D) A camada muscular mais externa da vagina."
+  ],
+  correctAnswer: "B) O recesso formado ao redor do colo do útero, dividido em partes anterior, posterior e laterais.",
+  comment: "Fórnice da Vagina: O recesso formado ao redor do colo do útero, dividido em partes anterior, posterior e laterais.",
+  topic: "Anatomia da Vagina"
+},
+{
+  question: "Onde o Ligamento Redondo do Útero termina após atravessar o canal inguinal?",
+  options: [
+    "A) Na parede lateral da pelve.",
+    "B) No sacro.",
+    "C) Na pele e tecido adiposo dos lábios maiores.",
+    "D) No ovário."
+  ],
+  correctAnswer: "C) Na pele e tecido adiposo dos lábios maiores.",
+  comment: "O Ligamento Redondo do Útero, após atravessar o canal inguinal, termina inserindo-se na pele e tecido adiposo dos lábios maiores.",
+  topic: "Genitália Externa Feminina (Vulva)"
+},
+{
+  question: "Qual órgão genital externo é erétil, sensorial, localizado na junção anterior dos lábios menores e formado por raiz, corpo e glande?",
+  options: [
+    "A) Monte do púbis.",
+    "B) Lábios maiores.",
+    "C) Clitóris.",
+    "D) Lábios menores."
+  ],
+  correctAnswer: "C) Clitóris.",
+  comment: "Clitóris: Órgão erétil sensorial localizado na junção anterior dos lábios menores. Formado por raiz (ramos), corpo e glande.",
+  topic: "Genitália Externa Feminina (Vulva)"
+},
+{
+  question: "Qual a função exclusiva do clitóris, destacada no texto?",
+  options: [
+    "A) Micção.",
+    "B) Reprodução.",
+    "C) Excitação sexual.",
+    "D) Lubrificação."
+  ],
+  correctAnswer: "C) Excitação sexual.",
+  comment: "Diferentemente do pênis, o clitóris não possui relação funcional com a uretra ou micção, servindo exclusivamente para excitação sexual.",
+  topic: "Estrutura do Clitóris"
+},
+{
+  question: "Quais estruturas se abrem no vestíbulo da vagina?",
+  options: [
+    "A) Apenas o óstio externo da uretra.",
+    "B) Apenas o óstio da vagina.",
+    "C) Óstio externo da uretra, óstio da vagina e ductos das glândulas vestibulares.",
+    "D) Ureter e colo do útero."
+  ],
+  correctAnswer: "C) Óstio externo da uretra, óstio da vagina e ductos das glândulas vestibulares.",
+  comment: "Neste espaço abrem-se: 1. Óstio externo da uretra: Localizado anteriormente. 2. Óstio da vagina (Introito): Localizado posteriormente à uretra. 3. Ductos das Glândulas Vestibulares.",
+  topic: "Vestíbulo da Vagina"
+} ];
+
+    function buildQuiz() {
+        const output = [];
+        questions.forEach((currentQuestion, questionNumber) => {
+            const options = [];
+            for (let i = 0; i < currentQuestion.options.length; i++) {
+                // Note o uso de ${...} para template literals do JS dentro da f-string
+                options.push(
+                    `<label class="option" data-question="${questionNumber}" data-value="${currentQuestion.options[i]}">
+                        <img src="tesouras.png" class="scissor-icon" onclick="event.stopPropagation(); this.parentNode.classList.toggle('struck-through');">
+                        ${currentQuestion.options[i]}
+                    </label>`
+                );
+            }
+            output.push(
+                `<div class="card" id="question-${questionNumber}" data-topic="${currentQuestion.topic}">
+                    <div class="question">${currentQuestion.question}</div>
+                    <div class="options">${options.join("")}</div>
+                    <div class="comment" id="comment-${questionNumber}"></div>
+                </div>`
+            );
+        });
+        quizContainer.innerHTML = output.join("");
+    }
+
+    function showResults() {
+        wrongQuestionIndices = [];
+        errorCountByTopic = {};
+        totalAnsweredQuestionsByTopic = {};
+        currentWrongQuestionIndex = -1;
+        hasErrors = false;
+        errorDiagnosisSection.style.display = 'none';
+        topicsToReviewList.innerHTML = '';
+        statusMessage.textContent = '';
+
+        const allQuestionCards = document.querySelectorAll('.quiz-container .card, #newQuestionsContent .card');
+        let correctAnswersCount = 0;
+        let totalQuestionsAnswered = 0;
+
+        allQuestionCards.forEach((card, index) => {
+            const questionEl = card.querySelector('.question') || card.querySelector('p');
+            if (!questionEl) return;
+            
+            const questionText = questionEl.textContent.trim();
+            const optionsContainer = card.querySelector('.options') || card;
+            const allOptions = optionsContainer.querySelectorAll('.option, label.option, label');
+            const userAnswerElement = optionsContainer.querySelector('.option.selected, label.selected');
+            const commentDiv = card.querySelector('.comment');
+            const questionTopic = card.dataset.topic || "Tópico não informado";
+
+            // Limpa classes
+            allOptions.forEach(option => { option.classList.remove('correct', 'incorrect', 'selected'); });
+            if (commentDiv) commentDiv.classList.remove('show');
+
+            let correctAnswerValue = null;
+            let questionComment = null;
+
+            // Lógica para Estáticas vs Dinâmicas
+            const isStatic = card.id && card.id.startsWith('question-');
+            if (isStatic) {
+                const questionData = questions.find(q => q.question.trim() === questionText);
+                if (questionData) {
+                    correctAnswerValue = questionData.correctAnswer.trim();
+                    questionComment = questionData.comment;
+                }
+            } else {
+                const correctOpt = optionsContainer.querySelector('.option[data-answer="true"], label[data-answer="true"]');
+                if (correctOpt) correctAnswerValue = correctOpt.dataset.value?.trim() || correctOpt.textContent.trim();
+                
+                const commentElement = card.querySelector('.comment');
+                if (commentElement && commentElement.textContent.trim()) questionComment = commentElement.textContent.trim();
+            }
+
+            // Verifica resposta
+            let userAnswer = null;
+            if (userAnswerElement) {
+                userAnswerElement.classList.add('selected');
+                userAnswer = userAnswerElement.dataset.value?.trim() || userAnswerElement.textContent.trim();
+                totalQuestionsAnswered++;
+                totalAnsweredQuestionsByTopic[questionTopic] = (totalAnsweredQuestionsByTopic[questionTopic] || 0) + 1;
+
+                if (userAnswer === correctAnswerValue) {
+                    correctAnswersCount++;
+                } else {
+                    hasErrors = true;
+                    errorCountByTopic[questionTopic] = (errorCountByTopic[questionTopic] || 0) + 1;
+                }
+            }
+
+            // Pinta as opções
+            allOptions.forEach(option => {
+                const optionValue = option.dataset.value?.trim() || option.textContent.trim();
+                if (optionValue === correctAnswerValue) option.classList.add('correct');
+                if (userAnswer && optionValue === userAnswer && userAnswer !== correctAnswerValue) option.classList.add('incorrect');
+            });
+
+            if (commentDiv && questionComment) {
+                commentDiv.textContent = questionComment;
+                commentDiv.classList.add('show');
+            }
+        });
+
+        resultsContainer.textContent = `Você acertou ${correctAnswersCount} de ${totalQuestionsAnswered} questões respondidas.`;
+
+        // Diagnóstico
+        if (hasErrors) {
+            for (const topic in errorCountByTopic) {
+                const errors = errorCountByTopic[topic];
+                const total = totalAnsweredQuestionsByTopic[topic] || 0;
+                if (total > 0) {
+                    const percent = ((errors / total) * 100).toFixed(1);
+                    const li = document.createElement('li');
+                    li.textContent = `${topic}: ${percent}% de erros (${errors} de ${total} questões)`;
+                    topicsToReviewList.appendChild(li);
+                }
+            }
+            errorDiagnosisSection.style.display = 'block';
+            generatedQuestionsSection.style.display = 'block';
+            generateNewQuestionsBtn.style.display = 'block';
+            errorDiagnosisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+            const li = document.createElement('li');
+            li.textContent = "🥳 Parabéns! Você não teve erros nas questões respondidas.";
+            topicsToReviewList.appendChild(li);
+        }
+    }
+
+    // Listeners
+    document.addEventListener("click", function (event) {
+        const clickedElement = event.target;
+        const optionElement = clickedElement.closest('.option');
+        if (optionElement) {
+            if (clickedElement.classList.contains("scissor-icon")) {
+                event.stopPropagation();
+                optionElement.classList.toggle("struck-through");
+            } else {
+                const parentCard = optionElement.closest('.card');
+                const currentQuestionOptions = parentCard.querySelectorAll('.option');
+                currentQuestionOptions.forEach(opt => opt.classList.remove("selected"));
+                optionElement.classList.add("selected");
+            }
+        }
+    });
+
+    generateNewQuestionsBtn.addEventListener("click", async function() {
+        statusMessage.textContent = '⏳ Gerando novas perguntas...';
+        generateNewQuestionsBtn.disabled = true;
+        
+        const topics = Object.keys(errorCountByTopic).filter(topic => {
+            const errorsInTopic = errorCountByTopic[topic] || 0;
+            const totalAnsweredInTopic = totalAnsweredQuestionsByTopic[topic] || 0;
+            return errorsInTopic > 0 && totalAnsweredInTopic > 0;
+        });
+        
+        const topicsToSend = topics.length > 0 ? topics : ["fisiologia celular", "biologia"];
+
+        try {
+            const response = await fetch('https://www.quizia.xyz/quiz', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ topicos: topicsToSend }),
+            });
+
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            
+            const data = await response.json();
+            newQuestionsContent.innerHTML = '';
+
+            if (data && data.html) {
+                newQuestionsContent.innerHTML = data.html.replace(/```html|```/g, '');
+                
+                newQuestionsContent.querySelectorAll('.card').forEach((card) => {
+                    // Lógica de limpeza e adição de tesouras (mantida igual)
+                    const questionElement = card.querySelector('p');
+                    if (questionElement && !questionElement.classList.contains('question')) questionElement.classList.add('question');
+                    
+                    card.querySelectorAll('label').forEach((label) => {
+                        const radioInput = label.querySelector('input[type="radio"]');
+                        if (radioInput) {
+                            if (radioInput.hasAttribute('data-answer')) label.setAttribute('data-answer', radioInput.getAttribute('data-answer'));
+                            radioInput.remove();
+                        }
+                        if (!label.classList.contains('option')) label.classList.add('option');
+                        if (!label.dataset.value) label.dataset.value = label.textContent.trim();
+                        if (!label.querySelector('.scissor-icon')) {
+                            const scissorIcon = document.createElement('img');
+                            scissorIcon.src = 'tesouras.png';
+                            scissorIcon.className = 'scissor-icon';
+                            scissorIcon.onclick = function(e) { e.stopPropagation(); label.classList.toggle('struck-through'); };
+                            label.insertBefore(scissorIcon, label.firstChild);
+                        }
+                    });
+                });
+            } else {
+                newQuestionsContent.innerHTML = "<p>Não foi possível gerar novas perguntas.</p>";
+            }
+            
+            generatedQuestionsSection.style.display = 'block';
+            generatedQuestionsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            statusMessage.textContent = '✅ Perguntas geradas com sucesso!';
+            setTimeout(() => { statusMessage.textContent = '' }, 3000);
+            
+        } catch (error) {
+            console.error('Erro:', error);
+            statusMessage.textContent = '❌ Erro: ' + error.message;
+            setTimeout(() => { statusMessage.textContent = '' }, 5000);
+        } finally {
+            generateNewQuestionsBtn.disabled = false;
+        }
+    });
+
+    buildQuiz();
+    document.getElementById("verifyAnswersBtn").addEventListener("click", showResults);
+</script>
+</body>
+</html>
