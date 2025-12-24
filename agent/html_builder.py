@@ -311,6 +311,7 @@ def criar_html(titulo, questions_text):
     buildQuiz();
     document.getElementById("verifyAnswersBtn").addEventListener("click", showResults);
 </script>
+<script src="conexao_firebase.js"></script><script src="navegacao.js"></script><script type="module" src="padrao_simulado.js"></script>
 </body>
 </html>
 """
