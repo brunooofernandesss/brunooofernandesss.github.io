@@ -1,642 +1,633 @@
-
+<!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Questionário de Múltipla Escolha: Ética em Pesquisa</title>
-    <style>
-      body {
-        font-family: sans-serif;
-        margin: 0;
-        padding: 20px;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        min-height: 100vh;
-        background-color: #f4f4f4;
-      }
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Ética em Pesquisa</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      background-color: #f4f4f4;
+    }
 
-      .quiz-container {
-        max-width: 800px;
-        width: 100%;
-      }
+    .quiz-container {
+      max-width: 800px;
+      width: 100%;
+    }
 
-      h1 {
-        color: #333;
-        text-align: center;
-        margin-bottom: 30px;
-      }
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 30px;
+    }
 
-      .card {
-        background-color: white;
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .question {
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .options {
+      margin-top: 15px;
+    }
+
+    /* Estilos unificados para todas as opções (estáticas e dinâmicas) */
+    .option, label.option, label, #newQuestionsContent label {
+      display: flex; /* Para alinhar imagem e texto */
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      position: relative; /* Para posicionar a tesoura */
+    }
+
+    /* FORÇA a remoção de inputs de radio em QUALQUER lugar */
+    .option input[type="radio"], 
+    label input[type="radio"],
+    #newQuestionsContent input[type="radio"],
+    #newQuestionsContent label input[type="radio"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
+    }
+
+    .option:hover, 
+    label.option:hover, 
+    label:hover,
+    #newQuestionsContent label:hover {
+      background-color: #e9e9e9;
+    }
+
+    .option.selected, 
+    label.option.selected, 
+    label.selected,
+    #newQuestionsContent label.selected {
+      background-color: #d1e7dd;
+      border-color: #28a745;
+    }
+
+    .option.correct, 
+    label.option.correct, 
+    label.correct,
+    #newQuestionsContent label.correct {
+      background-color: #d4edda;
+      border-color: #28a745;
+    }
+
+    .option.incorrect, 
+    label.option.incorrect, 
+    label.incorrect,
+    #newQuestionsContent label.incorrect {
+      background-color: #f8d7da;
+      border-color: #dc3545;
+    }
+
+    .submit-btn {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 30px;
+    }
+
+    .submit-btn:hover {
+      background-color: #0056b3;
+    }
+
+    .results {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .scissor-icon {
+      margin-right: 10px; /* Espaço entre a tesoura e o texto da opção */
+      width: 20px; /* Ajuste conforme o tamanho da sua imagem */
+      height: 20px; /* Ajuste conforme o tamanho da sua imagem */
+      opacity: 0.5; /* Transparência como no original */
+      cursor: pointer;
+    }
+
+    .scissor-icon.hidden {
+      display: none;
+    }
+
+    .struck-through {
+      text-decoration: line-through;
+      color: #888;
+    }
+
+    .comment {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f0f0f0;
+      border-left: 4px solid #007bff;
+      font-style: italic;
+      color: #555;
+      display: none; /* Escondido por padrão */
+    }
+    .comment.show {
+      display: block; /* Mostrado quando ativado */
+    }
+
+    /* Estilos para o botão de navegação de erro / diagnóstico */
+    .error-nav-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #dc3545; /* Vermelho para erro */
+      color: white;
+      border: none;
+      border-radius: 50%; /* Torna o botão redondo */
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      display: none; /* Escondido por padrão */
+      flex-direction: column; /* Para empilhar o ícone e o contador */
+      padding: 5px; /* Ajuste o padding para acomodar texto maior */
+      box-sizing: border-box; /* Garante que padding não aumente o tamanho total */
+      text-align: center;
+    }
+
+    .error-nav-btn:hover {
+      background-color: #c82333;
+    }
+
+    .error-nav-btn .arrow-icon {
+      font-size: 30px; /* Tamanho da seta */
+      line-height: 1; /* Ajuste para centralizar */
+    }
+
+    .error-nav-btn .button-text {
+      font-size: 12px; /* Tamanho do texto abaixo da seta */
+      line-height: 1;
+      margin-top: 2px; /* Espaço entre a seta e o texto */
+    }
+
+    /* Estilos para a seção de diagnóstico de erros */
+    .error-diagnosis-section {
+        margin-top: 50px;
+        padding: 30px;
+        background-color: #ffe0b2; /* Um laranja claro ou similar */
         border-radius: 8px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-
-      .question {
-        font-weight: bold;
-        margin-bottom: 10px;
-        color: #555;
-      }
-
-      .options {
-        margin-top: 15px;
-      }
-
-      .option {
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        margin-bottom: 8px;
-        cursor: pointer;
-        transition: background-color 0.2s ease, border-color 0.2s ease;
-        display: flex; /* Para alinhar a tesoura e o texto */
-        align-items: center;
-      }
-
-      .option:hover {
-        background-color: #e9e9e9;
-      }
-
-      .option.selected {
-        border-color: #4f46e5;
-        background-color: #e0e7ff;
-      }
-
-      .option.correct {
-        background-color: #c6f6d5;
-        color: green;
-        font-weight: bold;
-        border-color: #38a169;
-      }
-
-      .option.incorrect {
-        background-color: #f8d7da;
-        color: red;
-        border-color: #e53e3e;
-      }
-
-      .option.struck-through {
-        text-decoration: line-through;
-        color: #888; /* Opcional: para que fique mais suave ao ser riscado */
-      }
-
-      .scissor-icon {
-        margin-right: 8px;
-        cursor: pointer;
-        opacity: 0.5; /* Transparência de 50% */
-        width: 16px; /* Tamanho pequeno */
-        height: 16px; /* Tamanho pequeno */
-        flex-shrink: 0; /* Impede que a tesoura encolha */
-      }
-
-      .scissor-icon.hidden {
-        display: none; /* Esconde a tesoura */
-      }
-
-      .comment {
-        margin-top: 15px;
-        padding: 10px;
-        background-color: #f0f0f0;
-        border-left: 4px solid #4f46e5;
-        font-size: 0.9em;
-        color: #666;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
         display: none; /* Escondido por padrão */
-      }
-
-      .comment.show {
-        display: block; /* Visível quando 'show' é adicionado */
-      }
-
-      .button {
-        background-color: #4f46e5;
-        color: white;
-        padding: 12px 20px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        margin-top: 20px;
-        width: 100%;
-        font-size: 1.1em;
-        transition: background-color 0.2s ease;
-      }
-
-      .button:hover {
-        background-color: #3730a3;
-      }
-
-      #results {
-        margin-top: 30px;
-        font-weight: bold;
-        font-size: 1.3em;
         text-align: center;
+        font-size: 1.1em;
         color: #333;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="quiz-container">
-      <h1>Questionário de Múltipla Escolha: Ética em Pesquisa</h1>
-      <div id="quiz"></div>
-      <button id="submit" class="button">Verificar Respostas</button>
-      <div id="results"></div>
+    }
+
+    .error-diagnosis-section h2 {
+        color: #e65100; /* Laranja mais escuro */
+        margin-bottom: 20px;
+        font-size: 1.8em;
+    }
+
+    .error-diagnosis-section ul {
+        list-style: none; /* Remove marcadores de lista */
+        padding: 0;
+        margin: 0;
+    }
+
+    .error-diagnosis-section li {
+        background-color: #ff9800; /* Laranja */
+        color: white;
+        padding: 8px 15px;
+        margin: 8px 0;
+        border-radius: 5px;
+        display: inline-block; /* Para que os itens fiquem lado a lado */
+        margin-right: 10px;
+        font-weight: bold;
+    }
+    .error-diagnosis-section li:last-child {
+        margin-right: 0;
+    }
+ .card-bloco {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+      background: #fff;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="quiz-container">
+    <h1 style="text-align:center; margin-bottom: 30px;">Ética em Pesquisa</h1>
+    <div class="card-bloco" id="quiz"></div>
+    <button class="submit-btn" id="verifyAnswersBtn">Verificar Respostas</button>
+
+    <button class="generate-questions-btn submit-btn" id="generateNewQuestionsBtn" style="display:none;">
+      Gerar Novas Perguntas
+    </button>
+
+    <div class="results card-bloco" id="results"></div>
+    <div id="statusMessage" style="text-align: center; margin-top: 10px; font-weight: bold; color: #007bff;"></div>
+
+    <div class="error-diagnosis-section card-bloco" id="errorDiagnosis">
+      <h2>Diagnóstico de Erros</h2>
+      <p>Parece que você precisa revisar os seguintes assuntos:</p>
+      <ul id="topicsToReview"></ul>
     </div>
 
-    <script>
-      const questions = [
-        {
-          question: "1. Qual é a origem da palavra \"ética\" e qual o seu significado original, conforme a aula de Ética em Pesquisa?",
-          options: [
-            "Latim, que significa \"lei\"",
-            "Grego (\"ethos\"), que significa \"modo de ser\"",
-            "Sânscrito, que significa \"verdade\"",
-            "Hebraico, que significa \"justiça\""
-          ],
-          answer: 1,
-          comment: "A palavra \"ética\" tem suas raízes no grego, especificamente em \"**ethos**\". Este termo carregava o sentido de \"**modo de ser**\", referindo-se aos costumes, caráter e comportamento de um indivíduo ou de uma comunidade. Conforme a aula, compreender a origem etimológica ajuda a contextualizar a ética não apenas como um conjunto de regras, mas como uma reflexão sobre a forma como agimos e nos relacionamos no mundo, moldando nossa conduta e valores. No contexto da pesquisa, isso implica um modo de agir que respeite a dignidade e os direitos dos envolvidos."
-        },
-        {
-          question: "2. Do ponto de vista conceitual, o que a ética é definida como uma ciência especulativa na aula de Ética em Pesquisa?",
-          options: [
-            "O estudo de fenômenos naturais e suas aplicações tecnológicas.",
-            "O estudo filosófico dos princípios que motivam, distorcem, disciplinam ou orientam o comportamento humano.",
-            "A análise estatística de dados comportamentais.",
-            "A criação de leis e normas para a convivência social."
-          ],
-          answer: 1,
-          comment: "A aula de Ética em Pesquisa define a ética como uma \"**ciência especulativa**\" que tem como objeto \"**o estudo filosófico dos princípios que motivam, distorcem, disciplinam ou orientam o comportamento humano**\". Isso significa que a ética não é apenas um código de conduta, mas uma área do conhecimento que busca refletir sobre os fundamentos das ações humanas, questionando o que é certo ou errado, bom ou mau, e como esses princípios devem guiar nossa conduta, especialmente no complexo ambiente da pesquisa científica."
-        },
-        {
-          question: "3. Como a aula de Ética em Pesquisa define \"pesquisa\"?",
-          options: [
-            "Apenas a experimentação em laboratório com animais.",
-            "Investigação e estudo minuciosos e sistemáticos com o fim de descobrir ou estabelecer fatos ou princípios relativos a um campo qualquer do conhecimento.",
-            "A coleta de dados por meio de questionários e entrevistas.",
-            "A replicação de estudos existentes para confirmar resultados."
-          ],
-          answer: 1,
-          comment: "A aula de Ética em Pesquisa apresenta uma definição abrangente de pesquisa: \"Define-se pesquisa como **investigação e estudo minuciosos e sistemáticos com o fim de descobrir ou estabelecer fatos ou princípios relativos a um campo qualquer do conhecimento**\". Essa definição engloba uma vasta gama de atividades investigativas, desde as mais básicas até as aplicadas, e é crucial para entender o contexto em que a ética se insere, uma vez que a pesquisa envolve a busca por conhecimento, o que pode ter implicações significativas para indivíduos e para a sociedade."
-        },
-        {
-          question: "4. Quais são os três principais tipos de pesquisa mencionados no diagrama da página 4 da aula de Ética em Pesquisa?",
-          options: [
-            "Pesquisa Histórica, Pesquisa Quantitativa, Pesquisa Qualitativa.",
-            "Pesquisa Científica, Pesquisa Clínica com Seres Humanos, Ensaio Clínico.",
-            "Pesquisa de Campo, Pesquisa Bibliográfica, Pesquisa Experimental.",
-            "Pesquisa Pura, Pesquisa Aplicada, Pesquisa Exploratória."
-          ],
-          answer: 1,
-          comment: "O diagrama na página 4 da aula de Ética em Pesquisa ilustra claramente os tipos de pesquisa. Ele mostra um grande círculo para \"**Pesquisa Científica**\", que engloba um círculo menor, \"**Pesquisa Clínica com Seres Humanos**\", e dentro deste, outro círculo ainda menor, \"**Ensaio Clínico**\". Essa representação visual destaca que ensaios clínicos são um tipo específico de pesquisa clínica, que por sua vez é um tipo de pesquisa científica, ressaltando a hierarquia e a especificidade das investigações que envolvem diretamente seres humanos."
-        },
-        {
-          question: "5. Qual dos seguintes não é um referencial básico da ética em pesquisa, de acordo com a aula de Ética em Pesquisa?",
-          options: [
-            "Autonomia",
-            "Beneficência",
-            "Maleficiência",
-            "Não maleficência"
-          ],
-          answer: 2,
-          comment: "A aula de Ética em Pesquisa lista a \"**Autonomia**\", a \"**Beneficência**\" e a \"**Não maleficência**\" como referenciais básicos da ética em pesquisa. A \"Maleficiência\" (causar dano) é o oposto do que se busca na ética em pesquisa, que é a \"Não maleficência\" (evitar danos). Os princípios éticos visam proteger os participantes e garantir que a pesquisa seja conduzida de forma responsável e benéfica, não prejudicial."
-        },
-        {
-          question: "6. De acordo com o princípio da Autonomia, como os participantes da pesquisa devem ser tratados segundo a aula de Ética em Pesquisa?",
-          options: [
-            "Apenas com beneficência.",
-            "Com dignidade, respeito à autonomia e defesa da vulnerabilidade.",
-            "Exclusivamente com não maleficência.",
-            "Sem a necessidade de consentimento."
-          ],
-          answer: 1,
-          comment: "O princípio da Autonomia em pesquisa, conforme abordado na aula, vai além de simplesmente obter uma assinatura. Ele exige que os pesquisadores tratem os participantes com \"**dignidade, respeitá-los em sua autonomia e defendê-los em sua vulnerabilidade**\". Isso significa reconhecer a capacidade do indivíduo de tomar decisões informadas sobre sua participação, garantindo que eles compreendam plenamente os aspectos da pesquisa e que sejam protegidos de qualquer forma de coerção ou exploração, especialmente se forem considerados vulneráveis."
-        },
-        {
-          question: "7. O que o princípio da Beneficência em pesquisa exige dos pesquisadores, conforme a aula de Ética em Pesquisa?",
-          options: [
-            "Apenas minimizar os riscos.",
-            "Comprometer-se com o máximo de benefícios e o mínimo de danos e riscos.",
-            "Apenas garantir a confidencialidade dos dados.",
-            "Priorizar os interesses da pesquisa sobre os interesses dos participantes."
-          ],
-          answer: 1,
-          comment: "O princípio da Beneficência, conforme descrito na aula de Ética em Pesquisa, compromete os pesquisadores a buscar \"**o máximo de benefícios e o mínimo de danos e riscos**\". Isso significa que a pesquisa deve ser projetada e conduzida de forma a maximizar os resultados positivos para os participantes e para a sociedade, enquanto se esforça para mitigar ou eliminar qualquer potencial prejuízo físico, psicológico ou social aos envolvidos. É um equilíbrio entre a busca por conhecimento e a proteção do bem-estar dos participantes."
-        },
-        {
-          question: "8. Qual é o principal objetivo da ética em pesquisa, segundo a aula de Ética em Pesquisa?",
-          options: [
-            "Aumentar a qualidade dos resultados da pesquisa.",
-            "Reduzir os custos da pesquisa.",
-            "A proteção ao participante da pesquisa.",
-            "Acelerar o processo de publicação de resultados."
-          ],
-          answer: 2,
-          comment: "A aula de Ética em Pesquisa é enfática ao afirmar que \"**O principal objetivo da ética em pesquisa é a proteção ao participante da pesquisa**\". Embora a ética beneficie a qualidade da pesquisa e a integridade científica de diversas formas, sua função primordial é salvaguardar os direitos, a segurança e o bem-estar das pessoas que voluntariamente se submetem a estudos e experimentos, evitando abusos e garantindo que sua participação seja voluntária, informada e respeitosa."
-        },
-        {
-          question: "9. Quais são os dois documentos abrangentes e pioneiros sobre questões éticas de pesquisa mencionados na aula de Ética em Pesquisa?",
-          options: [
-            "A Declaração Universal dos Direitos Humanos e a Convenção de Genebra.",
-            "O Código de Nuremberg e a Declaração de Helsinki.",
-            "O Tratado de Versalhes e a Carta das Nações Unidas.",
-            "As Leis de Manu e o Código de Hamurabi."
-          ],
-          answer: 1,
-          comment: "A aula de Ética em Pesquisa destaca que \"Os dois documentos abrangentes e pioneiros sobre questões éticas de pesquisa são considerados: o **Código de Nuremberg** e a **Declaração de Helsinki**\". Esses marcos históricos surgiram em resposta a graves violações éticas em experimentos com seres humanos, e estabeleceram as bases para a regulamentação e proteção dos participantes de pesquisa em todo o mundo. O Código de Nuremberg surgiu após os julgamentos dos médicos nazistas, e a Declaração de Helsinki aprimorou essas diretrizes."
-        },
-        {
-          question: "10. Quando e por que o Código de Nuremberg foi criado, conforme a aula de Ética em Pesquisa?",
-          options: [
-            "Em 1945, após a fundação da ONU.",
-            "Em 1970, após a 2ª Guerra Mundial, na decisão do tribunal militar internacional que julgou médicos nazistas.",
-            "Em 1964, para regulamentar pesquisas com novos medicamentos.",
-            "Em 1988, para estabelecer os primeiros comitês de ética."
-          ],
-          answer: 1,
-          comment: "O Código de Nuremberg foi uma resposta direta às atrocidades cometidas por médicos nazistas durante a Segunda Guerra Mundial. A aula de Ética em Pesquisa especifica que essa diretriz foi criada \"**após a 2ª Guerra Mundial, na decisão do tribunal militar internacional que julgou médicos nazistas**\". Eles foram condenados por \"inúmeras brutalidades\" e experimentos humanos sem consentimento, com sofrimento e sadismo, resultando em mortes e sequelas. O código, portanto, é um documento fundamental na história da ética em pesquisa, estabelecendo princípios que visam prevenir tais abusos no futuro."
-        },
-        {
-          question: "11. Qual dos seguintes não é um dos princípios do Código de Nuremberg, conforme a aula de Ética em Pesquisa?",
-          options: [
-            "O consentimento voluntário do sujeito é absolutamente essencial.",
-            "A pesquisa deve ser baseada em estudos prévios em animais.",
-            "O pesquisador deve ter total autonomia para decidir sobre os riscos.",
-            "Nenhum experimento deve ser realizado onde exista risco de morte ou lesão incapacitante (com raras exceções)."
-          ],
-          answer: 2,
-          comment: "O Código de Nuremberg estabelece princípios claros que limitam a autonomia do pesquisador em favor da proteção do participante. O princípio número 5, por exemplo, afirma que \"**Nenhum experimento deve ser realizado onde exista risco de morte ou lesão incapacitante (exceto quando os próprios pesquisadores também participarem como sujeitos)**\". Isso contrasta diretamente com a ideia de total autonomia do pesquisador em relação aos riscos, mostrando que a responsabilidade ética recai sobre a proteção do participante e não sobre a liberdade irrestrita do investigador."
-        },
-        {
-          question: "12. O que o princípio 1 do Código de Nuremberg exige em relação ao consentimento, de acordo com a aula de Ética em Pesquisa?",
-          options: [
-            "Apenas a assinatura do participante.",
-            "O consentimento voluntário deve ser baseado em um conhecimento suficiente sobre a natureza, duração, propósito, métodos, inconveniências, riscos e efeitos da pesquisa.",
-            "O consentimento pode ser obtido a qualquer momento da pesquisa.",
-            "O consentimento pode ser presumido em casos de grande benefício social."
-          ],
-          answer: 1,
-          comment: "O primeiro e fundamental princípio do Código de Nuremberg, abordado na aula, enfatiza a necessidade de um \"**consentimento voluntário**\" que seja \"**baseado em um conhecimento suficiente sobre a natureza, duração, propósito, métodos, inconveniências, riscos e efeitos da pesquisa**\". Isso vai muito além de uma simples permissão e exige que o participante esteja plenamente informado e consciente de todos os aspectos do estudo antes de concordar em participar, garantindo que sua decisão seja verdadeiramente autônoma e esclarecida."
-        },
-        {
-          question: "13. Qual o papel da qualificação dos profissionais na pesquisa, segundo o Código de Nuremberg, conforme a aula de Ética em Pesquisa?",
-          options: [
-            "É um requisito opcional.",
-            "A pesquisa deve ser conduzida por profissionais cientificamente qualificados e exigir o mais alto nível de habilidades e cuidados.",
-            "A qualificação é irrelevante se os resultados forem promissores.",
-            "Apenas o líder da pesquisa precisa ser qualificado."
-          ],
-          answer: 1,
-          comment: "O princípio 8 do Código de Nuremberg, conforme ensinado na aula, estabelece que \"**A pesquisa deve ser conduzida por profissionais cientificamente qualificados e deve exigir o mais alto nível de habilidades e cuidados**\". Este princípio ressalta a importância da competência técnica e profissional dos pesquisadores, pois a segurança e o bem-estar dos participantes dependem diretamente da capacidade e do cuidado daqueles que conduzem o estudo. Pesquisas mal conduzidas por profissionais sem a devida qualificação podem expor os participantes a riscos desnecessários."
-        },
-        {
-          question: "14. Qual direito do sujeito da pesquisa é garantido pelo princípio 9 do Código de Nuremberg, de acordo com a aula de Ética em Pesquisa?",
-          options: [
-            "O direito a uma compensação financeira obrigatória.",
-            "O direito de os sujeitos serem livres para interromper um experimento se atingirem um estado físico ou mental onde continuar seja impossível.",
-            "O direito de exigir que o pesquisador participe do experimento.",
-            "O direito de não ser informado sobre os riscos da pesquisa."
-          ],
-          answer: 1,
-          comment: "O princípio 9 do Código de Nuremberg, conforme a aula, concede aos sujeitos o direito inalienável de \"**serem livres para interromper um experimento se atingirem um estado físico ou mental onde continuar seja impossível**\". Este é um aspecto crucial do consentimento voluntário e da autonomia do participante, garantindo que, mesmo após ter iniciado a pesquisa, o indivíduo tem a liberdade de se retirar a qualquer momento, sem prejuízo, caso sinta que não pode ou não quer mais continuar, priorizando seu bem-estar sobre os objetivos da pesquisa."
-        },
-        {
-          question: "15. Qual é um dos exemplos de estudos antiéticos que persistiram após o Código de Nuremberg, mencionado na aula de Ética em Pesquisa?",
-          options: [
-            "O Projeto Genoma Humano.",
-            "O Estudo de Sífilis não Tratada em Homens Negros de Tuskegee.",
-            "O Estudo Framingham do Coração.",
-            "O Estudo Longitudinal de Terman."
-          ],
-          answer: 1,
-          comment: "A aula de Ética em Pesquisa cita o \"**Tuskegee Study of Untreated Syphilis in the Negro Male**\" (1932-1972) como um exemplo de estudo antiético que persistiu após a criação do Código de Nuremberg. Neste estudo, 600 homens negros com sífilis foram acompanhados sem receber tratamento, mesmo após a penicilina se tornar um tratamento eficaz em 1945. Este caso é um dos mais notórios na história da ética em pesquisa, exemplificando a violação da autonomia e da beneficência dos participantes e reforçando a necessidade de regulamentações mais robustas."
-        },
-        {
-          question: "16. O que aconteceu na Willowbrook State School, conforme mencionado na aula de Ética em Pesquisa, como exemplo de pesquisa antiética?",
-          options: [
-            "Crianças foram submetidas a testes de QI sem consentimento.",
-            "Crianças com \"retardo mental\" foram deliberadamente infectadas com hepatite C.",
-            "Crianças foram usadas em testes de novos medicamentos para ansiedade.",
-            "Crianças foram privadas de sono para estudar seus efeitos."
-          ],
-          answer: 1,
-          comment: "A aula de Ética em Pesquisa descreve o caso da Willowbrook State School (1955-1970) como um estudo antiético onde \"**por volta de 50 crianças, foram deliberadamente infectadas com hepatite C**\". Este exemplo, juntamente com o Estudo de Tuskegee, ilustra as contínuas falhas éticas mesmo após a publicação do Código de Nuremberg, evidenciando a vulnerabilidade de certas populações e a necessidade de proteções éticas mais rigorosas e abrangentes, que viriam a ser desenvolvidas na Declaração de Helsinki e outras regulamentações."
-        },
-        {
-          question: "17. Quem elaborou a Declaração de Helsinki e em que ano, conforme a aula de Ética em Pesquisa?",
-          options: [
-            "A Organização Mundial da Saúde (OMS) em 1948.",
-            "A Associação Médica Mundial em junho de 1964.",
-            "A UNESCO em 1970.",
-            "A Cruz Vermelha em 1950."
-          ],
-          answer: 1,
-          comment: "A aula de Ética em Pesquisa informa que a Declaração de Helsinki foi elaborada pela \"**Associação Médica Mundial em junho de 1964**, durante a 18ª Assembleia Médica Mundial, em Helsinque, na Finlândia\". Esta declaração surgiu como uma resposta às deficiências do Código de Nuremberg, buscando adicionar novos elementos e aprimorar as diretrizes éticas para a pesquisa médica envolvendo seres humanos, tornando-se um dos documentos mais influentes na ética em pesquisa."
-        },
-        {
-          question: "18. Quais foram os dois novos e importantes elementos adicionados pela Declaração de Helsinki que o Código de Nuremberg não abordava explicitamente, segundo a aula de Ética em Pesquisa?",
-          options: [
-            "A obrigatoriedade de comitês de ética e a punição para pesquisadores antiéticos.",
-            "A prevalência dos interesses do sujeito sobre os da sociedade e o direito a receber o melhor tratamento conhecido.",
-            "A necessidade de revisão constante das diretrizes éticas e a participação de representantes da comunidade.",
-            "O direito à privacidade e a confidencialidade dos dados."
-          ],
-          answer: 1,
-          comment: "A Declaração de Helsinki, conforme a aula de Ética em Pesquisa, representou um avanço significativo ao adicionar dois elementos cruciais: \"**os interesses do sujeito sempre deveriam prevalecer sobre os interesses da sociedade**\" e \"**todo indivíduo deveria receber o melhor tratamento conhecido**\". Esses princípios foram fundamentais para fortalecer a proteção dos participantes de pesquisa, garantindo que o bem-estar individual não fosse sacrificado em nome de avanços científicos ou sociais, e que a participação em uma pesquisa não impedisse o acesso a tratamentos disponíveis e eficazes."
-        },
-        {
-          question: "19. A Declaração de Helsinki está sujeita a revisões, segundo a aula de Ética em Pesquisa?",
-          options: [
-            "Não, é um documento estático desde sua criação.",
-            "Sim, está sempre sendo revisada (atual 8ª edição).",
-            "Apenas em casos de emergências sanitárias.",
-            "Somente a cada 50 anos."
-          ],
-          answer: 1,
-          comment: "A aula de Ética em Pesquisa informa que a Declaração de Helsinki \"**Está sempre sendo revisada (atual 8ª edição)**\". A capacidade de revisão e atualização é um ponto forte da Declaração, permitindo que ela se adapte aos avanços científicos e às novas discussões éticas que surgem na pesquisa, garantindo que suas diretrizes permaneçam relevantes e eficazes na proteção dos participantes ao longo do tempo."
-        },
-        {
-          question: "20. Quais são as principais fontes de normatização brasileira mencionadas para a ética em pesquisa, segundo a aula de Ética em Pesquisa?",
-          options: [
-            "Resoluções do CNPq e da FAPESP.",
-            "Constituição Federal, Código Civil e Resolução CNS/ANVISA.",
-            "Leis estaduais e municipais.",
-            "Apenas a Declaração de Helsinki."
-          ],
-          answer: 1,
-          comment: "A aula de Ética em Pesquisa aponta que a normatização brasileira para a ética em pesquisa é composta pela \"**Constituição Federal, Código Civil**\" e \"**Resolução CNS/ANVISA**\". Isso demonstra um sistema legal e regulatório robusto, onde a ética em pesquisa é abordada em diferentes níveis, desde a legislação fundamental do país até as normas específicas de órgãos reguladores como o Conselho Nacional de Saúde (CNS) e a Agência Nacional de Vigilância Sanitária (ANVISA)."
-        },
-        {
-          question: "21. Qual órgão editou a Resolução n. 196/96, que criou a CONEP, conforme a aula de Ética em Pesquisa?",
-          options: [
-            "A ANVISA.",
-            "O Conselho Nacional de Saúde (CNS).",
-            "O Ministério da Saúde.",
-            "A Associação Médica Brasileira."
-          ],
-          answer: 1,
-          comment: "A aula de Ética em Pesquisa esclarece que \"**O CNS editou a Resolução n. 196/96, que criou a CONEP**\". O Conselho Nacional de Saúde (CNS) é um órgão fundamental na formulação de políticas de saúde no Brasil e desempenha um papel crucial na regulamentação da ética em pesquisa, sendo responsável pela criação de instâncias como a CONEP para garantir a proteção dos participantes."
-        },
-        {
-          question: "22. Qual era o documento mais atual que regulava o Sistema CEP-CONEP, antes da Lei nº 14.874/2024, segundo a aula de Ética em Pesquisa?",
-          options: [
-            "Resolução n. 01/88 do CNS.",
-            "Resolução n. 196/96 do CNS.",
-            "Resolução n. 466/12 do CNS.",
-            "O Código de Nuremberg."
-          ],
-          answer: 2,
-          comment: "A aula de Ética em Pesquisa indica que a \"Atualização, com a publicação da **Resolução n. 466/12**\" tornou-se \"**o documento mais atual que regulava o Sistema CEP-CONEP**; Normatizava o processo de análise ética dos projetos de pesquisa\". Esta resolução foi um marco importante na regulamentação da ética em pesquisa no Brasil, consolidando os procedimentos e princípios para a avaliação ética de projetos envolvendo seres humanos, até a promulgação da nova Lei."
-        },
-        {
-          question: "23. Quando o Conselho Nacional de Saúde (CNS) elaborou uma norma referente à ética em pesquisa médica, a Resolução n. 01/88, conforme a aula de Ética em Pesquisa?",
-          options: [
-            "Em 1937.",
-            "Em 1988.",
-            "Em 1996.",
-            "Em 2012."
-          ],
-          answer: 1,
-          comment: "A aula de Ética em Pesquisa menciona que o Conselho Nacional de Saúde (CNS), criado em 1937, \"**Em 1988, o CNS elaborou uma norma referente à ética em pesquisa médica, a Resolução n. 01/88**\". Esta resolução foi pioneira ao orientar a necessidade de consentimento esclarecido e determinar a necessidade de avaliação do projeto por um CEP, lançando as bases para o sistema brasileiro de ética em pesquisa."
-        },
-        {
-          question: "24. Qual a Lei brasileira mais recente mencionada na aula de Ética em Pesquisa que normatiza a ética em pesquisa?",
-          options: [
-            "Lei nº 8.080/90.",
-            "Lei nº 14.874, de 28 de Maio de 2024.",
-            "Lei nº 13.709/18 (LGPD).",
-            "Lei nº 12.401/11."
-          ],
-          answer: 1,
-          comment: "A aula de Ética em Pesquisa destaca a \"**LEI Nº 14.874, DE 28 DE MAIO DE 2024**\" como a mais recente normatização brasileira para a ética em pesquisa. Essa nova lei representa um avanço no arcabouço legal brasileiro, atualizando e fortalecendo as diretrizes para a condução de pesquisas envolvendo seres humanos, visando maior proteção e segurança para os participantes."
-        },
-        {
-          question: "25. Qual é a principal característica da Instância Nacional de Ética em Pesquisa (CONEP), segundo a aula de Ética em Pesquisa?",
-          options: [
-            "É um órgão de caráter consultivo.",
-            "É um colegiado interdisciplinar e independente, integrante do Ministério da Saúde, competente para regulação, fiscalização e controle ético da pesquisa.",
-            "Atua apenas como instância recursal.",
-            "É responsável pela execução direta das pesquisas."
-          ],
-          answer: 1,
-          comment: "A CONEP é descrita na aula de Ética em Pesquisa como uma \"Instância Nacional de Ética em Pesquisa\" que é \"**um colegiado interdisciplinar e independente**\" e \"**Integrante do Ministério da Saúde**\". Sua competência é normativa, abrangendo a \"**regulação, à fiscalização e ao controle ético da pesquisa**\". Além disso, é responsável pelo credenciamento e acreditação dos CEPs e atua como instância recursal das decisões proferidas por eles. Essa estrutura demonstra seu papel central e abrangente no sistema de ética em pesquisa brasileiro."
-        },
-        {
-          question: "26. Qual é a função da Instância Nacional de Ética em Pesquisa (CONEP) em relação aos CEPs, conforme a aula de Ética em Pesquisa?",
-          options: [
-            "Credenciamento e acreditação dos CEPs.",
-            "Realização de pesquisas conjuntas com os CEPs.",
-            "Treinamento dos membros dos CEPs apenas.",
-            "Gerenciamento direto dos projetos de pesquisa analisados pelos CEPs."
-          ],
-          answer: 0,
-          comment: "A aula de Ética em Pesquisa afirma que a CONEP tem como função o \"**Credenciamento e acreditação dos CEPs**\". Isso significa que a CONEP é responsável por certificar que os Comitês de Ética em Pesquisa atendem aos requisitos necessários para funcionar, garantindo a padronização e a qualidade da análise ética em todo o país. Além disso, a CONEP atua como instância recursal das decisões dos CEPs, reforçando seu papel de supervisão e controle."
-        },
-        {
-          question: "27. Qual é a composição de um Comitê de Ética em Pesquisa (CEP), segundo a aula de Ética em Pesquisa?",
-          options: [
-            "Apenas membros da área médica.",
-            "Composto de equipe interdisciplinar e deve ter em sua composição 1 representante dos participantes de pesquisa.",
-            "Apenas pesquisadores experientes.",
-            "Exclusivamente membros do Ministério da Saúde."
-          ],
-          answer: 1,
-          comment: "O CEP é caracterizado na aula de Ética em Pesquisa por ser \"**Composto de equipe interdisciplinar**\" e pela obrigatoriedade de \"**ter em sua composição 1 representante dos participantes de pesquisa**\". A interdisciplinaridade assegura uma análise abrangente e diversa das implicações éticas dos projetos, enquanto a presença do representante dos participantes garante que a perspectiva daqueles que serão envolvidos na pesquisa seja considerada, aumentando a transparência e a proteção dos direitos dos sujeitos."
-        },
-        {
-          question: "28. Como os CEPs são classificados conforme o grau de risco envolvido na pesquisa, de acordo com a aula de Ética em Pesquisa?",
-          options: [
-            "Básicos e Avançados.",
-            "Credenciado (risco baixo ou moderado) e Acreditado (risco elevado).",
-            "Nacionais e Regionais.",
-            "Clínicos e Não Clínicos."
-          ],
-          answer: 1,
-          comment: "A aula de Ética em Pesquisa explica que \"Conforme o grau de risco envolvido na pesquisa, teremos CEPs: **Credenciado = risco baixo ou moderado; Acreditado = risco elevado**\". Essa classificação permite que a análise ética seja adequada à complexidade e aos potenciais perigos de cada pesquisa. CEPs \"Acreditados\" possuem uma estrutura e expertise para lidar com estudos que apresentam maiores riscos aos participantes, enquanto os \"Credenciados\" são aptos para pesquisas de menor complexidade ética."
-        },
-        {
-          question: "29. Qual é a relação do CEP com a instituição que realiza a pesquisa, segundo a aula de Ética em Pesquisa?",
-          options: [
-            "É um órgão subordinado à direção da instituição.",
-            "É um órgão colegiado vinculado à instituição que realiza a pesquisa, mas atua de forma independente e autônoma.",
-            "É um órgão externo e sem ligação com a instituição.",
-            "O CEP é a própria instituição que realiza a pesquisa."
-          ],
-          answer: 1,
-          comment: "A aula de Ética em Pesquisa descreve o CEP como \"**um órgão colegiado vinculado à instituição que realiza a pesquisa**\". No entanto, é crucial destacar que ele \"**Atua de forma independente e autônoma**\". Essa independência é vital para garantir que as decisões éticas não sejam influenciadas por interesses institucionais ou financeiros, mas sim pela proteção dos direitos e bem-estar dos participantes. O vínculo com a instituição garante que o CEP esteja ciente do contexto da pesquisa, mas sua autonomia é essencial para a integridade da análise ética."
-        },
-        {
-          question: "30. Qual é o principal objetivo do Comitê de Ética em Pesquisa (CEP), conforme a aula de Ética em Pesquisa?",
-          options: [
-            "Acelerar o processo de aprovação de projetos.",
-            "Assegurar a proteção dos direitos, da segurança e do bem-estar dos participantes da pesquisa.",
-            "Oferecer consultoria aos pesquisadores sobre metodologia científica.",
-            "Promover a pesquisa científica a qualquer custo."
-          ],
-          answer: 1,
-          comment: "O CEP tem como objetivo fundamental \"**assegurar a proteção dos direitos, da segurança e do bem-estar dos participantes da pesquisa**\", conforme ensinado na aula de Ética em Pesquisa. Essa função é central para a ética em pesquisa, pois o CEP atua como um guardião dos interesses dos indivíduos envolvidos nos estudos, revisando e aprovando protocolos para garantir que os riscos sejam minimizados, os benefícios maximizados e que os direitos dos participantes sejam sempre respeitados, antes e durante a pesquisa."
-        },
-        {
-          question: "31. Quais são as responsabilidades do CEP em relação à qualificação do pesquisador e ao consentimento do participante, segundo a aula de Ética em Pesquisa?",
-          options: [
-            "O CEP não tem responsabilidade sobre a qualificação do pesquisador.",
-            "Considerar a qualificação do pesquisador para a pesquisa proposta e assegurar que estejam previstos os meios adequados para a obtenção do consentimento do participante da pesquisa ou de seu representante legal.",
-            "Apenas assegurar o consentimento, sem verificar a qualificação.",
-            "A qualificação do pesquisador é de responsabilidade exclusiva da instituição."
-          ],
-          answer: 1,
-          comment: "O Art. 12 da aula de Ética em Pesquisa especifica que são responsabilidades do CEP: \"**II - considerar a qualificação do pesquisador para a pesquisa proposta**\" e \"**VI - assegurar que estejam previstos os meios adequados para a obtenção do consentimento do participante da pesquisa ou de seu representante legal**\". Isso demonstra que o CEP avalia não apenas o projeto em si, mas também a capacidade e competência da equipe de pesquisa para conduzi-lo de forma segura e ética, garantindo que o consentimento seja obtido de maneira apropriada e informada."
-        },
-        {
-          question: "32. O que o CEP deve assegurar em relação ao ressarcimento ou provimento material ao participante da pesquisa, conforme a aula de Ética em Pesquisa?",
-          options: [
-            "Não há necessidade de informar sobre ressarcimento no TCLE.",
-            "Assegurar que a informação referente ao ressarcimento ou ao provimento material prévio ao participante da pesquisa esteja claramente especificada no TCLE, incluídas as formas, as quantias e a respectiva periodicidade.",
-            "O ressarcimento é opcional e não precisa ser detalhado.",
-            "Apenas informar que haverá algum tipo de ressarcimento."
-          ],
-          answer: 1,
-          comment: "O Art. 12, VII, da aula de Ética em Pesquisa destaca que o CEP deve \"**assegurar que a informação referente ao ressarcimento ou ao provimento material prévio ao participante da pesquisa esteja claramente especificada no TCLE, incluídas as formas, as quantias e a respectiva periodicidade**\". Este ponto é fundamental para a transparência e equidade, garantindo que os participantes estejam plenamente cientes de qualquer benefício ou compensação (se houver) antes de consentirem em participar, e que essa informação seja detalhada para evitar mal-entendidos ou abusos."
-        },
-        {
-          question: "33. Qual é a principal finalidade do Termo de Consentimento Livre e Esclarecido (TCLE), de acordo com a aula de Ética em Pesquisa?",
-          options: [
-            "Formalizar a participação do pesquisador.",
-            "Explicitar o consentimento livre e esclarecido do participante da pesquisa, ou do seu responsável legal, com o objetivo de completo esclarecimento sobre a pesquisa.",
-            "Registrar a aprovação do projeto pelo CEP.",
-            "Servir como contrato de trabalho entre o pesquisador e o participante."
-          ],
-          answer: 1,
-          comment: "O TCLE é definido na aula de Ética em Pesquisa como \"**um documento no qual é explicitado o consentimento livre e esclarecido do participante da pesquisa, ou do seu responsável legal**\". Seu principal objetivo é o \"**completo esclarecimento sobre a pesquisa da qual se propõe participar**\". Isso significa que o TCLE é a ferramenta central para garantir que o participante compreenda todos os aspectos do estudo (propósito, procedimentos, riscos, benefícios, direitos) antes de tomar a decisão de participar, assegurando a autonomia e a voluntariedade de sua adesão."
-        },
-        {
-          question: "34. Como o TCLE deve ser escrito em relação à sua linguagem, conforme a aula de Ética em Pesquisa?",
-          options: [
-            "Em linguagem técnica e científica para garantir a precisão.",
-            "Em linguagem clara e objetiva, de fácil entendimento.",
-            "Em linguagem jurídica complexa para proteção legal.",
-            "Em qualquer formato, desde que contenha as informações essenciais."
-          ],
-          answer: 1,
-          comment: "A aula de Ética em Pesquisa enfatiza que o TCLE deve ser \"**Escrito com todas as informações necessárias, em linguagem clara e objetiva, de fácil entendimento**\". A clareza e a acessibilidade da linguagem são cruciais para que o participante, independentemente de seu nível de escolaridade, possa compreender plenamente os termos da pesquisa e tomar uma decisão verdadeiramente informada. Um TCLE que utiliza jargões técnicos ou linguagem excessivamente complexa impede o entendimento e, consequentemente, compromete o consentimento livre e esclarecido."
-        },
-        {
-          question: "35. O que as informações do TCLE não podem indicar ou sugerir, de acordo com a Lei nº 14.874/2024 (Art. 18, § 3º), conforme a aula de Ética em Pesquisa?",
-          options: [
-            "A necessidade de participação voluntária.",
-            "A renúncia, pelo participante da pesquisa, de seus direitos; ou a isenção do pesquisador, da instituição, do patrocinador ou de seus agentes das responsabilidades relativas aos eventuais danos.",
-            "Os possíveis benefícios da pesquisa.",
-            "O propósito e os métodos da pesquisa."
-          ],
-          answer: 1,
-          comment: "O Art. 18, § 3º, da Lei nº 14.874/2024, conforme a aula de Ética em Pesquisa, estabelece restrições claras sobre o conteúdo do TCLE. Ele não pode indicar ou sugerir \"**I - a renúncia, pelo participante da pesquisa, de seus direitos**\" nem \"**II - a isenção do pesquisador, da instituição, do patrocinador ou de seus agentes das responsabilidades relativas aos eventuais danos que possam ser causados ao participante da pesquisa**\". Essa proibição visa proteger o participante de qualquer cláusula que possa desonerar os responsáveis."
+    <div class="generated-questions-section card-bloco" id="generatedQuestionsSection" style="display:none;">
+      <h2>Novas Perguntas Geradas</h2>
+      <div id="newQuestionsContent"></div>
+    </div>
+  </div>
+  
+  <button class="error-nav-btn" id="errorNavBtn" style="display:none;">
+    <span class="arrow-icon"></span>
+    <span class="button-text"></span>
+  </button>
+
+  <script>
+    const quizContainer = document.getElementById("quiz");
+    const resultsContainer = document.getElementById("results");
+    const errorNavBtn = document.getElementById("errorNavBtn");
+    const arrowIcon = errorNavBtn.querySelector(".arrow-icon");
+    const buttonText = errorNavBtn.querySelector(".button-text");
+    const errorDiagnosisSection = document.getElementById("errorDiagnosis");
+    const topicsToReviewList = document.getElementById("topicsToReview");
+    const generateNewQuestionsBtn = document.getElementById("generateNewQuestionsBtn");
+    const generatedQuestionsSection = document.getElementById("generatedQuestionsSection");
+    const newQuestionsContent = document.getElementById("newQuestionsContent");
+    const statusMessage = document.getElementById("statusMessage");
+
+    let wrongQuestionIndices = [];
+    let errorCountByTopic = {};
+    let totalAnsweredQuestionsByTopic = {};
+    let currentWrongQuestionIndex = -1;
+    let hasErrors = false;
+    let isShowingErrors = false;
+    let isShowingDiagnosis = false;
+
+    // Inicializa a visibilidade das seções no carregamento
+    errorDiagnosisSection.style.display = 'none';
+    topicsToReviewList.innerHTML = '';
+    statusMessage.textContent = '';
+
+    const questions = [     {         question: "1. Qual é a origem da palavra 'ética' e qual o seu significado original, conforme a aula de Ética em Pesquisa?",         options: [             "Latim, que significa 'lei'",             "Grego ('ethos'), que significa 'modo de ser'",             "Sânscrito, que significa 'verdade'",             "Hebraico, que significa 'justiça'"         ],         correctAnswer: "Grego ('ethos'), que significa 'modo de ser'",         comment: "A palavra ética deriva do grego 'ethos', que se refere ao caráter, aos costumes e ao modo de ser de um indivíduo ou comunidade, moldando a conduta e os valores nas relações humanas.",         topic: "Fundamentos e Etimologia da Ética"     },     {         question: "2. Do ponto de vista conceitual, o que a ética é definida como uma ciência especulativa na aula de Ética em Pesquisa?",         options: [             "O estudo de fenômenos naturais e suas aplicações tecnológicas.",             "O estudo filosófico dos princípios que motivam, distorcem, disciplinam ou orientam o comportamento humano.",             "A análise estatística de dados comportamentais.",             "A criação de leis e normas para a convivência social."         ],         correctAnswer: "O estudo filosófico dos princípios que motivam, distorcem, disciplinam ou orientam o comportamento humano.",         comment: "Como ciência especulativa, a ética busca refletir filosoficamente sobre os fundamentos das ações humanas, questionando o que orienta o comportamento e define o certo e o errado.",         topic: "Conceitos de Ética"     },     {         question: "3. Como a aula de Ética em Pesquisa define 'pesquisa'?",         options: [             "Apenas a experimentação em laboratório com animais.",             "Investigação e estudo minuciosos e sistemáticos com o fim de descobrir ou estabelecer fatos ou princípios relativos a um campo qualquer do conhecimento.",             "A coleta de dados por meio de questionários e entrevistas.",             "A replicação de estudos existentes para confirmar resultados."         ],         correctAnswer: "Investigação e estudo minuciosos e sistemáticos com o fim de descobrir ou estabelecer fatos ou princípios relativos a um campo qualquer do conhecimento.",         comment: "A pesquisa é um processo sistemático de busca por conhecimento que pode abranger qualquer campo, tendo implicações éticas significativas quando envolve seres humanos.",         topic: "Definição de Pesquisa Científica"     },     {         question: "4. Quais são os três principais tipos de pesquisa mencionados na hierarquia da aula de Ética em Pesquisa?",         options: [             "Pesquisa Histórica, Pesquisa Quantitativa, Pesquisa Qualitativa.",             "Pesquisa Científica, Pesquisa Clínica com Seres Humanos, Ensaio Clínico.",             "Pesquisa de Campo, Pesquisa Bibliográfica, Pesquisa Experimental.",             "Pesquisa Pura, Pesquisa Aplicada, Pesquisa Exploratória."         ],         correctAnswer: "Pesquisa Científica, Pesquisa Clínica com Seres Humanos, Ensaio Clínico.",         comment: "A hierarquia mostra que a Pesquisa Científica engloba a Pesquisa Clínica, e esta, por sua vez, engloba o Ensaio Clínico, destacando a especificidade das intervenções humanas.",         topic: "Tipos de Pesquisa e Hierarquia"     },     {         question: "5. Qual dos seguintes não é um referencial básico da ética em pesquisa, de acordo com a aula?",         options: [             "Autonomia",             "Beneficência",             "Maleficiência",             "Não maleficência"         ],         correctAnswer: "Maleficiência",         comment: "Os pilares da bioética em pesquisa são Autonomia, Beneficência, Não Maleficência e Justiça. A 'Maleficiência' é o ato de causar dano, o oposto do objetivo ético.",         topic: "Princípios da Bioética"     },     {         question: "6. De acordo com o princípio da Autonomia, como os participantes da pesquisa devem ser tratados?",         options: [             "Apenas com beneficência.",             "Com dignidade, respeito à autonomia e defesa da vulnerabilidade.",             "Exclusivamente com não maleficência.",             "Sem a necessidade de consentimento."         ],         correctAnswer: "Com dignidade, respeito à autonomia e defesa da vulnerabilidade.",         comment: "Respeitar a autonomia significa reconhecer o direito do indivíduo de decidir sobre sua participação e proteger aqueles que possuem autonomia reduzida (vulneráveis).",         topic: "Princípio da Autonomia"     },     {         question: "7. O que o princípio da Beneficência em pesquisa exige dos pesquisadores?",         options: [             "Apenas minimizar os riscos.",             "Comprometer-se com o máximo de benefícios e o mínimo de danos e riscos.",             "Apenas garantir a confidencialidade dos dados.",             "Priorizar os interesses da pesquisa sobre os interesses dos participantes."         ],         correctAnswer: "Comprometer-se com o máximo de benefícios e o mínimo de danos e riscos.",         comment: "A beneficência exige uma análise de risco-benefício favorável, buscando o bem-estar do participante acima do interesse da ciência.",         topic: "Princípio da Beneficência"     },     {         question: "8. Qual é o principal objetivo da ética em pesquisa, segundo a aula?",         options: [             "Aumentar a qualidade dos resultados da pesquisa.",             "Reduzir os custos da pesquisa.",             "A proteção ao participante da pesquisa.",             "Acelerar o processo de publicação de resultados."         ],         correctAnswer: "A proteção ao participante da pesquisa.",         comment: "Embora a ética fortaleça a integridade científica, sua missão primordial é salvaguardar a dignidade, os direitos e a segurança dos seres humanos envolvidos.",         topic: "Objetivos da Ética em Pesquisa"     },     {         question: "9. Quais são os dois documentos pioneiros e marcos históricos sobre ética em pesquisa com seres humanos?",         options: [             "A Declaração Universal dos Direitos Humanos e a Convenção de Genebra.",             "O Código de Nuremberg e a Declaração de Helsinki.",             "O Tratado de Versalhes e a Carta das Nações Unidas.",             "As Leis de Manu e o Código de Hamurabi."         ],         correctAnswer: "O Código de Nuremberg e a Declaração de Helsinki.",         comment: "Nuremberg (1947) estabeleceu o consentimento voluntário após os abusos da 2ª Guerra, e Helsinki (1964) aprimorou as diretrizes para a pesquisa médica.",         topic: "Marcos Históricos da Ética"     },     {         question: "10. Quando e por que o Código de Nuremberg foi criado?",         options: [             "Em 1945, após a fundação da ONU.",             "Em 1947, após a 2ª Guerra Mundial, no julgamento de médicos nazistas por tribunais militares internacionais.",             "Em 1964, para regulamentar pesquisas com novos medicamentos.",             "Em 1988, para estabelecer os primeiros comitês de ética."         ],         correctAnswer: "Em 1947, após a 2ª Guerra Mundial, no julgamento de médicos nazistas por tribunais militares internacionais.",         comment: "O código surgiu como sentença judicial para condenar experimentos atrozes realizados sem consentimento e com sofrimento extremo durante o regime nazista.",         topic: "Código de Nuremberg"     },     {         question: "11. Qual das situações abaixo viola um dos princípios do Código de Nuremberg?",         options: [             "O consentimento voluntário do sujeito é absolutamente essencial.",             "A pesquisa deve ser baseada em estudos prévios em animais.",             "O pesquisador deve ter total autonomia para decidir sobre os riscos ignorando o sofrimento.",             "Nenhum experimento deve ser realizado onde exista risco de morte previsível."         ],         correctAnswer: "O pesquisador deve ter total autonomia para decidir sobre os riscos ignorando o sofrimento.",         comment: "O Código de Nuremberg limita a liberdade do pesquisador: o sofrimento deve ser evitado e o experimento deve ser interrompido se houver perigo iminente.",         topic: "Código de Nuremberg - Princípios"     },     {         question: "12. O que o princípio 1 do Código de Nuremberg exige em relação ao consentimento?",         options: [             "Apenas a assinatura do participante.",             "O consentimento voluntário baseado no conhecimento suficiente sobre natureza, riscos e efeitos da pesquisa.",             "O consentimento pode ser obtido a qualquer momento da pesquisa.",             "O consentimento pode ser presumido em casos de grande benefício social."         ],         correctAnswer: "O consentimento voluntário baseado no conhecimento suficiente sobre natureza, riscos e efeitos da pesquisa.",         comment: "O consentimento 'esclarecido' exige que o participante entenda o que será feito e quais as consequências antes de decidir livremente.",         topic: "Consentimento Informado"     },     {         question: "13. Qual o papel da qualificação dos profissionais na pesquisa, segundo o Código de Nuremberg?",         options: [             "É um requisito opcional.",             "A pesquisa deve ser conduzida por profissionais cientificamente qualificados com alto nível de habilidade.",             "A qualificação é irrelevante se os resultados forem promissores.",             "Apenas o líder da pesquisa precisa ser qualificado."         ],         correctAnswer: "A pesquisa deve ser conduzida por profissionais cientificamente qualificados com alto nível de habilidade.",         comment: "A competência técnica é uma exigência ética, pois a imperícia do pesquisador coloca o participante em risco direto e desnecessário.",         topic: "Responsabilidade do Pesquisador"     },     {         question: "14. Qual direito fundamental é garantido pelo princípio 9 do Código de Nuremberg?",         options: [             "O direito a uma compensação financeira obrigatória.",             "A liberdade do sujeito de interromper o experimento a qualquer momento.",             "O direito de exigir que o pesquisador participe do experimento.",             "O direito de não ser informado sobre os riscos da pesquisa."         ],         correctAnswer: "A liberdade do sujeito de interromper o experimento a qualquer momento.",         comment: "A autonomia do participante garante que ele pode desistir do estudo quando desejar, sem sofrer retaliações ou precisar justificar sua saída.",         topic: "Direitos do Participante"     },     {         question: "15. Qual caso notório de violação ética persistiu por 40 anos, mesmo após o Código de Nuremberg?",         options: [             "O Projeto Genoma Humano.",             "O Estudo de Tuskegee (Sífilis não Tratada em Homens Negros).",             "O Estudo Framingham do Coração.",             "O Estudo Longitudinal de Terman."         ],         correctAnswer: "O Estudo de Tuskegee (Sífilis não Tratada em Homens Negros).",         comment: "Neste estudo, o tratamento (penicilina) foi negado a homens negros para observar o curso natural da doença, resultando em mortes e transmissões evitáveis.",         topic: "Violações Éticas Históricas"     },     {         question: "16. O que caracterizou o estudo antiético na Willowbrook State School?",         options: [             "Crianças foram submetidas a testes de QI sem consentimento.",             "Crianças com deficiência intelectual foram deliberadamente infectadas com hepatite.",             "Crianças foram usadas em testes de novos medicamentos para ansiedade.",             "Crianças foram privadas de sono para estudar seus efeitos."         ],         correctAnswer: "Crianças com deficiência intelectual foram deliberadamente infectadas com hepatite.",         comment: "Este estudo exemplifica o abuso de populações institucionalizadas e vulneráveis, reforçando a necessidade de proteção especial para incapazes.",         topic: "Violações Éticas Históricas"     },     {         question: "17. Quem elaborou a Declaração de Helsinki e qual sua importância?",         options: [             "A Organização Mundial da Saúde (OMS) em 1948.",             "A Associação Médica Mundial em 1964.",             "A UNESCO em 1970.",             "A Cruz Vermelha em 1950."         ],         correctAnswer: "A Associação Médica Mundial em 1964.",         comment: "A Declaração de Helsinki é a base ética da comunidade médica internacional para pesquisas humanas, sendo constantemente atualizada.",         topic: "Declaração de Helsinki"     },     {         question: "18. Quais foram os dois pilares adicionados pela Declaração de Helsinki que reforçaram a proteção do participante?",         options: [             "A obrigatoriedade de comitês de ética e punição criminal.",             "A prevalência dos interesses do sujeito sobre a ciência e o direito ao melhor tratamento conhecido.",             "A necessidade de revisão constante e participação da comunidade.",             "O direito à privacidade e a confidencialidade dos dados."         ],         correctAnswer: "A prevalência dos interesses do sujeito sobre a ciência e o direito ao melhor tratamento conhecido.",         comment: "Helsinki determinou que o progresso científico nunca deve justificar danos ao indivíduo e que ninguém deve ser privado do melhor cuidado disponível.",         topic: "Declaração de Helsinki - Princípios"     },     {         question: "19. Sobre a atualização da Declaração de Helsinki, é correto afirmar:",         options: [             "Não é revisada desde 1964.",             "Está em constante revisão, encontrando-se atualmente em sua 8ª edição.",             "Apenas é revisada em casos de pandemias globais.",             "É revisada apenas pelo governo dos EUA."         ],         correctAnswer: "Está em constante revisão, encontrando-se atualmente em sua 8ª edição.",         comment: "A revisão periódica garante que o documento acompanhe a evolução tecnológica e as novas complexidades morais da medicina moderna.",         topic: "Declaração de Helsinki"     },     {         question: "20. Quais são as bases da normatização brasileira sobre ética em pesquisa?",         options: [             "Resoluções do CNPq e da FAPESP.",             "Constituição Federal, Código Civil, Resoluções do CNS e a Nova Lei 14.874/24.",             "Leis estaduais de saúde pública.",             "Apenas tratados internacionais."         ],         correctAnswer: "Constituição Federal, Código Civil, Resoluções do CNS e a Nova Lei 14.874/24.",         comment: "O Brasil possui um sistema jurídico multinível, onde a ética em pesquisa é garantida desde a Constituição até resoluções técnicas do CNS.",         topic: "Regulamentação Brasileira"     },     {         question: "21. Qual o papel do Conselho Nacional de Saúde (CNS) no Sistema CEP-CONEP?",         options: [             "Fiscalizar apenas a ANVISA.",             "Editar resoluções (como a 196/96 e 466/12) que estruturaram a ética em pesquisa no Brasil.",             "Executar as pesquisas clínicas do governo.",             "Assinar todos os TCLEs do país."         ],         correctAnswer: "Editar resoluções (como a 196/96 e 466/12) que estruturaram a ética em pesquisa no Brasil.",         comment: "O CNS é o órgão deliberativo máximo do SUS que normatiza as diretrizes éticas para garantir a proteção dos participantes.",         topic: "Sistema CEP-CONEP"     },     {         question: "22. Qual resolução do CNS normatizava o processo de análise ética antes da nova lei de 2024?",         options: [             "Resolução n. 01/88.",             "Resolução n. 196/96.",             "Resolução n. 466/12.",             "O Código de Nuremberg."         ],         correctAnswer: "Resolução n. 466/12.",         comment: "A Resolução 466/12 foi o principal marco regulatório infralegal por mais de uma década, detalhando os direitos dos participantes e deveres do pesquisador.",         topic: "Resoluções do CNS"     },     {         question: "23. Qual a importância histórica da Resolução CNS n. 01/88?",         options: [             "Foi a primeira a tratar do SUS.",             "Foi pioneira ao orientar o consentimento esclarecido e a necessidade de avaliação por um CEP no Brasil.",             "Proibiu pesquisas com seres humanos no Brasil.",             "Criou a ANVISA."         ],         correctAnswer: "Foi pioneira ao orientar o consentimento esclarecido e a necessidade de avaliação por um CEP no Brasil.",         comment: "Essa resolução lançou os fundamentos para o controle ético institucionalizado que conhecemos hoje no país.",         topic: "História da Ética no Brasil"     },     {         question: "24. Qual a Lei Federal sancionada em 2024 que se tornou o novo marco legal da pesquisa clínica no Brasil?",         options: [             "Lei nº 8.080/90.",             "Lei nº 14.874, de 28 de Maio de 2024.",             "Lei nº 13.709/18 (LGPD).",             "Lei nº 12.401/11."         ],         correctAnswer: "Lei nº 14.874, de 28 de Maio de 2024.",         comment: "A Lei 14.874/24 eleva as normas de ética em pesquisa ao status de lei federal, trazendo maior segurança jurídica e atualizando procedimentos.",         topic: "Marco Legal - Lei 14.874/24"     },     {         question: "25. O que define a Comissão Nacional de Ética em Pesquisa (CONEP)?",         options: [             "É um órgão consultivo sem poder de fiscalização.",             "É o colegiado interdisciplinar e independente, integrante do Ministério da Saúde, responsável pela regulação e fiscalização ética nacional.",             "É um departamento subordinado à diretoria dos hospitais.",             "É a instância responsável por financiar os projetos de pesquisa."         ],         correctAnswer: "É o colegiado interdisciplinar e independente, integrante do Ministério da Saúde, responsável pela regulação e fiscalização ética nacional.",         comment: "A CONEP coordena a rede de CEPs e atua como instância máxima de regulação ética em pesquisas brasileiras.",         topic: "CONEP"     },     {         question: "26. Qual é a função da CONEP em relação aos Comitês de Ética em Pesquisa (CEPs)?",         options: [             "Credenciamento e acreditação dos CEPs.",             "Realização de pesquisas conjuntas com os CEPs.",             "Apenas treinamento técnico de funcionários.",             "Pagar os salários dos membros dos CEPs."         ],         correctAnswer: "Credenciamento e acreditação dos CEPs.",         comment: "A CONEP certifica que os CEPs têm competência para analisar protocolos, além de atuar como instância recursal para decisões locais.",         topic: "Sistema CEP-CONEP"     },     {         question: "27. Sobre a composição de um Comitê de Ética em Pesquisa (CEP), é obrigatório que haja:",         options: [             "Apenas médicos e advogados.",             "Uma equipe interdisciplinar e ao menos 1 representante dos participantes de pesquisa.",             "Apenas pesquisadores da própria instituição.",             "Membros indicados exclusivamente por empresas farmacêuticas."         ],         correctAnswer: "Uma equipe interdisciplinar e ao menos 1 representante dos participantes de pesquisa.",         comment: "A presença de um representante dos participantes (sociedade civil) garante a transparência e a defesa da perspectiva de quem será pesquisado.",         topic: "Composição do CEP"     },     {         question: "28. Como os CEPs são classificados quanto ao risco da pesquisa na nova legislação?",         options: [             "Básicos e Avançados.",             "Credenciados (risco baixo/moderado) e Acreditados (risco elevado).",             "Privados e Públicos.",             "Estaduais e Federais."         ],         correctAnswer: "Credenciados (risco baixo/moderado) e Acreditados (risco elevado).",         comment: "Essa classificação permite que CEPs com maior estrutura e experiência lidem com os casos de maior complexidade e perigo aos sujeitos.",         topic: "Classificação dos CEPs"     },     {         question: "29. Qual a natureza da relação entre o CEP e a Instituição de Pesquisa?",         options: [             "O CEP deve obedecer às ordens do diretor da instituição.",             "O CEP é vinculado à instituição, mas atua com independência e autonomia nas decisões éticas.",             "O CEP não pode ter qualquer relação com a instituição.",             "O CEP é contratado pelo pesquisador principal."         ],         correctAnswer: "O CEP é vinculado à instituição, mas atua com independência e autonomia nas decisões éticas.",         comment: "A independência garante que pressões institucionais ou financeiras não interfiram no julgamento ético sobre a segurança dos voluntários.",         topic: "Independência do CEP"     },     {         question: "30. Qual é a missão primordial do CEP ao analisar um projeto?",         options: [             "Acelerar a burocracia para o pesquisador.",             "Assegurar a proteção dos direitos, segurança e bem-estar dos participantes.",             "Corrigir o método estatístico da pesquisa.",             "Garantir o lucro dos patrocinadores."         ],         correctAnswer: "Assegurar a proteção dos direitos, segurança e bem-estar dos participantes.",         comment: "O CEP atua como um tribunal de ética que valida se a ciência proposta não viola a dignidade humana.",         topic: "Objetivos do CEP"     },     {         question: "31. É responsabilidade do CEP verificar se o pesquisador é qualificado?",         options: [             "Não, isso é função apenas da universidade.",             "Sim, deve considerar a qualificação para a pesquisa proposta e os meios para obter o consentimento.",             "Apenas se o pesquisador não tiver doutorado.",             "Somente em pesquisas internacionais."         ],         correctAnswer: "Sim, deve considerar a qualificação para a pesquisa proposta e os meios para obter o consentimento.",         comment: "O CEP avalia se a equipe possui currículo e experiência compatíveis com a complexidade e os riscos do estudo proposto.",         topic: "Responsabilidades do CEP"     },     {         question: "32. Sobre ressarcimento no TCLE, o que o CEP deve garantir?",         options: [             "Que o participante não saiba que haverá gastos.",             "Que a informação sobre ressarcimento ou provimento material esteja clara no TCLE, com formas e quantias especificadas.",             "Ressarcimento é proibido por lei no Brasil.",             "Que o participante pague para participar da pesquisa."         ],         correctAnswer: "Que a informação sobre ressarcimento ou provimento material esteja clara no TCLE, com formas e quantias especificadas.",         comment: "O participante não deve ter ônus financeiro. O ressarcimento de transporte e alimentação deve ser garantido e documentado.",         topic: "Direitos Financeiros do Participante"     },     {         question: "33. Qual a definição e finalidade do TCLE?",         options: [             "Documento de isenção de culpa do pesquisador.",             "Documento que explicita o consentimento livre e esclarecido, visando o completo esclarecimento do participante.",             "Um resumo dos resultados finais da pesquisa.",             "Um contrato de sigilo para o participante não denunciar abusos."         ],         correctAnswer: "Documento que explicita o consentimento livre e esclarecido, visando o completo esclarecimento do participante.",         comment: "O TCLE é a materialização do respeito à autonomia; sem ele (salvo raras exceções autorizadas), a pesquisa é ilegal.",         topic: "TCLE"     },     {         question: "34. Em que linguagem o TCLE deve ser redigido?",         options: [             "Linguagem técnica acadêmica para seriedade.",             "Linguagem clara, objetiva e de fácil entendimento para o participante.",             "Linguagem jurídica para evitar processos.",             "Linguagem codificada para segurança dos dados."         ],         correctAnswer: "Linguagem clara, objetiva e de fácil entendimento para o participante.",         comment: "O consentimento só é 'esclarecido' se o participante entender o que leu. O uso de termos técnicos deve ser evitado ou explicado.",         topic: "Comunicação Ética"     },     {         question: "35. Segundo a Lei nº 14.874/2024, o que é expressamente PROIBIDO constar no TCLE?",         options: [             "A descrição dos riscos.",             "A renúncia de direitos pelo participante ou a isenção de responsabilidade do pesquisador por danos.",             "O endereço do CEP local.",             "A garantia de sigilo."         ],         correctAnswer: "A renúncia de direitos pelo participante ou a isenção de responsabilidade do pesquisador por danos.",         comment: "Cláusulas de irresponsabilidade são nulas. O pesquisador e a instituição respondem legalmente por qualquer dano causado ao participante.",         topic: "Lei 14.874/2024 - Restrições"     } ];
+
+    function buildQuiz() {
+      const output = [];
+
+      questions.forEach((currentQuestion, questionNumber) => {
+        const options = [];
+        for (let i = 0; i < currentQuestion.options.length; i++) {
+          options.push(
+            `<label class="option" data-question="${questionNumber}" data-value="${currentQuestion.options[i]}">
+              <img src="tesouras.png" class="scissor-icon" onclick="event.stopPropagation(); this.parentNode.classList.toggle('struck-through');">
+              ${currentQuestion.options[i]}
+            </label>`
+          );
         }
-      ];
 
-      const quizContainer = document.getElementById("quiz");
-      const submitButton = document.getElementById("submit");
-      const resultsContainer = document.getElementById("results");
+        output.push(
+          `<div class="card" id="question-${questionNumber}" data-topic="${currentQuestion.topic}">
+            <div class="question">${currentQuestion.question}</div>
+            <div class="options">${options.join("")}</div>
+            <div class="comment" id="comment-${questionNumber}"></div>
+          </div>`
+        );
+      });
 
-      function buildQuiz() {
-        const output = [];
+      quizContainer.innerHTML = output.join("");
+    }
 
-        questions.forEach((currentQuestion, questionNumber) => {
-          const options = currentQuestion.options
-            .map(
-              (option, optionNumber) =>
-                `<div class="option" data-question="${questionNumber}" data-option="${optionNumber}">
-                  <img src="tesouras.png" class="scissor-icon" title="Cortar alternativa">
-                  <span>${option}</span>
-                </div>`
-            )
-            .join("");
+    function showResults() {
+      wrongQuestionIndices = [];
+      errorCountByTopic = {};
+      totalAnsweredQuestionsByTopic = {};
+      currentWrongQuestionIndex = -1;
+      hasErrors = false;
+      isShowingErrors = false;
+      isShowingDiagnosis = false;
 
-          output.push(`
-            <div class="card">
-              <div class="question">${currentQuestion.question}</div>
-              <div class="options">${options}</div>
-              <div class="comment" id="comment-${questionNumber}"></div>
-            </div>
-          `);
-        });
+      errorDiagnosisSection.style.display = 'none';
+      topicsToReviewList.innerHTML = '';
+      statusMessage.textContent = '';
 
-        quizContainer.innerHTML = output.join("");
-      }
+      // Busca por todas as perguntas: estáticas e dinâmicas
+      const allQuestionCards = document.querySelectorAll('.quiz-container .card, #newQuestionsContent .card');
+      let correctAnswersCount = 0;
+      let totalQuestionsAnswered = 0;
 
-      function showResults() {
-        let correctAnswers = 0;
+      console.log('🔍 Verificando', allQuestionCards.length, 'perguntas...');
 
-        questions.forEach((question, questionIndex) => {
-          const options = quizContainer.querySelectorAll(
-            `.option[data-question="${questionIndex}"]`
-          );
-          const userAnswerElement = quizContainer.querySelector(
-            `.option[data-question="${questionIndex}"].selected`
-          );
-          const userAnswer = userAnswerElement ? parseInt(userAnswerElement.dataset.option) : undefined;
-          const correctAnswer = question.answer;
-          const commentElement = document.getElementById(`comment-${questionIndex}`);
+      allQuestionCards.forEach((card, index) => {
+        const questionEl = card.querySelector('.question') || card.querySelector('p');
+        if (!questionEl) return;
 
-          options.forEach((option) => {
-            const optionIndex = parseInt(option.dataset.option);
-            option.classList.remove("correct", "incorrect");
-            option.classList.remove("struck-through"); // Remove a classe de riscado
-            
-            // Esconde a tesoura após a verificação
-            const scissorIcon = option.querySelector('.scissor-icon');
-            if (scissorIcon) {
-              scissorIcon.classList.add('hidden');
-            }
+        const questionText = questionEl.textContent.trim();
+        const optionsContainer = card.querySelector('.options') || card;
+        const allOptions = optionsContainer.querySelectorAll('.option, label.option, label');
+        const userAnswerElement = optionsContainer.querySelector('.option.selected, label.selected');
+        const commentDiv = card.querySelector('.comment');
 
-            if (optionIndex === correctAnswer) {
-              option.classList.add("correct");
-            }
-            if (userAnswer !== undefined && optionIndex === userAnswer && userAnswer !== correctAnswer) {
-              option.classList.add("incorrect");
-            }
-          });
-
-          // Exibir o comentário
-          if (question.comment) {
-            commentElement.innerHTML = `<p><strong>Comentário:</strong> ${question.comment}</p>`;
-            commentElement.classList.add('show'); // Torna o comentário visível
-          }
-
-          if (userAnswer === correctAnswer) {
-            correctAnswers++;
-          }
-        });
-
-        resultsContainer.textContent = `Você acertou ${correctAnswers} de ${questions.length} questões.`;
+        const questionTopic = card.dataset.topic || "Tópico não informado";
         
-        // Rola a página até o final para exibir o resultado
-        resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
-      }
+        console.log(`📝 Pergunta ${index + 1}: Tópico = "${questionTopic}"`);
+        console.log(`🔍 Encontradas ${allOptions.length} alternativas`);
+        
+        // Remove classes anteriores
+        allOptions.forEach(option => {
+          option.classList.remove('correct', 'incorrect', 'selected');
+        });
+        if (commentDiv) commentDiv.classList.remove('show');
 
-      quizContainer.addEventListener("click", function (event) {
-        const clickedElement = event.target;
-        const optionElement = clickedElement.closest('.option'); // Encontra o div .option mais próximo
+        let correctAnswerValue = null;
+        let questionComment = null;
 
-        if (optionElement) {
-            // Se o clique foi diretamente na tesoura e ela não está escondida
-            if (clickedElement.classList.contains("scissor-icon") && !clickedElement.classList.contains("hidden")) {
-                optionElement.classList.toggle("struck-through");
-            } 
-            // Se o clique foi em qualquer outra parte do bloco da alternativa
-            else {
-                const questionNumber = optionElement.dataset.question;
-                const selected = quizContainer.querySelector(
-                    `.option[data-question="${questionNumber}"].selected`
-                );
-                if (selected) selected.classList.remove("selected");
-                optionElement.classList.add("selected");
-            }
+        // Verifica se é pergunta estática ou dinâmica
+        const isStatic = card.id && card.id.startsWith('question-');
+        if (isStatic) {
+          // Pergunta estática - busca nos dados originais
+          const questionData = questions.find(q => q.question.trim() === questionText);
+          if (questionData) {
+            correctAnswerValue = questionData.correctAnswer.trim();
+            questionComment = questionData.comment;
+          }
+        } else {
+          // Pergunta dinâmica - busca pela opção marcada como correta
+          const correctOpt = optionsContainer.querySelector('.option[data-answer="true"], label[data-answer="true"]');
+          if (correctOpt) {
+            correctAnswerValue = correctOpt.dataset.value?.trim() || correctOpt.textContent.trim();
+            console.log(`✅ Resposta correta encontrada: "${correctAnswerValue}"`);
+          } else {
+            console.log('❌ Nenhuma resposta correta encontrada para pergunta dinâmica');
+          }
+          
+          // Busca comentário no próprio card ou no div comment
+          const commentElement = card.querySelector('.comment');
+          if (commentElement && commentElement.textContent.trim()) {
+            questionComment = commentElement.textContent.trim();
+          }
+        }
+
+        // Processa resposta do usuário e aplica coloração
+        let userAnswer = null;
+        if (userAnswerElement) {
+          userAnswerElement.classList.add('selected');
+          userAnswer = userAnswerElement.dataset.value?.trim() || userAnswerElement.textContent.trim();
+          totalQuestionsAnswered++;
+          totalAnsweredQuestionsByTopic[questionTopic] = (totalAnsweredQuestionsByTopic[questionTopic] || 0) + 1;
+
+          console.log(`👤 Resposta do usuário: "${userAnswer}"`);
+          console.log(`🎯 Resposta correta: "${correctAnswerValue}"`);
+
+          // Verifica se a resposta está correta
+          if (userAnswer === correctAnswerValue) {
+            correctAnswersCount++;
+            console.log(`✅ Resposta correta!`);
+          } else {
+            hasErrors = true;
+            errorCountByTopic[questionTopic] = (errorCountByTopic[questionTopic] || 0) + 1;
+            console.log(`❌ Resposta incorreta para tópico: ${questionTopic}`);
+          }
+        }
+
+        // Aplica coloração: SEMPRE marca a correta de verde, e a errada de vermelho se foi marcada
+        allOptions.forEach(option => {
+          const optionValue = option.dataset.value?.trim() || option.textContent.trim();
+          
+          // Marca a resposta correta de verde SEMPRE
+          if (optionValue === correctAnswerValue) {
+            option.classList.add('correct');
+            console.log(`🟢 Marcando como correta: "${optionValue}"`);
+          }
+          
+          // Se o usuário marcou uma resposta E ela está errada, marca de vermelho
+          if (userAnswer && optionValue === userAnswer && userAnswer !== correctAnswerValue) {
+            option.classList.add('incorrect');
+            console.log(`🔴 Marcando como incorreta: "${optionValue}"`);
+          }
+        });
+
+        // Mostra comentário se disponível
+        if (commentDiv && questionComment) {
+          commentDiv.textContent = questionComment;
+          commentDiv.classList.add('show');
         }
       });
 
-      submitButton.addEventListener("click", showResults);
+      // Exibe resultados
+      resultsContainer.textContent = `Você acertou ${correctAnswersCount} de ${totalQuestionsAnswered} questões respondidas.`;
 
-      buildQuiz();
-    </script>
-  </body>
-<script src="conexao_firebase.js"></script><script src="navegacao.js"></script><script type="module" src="padrao_simulado.js"></script></html>
+      console.log('📊 Erros por tópico:', errorCountByTopic);
+      console.log('📊 Total por tópico:', totalAnsweredQuestionsByTopic);
+
+      // Gera diagnóstico de erros
+      if (hasErrors) {
+        for (const topic in errorCountByTopic) {
+          const errors = errorCountByTopic[topic];
+          const total = totalAnsweredQuestionsByTopic[topic] || 0;
+          if (total > 0) {
+            const percent = ((errors / total) * 100).toFixed(1);
+            const li = document.createElement('li');
+            li.textContent = `${topic}: ${percent}% de erros (${errors} de ${total} questões respondidas)`;
+            topicsToReviewList.appendChild(li);
+          }
+        }
+      } else {
+        const li = document.createElement('li');
+        li.textContent = "🥳 Parabéns! Você não teve erros nas questões respondidas.";
+        topicsToReviewList.appendChild(li);
+      }
+
+      errorDiagnosisSection.style.display = 'block';
+      generatedQuestionsSection.style.display = 'block';
+      generateNewQuestionsBtn.style.display = 'block';
+      scrollToDiagnosis();
+    }
+
+    function scrollToQuestion(index) {
+      const questionCard = document.getElementById(`question-${index}`);
+      if (questionCard) {
+        questionCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    function scrollToDiagnosis() {
+        errorDiagnosisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function scrollToGeneratedQuestions() {
+        generatedQuestionsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Event listener para seleção de opções (funciona para estáticas e dinâmicas)
+    document.addEventListener("click", function (event) {
+      const clickedElement = event.target;
+      const optionElement = clickedElement.closest('.option');
+
+      if (optionElement) {
+          if (clickedElement.classList.contains("scissor-icon")) {
+              event.stopPropagation();
+              optionElement.classList.toggle("struck-through");
+          }
+          else {
+              const parentCard = optionElement.closest('.card');
+              const currentQuestionOptions = parentCard.querySelectorAll('.option');
+
+              currentQuestionOptions.forEach(opt => opt.classList.remove("selected"));
+              optionElement.classList.add("selected");
+          }
+      }
+    });
+
+    generateNewQuestionsBtn.addEventListener("click", async function() {
+        statusMessage.textContent = '⏳ Gerando novas perguntas...';
+        generateNewQuestionsBtn.disabled = true;
+
+        const topics = Object.keys(errorCountByTopic).filter(topic => {
+            const errorsInTopic = errorCountByTopic[topic] || 0;
+            const totalAnsweredInTopic = totalAnsweredQuestionsByTopic[topic] || 0;
+            return errorsInTopic > 0 && totalAnsweredInTopic > 0;
+        });
+
+        const topicsToSend = topics.length > 0 ? topics : ["fisiologia celular", "biologia"];
+
+        try {
+            const response = await fetch('https://www.quizia.xyz/quiz', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ topicos: topicsToSend }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            newQuestionsContent.innerHTML = '';
+            if (data && data.html) {
+                console.log('📥 HTML recebido do Flask:', data.html);
+                
+                // Insere o HTML diretamente sem reconstrução complexa
+                newQuestionsContent.innerHTML = data.html.replace(/```html|```/g, '');
+                
+                // Adiciona tesouras e ajusta formatação apenas se necessário
+                newQuestionsContent.querySelectorAll('.card').forEach((card, cardIndex) => {
+                    // Garante que o elemento de pergunta tenha a classe correta
+                    const questionElement = card.querySelector('p');
+                    if (questionElement && !questionElement.classList.contains('question')) {
+                       questionElement.classList.add('question');
+                    }
+
+                    // Remove qualquer input de radio que possa existir e adiciona tesouras
+                    card.querySelectorAll('label').forEach((label) => {
+                        // Remove inputs de radio MAS preserva o atributo data-answer
+                        const radioInput = label.querySelector('input[type="radio"]');
+                        if (radioInput) {
+                            // PRESERVA o atributo data-answer do input no label
+                            if (radioInput.hasAttribute('data-answer')) {
+                                label.setAttribute('data-answer', radioInput.getAttribute('data-answer'));
+                            }
+                            radioInput.remove();
+                        }
+                        
+                        // Garante que tenha a classe option
+                        if (!label.classList.contains('option')) {
+                            label.classList.add('option');
+                        }
+
+                        // Garante que tenha data-value
+                        if (!label.dataset.value) {
+                            label.dataset.value = label.textContent.trim();
+                        }
+
+                        // Adiciona tesoura se não existir
+                        if (!label.querySelector('.scissor-icon')) {
+                            const scissorIcon = document.createElement('img');
+                            scissorIcon.src = 'tesouras.png';
+                            scissorIcon.className = 'scissor-icon';
+                            scissorIcon.onclick = function(e) {
+                                e.stopPropagation();
+                                label.classList.toggle('struck-through');
+                            };
+                            label.insertBefore(scissorIcon, label.firstChild);
+                        }
+                    });
+
+                    console.log(`🏷️ Card ${cardIndex}: data-topic = "${card.dataset.topic}"`);
+                    
+                    // Verifica se há opção correta marcada
+                    const correctOption = card.querySelector('label[data-answer="true"]');
+                    if (correctOption) {
+                        console.log(`✅ Opção correta encontrada: "${correctOption.dataset.value}"`);
+                    } else {
+                        console.log('❌ Nenhuma opção correta encontrada');
+                    }
+                });
+            } else {
+                newQuestionsContent.innerHTML = "<p>Não foi possível gerar novas perguntas para os tópicos selecionados.</p>";
+            }
+            
+            generatedQuestionsSection.style.display = 'block';
+            scrollToGeneratedQuestions();
+            statusMessage.textContent = '✅ Perguntas geradas com sucesso!';
+            setTimeout(() => { statusMessage.textContent = '' }, 3000);
+
+        } catch (error) {
+            console.error('Erro ao gerar novas perguntas:', error);
+            newQuestionsContent.innerHTML = `<p>Erro ao carregar novas perguntas: ${error.message}. Por favor, tente novamente.</p>`;
+            generatedQuestionsSection.style.display = 'block';
+            scrollToGeneratedQuestions();
+            statusMessage.textContent = '❌ Erro na requisição: ' + error.message;
+            setTimeout(() => { statusMessage.textContent = '' }, 5000);
+        } finally {
+            generateNewQuestionsBtn.disabled = false;
+        }
+    });
+
+    // Inicialização
+    buildQuiz();
+    errorDiagnosisSection.style.display = 'none';
+    generatedQuestionsSection.style.display = 'none';
+    generateNewQuestionsBtn.style.display = 'none';
+
+    // Event listener para o botão de verificar respostas
+    document.getElementById("verifyAnswersBtn").addEventListener("click", showResults);
+  </script>
+  <script src="conexao_firebase.js"></script><script src="navegacao.js"></script><script type="module" src="padrao_simulado.js"></script>
+
+</body>
+</html>
