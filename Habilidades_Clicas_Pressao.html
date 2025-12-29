@@ -1,697 +1,633 @@
-
+<!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Quiz: Hipertensão Arterial e Sons de Korotkoff</title>
-    <style>
-      body {
-        font-family: sans-serif;
-        margin: 0;
-        padding: 20px;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        min-height: 100vh;
-        background-color: #f4f4f4;
-      }
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Hipertensão Arterial, Fisiologia Cardíaca e Técnica de Aferição da PA.</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      background-color: #f4f4f4;
+    }
 
-      .quiz-container {
-        max-width: 800px;
-        width: 100%;
-      }
+    .quiz-container {
+      max-width: 800px;
+      width: 100%;
+    }
 
-      h1 {
-        color: #333;
-        text-align: center;
-        margin-bottom: 30px;
-      }
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 30px;
+    }
 
-      .card {
-        background-color: white;
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .question {
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .options {
+      margin-top: 15px;
+    }
+
+    /* Estilos unificados para todas as opções (estáticas e dinâmicas) */
+    .option, label.option, label, #newQuestionsContent label {
+      display: flex; /* Para alinhar imagem e texto */
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      position: relative; /* Para posicionar a tesoura */
+    }
+
+    /* FORÇA a remoção de inputs de radio em QUALQUER lugar */
+    .option input[type="radio"], 
+    label input[type="radio"],
+    #newQuestionsContent input[type="radio"],
+    #newQuestionsContent label input[type="radio"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
+    }
+
+    .option:hover, 
+    label.option:hover, 
+    label:hover,
+    #newQuestionsContent label:hover {
+      background-color: #e9e9e9;
+    }
+
+    .option.selected, 
+    label.option.selected, 
+    label.selected,
+    #newQuestionsContent label.selected {
+      background-color: #d1e7dd;
+      border-color: #28a745;
+    }
+
+    .option.correct, 
+    label.option.correct, 
+    label.correct,
+    #newQuestionsContent label.correct {
+      background-color: #d4edda;
+      border-color: #28a745;
+    }
+
+    .option.incorrect, 
+    label.option.incorrect, 
+    label.incorrect,
+    #newQuestionsContent label.incorrect {
+      background-color: #f8d7da;
+      border-color: #dc3545;
+    }
+
+    .submit-btn {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 30px;
+    }
+
+    .submit-btn:hover {
+      background-color: #0056b3;
+    }
+
+    .results {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .scissor-icon {
+      margin-right: 10px; /* Espaço entre a tesoura e o texto da opção */
+      width: 20px; /* Ajuste conforme o tamanho da sua imagem */
+      height: 20px; /* Ajuste conforme o tamanho da sua imagem */
+      opacity: 0.5; /* Transparência como no original */
+      cursor: pointer;
+    }
+
+    .scissor-icon.hidden {
+      display: none;
+    }
+
+    .struck-through {
+      text-decoration: line-through;
+      color: #888;
+    }
+
+    .comment {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f0f0f0;
+      border-left: 4px solid #007bff;
+      font-style: italic;
+      color: #555;
+      display: none; /* Escondido por padrão */
+    }
+    .comment.show {
+      display: block; /* Mostrado quando ativado */
+    }
+
+    /* Estilos para o botão de navegação de erro / diagnóstico */
+    .error-nav-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #dc3545; /* Vermelho para erro */
+      color: white;
+      border: none;
+      border-radius: 50%; /* Torna o botão redondo */
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      display: none; /* Escondido por padrão */
+      flex-direction: column; /* Para empilhar o ícone e o contador */
+      padding: 5px; /* Ajuste o padding para acomodar texto maior */
+      box-sizing: border-box; /* Garante que padding não aumente o tamanho total */
+      text-align: center;
+    }
+
+    .error-nav-btn:hover {
+      background-color: #c82333;
+    }
+
+    .error-nav-btn .arrow-icon {
+      font-size: 30px; /* Tamanho da seta */
+      line-height: 1; /* Ajuste para centralizar */
+    }
+
+    .error-nav-btn .button-text {
+      font-size: 12px; /* Tamanho do texto abaixo da seta */
+      line-height: 1;
+      margin-top: 2px; /* Espaço entre a seta e o texto */
+    }
+
+    /* Estilos para a seção de diagnóstico de erros */
+    .error-diagnosis-section {
+        margin-top: 50px;
+        padding: 30px;
+        background-color: #ffe0b2; /* Um laranja claro ou similar */
         border-radius: 8px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-
-      .question {
-        font-weight: bold;
-        margin-bottom: 10px;
-        color: #555;
-      }
-
-      .options {
-        margin-top: 15px;
-      }
-
-      .option {
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        margin-bottom: 8px;
-        cursor: pointer;
-        transition: background-color 0.2s ease, border-color 0.2s ease;
-      }
-
-      .option:hover {
-        background-color: #e9e9e9;
-      }
-
-      .option.selected {
-        border-color: #4f46e5;
-        background-color: #e0e7ff;
-      }
-
-      .option.correct {
-        background-color: #c6f6d5;
-        color: green;
-        font-weight: bold;
-        border-color: #38a169;
-      }
-
-      .option.incorrect {
-        background-color: #f8d7da;
-        color: red;
-        border-color: #e53e3e;
-      }
-
-      .comment {
-        margin-top: 15px;
-        padding: 10px;
-        background-color: #f0f0f0;
-        border-left: 4px solid #4f46e5;
-        font-size: 0.9em;
-        color: #666;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
         display: none; /* Escondido por padrão */
-      }
-
-      .comment.show {
-        display: block; /* Visível quando 'show' é adicionado */
-      }
-
-      .button {
-        background-color: #4f46e5;
-        color: white;
-        padding: 12px 20px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        margin-top: 20px;
-        width: 100%;
-        font-size: 1.1em;
-        transition: background-color 0.2s ease;
-      }
-
-      .button:hover {
-        background-color: #3730a3;
-      }
-
-      #results {
-        margin-top: 30px;
-        font-weight: bold;
-        font-size: 1.3em;
         text-align: center;
+        font-size: 1.1em;
         color: #333;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="quiz-container">
-      <h1>Quiz: Hipertensão Arterial e Sons de Korotkoff</h1>
-      <div id="quiz"></div>
-      <button id="submit" class="button">Verificar Respostas</button>
-      <div id="results"></div>
+    }
+
+    .error-diagnosis-section h2 {
+        color: #e65100; /* Laranja mais escuro */
+        margin-bottom: 20px;
+        font-size: 1.8em;
+    }
+
+    .error-diagnosis-section ul {
+        list-style: none; /* Remove marcadores de lista */
+        padding: 0;
+        margin: 0;
+    }
+
+    .error-diagnosis-section li {
+        background-color: #ff9800; /* Laranja */
+        color: white;
+        padding: 8px 15px;
+        margin: 8px 0;
+        border-radius: 5px;
+        display: inline-block; /* Para que os itens fiquem lado a lado */
+        margin-right: 10px;
+        font-weight: bold;
+    }
+    .error-diagnosis-section li:last-child {
+        margin-right: 0;
+    }
+ .card-bloco {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+      background: #fff;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="quiz-container">
+    <h1 style="text-align:center; margin-bottom: 30px;">Hipertensão Arterial, Fisiologia Cardíaca e Técnica de Aferição da PA.</h1>
+    <div class="card-bloco" id="quiz"></div>
+    <button class="submit-btn" id="verifyAnswersBtn">Verificar Respostas</button>
+
+    <button class="generate-questions-btn submit-btn" id="generateNewQuestionsBtn" style="display:none;">
+      Gerar Novas Perguntas
+    </button>
+
+    <div class="results card-bloco" id="results"></div>
+    <div id="statusMessage" style="text-align: center; margin-top: 10px; font-weight: bold; color: #007bff;"></div>
+
+    <div class="error-diagnosis-section card-bloco" id="errorDiagnosis">
+      <h2>Diagnóstico de Erros</h2>
+      <p>Parece que você precisa revisar os seguintes assuntos:</p>
+      <ul id="topicsToReview"></ul>
     </div>
 
-    <script>
-      const questions = [
-        {
-          question: "De acordo com a aula, qual é uma das principais características da hipertensão arterial que a torna um desafio clínico?",
-          options: [
-            "Seus sintomas são sempre muito evidentes no início.",
-            "É uma doença que regride espontaneamente com o tempo.",
-            "É considerada uma 'doença silenciosa'.",
-            "Afeta apenas idosos.",
-            "Seu diagnóstico é simples e não exige rigor.",
-          ],
-          answer: 2,
-          comment: "O Dr. Rafael enfatiza que a hipertensão é uma '**doença silenciosa**' e que muitas vezes o paciente descobre a condição por acaso, após anos de evolução.",
-        },
-        {
-          question: "Qual é uma das consequências a longo prazo da hipertensão arterial não diagnosticada ou não tratada, mencionada pelo Dr. Rafael?",
-          options: [
-            "Diminuição da necessidade de diálise.",
-            "Redução do risco de infarto.",
-            "Acabar 'enfartado ou na fila da diálise'.",
-            "Melhora da circulação sanguínea.",
-            "Fortalecimento do coração.",
-          ],
-          answer: 2,
-          comment: "O Dr. Rafael destaca as consequências graves, como **infarto e necessidade de diálise**, para ilustrar a importância do diagnóstico e tratamento precoces.",
-        },
-        {
-          question: "Segundo a aula, qual é um dos grandes desafios para o profissional de saúde em relação à hipertensão arterial?",
-          options: [
-            "Convencer o paciente a não procurar tratamento.",
-            "Apenas prescrever medicação sem acompanhamento.",
-            "O diagnóstico e o convencimento do paciente sobre a doença.",
-            "Desconsiderar os critérios rigorosos de hipertensão.",
-            "Minimizar os riscos da doença.",
-          ],
-          answer: 2,
-          comment: "O Dr. Rafael salienta que é um '**desafio muito grande**' tanto diagnosticar quanto convencer o paciente da necessidade de tratamento e acompanhamento.",
-        },
-        {
-          question: "O que acontece com as válvulas cardíacas durante a contração ventricular (sístole), de acordo com a explicação do Dr. Rafael?",
-          options: [
-            "Elas se fecham, impedindo a passagem de sangue.",
-            "Elas se abrem, permitindo a passagem de sangue para a aorta.",
-            "Elas permanecem inalteradas.",
-            "Elas se dilatam para encher de sangue.",
-            "Elas vibram para criar os sons de Korotkoff.",
-          ],
-          answer: 1,
-          comment: "Durante a **sístole**, com a contração do ventrículo esquerdo, as válvulas cardíacas (como a aórtica) **se abrem para permitir a ejeção do sangue para a aorta**.",
-        },
-        {
-          question: "Qual é o movimento do coração que corresponde à contração ventricular, durante o qual o sangue é ejetado para a aorta?",
-          options: [
-            "Diástole",
-            "Sistole",
-            "Enchimento ventricular",
-            "Relaxamento atrial",
-            "Fluxo retrógrado",
-          ],
-          answer: 1,
-          comment: "O Dr. Rafael explica que 'enquanto o ventrículo tá contraindo um movimento chamado **sístole**', o sangue está sendo injetado.",
-        },
-        {
-          question: "Durante a diástole, o que acontece com o ventrículo e o que as válvulas cardíacas fazem para impedir o refluxo de sangue?",
-          options: [
-            "O ventrículo se contrai e as válvulas se abrem.",
-            "O ventrículo se dilata e as válvulas se fecham.",
-            "O ventrículo se dilata e as válvulas permanecem abertas.",
-            "O ventrículo se contrai e as válvulas se fecham.",
-            "O ventrículo não se move e as válvulas se abrem.",
-          ],
-          answer: 1,
-          comment: "O Dr. Rafael afirma que 'Depois esse ventrículo vai parar de contrair até que ele começa a dilatar, que é a **diástole** normal. Ou seja sempre voltar, né? Tá enchendo de novo. Por isso que nós temos as **válvulas que não permite esse fluxo de sangue**'.",
-        },
-        {
-          question: "Qual problema de válvula é mencionado como uma condição em que a válvula não fecha completamente, permitindo um refluxo de sangue e queda de pressão?",
-          options: [
-            "Estenose.",
-            "Insuficiência valvar.",
-            "Prolapso.",
-            "Aneurisma.",
-            "Trombose.",
-          ],
-          answer: 1,
-          comment: "O Dr. Rafael diz: 'Já dá para saber que na **insuficiência valvular** essa válvula ela não fecha, ela continua um pouco aberta. Devi um pouco de sangue, cai a pressão'.",
-        },
-        {
-          question: "O que é necessário para medir a pressão arterial, de acordo com o material?",
-          options: [
-            "Apenas um estetoscópio.",
-            "Um esfigmomanômetro e um estetoscópio.",
-            "Somente o manguito.",
-            "Um termômetro e um estetoscópio.",
-            "Um oxímetro de pulso.",
-          ],
-          answer: 1,
-          comment: "A aferição da pressão arterial requer o uso combinado de um **esfigmomanômetro** (que inclui o manguito) e um **estetoscópio**.",
-        },
-        {
-          question: "Antes de iniciar a aferição da pressão arterial, qual é a condição ideal para o paciente, conforme implicitamente sugerido pela aula e prática comum?",
-          options: [
-            "Acabou de fazer exercício físico intenso.",
-            "Está com vontade de ir ao banheiro.",
-            "Está em repouso e relaxado.",
-            "Está falando ativamente.",
-            "Acabou de consumir cafeína.",
-          ],
-          answer: 2,
-          comment: "Embora não explícito em cada palavra, a aula se refere à prática clínica, onde o paciente deve estar em **repouso e relaxado** para uma aferição precisa. A menção à 'pressão do branco' (ansiedade) reforça a necessidade de um estado calmo.",
-        },
-        {
-          question: "Qual a importância do tamanho do manguito na aferição da pressão arterial?",
-          options: [
-            "Não interfere no resultado.",
-            "Manguitos muito grandes superestimam a pressão.",
-            "Manguitos muito pequenos podem subestimar a pressão.",
-            "Um manguito de tamanho inadequado pode levar a erros na medida.",
-            "Manguitos apertados são mais confortáveis para o paciente.",
-          ],
-          answer: 3,
-          comment: "Embora não detalhado no resumo, a importância da escolha do **manguito de tamanho adequado** é um pilar da técnica correta de aferição da PA e é um erro comum abordado em aulas de habilidades clínicas.",
-        },
-        {
-          question: "Em que local do braço o manguito deve ser posicionado para a aferição da pressão arterial?",
-          options: [
-            "No punho.",
-            "No cotovelo.",
-            "2-3 cm acima da fossa cubital.",
-            "Na axila.",
-            "Em qualquer parte do braço.",
-          ],
-          answer: 2,
-          comment: "A técnica correta de aferição da pressão arterial preconiza o posicionamento do manguito **2-3 cm acima da fossa cubital**.",
-        },
-        {
-          question: "Qual artéria é fundamental para a ausculta dos sons de Korotkoff durante a aferição da pressão arterial?",
-          options: [
-            "Radial.",
-            "Ulnar.",
-            "Carótida.",
-            "Braquial.",
-            "Femoral.",
-          ],
-          answer: 3,
-          comment: "A **artéria braquial** é o local de escolha para a ausculta dos sons de Korotkoff na aferição da pressão arterial no braço.",
-        },
-        {
-          question: "Qual o valor aproximado de insuflação inicial do manguito, conforme a prática comum e o que é ensinado?",
-          options: [
-            "80 mmHg.",
-            "120 mmHg.",
-            "180-200 mmHg ou 20-30 mmHg acima do desaparecimento do pulso radial.",
-            "250 mmHg.",
-            "100 mmHg.",
-          ],
-          answer: 2,
-          comment: "A insuflação inicial deve ser rápida e atingir um valor que exceda a pressão sistólica esperada, geralmente **180-200 mmHg, ou 20-30 mmHg acima do ponto de desaparecimento do pulso radial**.",
-        },
-        {
-          question: "Qual é a velocidade ideal de desinsuflação do manguito para uma aferição precisa da pressão arterial?",
-          options: [
-            "10 mmHg por segundo.",
-            "5 mmHg por segundo.",
-            "2-3 mmHg por segundo.",
-            "O mais rápido possível.",
-            "Não há velocidade ideal, pode ser variável.",
-          ],
-          answer: 2,
-          comment: "A velocidade de desinsuflação lenta e controlada (**2-3 mmHg por segundo**) é crucial para a correta identificação dos sons de Korotkoff.",
-        },
-        {
-          question: "Qual é a descrição do primeiro som de Korotkoff que aparece e que corresponde à pressão sistólica?",
-          options: [
-            "Um som abafado.",
-            "Um som em sopro ou murmúrio.",
-            "Um som nítido, em pancada ('Pum').",
-            "A ausência de som.",
-            "Um som contínuo e fraco.",
-          ],
-          answer: 2,
-          comment: "O Dr. Rafael descreve: 'O primeiro som é **pum é a pancada**. É o primeiro som que aparece... É o mais fácil'.",
-        },
-        {
-          question: "O que representa o último som de Korotkoff (Fase V), que desaparece completamente durante a desinsuflação?",
-          options: [
-            "Pressão sistólica.",
-            "Pressão diastólica.",
-            "Pressão de pulso.",
-            "Pressão média.",
-            "Pressão arterial sistêmica.",
-          ],
-          answer: 1,
-          comment: "O Dr. Rafael explica que 'O último você não ouve. O último é ausência de som. É.', indicando que o desaparecimento do som marca a **pressão diastólica** (Fase V).",
-        },
-        {
-          question: "O que o resumo sugere ser a Fase V dos sons de Korotkoff?",
-          options: [
-            "O som mais nítido que aparece.",
-            "Um murmúrio suave.",
-            "O abafamento dos sons.",
-            "O desaparecimento completo dos sons.",
-            "O aumento da intensidade dos sons.",
-          ],
-          answer: 3,
-          comment: "o resumo afirma: 'O último você não ouve. O último é **ausência de som**. É.', referindo-se à Fase V (desaparecimento completo dos sons).",
-        },
-        {
-          question: "Qual fase dos sons de Korotkoff é descrita como 'o murmúrio' e é considerada mais difícil de ouvir?",
-          options: [
-            "Fase I.",
-            "Fase II.",
-            "Fase III.",
-            "Fase IV.",
-            "Fase V.",
-          ],
-          answer: 1,
-          comment: "o resumo menciona '**o murmúrio**. É mais difícil de ouvir. É.', referindo-se à **Fase II**, onde os sons são tipo sopro ou murmúrio.",
-        },
-        {
-          question: "Qual é uma das dicas do Dr. Rafael para treinar a identificação dos sons de Korotkoff?",
-          options: [
-            "Apenas ler livros sobre o assunto.",
-            "Assistir a filmes de ficção científica.",
-            "Colocar 'Korotkoff sounds' em inglês no YouTube para ouvir os sons.",
-            "Não praticar, apenas memorizar.",
-            "Depender exclusivamente da aula prática.",
-          ],
-          answer: 2,
-          comment: "O Dr. Rafael sugere: 'Dá uma olhada no no no no no YouTube, põe **corot sounds em inglês** que vai aparecer aquele videozinho'.",
-        },
-        {
-          question: "Segundo o Dr. Rafael, qual é o som de Korotkoff mais fácil de identificar e que é o que mais confunde com o externo?",
-          options: [
-            "O murmúrio.",
-            "O som abafado.",
-            "O primeiro som, em pancada ('Pum').",
-            "O último som, quando desaparece.",
-            "O som que aumenta de intensidade.",
-          ],
-          answer: 2,
-          comment: "O Dr. Rafael comenta sobre o primeiro som: 'É o mais fácil, tá? [...] mas o **primeiro som** você tem que treinar bem e é o que mais confunde com o externo.'",
-        },
-        {
-          question: "Qual é a principal dificuldade em relação ao 'murmúrio' (Fase II dos sons de Korotkoff)?",
-          options: [
-            "Ele é muito intenso.",
-            "Ele é fácil de confundir com o primeiro som.",
-            "Ele é mais difícil de ouvir.",
-            "Ele não tem relevância clínica.",
-            "Ele não existe.",
-          ],
-          answer: 2,
-          comment: "o resumo indica: 'O murmúrio. **É mais difícil de ouvir**. É.'",
-        },
-        {
-          question: "O que o Dr. Rafael enfatiza sobre a prática na ausculta dos sons de Korotkoff?",
-          options: [
-            "É desnecessária, basta ler a teoria.",
-            "É importante apenas para identificar o primeiro som.",
-            "É fundamental para o aprimoramento da habilidade.",
-            "Não deve ser feita sem supervisão constante.",
-            "Só deve ser feita após a conclusão do curso.",
-          ],
-          answer: 2,
-          comment: "A repetição da palavra '**treinar**' e a sugestão de ouvir vídeos e praticar na aula prática reforçam a importância do treinamento.",
-        },
-        {
-          question: "Qual o critério para o diagnóstico de hipertensão, segundo a aula?",
-          options: [
-            "Os critérios são flexíveis e variam muito.",
-            "Os critérios são rigorosos e bem definidos.",
-            "Apenas um valor isolado de pressão alta.",
-            "Apenas a presença de sintomas.",
-            "Não há critérios claros para o diagnóstico.",
-          ],
-          answer: 1,
-          comment: "O Dr. Rafael afirma: 'vocês vão ver que os critérios de hipertensão eles são **rigorosos e bem definidos**'.",
-        },
-        {
-          question: "Se o paciente está nervoso com o médico ('pressão do branco'), o que o Dr. Rafael sugere que pode acontecer com a pressão arterial?",
-          options: [
-            "Ela permanece inalterada.",
-            "Ela pode baixar significativamente.",
-            "Ela pode aumentar, levando a um resultado falso-positivo.",
-            "Ela se estabiliza.",
-            "O nervosismo não afeta a pressão arterial.",
-          ],
-          answer: 2,
-          comment: "A '**pressão do branco**' é uma condição conhecida onde a ansiedade do paciente no ambiente médico pode **elevar temporariamente a pressão arterial**.",
-        },
-        {
-          question: "O que ocorre com o sangue durante a sístole, de acordo com o texto?",
-          options: [
-            "Ele retorna ao coração.",
-            "Ele está sendo injetado e seguindo seu fluxo dentro da artéria.",
-            "Ele está enchendo o ventrículo.",
-            "Ele permanece estagnado.",
-            "Ele entra nos pulmões.",
-          ],
-          answer: 1,
-          comment: "'O sangue tá sendo **injetado e tá seguindo seu fluxo dentro da artéria**' durante a sístole.",
-        },
-        {
-          question: "Qual é a principal função das válvulas cardíacas mencionada na diástole?",
-          options: [
-            "Bombear o sangue para as artérias.",
-            "Impedir o refluxo de sangue.",
-            "Facilitar a contração ventricular.",
-            "Produzir os sons do coração.",
-            "Regular a frequência cardíaca.",
-          ],
-          answer: 1,
-          comment: "O Dr. Rafael explica que 'nós temos as **válvulas que não permite esse fluxo de sangue**', referindo-se ao refluxo durante o enchimento ventricular.",
-        },
-        {
-          question: "Se uma válvula cardíaca tem 'estenose', o que isso implica em relação ao fluxo sanguíneo?",
-          options: [
-            "A válvula não fecha, causando refluxo.",
-            "A válvula está apertada, dificultando a passagem do sangue.",
-            "A válvula está mais aberta do que o normal.",
-            "A válvula não tem função.",
-            "Não há impacto no fluxo sanguíneo.",
-          ],
-          answer: 1,
-          comment: "Embora o Dr. Rafael não detalhe a estenose tanto quanto a insuficiência, ele a menciona em contraste, e **estenose significa um estreitamento que dificulta o fluxo**.",
-        },
-        {
-          question: "Para que serve o vídeo 'Korotkoff sounds' em inglês no YouTube, de acordo com a recomendação do Dr. Rafael?",
-          options: [
-            "Para aprender a história da medicina.",
-            "Para praticar a escuta e identificar os sons de Korotkoff.",
-            "Para assistir a procedimentos cirúrgicos.",
-            "Para relaxar e ouvir música.",
-            "Para aprender um novo idioma.",
-          ],
-          answer: 1,
-          comment: "A sugestão é clara: 'põe corot sounds em inglês que vai aparecer aquele videozinho, tá? você vai **ouvir no**'.",
-        },
-        {
-          question: "O que o Dr. Rafael quer dizer com 'a hora que você tá desinsuflando' em relação à identificação dos sons?",
-          options: [
-            "Que os sons devem ser ouvidos enquanto o manguito está enchendo.",
-            "Que os sons devem ser ouvidos no momento de esvaziar o manguito lentamente.",
-            "Que os sons aparecem apenas antes de insuflar o manguito.",
-            "Que os sons são ouvidos apenas após a desinsuflação completa.",
-            "Que não há um momento específico para ouvir os sons.",
-          ],
-          answer: 1,
-          comment: "A identificação dos sons de Korotkoff ocorre durante a **desinsuflação lenta e controlada do manguito**.",
-        },
-        {
-          question: "Em relação à pressão arterial, a sístole é o momento de:",
-          options: [
-            "Enchimento ventricular.",
-            "Relaxamento do coração.",
-            "Contração ventricular e ejeção de sangue.",
-            "Fechamento das válvulas atrioventriculares.",
-            "Retorno venoso.",
-          ],
-          answer: 2,
-          comment: "A **sístole** corresponde à **contração do ventrículo esquerdo e à ejeção do sangue** para a aorta e demais artérias.",
-        },
-        {
-          question: "A diástole representa o momento de:",
-          options: [
-            "Pressão máxima nas artérias.",
-            "Contração ventricular.",
-            "Relaxamento e enchimento ventricular.",
-            "Abertura das válvulas semilunares.",
-            "Ejeção do sangue.",
-          ],
-          answer: 2,
-          comment: "A **diástole** é o período de **relaxamento do coração e enchimento dos ventrículos** com sangue.",
-        },
-        {
-          question: "Qual a principal implicação clínica da insuficiência valvar mencionada na aula?",
-          options: [
-            "Aumento da pressão arterial.",
-            "Diminuição da pressão arterial devido ao refluxo.",
-            "Normalização do fluxo sanguíneo.",
-            "Aumento da força de contração do coração.",
-            "Eliminação dos sons de Korotkoff.",
-          ],
-          answer: 1,
-          comment: "O Dr. Rafael afirma: 'Devi um pouco de sangue, **cai a pressão**', quando a válvula não fecha completamente.",
-        },
-        {
-          question: "Por que a hipertensão é um 'desafio muito grande' para o profissional de saúde, segundo o Dr. Rafael?",
-          options: [
-            "Porque os pacientes raramente necessitam de diagnóstico.",
-            "Porque é fácil de diagnosticar e convencer o paciente.",
-            "Pelo diagnóstico e pelo convencimento do paciente em relação à doença e ao tratamento.",
-            "Porque a doença não apresenta riscos a longo prazo.",
-            "Porque não existem tratamentos eficazes.",
-          ],
-          answer: 2,
-          comment: "O Dr. Rafael ressalta que o desafio está tanto em **diagnosticar a doença (que é silenciosa) quanto em convencer o paciente da necessidade de tratamento e acompanhamento**.",
-        },
-        {
-          question: "Se um aluno só consegue identificar três sons de Korotkoff, qual é a principal orientação do Dr. Rafael?",
-          options: [
-            "Que ele desista de aferir a pressão.",
-            "Que ele consulte um especialista imediatamente.",
-            "Que ele precisa treinar mais a ausculta.",
-            "Que é uma condição normal.",
-            "Que ele use apenas a palpação.",
-          ],
-          answer: 2,
-          comment: "A ênfase na aula é a importância do '**treinar**' para identificar os sons. 'Três. Três do tem que treinar.'",
-        },
-        {
-          question: "A 'pancada' ou 'Pum' é o som característico de qual fase dos sons de Korotkoff?",
-          options: [
-            "Fase II.",
-            "Fase III.",
-            "Fase IV.",
-            "Fase V.",
-            "Fase I.",
-          ],
-          answer: 4,
-          comment: "'O **primeiro som é pum é a pancada**. É o primeiro som que aparece.'",
-        },
-        {
-          question: "A ausência de som, que marca o final da ausculta e a pressão diastólica, corresponde a qual fase dos sons de Korotkoff?",
-          options: [
-            "Fase I.",
-            "Fase II.",
-            "Fase III.",
-            "Fase IV.",
-            "Fase V.",
-          ],
-          answer: 4,
-          comment: "'O último você não ouve. O último é **ausência de som**. É.'",
-        },
-        {
-          question: "O que o resumo sugere sobre a comparação entre o primeiro som de Korotkoff e os sons externos?",
-          options: [
-            "Eles são fáceis de diferenciar.",
-            "O primeiro som é o que mais confunde com o externo.",
-            "Os sons externos nunca interferem na ausculta.",
-            "A identificação é sempre clara.",
-            "Os sons externos são irrelevantes.",
-          ],
-          answer: 1,
-          comment: "...mas o **primeiro som você tem que treinar bem e é o que mais confunde com o externo**.'",
-        },
-        {
-          question: "Qual dos seguintes não é um critério para o diagnóstico de hipertensão, de acordo com o que se pode inferir da aula?",
-          options: [
-            "Serem rigorosos.",
-            "Serem bem definidos.",
-            "Serem apenas uma medida isolada.",
-            "Exigirem repetição e confirmação.",
-            "Considerarem a 'pressão do branco'.",
-          ],
-          answer: 2,
-          comment: "A aula enfatiza que os critérios são 'rigorosos e bem definidos', e o contexto de uma 'doença silenciosa' e 'pressão do branco' implica que **uma única medida não é suficiente para o diagnóstico**.",
-        },
-        {
-          question: "O que o Dr. Rafael menciona sobre a intensidade dos sons de Korotkoff ao longo das fases?",
-          options: [
-            "A intensidade só diminui.",
-            "A intensidade só aumenta.",
-            "O terceiro som eleva e a intensidade abaixa antes de sumir.",
-            "Os sons são sempre da mesma intensidade.",
-            "Os sons desaparecem imediatamente após a insuflação.",
-          ],
-          answer: 2,
-          comment: "'O terceiro som quando sumiu o murmúrio, ele elevou, quando a intensidade abaixou e quando sumiu.'",
-        },
-        {
-          question: "Qual a importância de o ventrículo 'começar a dilatar' na diástole, de acordo com a fisiologia explicada?",
-          options: [
-            "Para ejetar o sangue.",
-            "Para se contrair novamente.",
-            "Para encher de sangue.",
-            "Para fechar as válvulas atriais.",
-            "Para diminuir o retorno venoso.",
-          ],
-          answer: 2,
-          comment: "'Depois esse ventrículo vai parar de contrair até que ele começa a dilatar, que é a diástole normal. Ou seja sempre voltar, né? Tá **enchendo de novo**.'",
-        },
-      ];
+    <div class="generated-questions-section card-bloco" id="generatedQuestionsSection" style="display:none;">
+      <h2>Novas Perguntas Geradas</h2>
+      <div id="newQuestionsContent"></div>
+    </div>
+  </div>
+  
+  <button class="error-nav-btn" id="errorNavBtn" style="display:none;">
+    <span class="arrow-icon"></span>
+    <span class="button-text"></span>
+  </button>
 
-      const quizContainer = document.getElementById("quiz");
-      const submitButton = document.getElementById("submit");
-      const resultsContainer = document.getElementById("results");
+  <script>
+    const quizContainer = document.getElementById("quiz");
+    const resultsContainer = document.getElementById("results");
+    const errorNavBtn = document.getElementById("errorNavBtn");
+    const arrowIcon = errorNavBtn.querySelector(".arrow-icon");
+    const buttonText = errorNavBtn.querySelector(".button-text");
+    const errorDiagnosisSection = document.getElementById("errorDiagnosis");
+    const topicsToReviewList = document.getElementById("topicsToReview");
+    const generateNewQuestionsBtn = document.getElementById("generateNewQuestionsBtn");
+    const generatedQuestionsSection = document.getElementById("generatedQuestionsSection");
+    const newQuestionsContent = document.getElementById("newQuestionsContent");
+    const statusMessage = document.getElementById("statusMessage");
 
-      function buildQuiz() {
-        const output = [];
+    let wrongQuestionIndices = [];
+    let errorCountByTopic = {};
+    let totalAnsweredQuestionsByTopic = {};
+    let currentWrongQuestionIndex = -1;
+    let hasErrors = false;
+    let isShowingErrors = false;
+    let isShowingDiagnosis = false;
 
-        questions.forEach((currentQuestion, questionNumber) => {
-          const options = currentQuestion.options
-            .map(
-              (option, optionNumber) =>
-                `<div class="option" data-question="${questionNumber}" data-option="${optionNumber}">
-                  ${option}
-                </div>`
-            )
-            .join("");
+    // Inicializa a visibilidade das seções no carregamento
+    errorDiagnosisSection.style.display = 'none';
+    topicsToReviewList.innerHTML = '';
+    statusMessage.textContent = '';
 
-          output.push(`
-            <div class="card">
-              <div class="question">${questionNumber + 1}) ${
-                currentQuestion.question
-              }</div>
-              <div class="options">${options}</div>
-              <div class="comment" id="comment-${questionNumber}"></div>
-            </div>
-          `);
+    const questions = [     {         question: "De acordo com a aula, qual é uma das principais características da hipertensão arterial que a torna um desafio clínico?",         options: [             "Seus sintomas são sempre muito evidentes no início.",             "É uma doença que regride espontaneamente com o tempo.",             "É considerada uma 'doença silenciosa'.",             "Afeta apenas idosos.",             "Seu diagnóstico é simples e não exige rigor.",         ],         correctAnswer: "É considerada uma 'doença silenciosa'.",         comment: "A hipertensão é frequentemente assintomática por anos, o que dificulta o diagnóstico precoce e a adesão do paciente ao tratamento antes que ocorram danos graves.",         topic: "Hipertensão Arterial - Aspectos Clínicos"     },     {         question: "Qual é uma das consequências a longo prazo da hipertensão arterial não tratada, mencionada na aula?",         options: [             "Diminuição da necessidade de diálise.",             "Redução do risco de infarto.",             "Acabar 'enfartado ou na fila da diálise'.",             "Melhora da circulação sanguínea.",             "Fortalecimento do coração.",         ],         correctAnswer: "Acabar 'enfartado ou na fila da diálise'.",         comment: "A pressão elevada crônica causa lesões em órgãos-alvo, levando a complicações fatais ou debilitantes como o infarto agudo do miocárdio e a insuficiência renal crônica.",         topic: "Hipertensão Arterial - Complicações"     },     {         question: "Segundo a aula, qual é um dos grandes desafios para o profissional de saúde em relação à hipertensão arterial?",         options: [             "Convencer o paciente a não procurar tratamento.",             "Apenas prescrever medicação sem acompanhamento.",             "O diagnóstico e o convencimento do paciente sobre a doença.",             "Desconsiderar os critérios rigorosos de hipertensão.",             "Minimizar os riscos da doença.",         ],         correctAnswer: "O diagnóstico e o convencimento do paciente sobre a doença.",         comment: "Devido à falta de sintomas imediatos, o profissional enfrenta o desafio de convencer o paciente de que ele está doente e precisa de tratamento contínuo.",         topic: "Hipertensão Arterial - Desafios Clínicos"     },     {         question: "O que acontece com as válvulas cardíacas semilunares durante a contração ventricular (sístole)?",         options: [             "Elas se fecham, impedindo a passagem de sangue.",             "Elas se abrem, permitindo a passagem de sangue para a aorta.",             "Elas permanecem inalteradas.",             "Elas se dilatam para encher de sangue.",             "Elas vibram para criar os sons de Korotkoff.",         ],         correctAnswer: "Elas se abrem, permitindo a passagem de sangue para a aorta.",         comment: "Durante a sístole, a pressão no ventrículo esquerdo supera a da aorta, forçando a abertura da válvula aórtica para a ejeção sanguínea.",         topic: "Fisiologia Cardíaca - Ciclo Cardíaco"     },     {         question: "Qual é o movimento do coração que corresponde à contração ventricular, durante o qual o sangue é ejetado para as artérias?",         options: [             "Diástole",             "Sistole",             "Enchimento ventricular",             "Relaxamento atrial",             "Fluxo retrógrado",         ],         correctAnswer: "Sistole",         comment: "A sístole é a fase de contração muscular do coração, responsável por impulsionar o sangue para a circulação sistêmica e pulmonar.",         topic: "Fisiologia Cardíaca - Ciclo Cardíaco"     },     {         question: "Durante a diástole, o que ocorre com o ventrículo e como as válvulas se comportam para garantir o fluxo unidirecional?",         options: [             "O ventrículo se contrai e as válvulas se abrem.",             "O ventrículo se dilata e as válvulas semilunares se fecham.",             "O ventrículo se dilata e as válvulas permanecem abertas.",             "O ventrículo se contrai e as válvulas se fecham.",             "O ventrículo não se move e as válvulas se abrem.",         ],         correctAnswer: "O ventrículo se dilata e as válvulas semilunares se fecham.",         comment: "Na diástole, o ventrículo relaxa para ser preenchido por sangue; as válvulas aórtica e pulmonar fecham-se para evitar que o sangue ejetado retorne ao coração.",         topic: "Fisiologia Cardíaca - Ciclo Cardíaco"     },     {         question: "Na insuficiência valvar, qual é a principal falha estrutural e sua consequência hemodinâmica?",         options: [             "A válvula está apertada, dificultando a passagem.",             "A válvula não fecha completamente, permitindo refluxo e queda de pressão.",             "A válvula rompe-se completamente.",             "A válvula calcifica-se e impede a sístole.",             "A válvula aumenta a pressão sistólica.",         ],         correctAnswer: "A válvula não fecha completamente, permitindo refluxo e queda de pressão.",         comment: "A insuficiência (ou regurgitação) ocorre quando as cúspides da válvula não se vedam totalmente, resultando em fluxo retrógrado de sangue.",         topic: "Fisiopatologia Valvar"     },     {         question: "Quais instrumentos são estritamente necessários para aferir a pressão arterial pelo método auscultatório?",         options: [             "Apenas um estetoscópio.",             "Um esfigmomanômetro e um estetoscópio.",             "Somente o manguito.",             "Um termômetro e um estetoscópio.",             "Um oxímetro de pulso.",         ],         correctAnswer: "Um esfigmomanômetro e um estetoscópio.",         comment: "O esfigmomanômetro (manguito + manômetro) serve para interromper e liberar o fluxo, enquanto o estetoscópio é usado para auscultar os ruídos desse fluxo (Korotkoff).",         topic: "Técnica de Aferição da PA"     },     {         question: "Qual o posicionamento correto do manguito no braço do paciente para uma aferição precisa?",         options: [             "No punho.",             "No cotovelo.",             "2-3 cm acima da fossa cubital.",             "Na axila.",             "Em qualquer parte do braço.",         ],         correctAnswer: "2-3 cm acima da fossa cubital.",         comment: "O manguito deve ser colocado centralizado sobre a artéria braquial, com sua borda inferior posicionada cerca de 2 a 3 cm acima da prega do cotovelo.",         topic: "Técnica de Aferição da PA"     },     {         question: "Qual artéria é utilizada para a ausculta dos sons de Korotkoff durante a medida da PA no braço?",         options: [             "Radial.",             "Ulnar.",             "Carótida.",             "Braquial.",             "Femoral.",         ],         correctAnswer: "Braquial.",         comment: "A artéria braquial, localizada na face medial do braço abaixo do bíceps, é o ponto de ausculta padrão para os sons de Korotkoff.",         topic: "Técnica de Aferição da PA"     },     {         question: "Qual a velocidade recomendada para a desinsuflação do manguito visando identificar corretamente os valores sistólico e diastólico?",         options: [             "10 mmHg por segundo.",             "5 mmHg por segundo.",             "2-3 mmHg por segundo.",             "O mais rápido possível.",             "Não há velocidade ideal, pode ser variável.",         ],         correctAnswer: "2-3 mmHg por segundo.",         comment: "Uma desinsuflação muito rápida impede a percepção exata do início e fim dos sons, levando a erros na leitura da pressão.",         topic: "Técnica de Aferição da PA"     },     {         question: "O primeiro som nítido ouvido na ausculta (Pase I de Korotkoff) corresponde a qual valor de pressão?",         options: [             "Um som abafado.",             "A pressão média.",             "A pressão sistólica.",             "A pressão diastólica.",             "Um som contínuo.",         ],         correctAnswer: "A pressão sistólica.",         comment: "O aparecimento do primeiro som (nítido e repetitivo) marca o momento em que a pressão sistólica supera a pressão do manguito.",         topic: "Sons de Korotkoff"     },     {         question: "O que caracteriza a Fase V de Korotkoff e qual sua importância clínica?",         options: [             "O som mais nítido que aparece.",             "Um murmúrio suave.",             "O abafamento dos sons.",             "O desaparecimento completo dos sons, indicando a pressão diastólica.",             "O aumento da intensidade dos sons.",         ],         correctAnswer: "O desaparecimento completo dos sons, indicando a pressão diastólica.",         comment: "O ponto em que os sons desaparecem completamente é definido como a Fase V de Korotkoff, correspondendo à pressão diastólica.",         topic: "Sons de Korotkoff"     },     {         question: "Qual fase dos sons de Korotkoff é descrita como 'o murmúrio' (tipo sopro) e costuma ser a mais difícil de auscultar?",         options: [             "Fase I.",             "Fase II.",             "Fase III.",             "Fase IV.",             "Fase V.",         ],         correctAnswer: "Fase II.",         comment: "A Fase II é caracterizada por sons mais suaves, tipo sopro, que podem desaparecer temporariamente (hiato auscultatório).",         topic: "Sons de Korotkoff"     },     {         question: "O fenômeno conhecido como 'pressão do avental branco' refere-se a:",         options: [             "Hipotensão causada por medicamentos.",             "Pressão baixa em ambiente hospitalar.",             "Aumento temporário da PA devido à ansiedade do paciente no ambiente médico.",             "Erro de calibração do esfigmomanômetro.",             "Nervosismo do médico durante o atendimento.",         ],         correctAnswer: "Aumento temporário da PA devido à ansiedade do paciente no ambiente médico.",         comment: "Esse fenômeno pode gerar diagnósticos falso-positivos de hipertensão; por isso, critérios diagnósticos exigem múltiplas medidas.",         topic: "Hipertensão Arterial - Diagnóstico"     },     {         question: "Se uma válvula cardíaca apresenta 'estenose', o que acontece com o fluxo sanguíneo?",         options: [             "A válvula não fecha, causando refluxo.",             "A válvula está 'apertada' ou rígida, dificultando a passagem do sangue.",             "A válvula está mais aberta do que o normal.",             "A válvula perde sua inervação.",             "Não há impacto no fluxo sanguíneo.",         ],         correctAnswer: "A válvula está 'apertada' ou rígida, dificultando a passagem do sangue.",         comment: "Diferente da insuficiência (falha no fechamento), a estenose é uma falha na abertura completa da válvula.",         topic: "Fisiopatologia Valvar"     } ];
+
+    function buildQuiz() {
+      const output = [];
+
+      questions.forEach((currentQuestion, questionNumber) => {
+        const options = [];
+        for (let i = 0; i < currentQuestion.options.length; i++) {
+          options.push(
+            `<label class="option" data-question="${questionNumber}" data-value="${currentQuestion.options[i]}">
+              <img src="tesouras.png" class="scissor-icon" onclick="event.stopPropagation(); this.parentNode.classList.toggle('struck-through');">
+              ${currentQuestion.options[i]}
+            </label>`
+          );
+        }
+
+        output.push(
+          `<div class="card" id="question-${questionNumber}" data-topic="${currentQuestion.topic}">
+            <div class="question">${currentQuestion.question}</div>
+            <div class="options">${options.join("")}</div>
+            <div class="comment" id="comment-${questionNumber}"></div>
+          </div>`
+        );
+      });
+
+      quizContainer.innerHTML = output.join("");
+    }
+
+    function showResults() {
+      wrongQuestionIndices = [];
+      errorCountByTopic = {};
+      totalAnsweredQuestionsByTopic = {};
+      currentWrongQuestionIndex = -1;
+      hasErrors = false;
+      isShowingErrors = false;
+      isShowingDiagnosis = false;
+
+      errorDiagnosisSection.style.display = 'none';
+      topicsToReviewList.innerHTML = '';
+      statusMessage.textContent = '';
+
+      // Busca por todas as perguntas: estáticas e dinâmicas
+      const allQuestionCards = document.querySelectorAll('.quiz-container .card, #newQuestionsContent .card');
+      let correctAnswersCount = 0;
+      let totalQuestionsAnswered = 0;
+
+      console.log('🔍 Verificando', allQuestionCards.length, 'perguntas...');
+
+      allQuestionCards.forEach((card, index) => {
+        const questionEl = card.querySelector('.question') || card.querySelector('p');
+        if (!questionEl) return;
+
+        const questionText = questionEl.textContent.trim();
+        const optionsContainer = card.querySelector('.options') || card;
+        const allOptions = optionsContainer.querySelectorAll('.option, label.option, label');
+        const userAnswerElement = optionsContainer.querySelector('.option.selected, label.selected');
+        const commentDiv = card.querySelector('.comment');
+
+        const questionTopic = card.dataset.topic || "Tópico não informado";
+        
+        console.log(`📝 Pergunta ${index + 1}: Tópico = "${questionTopic}"`);
+        console.log(`🔍 Encontradas ${allOptions.length} alternativas`);
+        
+        // Remove classes anteriores
+        allOptions.forEach(option => {
+          option.classList.remove('correct', 'incorrect', 'selected');
         });
+        if (commentDiv) commentDiv.classList.remove('show');
 
-        quizContainer.innerHTML = output.join("");
-      }
+        let correctAnswerValue = null;
+        let questionComment = null;
 
-      function showResults() {
-        let correctAnswers = 0;
-
-        questions.forEach((question, questionIndex) => {
-          const options = quizContainer.querySelectorAll(
-            `.option[data-question="${questionIndex}"]`
-          );
-          const userAnswerElement = quizContainer.querySelector(
-            `.option[data-question="${questionIndex}"].selected`
-          );
-          const userAnswer = userAnswerElement ? parseInt(userAnswerElement.dataset.option) : undefined;
-          const correctAnswer = question.answer;
-          const commentElement = document.getElementById(`comment-${questionIndex}`);
-
-          options.forEach((option) => {
-            const optionIndex = parseInt(option.dataset.option);
-            option.classList.remove("correct", "incorrect");
-            if (optionIndex === correctAnswer) {
-              option.classList.add("correct");
-            }
-            if (userAnswer !== undefined && optionIndex === userAnswer && userAnswer !== correctAnswer) {
-              option.classList.add("incorrect");
-            }
-          });
-
-          // Exibir o comentário
-          if (question.comment) {
-            commentElement.innerHTML = `<p><strong>Comentário:</strong> ${question.comment}</p>`;
-            commentElement.classList.add('show'); // Torna o comentário visível
+        // Verifica se é pergunta estática ou dinâmica
+        const isStatic = card.id && card.id.startsWith('question-');
+        if (isStatic) {
+          // Pergunta estática - busca nos dados originais
+          const questionData = questions.find(q => q.question.trim() === questionText);
+          if (questionData) {
+            correctAnswerValue = questionData.correctAnswer.trim();
+            questionComment = questionData.comment;
           }
+        } else {
+          // Pergunta dinâmica - busca pela opção marcada como correta
+          const correctOpt = optionsContainer.querySelector('.option[data-answer="true"], label[data-answer="true"]');
+          if (correctOpt) {
+            correctAnswerValue = correctOpt.dataset.value?.trim() || correctOpt.textContent.trim();
+            console.log(`✅ Resposta correta encontrada: "${correctAnswerValue}"`);
+          } else {
+            console.log('❌ Nenhuma resposta correta encontrada para pergunta dinâmica');
+          }
+          
+          // Busca comentário no próprio card ou no div comment
+          const commentElement = card.querySelector('.comment');
+          if (commentElement && commentElement.textContent.trim()) {
+            questionComment = commentElement.textContent.trim();
+          }
+        }
 
-          if (userAnswer === correctAnswer) {
-            correctAnswers++;
+        // Processa resposta do usuário e aplica coloração
+        let userAnswer = null;
+        if (userAnswerElement) {
+          userAnswerElement.classList.add('selected');
+          userAnswer = userAnswerElement.dataset.value?.trim() || userAnswerElement.textContent.trim();
+          totalQuestionsAnswered++;
+          totalAnsweredQuestionsByTopic[questionTopic] = (totalAnsweredQuestionsByTopic[questionTopic] || 0) + 1;
+
+          console.log(`👤 Resposta do usuário: "${userAnswer}"`);
+          console.log(`🎯 Resposta correta: "${correctAnswerValue}"`);
+
+          // Verifica se a resposta está correta
+          if (userAnswer === correctAnswerValue) {
+            correctAnswersCount++;
+            console.log(`✅ Resposta correta!`);
+          } else {
+            hasErrors = true;
+            errorCountByTopic[questionTopic] = (errorCountByTopic[questionTopic] || 0) + 1;
+            console.log(`❌ Resposta incorreta para tópico: ${questionTopic}`);
+          }
+        }
+
+        // Aplica coloração: SEMPRE marca a correta de verde, e a errada de vermelho se foi marcada
+        allOptions.forEach(option => {
+          const optionValue = option.dataset.value?.trim() || option.textContent.trim();
+          
+          // Marca a resposta correta de verde SEMPRE
+          if (optionValue === correctAnswerValue) {
+            option.classList.add('correct');
+            console.log(`🟢 Marcando como correta: "${optionValue}"`);
+          }
+          
+          // Se o usuário marcou uma resposta E ela está errada, marca de vermelho
+          if (userAnswer && optionValue === userAnswer && userAnswer !== correctAnswerValue) {
+            option.classList.add('incorrect');
+            console.log(`🔴 Marcando como incorreta: "${optionValue}"`);
           }
         });
 
-        resultsContainer.textContent = `Você acertou ${correctAnswers} de ${questions.length} questões.`;
-      }
-
-      quizContainer.addEventListener("click", function (event) {
-        if (event.target.classList.contains("option")) {
-          const questionNumber = event.target.dataset.question;
-          const selected = quizContainer.querySelector(
-            `.option[data-question="${questionNumber}"].selected`
-          );
-          if (selected) selected.classList.remove("selected");
-          event.target.classList.add("selected");
+        // Mostra comentário se disponível
+        if (commentDiv && questionComment) {
+          commentDiv.textContent = questionComment;
+          commentDiv.classList.add('show');
         }
       });
 
-      submitButton.addEventListener("click", showResults);
+      // Exibe resultados
+      resultsContainer.textContent = `Você acertou ${correctAnswersCount} de ${totalQuestionsAnswered} questões respondidas.`;
 
-      buildQuiz();
-    </script>
-  </body>
-<script src="conexao_firebase.js"></script><script src="navegacao.js"></script><script type="module" src="padrao_simulado.js"></script></html>
+      console.log('📊 Erros por tópico:', errorCountByTopic);
+      console.log('📊 Total por tópico:', totalAnsweredQuestionsByTopic);
+
+      // Gera diagnóstico de erros
+      if (hasErrors) {
+        for (const topic in errorCountByTopic) {
+          const errors = errorCountByTopic[topic];
+          const total = totalAnsweredQuestionsByTopic[topic] || 0;
+          if (total > 0) {
+            const percent = ((errors / total) * 100).toFixed(1);
+            const li = document.createElement('li');
+            li.textContent = `${topic}: ${percent}% de erros (${errors} de ${total} questões respondidas)`;
+            topicsToReviewList.appendChild(li);
+          }
+        }
+      } else {
+        const li = document.createElement('li');
+        li.textContent = "🥳 Parabéns! Você não teve erros nas questões respondidas.";
+        topicsToReviewList.appendChild(li);
+      }
+
+      errorDiagnosisSection.style.display = 'block';
+      generatedQuestionsSection.style.display = 'block';
+      generateNewQuestionsBtn.style.display = 'block';
+      scrollToDiagnosis();
+    }
+
+    function scrollToQuestion(index) {
+      const questionCard = document.getElementById(`question-${index}`);
+      if (questionCard) {
+        questionCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    function scrollToDiagnosis() {
+        errorDiagnosisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function scrollToGeneratedQuestions() {
+        generatedQuestionsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Event listener para seleção de opções (funciona para estáticas e dinâmicas)
+    document.addEventListener("click", function (event) {
+      const clickedElement = event.target;
+      const optionElement = clickedElement.closest('.option');
+
+      if (optionElement) {
+          if (clickedElement.classList.contains("scissor-icon")) {
+              event.stopPropagation();
+              optionElement.classList.toggle("struck-through");
+          }
+          else {
+              const parentCard = optionElement.closest('.card');
+              const currentQuestionOptions = parentCard.querySelectorAll('.option');
+
+              currentQuestionOptions.forEach(opt => opt.classList.remove("selected"));
+              optionElement.classList.add("selected");
+          }
+      }
+    });
+
+    generateNewQuestionsBtn.addEventListener("click", async function() {
+        statusMessage.textContent = '⏳ Gerando novas perguntas...';
+        generateNewQuestionsBtn.disabled = true;
+
+        const topics = Object.keys(errorCountByTopic).filter(topic => {
+            const errorsInTopic = errorCountByTopic[topic] || 0;
+            const totalAnsweredInTopic = totalAnsweredQuestionsByTopic[topic] || 0;
+            return errorsInTopic > 0 && totalAnsweredInTopic > 0;
+        });
+
+        const topicsToSend = topics.length > 0 ? topics : ["fisiologia celular", "biologia"];
+
+        try {
+            const response = await fetch('https://www.quizia.xyz/quiz', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ topicos: topicsToSend }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            newQuestionsContent.innerHTML = '';
+            if (data && data.html) {
+                console.log('📥 HTML recebido do Flask:', data.html);
+                
+                // Insere o HTML diretamente sem reconstrução complexa
+                newQuestionsContent.innerHTML = data.html.replace(/```html|```/g, '');
+                
+                // Adiciona tesouras e ajusta formatação apenas se necessário
+                newQuestionsContent.querySelectorAll('.card').forEach((card, cardIndex) => {
+                    // Garante que o elemento de pergunta tenha a classe correta
+                    const questionElement = card.querySelector('p');
+                    if (questionElement && !questionElement.classList.contains('question')) {
+                       questionElement.classList.add('question');
+                    }
+
+                    // Remove qualquer input de radio que possa existir e adiciona tesouras
+                    card.querySelectorAll('label').forEach((label) => {
+                        // Remove inputs de radio MAS preserva o atributo data-answer
+                        const radioInput = label.querySelector('input[type="radio"]');
+                        if (radioInput) {
+                            // PRESERVA o atributo data-answer do input no label
+                            if (radioInput.hasAttribute('data-answer')) {
+                                label.setAttribute('data-answer', radioInput.getAttribute('data-answer'));
+                            }
+                            radioInput.remove();
+                        }
+                        
+                        // Garante que tenha a classe option
+                        if (!label.classList.contains('option')) {
+                            label.classList.add('option');
+                        }
+
+                        // Garante que tenha data-value
+                        if (!label.dataset.value) {
+                            label.dataset.value = label.textContent.trim();
+                        }
+
+                        // Adiciona tesoura se não existir
+                        if (!label.querySelector('.scissor-icon')) {
+                            const scissorIcon = document.createElement('img');
+                            scissorIcon.src = 'tesouras.png';
+                            scissorIcon.className = 'scissor-icon';
+                            scissorIcon.onclick = function(e) {
+                                e.stopPropagation();
+                                label.classList.toggle('struck-through');
+                            };
+                            label.insertBefore(scissorIcon, label.firstChild);
+                        }
+                    });
+
+                    console.log(`🏷️ Card ${cardIndex}: data-topic = "${card.dataset.topic}"`);
+                    
+                    // Verifica se há opção correta marcada
+                    const correctOption = card.querySelector('label[data-answer="true"]');
+                    if (correctOption) {
+                        console.log(`✅ Opção correta encontrada: "${correctOption.dataset.value}"`);
+                    } else {
+                        console.log('❌ Nenhuma opção correta encontrada');
+                    }
+                });
+            } else {
+                newQuestionsContent.innerHTML = "<p>Não foi possível gerar novas perguntas para os tópicos selecionados.</p>";
+            }
+            
+            generatedQuestionsSection.style.display = 'block';
+            scrollToGeneratedQuestions();
+            statusMessage.textContent = '✅ Perguntas geradas com sucesso!';
+            setTimeout(() => { statusMessage.textContent = '' }, 3000);
+
+        } catch (error) {
+            console.error('Erro ao gerar novas perguntas:', error);
+            newQuestionsContent.innerHTML = `<p>Erro ao carregar novas perguntas: ${error.message}. Por favor, tente novamente.</p>`;
+            generatedQuestionsSection.style.display = 'block';
+            scrollToGeneratedQuestions();
+            statusMessage.textContent = '❌ Erro na requisição: ' + error.message;
+            setTimeout(() => { statusMessage.textContent = '' }, 5000);
+        } finally {
+            generateNewQuestionsBtn.disabled = false;
+        }
+    });
+
+    // Inicialização
+    buildQuiz();
+    errorDiagnosisSection.style.display = 'none';
+    generatedQuestionsSection.style.display = 'none';
+    generateNewQuestionsBtn.style.display = 'none';
+
+    // Event listener para o botão de verificar respostas
+    document.getElementById("verifyAnswersBtn").addEventListener("click", showResults);
+  </script>
+  <script src="conexao_firebase.js"></script><script src="navegacao.js"></script><script type="module" src="padrao_simulado.js"></script>
+
+</body>
+</html>
