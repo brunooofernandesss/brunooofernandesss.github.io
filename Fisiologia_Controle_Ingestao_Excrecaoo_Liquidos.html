@@ -1,887 +1,633 @@
-
+<!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Simulado Módulo I - Fisiologia do Controle de Ingestão e Excreção de Líquidos</title>
-    <style>
-      body {
-        font-family: sans-serif;
-        margin: 0;
-        padding: 20px;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        min-height: 100vh;
-        background-color: #f4f4f4;
-      }
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Controle de Ingestão e Excreção de Líquidos</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      background-color: #f4f4f4;
+    }
 
-      .quiz-container {
-        max-width: 800px;
-        width: 100%;
-      }
+    .quiz-container {
+      max-width: 800px;
+      width: 100%;
+    }
 
-      h1 {
-        color: #333;
-        text-align: center;
-        margin-bottom: 30px;
-      }
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 30px;
+    }
 
-      .card {
-        background-color: white;
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .question {
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .options {
+      margin-top: 15px;
+    }
+
+    /* Estilos unificados para todas as opções (estáticas e dinâmicas) */
+    .option, label.option, label, #newQuestionsContent label {
+      display: flex; /* Para alinhar imagem e texto */
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      position: relative; /* Para posicionar a tesoura */
+    }
+
+    /* FORÇA a remoção de inputs de radio em QUALQUER lugar */
+    .option input[type="radio"], 
+    label input[type="radio"],
+    #newQuestionsContent input[type="radio"],
+    #newQuestionsContent label input[type="radio"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
+    }
+
+    .option:hover, 
+    label.option:hover, 
+    label:hover,
+    #newQuestionsContent label:hover {
+      background-color: #e9e9e9;
+    }
+
+    .option.selected, 
+    label.option.selected, 
+    label.selected,
+    #newQuestionsContent label.selected {
+      background-color: #d1e7dd;
+      border-color: #28a745;
+    }
+
+    .option.correct, 
+    label.option.correct, 
+    label.correct,
+    #newQuestionsContent label.correct {
+      background-color: #d4edda;
+      border-color: #28a745;
+    }
+
+    .option.incorrect, 
+    label.option.incorrect, 
+    label.incorrect,
+    #newQuestionsContent label.incorrect {
+      background-color: #f8d7da;
+      border-color: #dc3545;
+    }
+
+    .submit-btn {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 30px;
+    }
+
+    .submit-btn:hover {
+      background-color: #0056b3;
+    }
+
+    .results {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .scissor-icon {
+      margin-right: 10px; /* Espaço entre a tesoura e o texto da opção */
+      width: 20px; /* Ajuste conforme o tamanho da sua imagem */
+      height: 20px; /* Ajuste conforme o tamanho da sua imagem */
+      opacity: 0.5; /* Transparência como no original */
+      cursor: pointer;
+    }
+
+    .scissor-icon.hidden {
+      display: none;
+    }
+
+    .struck-through {
+      text-decoration: line-through;
+      color: #888;
+    }
+
+    .comment {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f0f0f0;
+      border-left: 4px solid #007bff;
+      font-style: italic;
+      color: #555;
+      display: none; /* Escondido por padrão */
+    }
+    .comment.show {
+      display: block; /* Mostrado quando ativado */
+    }
+
+    /* Estilos para o botão de navegação de erro / diagnóstico */
+    .error-nav-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #dc3545; /* Vermelho para erro */
+      color: white;
+      border: none;
+      border-radius: 50%; /* Torna o botão redondo */
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      display: none; /* Escondido por padrão */
+      flex-direction: column; /* Para empilhar o ícone e o contador */
+      padding: 5px; /* Ajuste o padding para acomodar texto maior */
+      box-sizing: border-box; /* Garante que padding não aumente o tamanho total */
+      text-align: center;
+    }
+
+    .error-nav-btn:hover {
+      background-color: #c82333;
+    }
+
+    .error-nav-btn .arrow-icon {
+      font-size: 30px; /* Tamanho da seta */
+      line-height: 1; /* Ajuste para centralizar */
+    }
+
+    .error-nav-btn .button-text {
+      font-size: 12px; /* Tamanho do texto abaixo da seta */
+      line-height: 1;
+      margin-top: 2px; /* Espaço entre a seta e o texto */
+    }
+
+    /* Estilos para a seção de diagnóstico de erros */
+    .error-diagnosis-section {
+        margin-top: 50px;
+        padding: 30px;
+        background-color: #ffe0b2; /* Um laranja claro ou similar */
         border-radius: 8px;
-        padding: 20px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        display: none; /* Escondido por padrão */
+        text-align: center;
+        font-size: 1.1em;
+        color: #333;
+    }
+
+    .error-diagnosis-section h2 {
+        color: #e65100; /* Laranja mais escuro */
         margin-bottom: 20px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
+        font-size: 1.8em;
+    }
 
-      .question {
-        font-weight: bold;
-        margin-bottom: 10px;
-        color: #333;
-      }
+    .error-diagnosis-section ul {
+        list-style: none; /* Remove marcadores de lista */
+        padding: 0;
+        margin: 0;
+    }
 
-      .options {
-        margin-top: 15px;
-      }
-
-      .option {
-        display: flex; /* Para alinhar imagem e texto */
-        align-items: center;
-        margin-bottom: 10px;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-        position: relative; /* Para posicionar a tesoura */
-      }
-
-      .option:hover {
-        background-color: #e9e9e9;
-      }
-
-      .option.selected {
-        background-color: #d1e7dd;
-        border-color: #28a745;
-      }
-
-      .option.correct {
-        background-color: #d4edda;
-        border-color: #28a745;
-      }
-
-      .option.incorrect {
-        background-color: #f8d7da;
-        border-color: #dc3545;
-      }
-
-      .submit-btn {
-        display: block;
-        width: 100%;
-        padding: 15px;
-        background-color: #007bff;
+    .error-diagnosis-section li {
+        background-color: #ff9800; /* Laranja */
         color: white;
-        border: none;
+        padding: 8px 15px;
+        margin: 8px 0;
         border-radius: 5px;
-        font-size: 18px;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-        margin-top: 30px;
-      }
-
-      .submit-btn:hover {
-        background-color: #0056b3;
-      }
-
-      .results {
-        text-align: center;
-        margin-top: 30px;
-        font-size: 20px;
+        display: inline-block; /* Para que os itens fiquem lado a lado */
+        margin-right: 10px;
         font-weight: bold;
-        color: #333;
-      }
+    }
+    .error-diagnosis-section li:last-child {
+        margin-right: 0;
+    }
+ .card-bloco {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+      background: #fff;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="quiz-container">
+    <h1 style="text-align:center; margin-bottom: 30px;">Controle de Ingestão e Excreção de Líquidos</h1>
+    <div class="card-bloco" id="quiz"></div>
+    <button class="submit-btn" id="verifyAnswersBtn">Verificar Respostas</button>
 
-      .scissor-icon {
-        margin-right: 10px; /* Espaço entre a tesoura e o texto da opção */
-        width: 20px; /* Ajuste conforme o tamanho da sua imagem */
-        height: 20px; /* Ajuste conforme o tamanho da sua imagem */
-        opacity: 0.5; /* Transparência como no original */
-        cursor: pointer;
-      }
+    <button class="generate-questions-btn submit-btn" id="generateNewQuestionsBtn" style="display:none;">
+      Gerar Novas Perguntas
+    </button>
 
-      .scissor-icon.hidden {
-        display: none;
-      }
+    <div class="results card-bloco" id="results"></div>
+    <div id="statusMessage" style="text-align: center; margin-top: 10px; font-weight: bold; color: #007bff;"></div>
 
-      .struck-through {
-        text-decoration: line-through;
-        color: #888;
-      }
-
-      .comment {
-        margin-top: 10px;
-        padding: 10px;
-        background-color: #f0f0f0;
-        border-left: 4px solid #007bff;
-        font-style: italic;
-        color: #555;
-        display: none; /* Escondido por padrão */
-      }
-      .comment.show {
-        display: block; /* Mostrado quando ativado */
-      }
-
-      /* Estilos para o botão de navegação de erro / diagnóstico */
-      .error-nav-btn {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background-color: #dc3545; /* Vermelho para erro */
-        color: white;
-        border: none;
-        border-radius: 50%; /* Torna o botão redondo */
-        width: 60px;
-        height: 60px;
-        font-size: 24px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        cursor: pointer;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        z-index: 1000;
-        display: none; /* Escondido por padrão */
-        flex-direction: column; /* Para empilhar o ícone e o contador */
-        padding: 5px; /* Ajuste o padding para acomodar texto maior */
-        box-sizing: border-box; /* Garante que padding não aumente o tamanho total */
-        text-align: center;
-      }
-
-      .error-nav-btn:hover {
-        background-color: #c82333;
-      }
-
-      .error-nav-btn .arrow-icon {
-        font-size: 30px; /* Tamanho da seta */
-        line-height: 1; /* Ajuste para centralizar */
-      }
-
-      .error-nav-btn .button-text {
-        font-size: 12px; /* Tamanho do texto abaixo da seta */
-        line-height: 1;
-        margin-top: 2px; /* Espaço entre a seta e o texto */
-      }
-      
-      /* Estilos para a seção de diagnóstico de erros */
-      .error-diagnosis-section {
-          margin-top: 50px;
-          padding: 30px;
-          background-color: #ffe0b2; /* Um laranja claro ou similar */
-          border-radius: 8px;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-          display: none; /* Escondido por padrão */
-          text-align: center;
-          font-size: 1.1em;
-          color: #333;
-      }
-
-      .error-diagnosis-section h2 {
-          color: #e65100; /* Laranja mais escuro */
-          margin-bottom: 20px;
-          font-size: 1.8em;
-      }
-
-      .error-diagnosis-section ul {
-          list-style: none; /* Remove marcadores de lista */
-          padding: 0;
-          margin: 0;
-      }
-
-      .error-diagnosis-section li {
-          background-color: #ff9800; /* Laranja */
-          color: white;
-          padding: 8px 15px;
-          margin: 8px 0;
-          border-radius: 5px;
-          display: inline-block; /* Para que os itens fiquem lado a lado */
-          margin-right: 10px;
-          font-weight: bold;
-      }
-      .error-diagnosis-section li:last-child {
-          margin-right: 0;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="quiz-container">
-      <h1>Questionário de Múltipla Escolha: Controle de Ingestão e Excreção de Líquidos</h1>
-      <div id="quiz"></div>
-      <button class="submit-btn" id="submit">Verificar Respostas</button>
-      <div id="results" class="results"></div>
-
-      <div id="errorDiagnosis" class="error-diagnosis-section">
-        <h2>Diagnóstico de Erros</h2>
-        <p>Parece que você precisa revisar os seguintes assuntos:</p>
-        <ul id="topicsToReview">
-          </ul>
-      </div>
+    <div class="error-diagnosis-section card-bloco" id="errorDiagnosis">
+      <h2>Diagnóstico de Erros</h2>
+      <p>Parece que você precisa revisar os seguintes assuntos:</p>
+      <ul id="topicsToReview"></ul>
     </div>
 
-    <button class="error-nav-btn" id="errorNavBtn">
-      <span class="arrow-icon"></span> <span class="button-text"></span> </button>
+    <div class="generated-questions-section card-bloco" id="generatedQuestionsSection" style="display:none;">
+      <h2>Novas Perguntas Geradas</h2>
+      <div id="newQuestionsContent"></div>
+    </div>
+  </div>
+  
+  <button class="error-nav-btn" id="errorNavBtn" style="display:none;">
+    <span class="arrow-icon"></span>
+    <span class="button-text"></span>
+  </button>
 
-    <script>
-      const quizContainer = document.getElementById("quiz");
-      const submitButton = document.getElementById("submit");
-      const resultsContainer = document.getElementById("results");
-      const errorNavBtn = document.getElementById("errorNavBtn");
-      const arrowIcon = errorNavBtn.querySelector(".arrow-icon");
-      const buttonText = errorNavBtn.querySelector(".button-text");
-      const errorDiagnosisSection = document.getElementById("errorDiagnosis");
-      const topicsToReviewList = document.getElementById("topicsToReview");
+  <script>
+    const quizContainer = document.getElementById("quiz");
+    const resultsContainer = document.getElementById("results");
+    const errorNavBtn = document.getElementById("errorNavBtn");
+    const arrowIcon = errorNavBtn.querySelector(".arrow-icon");
+    const buttonText = errorNavBtn.querySelector(".button-text");
+    const errorDiagnosisSection = document.getElementById("errorDiagnosis");
+    const topicsToReviewList = document.getElementById("topicsToReview");
+    const generateNewQuestionsBtn = document.getElementById("generateNewQuestionsBtn");
+    const generatedQuestionsSection = document.getElementById("generatedQuestionsSection");
+    const newQuestionsContent = document.getElementById("newQuestionsContent");
+    const statusMessage = document.getElementById("statusMessage");
 
-      let wrongQuestionIndices = []; 
-      let errorCountByTopic = {}; 
-      let totalAnsweredQuestionsByTopic = {}; 
-      let currentWrongQuestionIndex = -1; 
-      let hasErrors = false; 
-      let isShowingErrors = false; 
-      let isShowingDiagnosis = false; 
+    let wrongQuestionIndices = [];
+    let errorCountByTopic = {};
+    let totalAnsweredQuestionsByTopic = {};
+    let currentWrongQuestionIndex = -1;
+    let hasErrors = false;
+    let isShowingErrors = false;
+    let isShowingDiagnosis = false;
 
-      const questions = [
-        {
-          question:
-            "1. Qual é a porcentagem aproximada de água no organismo humano adulto, conforme o slide de introdução?",
-          options: [
-            "a) 40% a 50%",
-            "b) 60% a 70%",
-            "c) 80% a 90%",
-            "d) 30% a 40%",
-          ],
-          correctAnswer: "b) 60% a 70%",
-          comment:
-            "O primeiro slide informa que o organismo humano é composto por aproximadamente 60% a 70% de água, sendo um valor médio para adultos.",
-          topic: "Água Corporal Total",
-        },
-        {
-          question:
-            "2. Comparando homens e mulheres adultos, quem geralmente possui maior quantidade de água no corpo e por qual motivo, segundo os slides?",
-          options: [
-            "a) Mulheres, devido à maior massa muscular.",
-            "b) Homens, devido à maior massa muscular.",
-            "c) Mulheres, devido à maior proporção de células adiposas.",
-            "d) Homens, devido à menor proporção de células adiposas.",
-          ],
-          correctAnswer: "b) Homens, devido à maior massa muscular.",
-          comment:
-            "Os slides mencionam que homens geralmente possuem maior quantidade de água devido à maior massa muscular, já que o tecido muscular contém mais água que o tecido adiposo.",
-          topic: "Variação da Água Corporal",
-        },
-        {
-          question:
-            "3. Qual é a principal função do Compartimento Intracelular (LIC)?",
-          options: [
-            "a) Transporte de nutrientes e oxigênio para as células.",
-            "b) Armazenamento de eletrólitos e solúveis para uso futuro.",
-            "c) Desempenhar papel fundamental em processos celulares como metabolismo e função enzimática.",
-            "d) Manter a pressão arterial estável.",
-          ],
-          correctAnswer: "c) Desempenhar papel fundamental em processos celulares como metabolismo e função enzimática.",
-          comment:
-            "O Compartimento Intracelular (LIC) é o fluido dentro das células, onde ocorrem a maioria das reações metabólicas e as funções vitais da célula.",
-          topic: "Compartimento Intracelular",
-        },
-        {
-          question:
-            "4. Qual eletrólito é o principal cátion no líquido extracelular (LEC)?",
-          options: [
-            "a) Potássio (K⁺).",
-            "b) Cálcio (Ca²⁺).",
-            "c) Sódio (Na⁺).",
-            "d) Magnésio (Mg²⁺).",
-          ],
-          correctAnswer: "c) Sódio (Na⁺).",
-          comment:
-            "O sódio (Na⁺) é o eletrólito mais abundante e o principal cátion no líquido extracelular, sendo crucial para a osmolalidade e o volume do LEC.",
-          topic: "Eletrólitos do LEC",
-        },
-        {
-          question:
-            "5. A barreira que separa o líquido intravascular do líquido intersticial é:",
-          options: [
-            "a) A membrana celular.",
-            "b) A membrana nuclear.",
-            "c) A parede capilar.",
-            "d) A membrana plasmática.",
-          ],
-          correctAnswer: "c) A parede capilar.",
-          comment:
-            "A parede capilar é a barreira semipermeável que permite a troca de água e pequenos solutos entre o plasma (líquido intravascular) e o líquido intersticial.",
-          topic: "Barreiras entre Compartimentos",
-        },
-        {
-          question:
-            "6. A ingestão diária de líquidos (principalmente água) por um adulto, proveniente de líquidos e alimentos, é de aproximadamente:",
-          options: [
-            "a) 500 mL.",
-            "b) 1.000 mL.",
-            "c) 2.000 a 2.500 mL.",
-            "d) 5.000 mL.",
-          ],
-          correctAnswer: "c) 2.000 a 2.500 mL.",
-          comment:
-            "Os slides indicam que a ingestão diária total de líquidos, incluindo líquidos ingeridos e água presente nos alimentos, é de cerca de 2.000 a 2.500 mL.",
-          topic: "Balanço Hídrico: Ingestão",
-        },
-        {
-          question:
-            "7. Qual é a principal forma de perda de líquidos no organismo, além da excreção renal?",
-          options: [
-            "a) Perdas gastrointestinais (fezes).",
-            "b) Perdas insensíveis (pele e respiração).",
-            "c) Suor.",
-            "d) Perda por vômito.",
-          ],
-          correctAnswer: "b) Perdas insensíveis (pele e respiração).",
-          comment:
-            "As perdas insensíveis (água que se evapora da pele e do trato respiratório) são uma forma contínua e não mensurável de perda de líquidos, que ocorre mesmo em repouso e sem suor visível.",
-          topic: "Balanço Hídrico: Perdas Insensíveis",
-        },
-        {
-          question:
-            "8. A 'sede' é um mecanismo fisiológico que responde principalmente a qual alteração no organismo?",
-          options: [
-            "a) Aumento da pressão arterial.",
-            "b) Diminuição da osmolalidade plasmática.",
-            "c) Aumento da osmolalidade plasmática (desidratação celular).",
-            "d) Aumento do volume sanguíneo.",
-          ],
-          correctAnswer: "c) Aumento da osmolalidade plasmática (desidratação celular).",
-          comment:
-            "A sede é o principal mecanismo de controle da ingestão de água, sendo ativada pelos osmorreceptores hipotalâmicos em resposta a um aumento na osmolalidade plasmática (ou seja, quando o plasma fica mais concentrado e as células desidratam).",
-          topic: "Mecanismo da Sede",
-        },
-        {
-          question:
-            "9. Qual hormônio é liberado pela neuro-hipófise em resposta a um aumento da osmolalidade plasmática e/ou diminuição do volume sanguíneo?",
-          options: [
-            "a) Aldosterona.",
-            "b) Hormônio Antidiurético (ADH) ou Vasopressina.",
-            "c) Peptídeo Natriurético Atrial (ANP).",
-            "d) Angiotensina II.",
-          ],
-          correctAnswer: "b) Hormônio Antidiurético (ADH) ou Vasopressina.",
-          comment:
-            "O ADH é o principal hormônio que regula a reabsorção de água nos túbulos renais. Sua liberação é estimulada pelo aumento da osmolalidade plasmática e pela diminuição do volume sanguíneo, visando reter água no corpo.",
-          topic: "Hormônio Antidiurético (ADH)",
-        },
-        {
-          question:
-            "10. O ADH atua principalmente em qual parte do néfron para aumentar a reabsorção de água?",
-          options: [
-            "a) Glomérulo.",
-            "b) Túbulo contorcido proximal.",
-            "c) Alça de Henle ascendente.",
-            "d) Túbulos coletores e túbulo contorcido distal.",
-          ],
-          correctAnswer: "d) Túbulos coletores e túbulo contorcido distal.",
-          comment:
-            "O ADH aumenta a permeabilidade à água nos túbulos coletores e no túbulo contorcido distal, inserindo aquaporinas e permitindo a reabsorção de água livre para o interstício medular concentrado.",
-          topic: "Ação do ADH no Rim",
-        },
-        {
-          question:
-            "11. Qual é o principal efeito do sistema Renina-Angiotensina-Aldosterona (SRAA) na regulação do volume de líquidos?",
-          options: [
-            "a) Aumento da excreção de sódio e água.",
-            "b) Vasodilatação e diminuição da pressão arterial.",
-            "c) Reabsorção de sódio e água, e vasoconstrição, aumentando a pressão arterial.",
-            "d) Inibição da sede.",
-          ],
-          correctAnswer: "c) Reabsorção de sódio e água, e vasoconstrição, aumentando a pressão arterial.",
-          comment:
-            "O SRAA é ativado em resposta à diminuição do volume sanguíneo e da pressão arterial. A angiotensina II e a aldosterona agem para reter sódio e água, além de causar vasoconstrição, elevando o volume e a pressão.",
-          topic: "Sistema Renina-Angiotensina-Aldosterona (SRAA)",
-        },
-        {
-          question:
-            "12. A aldosterona, hormônio do SRAA, atua principalmente para aumentar a reabsorção de:",
-          options: [
-            "a) Água no túbulo distal.",
-            "b) Sódio e secreção de potássio nos túbulos renais.",
-            "c) Glicose no túbulo proximal.",
-            "d) Bicarbonato.",
-          ],
-          correctAnswer: "b) Sódio e secreção de potássio nos túbulos renais.",
-          comment:
-            "A aldosterona, liberada pelo córtex adrenal, age nos túbulos distais e coletores do rim para aumentar a reabsorção de sódio (e, consequentemente, água) e a secreção de potássio e íons hidrogênio.",
-          topic: "Ação da Aldosterona",
-        },
-        {
-          question:
-            "13. O Peptídeo Natriurético Atrial (ANP) é liberado em resposta a qual estímulo?",
-          options: [
-            "a) Diminuição da pressão arterial.",
-            "b) Aumento do volume sanguíneo (estiramento atrial).",
-            "c) Aumento da osmolalidade plasmática.",
-            "d) Hipocalemia.",
-          ],
-          correctAnswer: "b) Aumento do volume sanguíneo (estiramento atrial).",
-          comment:
-            "O ANP é um hormônio liberado pelos átrios cardíacos em resposta ao estiramento atrial (indicando aumento do volume sanguíneo). Ele atua para promover a natriurese (excreção de sódio) e a diurese (excreção de água), ajudando a reduzir o volume sanguíneo e a pressão arterial.",
-          topic: "Peptídeo Natriurético Atrial (ANP)",
-        },
-        {
-          question:
-            "14. Qual é o efeito principal do ANP na função renal?",
-          options: [
-            "a) Aumento da reabsorção de sódio.",
-            "b) Diminuição da taxa de filtração glomerular (TFG).",
-            "c) Aumento da excreção de sódio e água.",
-            "d) Estímulo à liberação de ADH.",
-          ],
-          correctAnswer: "c) Aumento da excreção de sódio e água.",
-          comment:
-            "O ANP promove a natriurese e a diurese ao aumentar a TFG, inibir a reabsorção de sódio e inibir a liberação de renina e aldosterona, ajudando a diminuir o volume sanguíneo.",
-          topic: "Efeitos do ANP",
-        },
-        {
-          question:
-            "15. A hipernatremia (sódio elevado no sangue) é mais frequentemente associada a qual desequilíbrio hídrico?",
-          options: [
-            "a) Hipervolemia.",
-            "b) Hipovolemia.",
-            "c) Desidratação (perda de água maior que a de sódio).",
-            "d) Edema.",
-          ],
-          correctAnswer: "c) Desidratação (perda de água maior que a de sódio).",
-          comment:
-            "A hipernatremia geralmente indica um déficit de água em relação ao sódio no corpo. Isso pode ser por perda excessiva de água (como em diabetes insipidus ou febre alta) ou ingestão insuficiente de água, resultando em desidratação celular.",
-          topic: "Hipernatremia",
-        },
-        {
-          question:
-            "16. A hiponatremia (sódio baixo no sangue) pode ser causada por:",
-          options: [
-            "a) Desidratação severa.",
-            "b) Ingestão excessiva de sódio.",
-            "c) Ingestão excessiva de água em relação ao sódio ou perda excessiva de sódio.",
-            "d) Diabetes insipidus.",
-          ],
-          correctAnswer: "c) Ingestão excessiva de água em relação ao sódio ou perda excessiva de sódio.",
-          comment:
-            "A hiponatremia ocorre quando há um excesso de água em relação ao sódio no plasma (diluição) ou uma perda real de sódio do corpo, como em casos de SIADH (síndrome de secreção inapropriada de ADH) ou diuréticos que promovem a excreção de sódio.",
-          topic: "Hiponatremia",
-        },
-        {
-          question:
-            "17. Qual é a principal consequência da hipercalemia (potássio elevado no sangue)?",
-          options: [
-            "a) Aumento da pressão arterial.",
-            "b) Distúrbios cardíacos graves (arritmias).",
-            "c) Edema generalizado.",
-            "d) Aumento da produção de urina.",
-          ],
-          correctAnswer: "b) Distúrbios cardíacos graves (arritmias).",
-          comment:
-            "A hipercalemia é uma emergência médica devido aos seus efeitos potencialmente fatais no coração, podendo causar arritmias e parada cardíaca.",
-          topic: "Hipercalemia",
-        },
-        {
-          question:
-            "18. A principal causa de hipocalemia (potássio baixo no sangue) é frequentemente associada a:",
-          options: [
-            "a) Insuficiência renal crônica.",
-            "b) Uso de diuréticos de alça ou tiazídicos, vômitos e diarreia.",
-            "c) Ingestão excessiva de potássio.",
-            "d) Trauma muscular.",
-          ],
-          correctAnswer: "b) Uso de diuréticos de alça ou tiazídicos, vômitos e diarreia.",
-          comment:
-            "Diuréticos (especialmente os de alça e tiazídicos) e perdas gastrointestinais (vômitos e diarreia) são causas comuns de hipocalemia, pois promovem a excreção de potássio.",
-          topic: "Hipocalemia",
-        },
-        {
-          question:
-            "19. Em casos de choque hipovolêmico, o corpo tenta compensar a perda de volume sanguíneo ativando qual sistema?",
-          options: [
-            "a) Sistema Parassimpático.",
-            "b) Sistema Renina-Angiotensina-Aldosterona (SRAA).",
-            "c) Liberação de Peptídeo Natriurético Atrial (ANP).",
-            "d) Diminuição da liberação de ADH.",
-          ],
-          correctAnswer: "b) Sistema Renina-Angiotensina-Aldosterona (SRAA).",
-          comment:
-            "O SRAA é um dos principais sistemas de defesa do corpo contra a hipovolemia. Ele é ativado pela diminuição da perfusão renal e atua para reter sódio e água e causar vasoconstrição, ajudando a restaurar o volume sanguíneo e a pressão arterial.",
-          topic: "Choque Hipovolêmico e SRAA",
-        },
-        {
-          question:
-            "20. Qual é a função primária dos rins na regulação do balanço hídrico e eletrolítico?",
-          options: [
-            "a) Produção de hormônios digestivos.",
-            "b) Excreção de CO₂.",
-            "c) Filtrar o sangue, reabsorver substâncias úteis e excretar resíduos e excessos de água e eletrólitos.",
-            "d) Armazenar glicogênio.",
-          ],
-          correctAnswer: "c) Filtrar o sangue, reabsorver substâncias úteis e excretar resíduos e excessos de água e eletrólitos.",
-          comment:
-            "Os rins são os órgãos centrais na homeostase de líquidos e eletrólitos, ajustando a excreção de água, sódio, potássio e outros solutos para manter o equilíbrio interno.",
-          topic: "Função Renal no Balanço Hídrico",
-        },
-        {
-          question:
-            "21. A Diurese Osmótica ocorre quando:",
-          options: [
-            "a) Há um excesso de ADH.",
-            "b) Há presença de solutos não reabsorvíveis no filtrado renal, arrastando água consigo.",
-            "c) Há uma diminuição da TFG.",
-            "d) A ingestão de líquidos é muito baixa.",
-          ],
-          correctAnswer: "b) Há presença de solutos não reabsorvíveis no filtrado renal, arrastando água consigo.",
-          comment:
-            "Na diurese osmótica (como no diabetes mellitus não controlado, onde a glicose age como um diurético osmótico), solutos que não são reabsorvidos pelos túbulos renais retêm água osmoticamente no lúmen tubular, aumentando o volume de urina.",
-          topic: "Diurese Osmótica",
-        },
-        {
-          question:
-            "22. Qual dos seguintes sintomas é característico de edema (excesso de líquido no espaço intersticial)?",
-          options: [
-            "a) Boca seca.",
-            "b) Diminuição do peso corporal.",
-            "c) Inchaço e ganho de peso.",
-            "d) Aumento da diurese.",
-          ],
-          correctAnswer: "c) Inchaço e ganho de peso.",
-          comment:
-            "Edema é o acúmulo de fluido nos tecidos intersticiais, manifestando-se como inchaço visível e, em casos generalizados, ganho de peso.",
-          topic: "Edema",
-        },
-        {
-          question:
-            "23. A SIADH (Síndrome de Secreção Inapropriada de ADH) leva a qual desequilíbrio hídrico?",
-          options: [
-            "a) Desidratação e hipernatremia.",
-            "b) Hipervolemia e hipernatremia.",
-            "c) Hiponatremia dilucional (excesso de água em relação ao sódio).",
-            "d) Diabetes insipidus.",
-          ],
-          correctAnswer: "c) Hiponatremia dilucional (excesso de água em relação ao sódio).",
-          comment:
-            "Na SIADH, há secreção excessiva e inapropriada de ADH, levando à retenção de água e à diluição do sódio no plasma, resultando em hiponatremia dilucional.",
-          topic: "SIADH",
-        },
-        {
-          question:
-            "24. O 'Diabetes Insipidus' é uma condição caracterizada por deficiência ou resistência à qual hormônio?",
-          options: [
-            "a) Insulina.",
-            "b) Aldosterona.",
-            "c) Hormônio Antidiurético (ADH).",
-            "d) Peptídeo Natriurético Atrial (ANP).",
-          ],
-          correctAnswer: "c) Hormônio Antidiurético (ADH).",
-          comment:
-            "O Diabetes Insipidus é causado pela incapacidade de produzir (central) ou de responder (nefrogênico) ao ADH, resultando em poliúria (excreção de grandes volumes de urina diluída) e polidipsia (sede intensa).",
-          topic: "Diabetes Insipidus",
-        },
-        {
-          question:
-            "25. A Regulação da osmolalidade plasmática é mantida principalmente por qual mecanismo?",
-          options: [
-            "a) Ajuste da excreção de potássio.",
-            "b) Regulação da ingestão e excreção de água pelo sistema ADH-sede.",
-            "c) Ajuste da excreção de bicarbonato.",
-            "d) Controle da pressão arterial.",
-          ],
-          correctAnswer: "b) Regulação da ingestão e excreção de água pelo sistema ADH-sede.",
-          comment:
-            "A osmolalidade plasmática, que reflete a concentração de solutos no sangue, é finamente controlada pela regulação da ingestão de água (sede) e da excreção de água livre pelos rins, mediada pelo ADH.",
-          topic: "Regulação da Osmolalidade",
-        },
-        {
-          question:
-            "26. O que significa 'perda de volume' (hipovolemia) no contexto dos desequilíbrios hídricos?",
-          options: [
-            "a) Excesso de água no corpo com sódio normal.",
-            "b) Diminuição da pressão arterial devido à vasodilatação.",
-            "c) Redução do volume de líquido no espaço extracelular, que pode ocorrer por perda de água e eletrólitos ou apenas de água.",
-            "d) Aumento do volume intracelular.",
-          ],
-          correctAnswer: "c) Redução do volume de líquido no espaço extracelular, que pode ocorrer por perda de água e eletrólitos ou apenas de água.",
-          comment:
-            "Hipovolemia é a diminuição do volume de fluido no compartimento extracelular. Pode ser isotônica (perda proporcional de água e solutos), hipotônica (perda maior de solutos) ou hipertônica (perda maior de água, levando à desidratação).",
-          topic: "Hipovolemia",
-        },
-        {
-          question:
-            "27. Qual dos seguintes sintomas é característico de desidratação?",
-          options: [
-            "a) Aumento da pressão arterial.",
-            "b) Edema (inchaço).",
-            "c) Boca seca e urina escura.",
-            "d) Aumento do apetite.",
-          ],
-          correctAnswer: "c) Boca seca e urina escura.",
-          comment:
-            "Boca seca e urina escura são sinais clássicos de desidratação, indicando a necessidade de reposição hídrica e a concentração da urina pelos rins.",
-          topic: "Sintomas de Desidratação",
-        },
-        {
-          question:
-            "28. Bebês e idosos são considerados mais vulneráveis a desequilíbrios hídricos por quê?",
-          options: [
-            "a) Possuem maior sensação de sede.",
-            "b) Têm maior capacidade renal de reter água.",
-            "c) São mais propensos à desidratação e têm menor capacidade de regulação.",
-            "d) Possuem maior porcentagem de massa muscular.",
-          ],
-          correctAnswer: "c) São mais propensos à desidratação e têm menor capacidade de regulação.",
-          comment:
-            "Bebês têm uma maior proporção de água corporal e maior taxa metabólica, enquanto idosos podem ter menor sensação de sede e menor função renal, tornando ambos os grupos mais suscetíveis a desequilíbrios.",
-          topic: "Vulnerabilidade a Desequilíbrios Hídricos",
-        },
-        {
-          question:
-            "29. A imagem final do slide de conclusão (Slide 12) destaca qual estrutura anatômica para reforçar o papel do rim no controle do volume e da osmolalidade da urina?",
-          options: [
-            "a) O glomérulo.",
-            "b) O néfron.",
-            "c) O ducto coletor.",
-            "d) O córtex renal.",
-          ],
-          correctAnswer: "b) O néfron.",
-          comment:
-            "Embora o glomérulo e o ducto coletor sejam partes importantes, a imagem no slide 12 mostra a estrutura completa do néfron, que é a unidade funcional do rim responsável pela filtração, reabsorção e secreção, essencial para o controle hídrico e eletrolítico.",
-          topic: "Néfron e Controle Hídrico",
-        },
-        {
-          question:
-            "30. O que significa 'perda insensível de água'?",
-          options: [
-            "a) Perda de água através da urina.",
-            "b) Perda de água através das fezes.",
-            "c) Perda de água por evaporação da pele e do trato respiratório que não é percebida.",
-            "d) Perda de água por suor excessivo.",
-          ],
-          correctAnswer: "c) Perda de água por evaporação da pele e do trato respiratório que não é percebida.",
-          comment:
-            "Perdas insensíveis são as perdas contínuas de água que não são facilmente mensuráveis e não são acompanhadas por uma percepção consciente da perda (diferente do suor excessivo ou da urina).",
-          topic: "Perda Insensível de Água",
-        },
-      ];
+    // Inicializa a visibilidade das seções no carregamento
+    errorDiagnosisSection.style.display = 'none';
+    topicsToReviewList.innerHTML = '';
+    statusMessage.textContent = '';
 
-      function buildQuiz() {
-        const output = [];
+          const questions = [         {           question:             "1. Qual é a porcentagem aproximada de água no organismo humano adulto, conforme o slide de introdução?",           options: [             "a) 40% a 50%",             "b) 60% a 70%",             "c) 80% a 90%",             "d) 30% a 40%",           ],           correctAnswer: "b) 60% a 70%",           comment:             "O primeiro slide informa que o organismo humano é composto por aproximadamente 60% a 70% de água, sendo um valor médio para adultos.",           topic: "Água Corporal Total",         },         {           question:             "2. Comparando homens e mulheres adultos, quem geralmente possui maior quantidade de água no corpo e por qual motivo, segundo os slides?",           options: [             "a) Mulheres, devido à maior massa muscular.",             "b) Homens, devido à maior massa muscular.",             "c) Mulheres, devido à maior proporção de células adiposas.",             "d) Homens, devido à menor proporção de células adiposas.",           ],           correctAnswer: "b) Homens, devido à maior massa muscular.",           comment:             "Os slides mencionam que homens geralmente possuem maior quantidade de água devido à maior massa muscular, já que o tecido muscular contém mais água que o tecido adiposo.",           topic: "Variação da Água Corporal",         },         {           question:             "3. Qual é a principal função do Compartimento Intracelular (LIC)?",           options: [             "a) Transporte de nutrientes e oxigênio para as células.",             "b) Armazenamento de eletrólitos e solúveis para uso futuro.",             "c) Desempenhar papel fundamental em processos celulares como metabolismo e função enzimática.",             "d) Manter a pressão arterial estável.",           ],           correctAnswer: "c) Desempenhar papel fundamental em processos celulares como metabolismo e função enzimática.",           comment:             "O Compartimento Intracelular (LIC) é o fluido dentro das células, onde ocorrem a maioria das reações metabólicas e as funções vitais da célula.",           topic: "Compartimento Intracelular",         },         {           question:             "4. Qual eletrólito é o principal cátion no líquido extracelular (LEC)?",           options: [             "a) Potássio (K⁺).",             "b) Cálcio (Ca²⁺).",             "c) Sódio (Na⁺).",             "d) Magnésio (Mg²⁺).",           ],           correctAnswer: "c) Sódio (Na⁺).",           comment:             "O sódio (Na⁺) é o eletrólito mais abundante e o principal cátion no líquido extracelular, sendo crucial para a osmolalidade e o volume do LEC.",           topic: "Eletrólitos do LEC",         },         {           question:             "5. A barreira que separa o líquido intravascular do líquido intersticial é:",           options: [             "a) A membrana celular.",             "b) A membrana nuclear.",             "c) A parede capilar.",             "d) A membrana plasmática.",           ],           correctAnswer: "c) A parede capilar.",           comment:             "A parede capilar é a barreira semipermeável que permite a troca de água e pequenos solutos entre o plasma (líquido intravascular) e o líquido intersticial.",           topic: "Barreiras entre Compartimentos",         },         {           question:             "6. A ingestão diária de líquidos (principalmente água) por um adulto, proveniente de líquidos e alimentos, é de aproximadamente:",           options: [             "a) 500 mL.",             "b) 1.000 mL.",             "c) 2.000 a 2.500 mL.",             "d) 5.000 mL.",           ],           correctAnswer: "c) 2.000 a 2.500 mL.",           comment:             "Os slides indicam que a ingestão diária total de líquidos, incluindo líquidos ingeridos e água presente nos alimentos, é de cerca de 2.000 a 2.500 mL.",           topic: "Balanço Hídrico: Ingestão",         },         {           question:             "7. Qual é a principal forma de perda de líquidos no organismo, além da excreção renal?",           options: [             "a) Perdas gastrointestinais (fezes).",             "b) Perdas insensíveis (pele e respiração).",             "c) Suor.",             "d) Perda por vômito.",           ],           correctAnswer: "b) Perdas insensíveis (pele e respiração).",           comment:             "As perdas insensíveis (água que se evapora da pele e do trato respiratório) são uma forma contínua e não mensurável de perda de líquidos, que ocorre mesmo em repouso e sem suor visível.",           topic: "Balanço Hídrico: Perdas Insensíveis",         },         {           question:             "8. A 'sede' é um mecanismo fisiológico que responde principalmente a qual alteração no organismo?",           options: [             "a) Aumento da pressão arterial.",             "b) Diminuição da osmolalidade plasmática.",             "c) Aumento da osmolalidade plasmática (desidratação celular).",             "d) Aumento do volume sanguíneo.",           ],           correctAnswer: "c) Aumento da osmolalidade plasmática (desidratação celular).",           comment:             "A sede é o principal mecanismo de controle da ingestão de água, sendo ativada pelos osmorreceptores hipotalâmicos em resposta a um aumento na osmolalidade plasmática (ou seja, quando o plasma fica mais concentrado e as células desidratam).",           topic: "Mecanismo da Sede",         },         {           question:             "9. Qual hormônio é liberado pela neuro-hipófise em resposta a um aumento da osmolalidade plasmática e/ou diminuição do volume sanguíneo?",           options: [             "a) Aldosterona.",             "b) Hormônio Antidiurético (ADH) ou Vasopressina.",             "c) Peptídeo Natriurético Atrial (ANP).",             "d) Angiotensina II.",           ],           correctAnswer: "b) Hormônio Antidiurético (ADH) ou Vasopressina.",           comment:             "O ADH é o principal hormônio que regula a reabsorção de água nos túbulos renais. Sua liberação é estimulada pelo aumento da osmolalidade plasmática e pela diminuição do volume sanguíneo, visando reter água no corpo.",           topic: "Hormônio Antidiurético (ADH)",         },         {           question:             "10. O ADH atua principalmente em qual parte do néfron para aumentar a reabsorção de água?",           options: [             "a) Glomérulo.",             "b) Túbulo contorcido proximal.",             "c) Alça de Henle ascendente.",             "d) Túbulos coletores e túbulo contorcido distal.",           ],           correctAnswer: "d) Túbulos coletores e túbulo contorcido distal.",           comment:             "O ADH aumenta a permeabilidade à água nos túbulos coletores e no túbulo contorcido distal, inserindo aquaporinas e permitindo a reabsorção de água livre para o interstício medular concentrado.",           topic: "Ação do ADH no Rim",         },         {           question:             "11. Qual é o principal efeito do sistema Renina-Angiotensina-Aldosterona (SRAA) na regulação do volume de líquidos?",           options: [             "a) Aumento da excreção de sódio e água.",             "b) Vasodilatação e diminuição da pressão arterial.",             "c) Reabsorção de sódio e água, e vasoconstrição, aumentando a pressão arterial.",             "d) Inibição da sede.",           ],           correctAnswer: "c) Reabsorção de sódio e água, e vasoconstrição, aumentando a pressão arterial.",           comment:             "O SRAA é ativado em resposta à diminuição do volume sanguíneo e da pressão arterial. A angiotensina II e a aldosterona agem para reter sódio e água, além de causar vasoconstrição, elevando o volume e a pressão.",           topic: "Sistema Renina-Angiotensina-Aldosterona (SRAA)",         },         {           question:             "12. A aldosterona, hormônio do SRAA, atua principalmente para aumentar a reabsorção de:",           options: [             "a) Água no túbulo distal.",             "b) Sódio e secreção de potássio nos túbulos renais.",             "c) Glicose no túbulo proximal.",             "d) Bicarbonato.",           ],           correctAnswer: "b) Sódio e secreção de potássio nos túbulos renais.",           comment:             "A aldosterona, liberada pelo córtex adrenal, age nos túbulos distais e coletores do rim para aumentar a reabsorção de sódio (e, consequentemente, água) e a secreção de potássio e íons hidrogênio.",           topic: "Ação da Aldosterona",         },         {           question:             "13. O Peptídeo Natriurético Atrial (ANP) é liberado em resposta a qual estímulo?",           options: [             "a) Diminuição da pressão arterial.",             "b) Aumento do volume sanguíneo (estiramento atrial).",             "c) Aumento da osmolalidade plasmática.",             "d) Hipocalemia.",           ],           correctAnswer: "b) Aumento do volume sanguíneo (estiramento atrial).",           comment:             "O ANP é um hormônio liberado pelos átrios cardíacos em resposta ao estiramento atrial (indicando aumento do volume sanguíneo). Ele atua para promover a natriurese (excreção de sódio) e a diurese (excreção de água), ajudando a reduzir o volume sanguíneo e a pressão arterial.",           topic: "Peptídeo Natriurético Atrial (ANP)",         },         {           question:             "14. Qual é o efeito principal do ANP na função renal?",           options: [             "a) Aumento da reabsorção de sódio.",             "b) Diminuição da taxa de filtração glomerular (TFG).",             "c) Aumento da excreção de sódio e água.",             "d) Estímulo à liberação de ADH.",           ],           correctAnswer: "c) Aumento da excreção de sódio e água.",           comment:             "O ANP promove a natriurese e a diurese ao aumentar a TFG, inibir a reabsorção de sódio e inibir a liberação de renina e aldosterona, ajudando a diminuir o volume sanguíneo.",           topic: "Efeitos do ANP",         },         {           question:             "15. A hipernatremia (sódio elevado no sangue) é mais frequentemente associada a qual desequilíbrio hídrico?",           options: [             "a) Hipervolemia.",             "b) Hipovolemia.",             "c) Desidratação (perda de água maior que a de sódio).",             "d) Edema.",           ],           correctAnswer: "c) Desidratação (perda de água maior que a de sódio).",           comment:             "A hipernatremia geralmente indica um déficit de água em relação ao sódio no corpo. Isso pode ser por perda excessiva de água (como em diabetes insipidus ou febre alta) ou ingestão insuficiente de água, resultando em desidratação celular.",           topic: "Hipernatremia",         },         {           question:             "16. A hiponatremia (sódio baixo no sangue) pode ser causada por:",           options: [             "a) Desidratação severa.",             "b) Ingestão excessiva de sódio.",             "c) Ingestão excessiva de água em relação ao sódio ou perda excessiva de sódio.",             "d) Diabetes insipidus.",           ],           correctAnswer: "c) Ingestão excessiva de água em relação ao sódio ou perda excessiva de sódio.",           comment:             "A hiponatremia ocorre quando há um excesso de água em relação ao sódio no plasma (diluição) ou uma perda real de sódio do corpo, como em casos de SIADH (síndrome de secreção inapropriada de ADH) ou diuréticos que promovem a excreção de sódio.",           topic: "Hiponatremia",         },         {           question:             "17. Qual é a principal consequência da hipercalemia (potássio elevado no sangue)?",           options: [             "a) Aumento da pressão arterial.",             "b) Distúrbios cardíacos graves (arritmias).",             "c) Edema generalizado.",             "d) Aumento da produção de urina.",           ],           correctAnswer: "b) Distúrbios cardíacos graves (arritmias).",           comment:             "A hipercalemia é uma emergência médica devido aos seus efeitos potencialmente fatais no coração, podendo causar arritmias e parada cardíaca.",           topic: "Hipercalemia",         },         {           question:             "18. A principal causa de hipocalemia (potássio baixo no sangue) é frequentemente associada a:",           options: [             "a) Insuficiência renal crônica.",             "b) Uso de diuréticos de alça ou tiazídicos, vômitos e diarreia.",             "c) Ingestão excessiva de potássio.",             "d) Trauma muscular.",           ],           correctAnswer: "b) Uso de diuréticos de alça ou tiazídicos, vômitos e diarreia.",           comment:             "Diuréticos (especialmente os de alça e tiazídicos) e perdas gastrointestinais (vômitos e diarreia) são causas comuns de hipocalemia, pois promovem a excreção de potássio.",           topic: "Hipocalemia",         },         {           question:             "19. Em casos de choque hipovolêmico, o corpo tenta compensar a perda de volume sanguíneo ativando qual sistema?",           options: [             "a) Sistema Parassimpático.",             "b) Sistema Renina-Angiotensina-Aldosterona (SRAA).",             "c) Liberação de Peptídeo Natriurético Atrial (ANP).",             "d) Diminuição da liberação de ADH.",           ],           correctAnswer: "b) Sistema Renina-Angiotensina-Aldosterona (SRAA).",           comment:             "O SRAA é um dos principais sistemas de defesa do corpo contra a hipovolemia. Ele é ativado pela diminuição da perfusão renal e atua para reter sódio e água e causar vasoconstrição, ajudando a restaurar o volume sanguíneo e a pressão arterial.",           topic: "Choque Hipovolêmico e SRAA",         },         {           question:             "20. Qual é a função primária dos rins na regulação do balanço hídrico e eletrolítico?",           options: [             "a) Produção de hormônios digestivos.",             "b) Excreção de CO₂.",             "c) Filtrar o sangue, reabsorver substâncias úteis e excretar resíduos e excessos de água e eletrólitos.",             "d) Armazenar glicogênio.",           ],           correctAnswer: "c) Filtrar o sangue, reabsorver substâncias úteis e excretar resíduos e excessos de água e eletrólitos.",           comment:             "Os rins são os órgãos centrais na homeostase de líquidos e eletrólitos, ajustando a excreção de água, sódio, potássio e outros solutos para manter o equilíbrio interno.",           topic: "Função Renal no Balanço Hídrico",         },         {           question:             "21. A Diurese Osmótica ocorre quando:",           options: [             "a) Há um excesso de ADH.",             "b) Há presença de solutos não reabsorvíveis no filtrado renal, arrastando água consigo.",             "c) Há uma diminuição da TFG.",             "d) A ingestão de líquidos é muito baixa.",           ],           correctAnswer: "b) Há presença de solutos não reabsorvíveis no filtrado renal, arrastando água consigo.",           comment:             "Na diurese osmótica (como no diabetes mellitus não controlado, onde a glicose age como um diurético osmótico), solutos que não são reabsorvidos pelos túbulos renais retêm água osmoticamente no lúmen tubular, aumentando o volume de urina.",           topic: "Diurese Osmótica",         },         {           question:             "22. Qual dos seguintes sintomas é característico de edema (excesso de líquido no espaço intersticial)?",           options: [             "a) Boca seca.",             "b) Diminuição do peso corporal.",             "c) Inchaço e ganho de peso.",             "d) Aumento da diurese.",           ],           correctAnswer: "c) Inchaço e ganho de peso.",           comment:             "Edema é o acúmulo de fluido nos tecidos intersticiais, manifestando-se como inchaço visível e, em casos generalizados, ganho de peso.",           topic: "Edema",         },         {           question:             "23. A SIADH (Síndrome de Secreção Inapropriada de ADH) leva a qual desequilíbrio hídrico?",           options: [             "a) Desidratação e hipernatremia.",             "b) Hipervolemia e hipernatremia.",             "c) Hiponatremia dilucional (excesso de água em relação ao sódio).",             "d) Diabetes insipidus.",           ],           correctAnswer: "c) Hiponatremia dilucional (excesso de água em relação ao sódio).",           comment:             "Na SIADH, há secreção excessiva e inapropriada de ADH, levando à retenção de água e à diluição do sódio no plasma, resultando em hiponatremia dilucional.",           topic: "SIADH",         },         {           question:             "24. O 'Diabetes Insipidus' é uma condição caracterizada por deficiência ou resistência à qual hormônio?",           options: [             "a) Insulina.",             "b) Aldosterona.",             "c) Hormônio Antidiurético (ADH).",             "d) Peptídeo Natriurético Atrial (ANP).",           ],           correctAnswer: "c) Hormônio Antidiurético (ADH).",           comment:             "O Diabetes Insipidus é causado pela incapacidade de produzir (central) ou de responder (nefrogênico) ao ADH, resultando em poliúria (excreção de grandes volumes de urina diluída) e polidipsia (sede intensa).",           topic: "Diabetes Insipidus",         },         {           question:             "25. A Regulação da osmolalidade plasmática é mantida principalmente por qual mecanismo?",           options: [             "a) Ajuste da excreção de potássio.",             "b) Regulação da ingestão e excreção de água pelo sistema ADH-sede.",             "c) Ajuste da excreção de bicarbonato.",             "d) Controle da pressão arterial.",           ],           correctAnswer: "b) Regulação da ingestão e excreção de água pelo sistema ADH-sede.",           comment:             "A osmolalidade plasmática, que reflete a concentração de solutos no sangue, é finamente controlada pela regulação da ingestão de água (sede) e da excreção de água livre pelos rins, mediada pelo ADH.",           topic: "Regulação da Osmolalidade",         },         {           question:             "26. O que significa 'perda de volume' (hipovolemia) no contexto dos desequilíbrios hídricos?",           options: [             "a) Excesso de água no corpo com sódio normal.",             "b) Diminuição da pressão arterial devido à vasodilatação.",             "c) Redução do volume de líquido no espaço extracelular, que pode ocorrer por perda de água e eletrólitos ou apenas de água.",             "d) Aumento do volume intracelular.",           ],           correctAnswer: "c) Redução do volume de líquido no espaço extracelular, que pode ocorrer por perda de água e eletrólitos ou apenas de água.",           comment:             "Hipovolemia é a diminuição do volume de fluido no compartimento extracelular. Pode ser isotônica (perda proporcional de água e solutos), hipotônica (perda maior de solutos) ou hipertônica (perda maior de água, levando à desidratação).",           topic: "Hipovolemia",         },         {           question:             "27. Qual dos seguintes sintomas é característico de desidratação?",           options: [             "a) Aumento da pressão arterial.",             "b) Edema (inchaço).",             "c) Boca seca e urina escura.",             "d) Aumento do apetite.",           ],           correctAnswer: "c) Boca seca e urina escura.",           comment:             "Boca seca e urina escura são sinais clássicos de desidratação, indicando a necessidade de reposição hídrica e a concentração da urina pelos rins.",           topic: "Sintomas de Desidratação",         },         {           question:             "28. Bebês e idosos são considerados mais vulneráveis a desequilíbrios hídricos por quê?",           options: [             "a) Possuem maior sensação de sede.",             "b) Têm maior capacidade renal de reter água.",             "c) São mais propensos à desidratação e têm menor capacidade de regulação.",             "d) Possuem maior porcentagem de massa muscular.",           ],           correctAnswer: "c) São mais propensos à desidratação e têm menor capacidade de regulação.",           comment:             "Bebês têm uma maior proporção de água corporal e maior taxa metabólica, enquanto idosos podem ter menor sensação de sede e menor função renal, tornando ambos os grupos mais suscetíveis a desequilíbrios.",           topic: "Vulnerabilidade a Desequilíbrios Hídricos",         },         {           question:             "29. A imagem final do slide de conclusão (Slide 12) destaca qual estrutura anatômica para reforçar o papel do rim no controle do volume e da osmolalidade da urina?",           options: [             "a) O glomérulo.",             "b) O néfron.",             "c) O ducto coletor.",             "d) O córtex renal.",           ],           correctAnswer: "b) O néfron.",           comment:             "Embora o glomérulo e o ducto coletor sejam partes importantes, a imagem no slide 12 mostra a estrutura completa do néfron, que é a unidade funcional do rim responsável pela filtração, reabsorção e secreção, essencial para o controle hídrico e eletrolítico.",           topic: "Néfron e Controle Hídrico",         },         {           question:             "30. O que significa 'perda insensível de água'?",           options: [             "a) Perda de água através da urina.",             "b) Perda de água através das fezes.",             "c) Perda de água por evaporação da pele e do trato respiratório que não é percebida.",             "d) Perda de água por suor excessivo.",           ],           correctAnswer: "c) Perda de água por evaporação da pele e do trato respiratório que não é percebida.",           comment:             "Perdas insensíveis são as perdas contínuas de água que não são facilmente mensuráveis e não são acompanhadas por uma percepção consciente da perda (diferente do suor excessivo ou da urina).",           topic: "Perda Insensível de Água",         },       ];
 
-        questions.forEach((currentQuestion, questionNumber) => {
-          const options = [];
-          for (let i = 0; i < currentQuestion.options.length; i++) {
-            options.push(
-              `<label class="option" data-question="${questionNumber}" data-value="${currentQuestion.options[i]}">
-                <img src="tesouras.png" class="scissor-icon" onclick="event.stopPropagation(); this.parentNode.classList.toggle('struck-through');">
-                ${currentQuestion.options[i]}
-              </label>`
-            );
-          }
+    function buildQuiz() {
+      const output = [];
 
-          output.push(
-            `<div class="card" id="question-${questionNumber}" data-topic="${currentQuestion.topic}">
-              <div class="question">${currentQuestion.question}</div>
-              <div class="options">${options.join("")}</div>
-              <div class="comment" id="comment-${questionNumber}"></div>
-            </div>`
+      questions.forEach((currentQuestion, questionNumber) => {
+        const options = [];
+        for (let i = 0; i < currentQuestion.options.length; i++) {
+          options.push(
+            `<label class="option" data-question="${questionNumber}" data-value="${currentQuestion.options[i]}">
+              <img src="tesouras.png" class="scissor-icon" onclick="event.stopPropagation(); this.parentNode.classList.toggle('struck-through');">
+              ${currentQuestion.options[i]}
+            </label>`
           );
+        }
+
+        output.push(
+          `<div class="card" id="question-${questionNumber}" data-topic="${currentQuestion.topic}">
+            <div class="question">${currentQuestion.question}</div>
+            <div class="options">${options.join("")}</div>
+            <div class="comment" id="comment-${questionNumber}"></div>
+          </div>`
+        );
+      });
+
+      quizContainer.innerHTML = output.join("");
+    }
+
+    function showResults() {
+      wrongQuestionIndices = [];
+      errorCountByTopic = {};
+      totalAnsweredQuestionsByTopic = {};
+      currentWrongQuestionIndex = -1;
+      hasErrors = false;
+      isShowingErrors = false;
+      isShowingDiagnosis = false;
+
+      errorDiagnosisSection.style.display = 'none';
+      topicsToReviewList.innerHTML = '';
+      statusMessage.textContent = '';
+
+      // Busca por todas as perguntas: estáticas e dinâmicas
+      const allQuestionCards = document.querySelectorAll('.quiz-container .card, #newQuestionsContent .card');
+      let correctAnswersCount = 0;
+      let totalQuestionsAnswered = 0;
+
+      console.log('🔍 Verificando', allQuestionCards.length, 'perguntas...');
+
+      allQuestionCards.forEach((card, index) => {
+        const questionEl = card.querySelector('.question') || card.querySelector('p');
+        if (!questionEl) return;
+
+        const questionText = questionEl.textContent.trim();
+        const optionsContainer = card.querySelector('.options') || card;
+        const allOptions = optionsContainer.querySelectorAll('.option, label.option, label');
+        const userAnswerElement = optionsContainer.querySelector('.option.selected, label.selected');
+        const commentDiv = card.querySelector('.comment');
+
+        const questionTopic = card.dataset.topic || "Tópico não informado";
+        
+        console.log(`📝 Pergunta ${index + 1}: Tópico = "${questionTopic}"`);
+        console.log(`🔍 Encontradas ${allOptions.length} alternativas`);
+        
+        // Remove classes anteriores
+        allOptions.forEach(option => {
+          option.classList.remove('correct', 'incorrect', 'selected');
+        });
+        if (commentDiv) commentDiv.classList.remove('show');
+
+        let correctAnswerValue = null;
+        let questionComment = null;
+
+        // Verifica se é pergunta estática ou dinâmica
+        const isStatic = card.id && card.id.startsWith('question-');
+        if (isStatic) {
+          // Pergunta estática - busca nos dados originais
+          const questionData = questions.find(q => q.question.trim() === questionText);
+          if (questionData) {
+            correctAnswerValue = questionData.correctAnswer.trim();
+            questionComment = questionData.comment;
+          }
+        } else {
+          // Pergunta dinâmica - busca pela opção marcada como correta
+          const correctOpt = optionsContainer.querySelector('.option[data-answer="true"], label[data-answer="true"]');
+          if (correctOpt) {
+            correctAnswerValue = correctOpt.dataset.value?.trim() || correctOpt.textContent.trim();
+            console.log(`✅ Resposta correta encontrada: "${correctAnswerValue}"`);
+          } else {
+            console.log('❌ Nenhuma resposta correta encontrada para pergunta dinâmica');
+          }
+          
+          // Busca comentário no próprio card ou no div comment
+          const commentElement = card.querySelector('.comment');
+          if (commentElement && commentElement.textContent.trim()) {
+            questionComment = commentElement.textContent.trim();
+          }
+        }
+
+        // Processa resposta do usuário e aplica coloração
+        let userAnswer = null;
+        if (userAnswerElement) {
+          userAnswerElement.classList.add('selected');
+          userAnswer = userAnswerElement.dataset.value?.trim() || userAnswerElement.textContent.trim();
+          totalQuestionsAnswered++;
+          totalAnsweredQuestionsByTopic[questionTopic] = (totalAnsweredQuestionsByTopic[questionTopic] || 0) + 1;
+
+          console.log(`👤 Resposta do usuário: "${userAnswer}"`);
+          console.log(`🎯 Resposta correta: "${correctAnswerValue}"`);
+
+          // Verifica se a resposta está correta
+          if (userAnswer === correctAnswerValue) {
+            correctAnswersCount++;
+            console.log(`✅ Resposta correta!`);
+          } else {
+            hasErrors = true;
+            errorCountByTopic[questionTopic] = (errorCountByTopic[questionTopic] || 0) + 1;
+            console.log(`❌ Resposta incorreta para tópico: ${questionTopic}`);
+          }
+        }
+
+        // Aplica coloração: SEMPRE marca a correta de verde, e a errada de vermelho se foi marcada
+        allOptions.forEach(option => {
+          const optionValue = option.dataset.value?.trim() || option.textContent.trim();
+          
+          // Marca a resposta correta de verde SEMPRE
+          if (optionValue === correctAnswerValue) {
+            option.classList.add('correct');
+            console.log(`🟢 Marcando como correta: "${optionValue}"`);
+          }
+          
+          // Se o usuário marcou uma resposta E ela está errada, marca de vermelho
+          if (userAnswer && optionValue === userAnswer && userAnswer !== correctAnswerValue) {
+            option.classList.add('incorrect');
+            console.log(`🔴 Marcando como incorreta: "${optionValue}"`);
+          }
         });
 
-        quizContainer.innerHTML = output.join("");
+        // Mostra comentário se disponível
+        if (commentDiv && questionComment) {
+          commentDiv.textContent = questionComment;
+          commentDiv.classList.add('show');
+        }
+      });
+
+      // Exibe resultados
+      resultsContainer.textContent = `Você acertou ${correctAnswersCount} de ${totalQuestionsAnswered} questões respondidas.`;
+
+      console.log('📊 Erros por tópico:', errorCountByTopic);
+      console.log('📊 Total por tópico:', totalAnsweredQuestionsByTopic);
+
+      // Gera diagnóstico de erros
+      if (hasErrors) {
+        for (const topic in errorCountByTopic) {
+          const errors = errorCountByTopic[topic];
+          const total = totalAnsweredQuestionsByTopic[topic] || 0;
+          if (total > 0) {
+            const percent = ((errors / total) * 100).toFixed(1);
+            const li = document.createElement('li');
+            li.textContent = `${topic}: ${percent}% de erros (${errors} de ${total} questões respondidas)`;
+            topicsToReviewList.appendChild(li);
+          }
+        }
+      } else {
+        const li = document.createElement('li');
+        li.textContent = "🥳 Parabéns! Você não teve erros nas questões respondidas.";
+        topicsToReviewList.appendChild(li);
       }
 
-      function showResults() {
-        wrongQuestionIndices = []; 
-        errorCountByTopic = {}; 
-        totalAnsweredQuestionsByTopic = {}; 
-        currentWrongQuestionIndex = -1; 
-        hasErrors = false; 
-        isShowingErrors = false; 
-        isShowingDiagnosis = false;
+      errorDiagnosisSection.style.display = 'block';
+      generatedQuestionsSection.style.display = 'block';
+      generateNewQuestionsBtn.style.display = 'block';
+      scrollToDiagnosis();
+    }
 
-        errorDiagnosisSection.style.display = 'none';
-        topicsToReviewList.innerHTML = ''; 
+    function scrollToQuestion(index) {
+      const questionCard = document.getElementById(`question-${index}`);
+      if (questionCard) {
+        questionCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
 
-        const answerContainers = quizContainer.querySelectorAll(".options");
-        let correctAnswers = 0;
+    function scrollToDiagnosis() {
+        errorDiagnosisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 
-        questions.forEach((currentQuestion, questionNumber) => {
-          const answerContainer = answerContainers[questionNumber];
-          const userAnswerElement = answerContainer.querySelector('.option.selected');
-          const userAnswerValue = userAnswerElement ? userAnswerElement.dataset.value : undefined;
-          const commentDiv = document.getElementById(`comment-${questionNumber}`);
+    function scrollToGeneratedQuestions() {
+        generatedQuestionsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 
-          // Limpa estados anteriores
-          const allOptions = answerContainer.querySelectorAll('.option');
-          allOptions.forEach(option => {
-            option.classList.remove('correct', 'incorrect');
-            const scissorIcon = option.querySelector('.scissor-icon');
-            if (scissorIcon) scissorIcon.classList.add('hidden'); // Esconder tesouras inicialmente
-          });
-          if (commentDiv) commentDiv.classList.remove('show');
+    // Event listener para seleção de opções (funciona para estáticas e dinâmicas)
+    document.addEventListener("click", function (event) {
+      const clickedElement = event.target;
+      const optionElement = clickedElement.closest('.option');
 
+      if (optionElement) {
+          if (clickedElement.classList.contains("scissor-icon")) {
+              event.stopPropagation();
+              optionElement.classList.toggle("struck-through");
+          }
+          else {
+              const parentCard = optionElement.closest('.card');
+              const currentQuestionOptions = parentCard.querySelectorAll('.option');
 
-          const optionElements = answerContainer.querySelectorAll('.option');
-          optionElements.forEach(option => {
-            const scissorIcon = option.querySelector('.scissor-icon');
+              currentQuestionOptions.forEach(opt => opt.classList.remove("selected"));
+              optionElement.classList.add("selected");
+          }
+      }
+    });
 
-            if (option === userAnswerElement && scissorIcon) {
-                scissorIcon.classList.add('hidden');
-            } else if (scissorIcon) {
-                scissorIcon.classList.remove('hidden'); // Mostrar tesoura para opções não selecionadas
+    generateNewQuestionsBtn.addEventListener("click", async function() {
+        statusMessage.textContent = '⏳ Gerando novas perguntas...';
+        generateNewQuestionsBtn.disabled = true;
+
+        const topics = Object.keys(errorCountByTopic).filter(topic => {
+            const errorsInTopic = errorCountByTopic[topic] || 0;
+            const totalAnsweredInTopic = totalAnsweredQuestionsByTopic[topic] || 0;
+            return errorsInTopic > 0 && totalAnsweredInTopic > 0;
+        });
+
+        const topicsToSend = topics.length > 0 ? topics : ["fisiologia celular", "biologia"];
+
+        try {
+            const response = await fetch('https://www.quizia.xyz/quiz', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ topicos: topicsToSend }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            newQuestionsContent.innerHTML = '';
+            if (data && data.html) {
+                console.log('📥 HTML recebido do Flask:', data.html);
+                
+                // Insere o HTML diretamente sem reconstrução complexa
+                newQuestionsContent.innerHTML = data.html.replace(/```html|```/g, '');
+                
+                // Adiciona tesouras e ajusta formatação apenas se necessário
+                newQuestionsContent.querySelectorAll('.card').forEach((card, cardIndex) => {
+                    // Garante que o elemento de pergunta tenha a classe correta
+                    const questionElement = card.querySelector('p');
+                    if (questionElement && !questionElement.classList.contains('question')) {
+                       questionElement.classList.add('question');
+                    }
+
+                    // Remove qualquer input de radio que possa existir e adiciona tesouras
+                    card.querySelectorAll('label').forEach((label) => {
+                        // Remove inputs de radio MAS preserva o atributo data-answer
+                        const radioInput = label.querySelector('input[type="radio"]');
+                        if (radioInput) {
+                            // PRESERVA o atributo data-answer do input no label
+                            if (radioInput.hasAttribute('data-answer')) {
+                                label.setAttribute('data-answer', radioInput.getAttribute('data-answer'));
+                            }
+                            radioInput.remove();
+                        }
+                        
+                        // Garante que tenha a classe option
+                        if (!label.classList.contains('option')) {
+                            label.classList.add('option');
+                        }
+
+                        // Garante que tenha data-value
+                        if (!label.dataset.value) {
+                            label.dataset.value = label.textContent.trim();
+                        }
+
+                        // Adiciona tesoura se não existir
+                        if (!label.querySelector('.scissor-icon')) {
+                            const scissorIcon = document.createElement('img');
+                            scissorIcon.src = 'tesouras.png';
+                            scissorIcon.className = 'scissor-icon';
+                            scissorIcon.onclick = function(e) {
+                                e.stopPropagation();
+                                label.classList.toggle('struck-through');
+                            };
+                            label.insertBefore(scissorIcon, label.firstChild);
+                        }
+                    });
+
+                    console.log(`🏷️ Card ${cardIndex}: data-topic = "${card.dataset.topic}"`);
+                    
+                    // Verifica se há opção correta marcada
+                    const correctOption = card.querySelector('label[data-answer="true"]');
+                    if (correctOption) {
+                        console.log(`✅ Opção correta encontrada: "${correctOption.dataset.value}"`);
+                    } else {
+                        console.log('❌ Nenhuma opção correta encontrada');
+                    }
+                });
+            } else {
+                newQuestionsContent.innerHTML = "<p>Não foi possível gerar novas perguntas para os tópicos selecionados.</p>";
             }
             
-            if (option.dataset.value === currentQuestion.correctAnswer) {
-                option.classList.add('correct');
-                if (commentDiv && currentQuestion.comment) {
-                    commentDiv.textContent = currentQuestion.comment;
-                    commentDiv.classList.add('show');
-                }
-            }
-          });
+            generatedQuestionsSection.style.display = 'block';
+            scrollToGeneratedQuestions();
+            statusMessage.textContent = '✅ Perguntas geradas com sucesso!';
+            setTimeout(() => { statusMessage.textContent = '' }, 3000);
 
-          // ***************************************************************
-          // Lógica crucial: Apenas contabiliza se a questão foi respondida
-          // ***************************************************************
-          if (userAnswerElement) { 
-            totalAnsweredQuestionsByTopic[currentQuestion.topic] = (totalAnsweredQuestionsByTopic[currentQuestion.topic] || 0) + 1;
-
-            if (userAnswerValue !== currentQuestion.correctAnswer) {
-              userAnswerElement.classList.add('incorrect');
-              wrongQuestionIndices.push(questionNumber);
-              hasErrors = true; 
-
-              // Incrementa o contador de erros para este tópico
-              errorCountByTopic[currentQuestion.topic] = (errorCountByTopic[currentQuestion.topic] || 0) + 1;
-            } else {
-              correctAnswers++;
-            }
-          }
-          // ***************************************************************
-          // Fim da lógica crucial
-          // ***************************************************************
-        });
-
-        resultsContainer.textContent = `Você acertou ${correctAnswers} de ${questions.length} questões.`;
-        
-        // Rola a página totalmente para baixo para exibir o resultado
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-
-        if (hasErrors) {
-            errorNavBtn.style.display = 'flex';
-            arrowIcon.textContent = '⬆️'; 
-            buttonText.textContent = 'Diagnóstico de Erros'; 
-            isShowingErrors = false; 
-            isShowingDiagnosis = false; 
-        } else {
-            errorNavBtn.style.display = 'none';
+        } catch (error) {
+            console.error('Erro ao gerar novas perguntas:', error);
+            newQuestionsContent.innerHTML = `<p>Erro ao carregar novas perguntas: ${error.message}. Por favor, tente novamente.</p>`;
+            generatedQuestionsSection.style.display = 'block';
+            scrollToGeneratedQuestions();
+            statusMessage.textContent = '❌ Erro na requisição: ' + error.message;
+            setTimeout(() => { statusMessage.textContent = '' }, 5000);
+        } finally {
+            generateNewQuestionsBtn.disabled = false;
         }
-      }
+    });
 
-      function scrollToQuestion(index) {
-        const questionCard = document.getElementById(`question-${index}`);
-        if (questionCard) {
-          questionCard.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
-        }
-      }
-      
-      function scrollToDiagnosis() {
-          errorDiagnosisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+    // Inicialização
+    buildQuiz();
+    errorDiagnosisSection.style.display = 'none';
+    generatedQuestionsSection.style.display = 'none';
+    generateNewQuestionsBtn.style.display = 'none';
 
-      quizContainer.addEventListener("click", function (event) {
-        const clickedElement = event.target;
-        const optionElement = clickedElement.closest('.option');
+    // Event listener para o botão de verificar respostas
+    document.getElementById("verifyAnswersBtn").addEventListener("click", showResults);
+  </script>
+  <script src="conexao_firebase.js"></script><script src="navegacao.js"></script><script type="module" src="padrao_simulado.js"></script>
 
-        if (optionElement) {
-            if (clickedElement.classList.contains("scissor-icon")) {
-                optionElement.classList.toggle("struck-through");
-            } 
-            else {
-                const questionNumber = optionElement.dataset.question;
-                const currentQuestionOptions = quizContainer.querySelectorAll(`.option[data-question=\"${questionNumber}\"]`);
-                currentQuestionOptions.forEach(opt => opt.classList.remove("selected"));
-                
-                optionElement.classList.add("selected");
-            }
-        }
-      });
-
-      errorNavBtn.addEventListener("click", function() {
-        if (!hasErrors) { 
-            errorNavBtn.style.display = 'none';
-            return;
-        }
-
-        if (!isShowingErrors && !isShowingDiagnosis) { 
-            if (wrongQuestionIndices.length > 0) {
-                isShowingErrors = true; 
-                currentWrongQuestionIndex = 0; 
-                arrowIcon.textContent = '⬇️'; 
-                buttonText.textContent = `Próximo Erro (${currentWrongQuestionIndex + 1}/${wrongQuestionIndices.length})`;
-                scrollToQuestion(wrongQuestionIndices[currentWrongQuestionIndex]);
-            } else {
-                isShowingDiagnosis = true;
-                arrowIcon.textContent = '⬆️'; 
-                buttonText.textContent = 'Diagnóstico de Erros'; 
-                
-                topicsToReviewList.innerHTML = ''; 
-                for (const topic in errorCountByTopic) {
-                    const errorsInTopic = errorCountByTopic[topic];
-                    const totalAnsweredInTopic = totalAnsweredQuestionsByTopic[topic] || 0; 
-                    
-                    if (totalAnsweredInTopic > 0) { 
-                        const percentage = ((errorsInTopic / totalAnsweredInTopic) * 100).toFixed(1); 
-                        const li = document.createElement('li');
-                        li.textContent = `${topic}: ${percentage}% de erros (${errorsInTopic} de ${totalAnsweredInTopic} questões respondidas)`;
-                        topicsToReviewList.appendChild(li);
-                    }
-                }
-                errorDiagnosisSection.style.display = 'block'; 
-                scrollToDiagnosis();
-                errorNavBtn.style.display = 'none'; 
-            }
-
-        } else if (isShowingErrors) { 
-            currentWrongQuestionIndex++;
-            if (currentWrongQuestionIndex < wrongQuestionIndices.length) {
-                scrollToQuestion(wrongQuestionIndices[currentWrongQuestionIndex]);
-                buttonText.textContent = `Próximo Erro (${currentWrongQuestionIndex + 1}/${wrongQuestionIndices.length})`;
-            } else {
-                isShowingErrors = false; 
-                isShowingDiagnosis = true;
-                arrowIcon.textContent = '⬇️'; 
-                buttonText.textContent = 'Diagnóstico de Erros'; 
-
-                topicsToReviewList.innerHTML = ''; 
-                for (const topic in errorCountByTopic) {
-                    const errorsInTopic = errorCountByTopic[topic];
-                    const totalAnsweredInTopic = totalAnsweredQuestionsByTopic[topic] || 0;
-                    
-                    if (totalAnsweredInTopic > 0) {
-                        const percentage = ((errorsInTopic / totalAnsweredInTopic) * 100).toFixed(1); 
-                        const li = document.createElement('li');
-                        li.textContent = `${topic}: ${percentage}% de erros (${errorsInTopic} de ${totalAnsweredInTopic} questões respondidas)`;
-                        topicsToReviewList.appendChild(li);
-                    }
-                }
-                errorDiagnosisSection.style.display = 'block'; 
-                scrollToDiagnosis();
-                errorNavBtn.style.display = 'none'; 
-            }
-        } 
-      });
-
-      submitButton.addEventListener("click", showResults);
-
-      buildQuiz();
-    </script>
-  </body>
-<script src="conexao_firebase.js"></script><script src="navegacao.js"></script><script type="module" src="padrao_simulado.js"></script></html>
+</body>
+</html>
