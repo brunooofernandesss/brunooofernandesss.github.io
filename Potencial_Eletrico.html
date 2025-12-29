@@ -1,1032 +1,633 @@
-
+<!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Simulado Módulo I - Potencial Elétrico da Membrana Celular</title>
-    <script type="text/javascript" async
-      src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML">
-    </script>
-    <style>
-      body {
-        font-family: sans-serif;
-        margin: 0;
-        padding: 20px;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        min-height: 100vh;
-        background-color: #f4f4f4;
-      }
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Bioeletrogênese e Potenciais de Membrana</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      background-color: #f4f4f4;
+    }
 
-      .quiz-container {
-        max-width: 800px;
-        width: 100%;
-      }
+    .quiz-container {
+      max-width: 800px;
+      width: 100%;
+    }
 
-      h1 {
-        color: #333;
-        text-align: center;
-        margin-bottom: 30px;
-      }
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 30px;
+    }
 
-      .card {
-        background-color: white;
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .question {
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .options {
+      margin-top: 15px;
+    }
+
+    /* Estilos unificados para todas as opções (estáticas e dinâmicas) */
+    .option, label.option, label, #newQuestionsContent label {
+      display: flex; /* Para alinhar imagem e texto */
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      position: relative; /* Para posicionar a tesoura */
+    }
+
+    /* FORÇA a remoção de inputs de radio em QUALQUER lugar */
+    .option input[type="radio"], 
+    label input[type="radio"],
+    #newQuestionsContent input[type="radio"],
+    #newQuestionsContent label input[type="radio"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
+    }
+
+    .option:hover, 
+    label.option:hover, 
+    label:hover,
+    #newQuestionsContent label:hover {
+      background-color: #e9e9e9;
+    }
+
+    .option.selected, 
+    label.option.selected, 
+    label.selected,
+    #newQuestionsContent label.selected {
+      background-color: #d1e7dd;
+      border-color: #28a745;
+    }
+
+    .option.correct, 
+    label.option.correct, 
+    label.correct,
+    #newQuestionsContent label.correct {
+      background-color: #d4edda;
+      border-color: #28a745;
+    }
+
+    .option.incorrect, 
+    label.option.incorrect, 
+    label.incorrect,
+    #newQuestionsContent label.incorrect {
+      background-color: #f8d7da;
+      border-color: #dc3545;
+    }
+
+    .submit-btn {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 30px;
+    }
+
+    .submit-btn:hover {
+      background-color: #0056b3;
+    }
+
+    .results {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .scissor-icon {
+      margin-right: 10px; /* Espaço entre a tesoura e o texto da opção */
+      width: 20px; /* Ajuste conforme o tamanho da sua imagem */
+      height: 20px; /* Ajuste conforme o tamanho da sua imagem */
+      opacity: 0.5; /* Transparência como no original */
+      cursor: pointer;
+    }
+
+    .scissor-icon.hidden {
+      display: none;
+    }
+
+    .struck-through {
+      text-decoration: line-through;
+      color: #888;
+    }
+
+    .comment {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f0f0f0;
+      border-left: 4px solid #007bff;
+      font-style: italic;
+      color: #555;
+      display: none; /* Escondido por padrão */
+    }
+    .comment.show {
+      display: block; /* Mostrado quando ativado */
+    }
+
+    /* Estilos para o botão de navegação de erro / diagnóstico */
+    .error-nav-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #dc3545; /* Vermelho para erro */
+      color: white;
+      border: none;
+      border-radius: 50%; /* Torna o botão redondo */
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      display: none; /* Escondido por padrão */
+      flex-direction: column; /* Para empilhar o ícone e o contador */
+      padding: 5px; /* Ajuste o padding para acomodar texto maior */
+      box-sizing: border-box; /* Garante que padding não aumente o tamanho total */
+      text-align: center;
+    }
+
+    .error-nav-btn:hover {
+      background-color: #c82333;
+    }
+
+    .error-nav-btn .arrow-icon {
+      font-size: 30px; /* Tamanho da seta */
+      line-height: 1; /* Ajuste para centralizar */
+    }
+
+    .error-nav-btn .button-text {
+      font-size: 12px; /* Tamanho do texto abaixo da seta */
+      line-height: 1;
+      margin-top: 2px; /* Espaço entre a seta e o texto */
+    }
+
+    /* Estilos para a seção de diagnóstico de erros */
+    .error-diagnosis-section {
+        margin-top: 50px;
+        padding: 30px;
+        background-color: #ffe0b2; /* Um laranja claro ou similar */
         border-radius: 8px;
-        padding: 20px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        display: none; /* Escondido por padrão */
+        text-align: center;
+        font-size: 1.1em;
+        color: #333;
+    }
+
+    .error-diagnosis-section h2 {
+        color: #e65100; /* Laranja mais escuro */
         margin-bottom: 20px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
+        font-size: 1.8em;
+    }
 
-      .question {
-        font-weight: bold;
-        margin-bottom: 10px;
-        color: #333;
-      }
+    .error-diagnosis-section ul {
+        list-style: none; /* Remove marcadores de lista */
+        padding: 0;
+        margin: 0;
+    }
 
-      .options {
-        margin-top: 15px;
-      }
-
-      .option {
-        display: flex; /* Para alinhar imagem e texto */
-        align-items: center;
-        margin-bottom: 10px;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-        position: relative; /* Para posicionar a tesoura */
-      }
-
-      .option:hover {
-        background-color: #e9e9e9;
-      }
-
-      .option.selected {
-        background-color: #d1e7dd;
-        border-color: #28a745;
-      }
-
-      .option.correct {
-        background-color: #d4edda;
-        border-color: #28a745;
-      }
-
-      .option.incorrect {
-        background-color: #f8d7da;
-        border-color: #dc3545;
-      }
-
-      .submit-btn {
-        display: block;
-        width: 100%;
-        padding: 15px;
-        background-color: #007bff;
+    .error-diagnosis-section li {
+        background-color: #ff9800; /* Laranja */
         color: white;
-        border: none;
+        padding: 8px 15px;
+        margin: 8px 0;
         border-radius: 5px;
-        font-size: 18px;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-        margin-top: 30px;
-      }
-
-      .submit-btn:hover {
-        background-color: #0056b3;
-      }
-
-      .results {
-        text-align: center;
-        margin-top: 30px;
-        font-size: 20px;
+        display: inline-block; /* Para que os itens fiquem lado a lado */
+        margin-right: 10px;
         font-weight: bold;
-        color: #333;
-      }
+    }
+    .error-diagnosis-section li:last-child {
+        margin-right: 0;
+    }
+ .card-bloco {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+      background: #fff;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="quiz-container">
+    <h1 style="text-align:center; margin-bottom: 30px;">Bioeletrogênese e Potenciais de Membrana</h1>
+    <div class="card-bloco" id="quiz"></div>
+    <button class="submit-btn" id="verifyAnswersBtn">Verificar Respostas</button>
 
-      .scissor-icon {
-        margin-right: 10px; /* Espaço entre a tesoura e o texto da opção */
-        width: 20px; /* Ajuste conforme o tamanho da sua imagem */
-        height: 20px; /* Ajuste conforme o tamanho da sua imagem */
-        opacity: 0.5; /* Transparência como no original */
-        cursor: pointer;
-      }
+    <button class="generate-questions-btn submit-btn" id="generateNewQuestionsBtn" style="display:none;">
+      Gerar Novas Perguntas
+    </button>
 
-      .scissor-icon.hidden {
-        display: none;
-      }
+    <div class="results card-bloco" id="results"></div>
+    <div id="statusMessage" style="text-align: center; margin-top: 10px; font-weight: bold; color: #007bff;"></div>
 
-      .struck-through {
-        text-decoration: line-through;
-        color: #888;
-      }
-
-      .comment {
-        margin-top: 10px;
-        padding: 10px;
-        background-color: #f0f0f0;
-        border-left: 4px solid #007bff;
-        font-style: italic;
-        color: #555;
-        display: none; /* Escondido por padrão */
-      }
-      .comment.show {
-        display: block; /* Mostrado quando ativado */
-      }
-
-      /* Estilos para o botão de navegação de erro / diagnóstico */
-      .error-nav-btn {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background-color: #dc3545; /* Vermelho para erro */
-        color: white;
-        border: none;
-        border-radius: 50%; /* Torna o botão redondo */
-        width: 60px;
-        height: 60px;
-        font-size: 24px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        cursor: pointer;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        z-index: 1000;
-        display: none; /* Escondido por padrão */
-        flex-direction: column; /* Para empilhar o ícone e o contador */
-        padding: 5px; /* Ajuste o padding para acomodar texto maior */
-        box-sizing: border-box; /* Garante que padding não aumente o tamanho total */
-        text-align: center;
-      }
-
-      .error-nav-btn:hover {
-        background-color: #c82333;
-      }
-
-      .error-nav-btn .arrow-icon {
-        font-size: 30px; /* Tamanho da seta */
-        line-height: 1; /* Ajuste para centralizar */
-      }
-
-      .error-nav-btn .button-text {
-        font-size: 12px; /* Tamanho do texto abaixo da seta */
-        line-height: 1;
-        margin-top: 2px; /* Espaço entre a seta e o texto */
-      }
-      
-      /* Estilos para a seção de diagnóstico de erros */
-      .error-diagnosis-section {
-          margin-top: 50px;
-          padding: 30px;
-          background-color: #ffe0b2; /* Um laranja claro ou similar */
-          border-radius: 8px;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-          display: none; /* Escondido por padrão */
-          text-align: center;
-          font-size: 1.1em;
-          color: #333;
-      }
-
-      .error-diagnosis-section h2 {
-          color: #e65100; /* Laranja mais escuro */
-          margin-bottom: 20px;
-          font-size: 1.8em;
-      }
-
-      .error-diagnosis-section ul {
-          list-style: none; /* Remove marcadores de lista */
-          padding: 0;
-          margin: 0;
-      }
-
-      .error-diagnosis-section li {
-          background-color: #ff9800; /* Laranja */
-          color: white;
-          padding: 8px 15px;
-          margin: 8px 0;
-          border-radius: 5px;
-          display: inline-block; /* Para que os itens fiquem lado a lado */
-          margin-right: 10px;
-          font-weight: bold;
-      }
-      .error-diagnosis-section li:last-child {
-          margin-right: 0;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="quiz-container">
-      <h1>Questionário de Múltipla Escolha: Potencial Elétrico da Membrana Celular</h1>
-      <div id="quiz"></div>
-      <button class="submit-btn" id="submit">Verificar Respostas</button>
-      <div id="results" class="results"></div>
-
-      <div id="errorDiagnosis" class="error-diagnosis-section">
-        <h2>Diagnóstico de Erros</h2>
-        <p>Parece que você precisa revisar os seguintes assuntos:</p>
-        <ul id="topicsToReview">
-          </ul>
-      </div>
+    <div class="error-diagnosis-section card-bloco" id="errorDiagnosis">
+      <h2>Diagnóstico de Erros</h2>
+      <p>Parece que você precisa revisar os seguintes assuntos:</p>
+      <ul id="topicsToReview"></ul>
     </div>
 
-    <button class="error-nav-btn" id="errorNavBtn">
-      <span class="arrow-icon"></span> <span class="button-text"></span> </button>
+    <div class="generated-questions-section card-bloco" id="generatedQuestionsSection" style="display:none;">
+      <h2>Novas Perguntas Geradas</h2>
+      <div id="newQuestionsContent"></div>
+    </div>
+  </div>
+  
+  <button class="error-nav-btn" id="errorNavBtn" style="display:none;">
+    <span class="arrow-icon"></span>
+    <span class="button-text"></span>
+  </button>
 
-    <script>
-      const quizContainer = document.getElementById("quiz");
-      const submitButton = document.getElementById("submit");
-      const resultsContainer = document.getElementById("results");
-      const errorNavBtn = document.getElementById("errorNavBtn");
-      const arrowIcon = errorNavBtn.querySelector(".arrow-icon");
-      const buttonText = errorNavBtn.querySelector(".button-text");
-      const errorDiagnosisSection = document.getElementById("errorDiagnosis");
-      const topicsToReviewList = document.getElementById("topicsToReview");
+  <script>
+    const quizContainer = document.getElementById("quiz");
+    const resultsContainer = document.getElementById("results");
+    const errorNavBtn = document.getElementById("errorNavBtn");
+    const arrowIcon = errorNavBtn.querySelector(".arrow-icon");
+    const buttonText = errorNavBtn.querySelector(".button-text");
+    const errorDiagnosisSection = document.getElementById("errorDiagnosis");
+    const topicsToReviewList = document.getElementById("topicsToReview");
+    const generateNewQuestionsBtn = document.getElementById("generateNewQuestionsBtn");
+    const generatedQuestionsSection = document.getElementById("generatedQuestionsSection");
+    const newQuestionsContent = document.getElementById("newQuestionsContent");
+    const statusMessage = document.getElementById("statusMessage");
 
-      let wrongQuestionIndices = []; // Array para armazenar os índices das questões marcadas erradas
-      let errorCountByTopic = {}; // Objeto para contar erros por tópico (APENAS QUESTÕES MARCADAS ERRADO)
-      let totalAnsweredQuestionsByTopic = {}; // Objeto para contar o total de questões RESPONDIDAS por tópico
-      let currentWrongQuestionIndex = -1; 
-      let hasErrors = false; 
-      let isShowingErrors = false; // Flag para controlar se estamos navegando nos erros
-      let isShowingDiagnosis = false; // Flag para controlar se estamos na seção de diagnóstico
+    let wrongQuestionIndices = [];
+    let errorCountByTopic = {};
+    let totalAnsweredQuestionsByTopic = {};
+    let currentWrongQuestionIndex = -1;
+    let hasErrors = false;
+    let isShowingErrors = false;
+    let isShowingDiagnosis = false;
 
-      const questions = [
-        {
-          question:
-            "1. Qual o principal fator que provoca a alteração no potencial elétrico da membrana celular?",
-          options: [
-            "a) O movimento de proteínas através da membrana.",
-            "b) A síntese de ATP no citoplasma.",
-            "c) O movimento de íons carregados através da membrana plasmática.",
-            "d) A replicação do DNA no núcleo.",
-          ],
-          correctAnswer: "c) O movimento de íons carregados através da membrana plasmática.",
-          comment:
-            "O potencial elétrico da membrana é fundamentalmente determinado pela distribuição desigual de cargas elétricas (íons) através da bicamada lipídica. O movimento desses íons, seja para dentro ou para fora da célula, altera o balanço de cargas e, consequentemente, o potencial elétrico.",
-          topic: "Conceito Básico de Potencial de Membrana",
-        },
-        {
-          question:
-            "2. No estado de repouso, como se compara o potencial elétrico do interior da célula em relação ao exterior?",
-          options: [
-            "a) Mais positivo.",
-            "b) Neutro.",
-            "c) Mais negativo.",
-            "d) Igual.",
-          ],
-          correctAnswer: "c) Mais negativo.",
-          comment:
-            "O potencial de membrana em repouso (ou potencial de repouso) é caracterizado por um interior celular mais negativo em comparação com o exterior. Isso é estabelecido e mantido por gradientes de concentração de íons e pela ação da bomba de sódio e potássio, bem como pela permeabilidade seletiva da membrana a diferentes íons, principalmente ao potássio.",
-          topic: "Potencial de Repouso",
-        },
-        {
-          question:
-            "3. Qual o íon que está em maior concentração fora da célula e é crucial para a despolarização?",
-          options: [
-            "a) $\\text{K}^{+}$ (Potássio).",
-            "b) $\\text{Cl}^{-}$ (Cloreto).",
-            "c) $\\text{Na}^{+}$ (Sódio).",
-            "d) $\\text{Ca}^{2+}$ (Cálcio).",
-          ],
-          correctAnswer: "c) $\\text{Na}^{+}$ (Sódio).",
-          comment:
-            "O íon $\\text{Na}^{+}$ (Sódio) é encontrado em alta concentração no meio extracelular. Sua entrada rápida na célula através de canais iônicos específicos é a principal responsável pela despolarização da membrana durante um potencial de ação.",
-          topic: "Distribuição Iônica: Sódio",
-        },
-        {
-          question:
-            "4. A bomba de $\\text{Na}^{+}/\\text{K}^{+}$ ATPase é fundamental para o potencial de repouso porque:",
-          options: [
-            "a) Transporta $\\text{K}^{+}$ para fora e $\\text{Na}^{+}$ para dentro da célula.",
-            "b) Transporta $\\text{Na}^{+}$ para fora e $\\text{K}^{+}$ para dentro da célula.",
-            "c) Transporta ambos os íons para fora da célula.",
-            "d) Transporta ambos os íons para dentro da célula.",
-          ],
-          correctAnswer: "b) Transporta $\\text{Na}^{+}$ para fora e $\\text{K}^{+}$ para dentro da célula.",
-          comment:
-            "A bomba de $\\text{Na}^{+}/\\text{K}^{+}$ ATPase é uma proteína de transporte ativo que bombeia 3 íons $\\text{Na}^{+}$ para fora da célula e 2 íons $\\text{K}^{+}$ para dentro da célula a cada ciclo, utilizando ATP. Isso contribui diretamente para a manutenção dos gradientes de concentração de $\\text{Na}^{+}$ e $\\text{K}^{+}$ e para o estabelecimento do potencial de membrana em repouso, ao criar um leve excesso de cargas positivas fora da célula.",
-          topic: "Bomba de Sódio e Potássio",
-        },
-        {
-          question:
-            "5. O que acontece com o potencial de membrana durante a despolarização?",
-          options: [
-            "a) Torna-se mais negativo.",
-            "b) Torna-se menos negativo (mais positivo).",
-            "c) Permanece inalterado.",
-            "d) Retorna ao seu estado de repouso.",
-          ],
-          correctAnswer: "b) Torna-se menos negativo (mais positivo).",
-          comment:
-            "A despolarização é o processo em que o potencial de membrana se move para valores menos negativos, ou seja, em direção a zero ou a valores positivos. Isso geralmente ocorre devido à entrada de íons positivos (como $\\text{Na}^{+}$) na célula.",
-          topic: "Despolarização",
-        },
-        {
-          question:
-            "6. A repolarização de uma membrana celular ocorre devido principalmente à:",
-          options: [
-            "a) Entrada de $\\text{Na}^{+}$.",
-            "b) Saída de $\\text{K}^{+}$.",
-            "c) Saída de $\\text{Cl}^{-}$.",
-            "d) Entrada de $\\text{Ca}^{2+}$.",
-          ],
-          correctAnswer: "b) Saída de $\\text{K}^{+}$.",
-          comment:
-            "Após a despolarização, a repolarização (retorno ao potencial de repouso) é predominantemente causada pela abertura de canais de $\\text{K}^{+}$ dependentes de voltagem, que permitem a saída de íons $\\text{K}^{+}$ (cargas positivas) do interior da célula, tornando o potencial de membrana mais negativo novamente.",
-          topic: "Repolarização",
-        },
-        {
-          question: "7. O que é a hiperpolarização?",
-          options: [
-            "a) O potencial de membrana se torna mais positivo que o potencial de repouso.",
-            "b) O potencial de membrana se torna mais negativo que o potencial de repouso.",
-            "c) O potencial de membrana atinge o limiar para um potencial de ação.",
-            "d) O potencial de membrana permanece em repouso.",
-          ],
-          correctAnswer: "b) O potencial de membrana se torna mais negativo que o potencial de repouso.",
-          comment:
-            "A hiperpolarização é um estado em que o potencial de membrana se torna ainda mais negativo do que o potencial de repouso normal. Isso pode ocorrer devido à saída de cargas positivas (como $\\text{K}^{+}$) ou à entrada de cargas negativas (como $\\text{Cl}^{-}$).",
-          topic: "Hiperpolarização",
-        },
-        {
-          question:
-            "8. O que é um canal iônico regulado por voltagem?",
-          options: [
-            "a) Um canal que abre em resposta à ligação de uma molécula sinalizadora.",
-            "b) Um canal que abre em resposta a uma mudança no potencial elétrico da membrana.",
-            "c) Um canal que está sempre aberto.",
-            "d) Um canal que transporta íons contra seu gradiente de concentração.",
-          ],
-          correctAnswer: "b) Um canal que abre em resposta a uma mudança no potencial elétrico da membrana.",
-          comment:
-            "Canais iônicos regulados por voltagem são proteínas transmembrana que alteram sua conformação (abrem ou fecham) em resposta a variações no potencial elétrico através da membrana celular. Eles são cruciais para a geração e propagação de potenciais de ação.",
-          topic: "Canais Iônicos Voltagem-Dependentes",
-        },
-        {
-          question:
-            "9. A fase de 'limiar' em um potencial de ação refere-se ao:",
-          options: [
-            "a) Potencial máximo atingido pela despolarização.",
-            "b) Potencial mínimo necessário para disparar um potencial de ação.",
-            "c) Potencial de repouso da célula.",
-            "d) Potencial durante a repolarização.",
-          ],
-          correctAnswer: "b) Potencial mínimo necessário para disparar um potencial de ação.",
-          comment:
-            "O limiar é o potencial de membrana crítico que deve ser atingido para que um potencial de ação seja disparado. Se o estímulo não atingir esse limiar, nenhum potencial de ação completo será gerado, e a célula retornará ao repouso.",
-          topic: "Limiar do Potencial de Ação",
-        },
-        {
-          question:
-            "10. Qual a principal característica de um potencial de ação de 'tudo ou nada'?",
-          options: [
-            "a) Sua amplitude varia com a intensidade do estímulo.",
-            "b) Ele ocorre com amplitude máxima se o limiar for atingido, ou não ocorre.",
-            "c) Ele pode ser interrompido a qualquer momento.",
-            "d) Depende da quantidade de proteínas no citoplasma.",
-          ],
-          correctAnswer: "b) Ele ocorre com amplitude máxima se o limiar for atingido, ou não ocorre.",
-          comment:
-            "O princípio de 'tudo ou nada' significa que, uma vez que o limiar é alcançado, o potencial de ação é disparado com sua amplitude e duração características, independentemente da intensidade do estímulo que o iniciou (desde que o estímulo seja supra-limiar). Se o limiar não for atingido, nenhum potencial de ação ocorre.",
-          topic: "Princípio do Tudo ou Nada",
-        },
-        {
-          question:
-            "11. Qual é o papel dos canais de vazamento de $\\text{K}^{+}$ no potencial de repouso?",
-          options: [
-            "a) Eles iniciam a despolarização.",
-            "b) Eles permitem a saída contínua de $\\text{K}^{+}$, contribuindo para a negatividade interna.",
-            "c) Eles bloqueiam a passagem de $\\text{K}^{+}$.",
-            "d) Eles transportam $\\text{K}^{+}$ ativamente para dentro da célula.",
-          ],
-          correctAnswer: "b) Eles permitem a saída contínua de $\\text{K}^{+}$, contribuindo para a negatividade interna.",
-          comment:
-            "Os canais de vazamento de $\\text{K}^{+}$ (ou canais de repouso de $\\text{K}^{+}$) são canais iônicos que estão abertos no potencial de repouso, permitindo que os íons $\\text{K}^{+}$ se movam para fora da célula a favor de seu gradiente de concentração. Essa saída contínua de cargas positivas é um dos principais fatores que estabelecem e mantêm a negatividade do potencial de repouso.",
-          topic: "Canais de Vazamento de Potássio",
-        },
-        {
-          question:
-            "12. Em que tipo de células os potenciais de ação são mais frequentemente observados e são cruciais para sua função?",
-          options: [
-            "a) Células epiteliais.",
-            "b) Células adiposas.",
-            "c) Células excitáveis (neurônios e células musculares).",
-            "d) Células sanguíneas.",
-          ],
-          correctAnswer: "c) Células excitáveis (neurônios e células musculares).",
-          comment:
-            "Potenciais de ação são os sinais elétricos fundamentais utilizados por células excitáveis, como neurônios (para transmitir informações) e células musculares (para iniciar a contração).",
-          topic: "Células Excitáveis",
-        },
-        {
-          question:
-            "13. A fase de queda rápida do potencial de ação (repolarização) é principalmente causada pela:",
-          options: [
-            "a) Abertura de canais de $\\text{Na}^{+}$ dependentes de voltagem.",
-            "b) Fechamento de canais de $\\text{K}^{+}$ dependentes de voltagem.",
-            "c) Inativação dos canais de $\\text{Na}^{+}$ dependentes de voltagem e abertura dos canais de $\\text{K}^{+}$ dependentes de voltagem.",
-            "d) Atividade da bomba de $\\text{Na}^{+}/\\text{K}^{+}$ ATPase.",
-          ],
-          correctAnswer: "c) Inativação dos canais de $\\text{Na}^{+}$ dependentes de voltagem e abertura dos canais de $\\text{K}^{+}$ dependentes de voltagem.",
-          comment:
-            "A repolarização ocorre devido a dois eventos coordenados: a rápida inativação dos canais de $\\text{Na}^{+}$ dependentes de voltagem (impedindo a entrada de $\\text{Na}^{+}$) e a abertura mais lenta dos canais de $\\text{K}^{+}$ dependentes de voltagem (permitindo a saída de $\\text{K}^{+}$), o que restaura a negatividade do potencial de membrana.",
-          topic: "Eventos Iônicos da Repolarização",
-        },
-        {
-          question:
-            "14. O que é o período refratário absoluto de um neurônio?",
-          options: [
-            "a) O período em que um segundo potencial de ação pode ser gerado com um estímulo mais forte.",
-            "b) O período em que nenhum segundo potencial de ação pode ser gerado, independentemente da intensidade do estímulo.",
-            "c) O período em que a célula está em hiperpolarização.",
-            "d) O período em que os canais de $\\text{K}^{+}$ estão fechados.",
-          ],
-          correctAnswer: "b) O período em que nenhum segundo potencial de ação pode ser gerado, independentemente da intensidade do estímulo.",
-          comment:
-            "Durante o período refratário absoluto, os canais de $\\text{Na}^{+}$ dependentes de voltagem estão inativados, impedindo a geração de um novo potencial de ação, mesmo com um estímulo muito forte. Isso garante a propagação unidirecional dos potenciais de ação.",
-          topic: "Período Refratário Absoluto",
-        },
-        {
-          question:
-            "15. O potencial de equilíbrio de um íon é o potencial de membrana no qual:",
-          options: [
-            "a) O íon para de se mover através da membrana.",
-            "b) A força elétrica e a força do gradiente de concentração sobre o íon são iguais e opostas, resultando em nenhum movimento líquido.",
-            "c) O íon se move apenas por transporte ativo.",
-            "d) A célula morre.",
-          ],
-          correctAnswer: "b) A força elétrica e a força do gradiente de concentração sobre o íon são iguais e opostas, resultando em nenhum movimento líquido.",
-          comment:
-            "O potencial de equilíbrio de um íon é o potencial elétrico transmembrana no qual a força química (gradiente de concentração) que impulsiona o íon em uma direção é exatamente balanceada pela força elétrica que o impulsiona na direção oposta, resultando em um fluxo líquido zero do íon através da membrana.",
-          topic: "Potencial de Equilíbrio Iônico",
-        },
-        {
-          question:
-            "16. Para qual íon o potencial de membrana em repouso é mais próximo de seu potencial de equilíbrio?",
-          options: [
-            "a) $\\text{Na}^{+}$",
-            "b) $\\text{Ca}^{2+}$",
-            "c) $\\text{K}^{+}$",
-            "d) $\\text{Cl}^{-}$",
-          ],
-          correctAnswer: "c) $\\text{K}^{+}$",
-          comment:
-            "O potencial de membrana em repouso é primariamente determinado pela permeabilidade seletiva da membrana aos íons $\\text{K}^{+}$ (via canais de vazamento de $\\text{K}^{+}$), o que torna o potencial de repouso muito próximo do potencial de equilíbrio de $\\text{K}^{+}$ (aproximadamente -90 mV), que é o mais negativo.",
-          topic: "Potencial de Repouso e Potencial de Equilíbrio",
-        },
-        {
-          question: "17. O que é um potencial graduado?",
-          options: [
-            "a) Um potencial de ação que viaja longas distâncias.",
-            "b) Uma alteração no potencial de membrana cuja amplitude varia com a intensidade do estímulo.",
-            "c) Um potencial que segue o princípio de 'tudo ou nada'.",
-            "d) Um potencial que ocorre apenas em células não excitáveis.",
-          ],
-          correctAnswer: "b) Uma alteração no potencial de membrana cuja amplitude varia com a intensidade do estímulo.",
-          comment:
-            "Potenciais graduados (ou locais) são alterações temporárias no potencial de membrana cuja magnitude é proporcional à intensidade do estímulo. Diferentemente dos potenciais de ação, eles não são de 'tudo ou nada' e sua amplitude diminui com a distância.",
-          topic: "Potenciais Graduados",
-        },
-        {
-          question:
-            "18. Qual o efeito de um aumento na permeabilidade da membrana ao $\\text{Na}^{+}$?",
-          options: [
-            "a) Hiperpolarização.",
-            "b) Repolarização.",
-            "c) Despolarização.",
-            "d) Nenhuma alteração.",
-          ],
-          correctAnswer: "c) Despolarização.",
-          comment:
-            "Um aumento na permeabilidade ao $\\text{Na}^{+}$ permite que mais íons $\\text{Na}^{+}$ (carregados positivamente e mais concentrados fora da célula) entrem na célula, tornando o interior menos negativo e, portanto, despolarizando a membrana.",
-          topic: "Efeito da Permeabilidade ao Sódio",
-        },
-        {
-          question:
-            "19. A mielinização de um axônio acelera a condução do potencial de ação através de um processo chamado:",
-          options: [
-            "a) Condução contínua.",
-            "b) Condução saltatória.",
-            "c) Potencial graduado.",
-            "d) Repolarização.",
-          ],
-          correctAnswer: "b) Condução saltatória.",
-          comment:
-            "A bainha de mielina isola o axônio, e o potencial de ação salta de um Nodo de Ranvier (regiões não mielinizadas) para o próximo, um processo conhecido como condução saltatória. Isso aumenta drasticamente a velocidade de condução do impulso nervoso.",
-          topic: "Mielinização e Condução Saltatória",
-        },
-        {
-          question: "20. Os Nodos de Ranvier são importantes porque:",
-          options: [
-            "a) São as únicas regiões do axônio onde o potencial de ação pode ser gerado.",
-            "b) São as regiões do axônio cobertas por mielina.",
-            "c) São as regiões onde a bomba de $\\text{Na}^{+}/\\text{K}^{+}$ ATPase está ausente.",
-            "d) São os terminais sinápticos.",
-          ],
-          correctAnswer: "a) São as únicas regiões do axônio onde o potencial de ação pode ser gerado.",
-          comment:
-            "Nos axônios mielinizados, os canais de $\\text{Na}^{+}$ dependentes de voltagem estão concentrados nos Nodos de Ranvier. O potencial de ação é regenerado nesses nós, permitindo a condução saltatória e a rápida propagação do sinal.",
-          topic: "Nodos de Ranvier",
-        },
-        {
-          question:
-            "21. Qual o papel da bomba de $\\text{Na}^{+}/\\text{K}^{+}$ ATPase no retorno ao potencial de repouso após um potencial de ação prolongado ou repetitivo?",
-          options: [
-            "a) Ela inicia a despolarização.",
-            "b) Ela restabelece os gradientes de concentração de $\\text{Na}^{+}$ e $\\text{K}^{+}$ que foram ligeiramente alterados.",
-            "c) Ela impede a repolarização.",
-            "d) Ela é responsável pela fase de pico do potencial de ação.",
-          ],
-          correctAnswer: "b) Ela restabelece os gradientes de concentração de $\\text{Na}^{+}$ e $\\text{K}^{+}$ que foram ligeiramente alterados.",
-          comment:
-            "Embora a repolarização primária seja devido ao movimento iônico através dos canais de $\\text{Na}^{+}$ e $\\text{K}^{+}$, a bomba de $\\text{Na}^{+}/\\text{K}^{+}$ ATPase trabalha continuamente para restabelecer os gradientes de concentração de $\\text{Na}^{+}$ e $\\text{K}^{+}$ que são ligeiramente dissipados durante a sequência de múltiplos potenciais de ação. Ela é essencial para a manutenção a longo prazo do potencial de repouso e da excitabilidade celular.",
-          topic: "Função da Bomba de Sódio e Potássio no Potencial de Ação",
-        },
-        {
-          question:
-            "22. Se a concentração de $\\text{K}^{+}$ extracelular aumentar, o que acontecerá com o potencial de membrana em repouso da célula?",
-          options: [
-            "a) Torna-se mais negativo (hiperpolarização).",
-            "b) Torna-se menos negativo (despolarização).",
-            "c) Não se altera.",
-            "d) Torna-se neutro.",
-          ],
-          correctAnswer: "b) Torna-se menos negativo (despolarização).",
-          comment:
-            "Um aumento na concentração de $\\text{K}^{+}$ extracelular reduz o gradiente de concentração de $\\text{K}^{+}$ para fora da célula. Isso faz com que menos $\\text{K}^{+}$ saia pelos canais de vazamento, tornando o interior da célula menos negativo e despolarizando-a. Isso pode ser muito perigoso para a função cardíaca e nervosa.",
-          topic: "Efeito da Concentração de Potássio Extracelular",
-        },
-        {
-          question:
-            "23. Qual o principal íon responsável pela fase de ascendência (despolarização) do potencial de ação?",
-          options: [
-            "a) $\\text{K}^{+}$",
-            "b) $\\text{Cl}^{-}$",
-            "c) $\\text{Na}^{+}$",
-            "d) $\\text{Ca}^{2+}$",
-          ],
-          correctAnswer: "c) $\\text{Na}^{+}$",
-          comment:
-            "A fase ascendente do potencial de ação é caracterizada por uma rápida despolarização causada pela abertura de canais de $\\text{Na}^{+}$ dependentes de voltagem e a consequente entrada massiva de íons $\\text{Na}^{+}$ na célula.",
-          topic: "Íons na Despolarização do Potencial de Ação",
-        },
-        {
-          question:
-            "24. Os anestésicos locais funcionam bloqueando quais canais iônicos?",
-          options: [
-            "a) Canais de $\\text{K}^{+}$ dependentes de voltagem.",
-            "b) Canais de $\\text{Na}^{+}$ dependentes de voltagem.",
-            "c) Canais de $\\text{Ca}^{2+}$ dependentes de voltagem.",
-            "d) Canais de $\\text{Cl}^{-}$ regulados por ligante.",
-          ],
-          correctAnswer: "b) Canais de $\\text{Na}^{+}$ dependentes de voltagem.",
-          comment:
-            "Os anestésicos locais exercem seu efeito ao bloquear a abertura dos canais de $\\text{Na}^{+}$ dependentes de voltagem nos neurônios. Ao impedir a entrada de $\\text{Na}^{+}$, eles inibem a geração e a propagação dos potenciais de ação, bloqueando a transmissão da dor.",
-          topic: "Mecanismo de Ação de Anestésicos Locais",
-        },
-        {
-          question:
-            "25. O que define o período refratário relativo?",
-          options: [
-            "a) Nenhum potencial de ação pode ser gerado.",
-            "b) Um segundo potencial de ação pode ser gerado, mas apenas com um estímulo supra-limiar (mais forte).",
-            "c) A célula está em repouso.",
-            "d) Ocorre a repolarização completa.",
-          ],
-          correctAnswer: "b) Um segundo potencial de ação pode ser gerado, mas apenas com um estímulo supra-limiar (mais forte).",
-          comment:
-            "O período refratário relativo ocorre logo após o período refratário absoluto, durante a fase de repolarização e, às vezes, hiperpolarização. Durante este período, alguns canais de $\\text{Na}^{+}$ se recuperaram da inativação, mas a célula está mais negativa ou os canais de $\\text{K}^{+}$ ainda estão abertos, exigindo um estímulo mais forte para atingir o limiar e disparar um novo potencial de ação.",
-          topic: "Período Refratário Relativo",
-        },
-        {
-          question:
-            "26. Como a distribuição de íons $\\text{Cl}^{-}$ contribui para o potencial de membrana em repouso?",
-          options: [
-            "a) $\\text{Cl}^{-}$ é ativamente bombeado para fora da célula.",
-            "b) A alta concentração de $\\text{Cl}^{-}$ fora da célula e a sua permeabilidade contribuem para a negatividade interna.",
-            "c) $\\text{Cl}^{-}$ é o principal íon a despolarizar a membrana.",
-            "d) $\\text{Cl}^{-}$ não tem papel no potencial de repouso.",
-          ],
-          correctAnswer: "b) A alta concentração de $\\text{Cl}^{-}$ fora da célula e a sua permeabilidade contribuem para a negatividade interna.",
-          comment:
-            "Os íons $\\text{Cl}^{-}$ estão em maior concentração fora da célula. A membrana é relativamente permeável ao $\\text{Cl}^{-}$ em repouso, e sua tendência de entrar na célula a favor de seu gradiente de concentração eletroquímico contribui para a negatividade do potencial de repouso, embora em menor grau que a saída de $\\text{K}^{+}$.",
-          topic: "Contribuição do Cloreto ao Potencial de Repouso",
-        },
-        {
-          question:
-            "27. Qual o papel dos canais de $\\text{Ca}^{2+}$ dependentes de voltagem nos terminais axônicos?",
-          options: [
-            "a) Iniciar a repolarização.",
-            "b) Liberar neurotransmissores.",
-            "c) Manter o potencial de repouso.",
-            "d) Bloquear a propagação do potencial de ação.",
-          ],
-          correctAnswer: "b) Liberar neurotransmissores.",
-          comment:
-            "A chegada de um potencial de ação ao terminal axônico despolariza a membrana e abre os canais de $\\text{Ca}^{2+}$ dependentes de voltagem. A entrada de $\\text{Ca}^{2+}$ no terminal aciona a fusão de vesículas sinápticas com a membrana pré-sináptica, liberando neurotransmissores na fenda sináptica.",
-          topic: "Canais de Cálcio e Liberação de Neurotransmissores",
-        },
-        {
-          question: "28. O que é um neurotransmissor excitatório?",
-          options: [
-            "a) Uma substância que causa hiperpolarização da membrana pós-sináptica.",
-            "b) Uma substância que causa despolarização da membrana pós-sináptica, aproximando-a do limiar.",
-            "c) Uma substância que inibe a transmissão do sinal.",
-            "d) Uma substância que não altera o potencial de membrana.",
-          ],
-          correctAnswer: "b) Uma substância que causa despolarização da membrana pós-sináptica, aproximando-a do limiar.",
-          comment:
-            "Neurotransmissores excitatórios (como o glutamato ou a acetilcolina em junções neuromusculares) ligam-se a receptores na membrana pós-sináptica, causando a abertura de canais iônicos que permitem a entrada de cargas positivas (ex: $\\text{Na}^{+}$), levando à despolarização (potencial pós-sináptico excitatório - PPSE) e aumentando a probabilidade de um potencial de ação.",
-          topic: "Neurotransmissores Excitatórios",
-        },
-        {
-          question: "29. O que é um neurotransmissor inibitório?",
-          options: [
-            "a) Uma substância que causa despolarização da membrana pós-sináptica.",
-            "b) Uma substância que causa hiperpolarização da membrana pós-sináptica ou a estabiliza perto do potencial de repouso, afastando-a do limiar.",
-            "c) Uma substância que acelera a transmissão do sinal.",
-            "d) Uma substância que é liberada apenas em células musculares.",
-          ],
-          correctAnswer: "b) Uma substância que causa hiperpolarização da membrana pós-sináptica ou a estabiliza perto do potencial de repouso, afastando-a do limiar.",
-          comment:
-            "Neurotransmissores inibitórios (como GABA ou glicina) ligam-se a receptores na membrana pós-sináptica, causando a abertura de canais iônicos que permitem a entrada de cargas negativas (ex: $\\text{Cl}^{-}$) ou a saída de cargas positivas (ex: $\\text{K}^{+}$), levando à hiperpolarização (potencial pós-sináptico inibitório - PPSI) ou estabilização da membrana, diminuindo a probabilidade de um potencial de ação.",
-          topic: "Neurotransmissores Inibitórios",
-        },
-        {
-          question:
-            "30. A Lei de Ohm, no contexto da bioeletricidade, expressa a relação entre:",
-          options: [
-            "a) Pressão, volume e temperatura.",
-            "b) Corrente, voltagem e resistência.",
-            "c) Massa, aceleração e força.",
-            "d) Densidade, massa e volume.",
-          ],
-          correctAnswer: "b) Corrente, voltagem e resistência.",
-          comment:
-            "A Lei de Ohm (V = I x R, ou I = V/R) é fundamental na biofísica das membranas. Ela relaciona a voltagem (V, potencial de membrana), a corrente (I, fluxo de íons) e a resistência (R, a oposição ao fluxo de íons através da membrana). Entender essa relação é essencial para compreender como os íons se movem e alteram o potencial.",
-          topic: "Lei de Ohm em Bioeletricidade",
-        },
-        {
-          question:
-            "31. O potencial de Nernst para um íon é calculado usando qual equação?",
-          options: [
-            "a) Equação de Goldman.",
-            "b) Equação de Nernst.",
-            "c) Equação de Planck.",
-            "d) Equação de Einstein.",
-          ],
-          correctAnswer: "b) Equação de Nernst.",
-          comment:
-            "A Equação de Nernst é utilizada para calcular o potencial de equilíbrio de um único íon através de uma membrana semipermeável, levando em conta sua concentração intra e extracelular e sua carga elétrica.",
-          topic: "Equação de Nernst",
-        },
-        {
-          question:
-            "32. Qual a relação entre a permeabilidade da membrana a diferentes íons e o potencial de membrana em repouso?",
-          options: [
-            "a) A permeabilidade só afeta a despolarização.",
-            "b) O potencial de repouso é mais influenciado pelos íons para os quais a membrana é mais permeável.",
-            "c) A permeabilidade não tem relação com o potencial de repouso.",
-            "d) A membrana é igualmente permeável a todos os íons em repouso.",
-          ],
-          correctAnswer: "b) O potencial de repouso é mais influenciado pelos íons para os quais a membrana é mais permeável.",
-          comment:
-            "O potencial de membrana em repouso é um potencial de difusão que é fortemente influenciado pela permeabilidade relativa da membrana a diferentes íons. Como a membrana em repouso é muito mais permeável ao $\\text{K}^{+}$ (devido aos canais de vazamento de $\\text{K}^{+}$) do que ao $\\text{Na}^{+}$, o potencial de repouso é mais próximo do potencial de equilíbrio de $\\text{K}^{+}$.",
-          topic: "Permeabilidade Iônica e Potencial de Repouso",
-        },
-        {
-          question:
-            "33. Quais os dois principais tipos de canais iônicos envolvidos na geração e propagação do potencial de ação?",
-          options: [
-            "a) Canais de vazamento de $\\text{K}^{+}$ e canais de $\\text{Cl}^{-}$ regulados por voltagem.",
-            "b) Canais de $\\text{Na}^{+}$ dependentes de voltagem e canais de $\\text{K}^{+}$ dependentes de voltagem.",
-            "c) Canais de $\\text{Ca}^{2+}$ ativados por ligante e canais de $\\text{Na}^{+}$ de vazamento.",
-            "d) Bombas de íons e transportadores.",
-          ],
-          correctAnswer: "b) Canais de $\\text{Na}^{+}$ dependentes de voltagem e canais de $\\text{K}^{+}$ dependentes de voltagem.",
-          comment:
-            "Os canais de $\\text{Na}^{+}$ dependentes de voltagem (responsáveis pela despolarização inicial) e os canais de $\\text{K}^{+}$ dependentes de voltagem (responsáveis pela repolarização) são os principais atores na geração e propagação dos potenciais de ação.",
-          topic: "Canais Iônicos no Potencial de Ação",
-        },
-        {
-          question:
-            "34. Por que a propagação do potencial de ação é unidirecional na maioria dos axônios?",
-          options: [
-            "a) Devido à presença de canais de $\\text{Ca}^{2+}$.",
-            "b) Devido ao período refratário dos canais de $\\text{Na}^{+}$ ativados.",
-            "c) Devido à ausência de $\\text{K}^{+}$ na célula.",
-            "d) Devido à mielinização completa do axônio.",
-          ],
-          correctAnswer: "b) Devido ao período refratário dos canais de $\\text{Na}^{+}$ ativados.",
-          comment:
-            "O período refratário (especialmente o absoluto), que ocorre logo após a ativação dos canais de $\\text{Na}^{+}$, garante que a região do axônio que acabou de ser despolarizada esteja temporariamente inativa, impedindo que o potencial de ação se propague para trás e assegurando a condução unidirecional.",
-          topic: "Unidirecionalidade do Potencial de Ação",
-        },
-        {
-          question:
-            "35. O que aconteceria com a excitabilidade de um neurônio se a bomba de $\\text{Na}^{+}/\\text{K}^{+}$ ATPase parasse de funcionar?",
-          options: [
-            "a) A célula se hiperpolarizaria.",
-            "b) Os gradientes iônicos desapareceriam gradualmente, levando à perda do potencial de repouso e da excitabilidade.",
-            "c) A célula se tornaria mais excitável.",
-            "d) Não haveria alteração na excitabilidade.",
-          ],
-          correctAnswer: "b) Os gradientes iônicos desapareceriam gradualmente, levando à perda do potencial de repouso e da excitabilidade.",
-          comment:
-            "A bomba de $\\text{Na}^{+}/\\text{K}^{+}$ ATPase é vital para manter os gradientes de concentração de $\\text{Na}^{+}$ e $\\text{K}^{+}$ através da membrana. Se ela parar de funcionar, esses gradientes se dissiparão ao longo do tempo, e o potencial de membrana em repouso não poderá ser mantido, resultando na perda da capacidade da célula de gerar potenciais de ação e, consequentemente, da sua excitabilidade.",
-          topic: "Importância da Bomba de Sódio e Potássio para a Excitabilidade",
-        },
-        {
-          question:
-            "36. A condução do potencial de ação em axônios não mielinizados é mais lenta porque:",
-          options: [
-            "a) Ocorre condução saltatória.",
-            "b) O potencial de ação precisa ser regenerado em cada ponto da membrana.",
-            "c) Não há canais iônicos nesses axônios.",
-            "d) Ocorre maior vazamento de corrente.",
-          ],
-          correctAnswer: "b) O potencial de ação precisa ser regenerado em cada ponto da membrana.",
-          comment:
-            "Em axônios não mielinizados, o potencial de ação precisa ser regenerado continuamente em cada ponto da membrana ao longo do axônio. Isso requer a abertura sequencial de canais de $\\text{Na}^{+}$ dependentes de voltagem ao longo de todo o axônio, tornando a condução muito mais lenta do que a condução saltatória nos axônios mielinizados.",
-          topic: "Condução em Axônios Não Mielinizados",
-        },
-        {
-          question:
-            "37. O que é plasticidade sináptica e como ela se relaciona com o potencial de membrana?",
-          options: [
-            "a) A capacidade da membrana de alterar sua forma.",
-            "b) A capacidade de uma sinapse de fortalecer ou enfraquecer suas conexões ao longo do tempo, alterando a eficácia da transmissão do potencial.",
-            "c) A flexibilidade da membrana plasmática para se mover.",
-            "d) A resistência da membrana à passagem de íons.",
-          ],
-          correctAnswer: "b) A capacidade de uma sinapse de fortalecer ou enfraquecer suas conexões ao longo do tempo, alterando a eficácia da transmissão do potencial.",
-          comment:
-            "Plasticidade sináptica refere-se à capacidade das sinapses de mudar sua força de transmissão em resposta à atividade. Isso envolve alterações na excitabilidade pós-sináptica (influenciando a despolarização ou hiperpolarização) e na liberação de neurotransmissores, sendo fundamental para o aprendizado e a memória.",
-          topic: "Plasticidade Sináptica",
-        },
-        {
-          question:
-            "38. Qual o papel dos canais de $\\text{K}^{+}$ de repouso (canais de vazamento) na manutenção do potencial de membrana em repouso?",
-          options: [
-            "a) Geram a despolarização.",
-            "b) Permitem um efluxo constante de $\\text{K}^{+}$, contribuindo significativamente para a negatividade interna.",
-            "c) Bloqueiam completamente o movimento de $\\text{K}^{+}$.",
-            "d) Transportam $\\text{K}^{+}$ para dentro da célula ativamente.",
-          ],
-          correctAnswer: "b) Permitem um efluxo constante de $\\text{K}^{+}$, contribuindo significativamente para a negatividade interna.",
-          comment:
-            "Os canais de $\\text{K}^{+}$ de repouso são constitutivamente abertos no potencial de repouso. Eles permitem que os íons $\\text{K}^{+}$, que estão em maior concentração no interior da célula, vazem para fora da célula, levando cargas positivas para fora e tornando o interior da célula negativo. Esse vazamento de $\\text{K}^{+}$ é o principal determinante do potencial de membrana em repouso.",
-          topic: "Canais de Potássio de Repouso",
-        },
-        {
-          question:
-            "39. Se um íon carregado positivamente entra em uma célula, o que geralmente acontece com o potencial de membrana?",
-          options: [
-            "a) Hiperpolarização.",
-            "b) Repolarização.",
-            "c) Despolarização.",
-            "d) O potencial de membrana não se altera.",
-          ],
-          correctAnswer: "c) Despolarização.",
-          comment:
-            "A entrada de cargas positivas no interior da célula (que é geralmente negativo em repouso) torna o potencial de membrana menos negativo, ou seja, o despolariza, aproximando-o do zero ou tornando-o positivo.",
-          topic: "Efeito da Entrada de Íons Positivos",
-        },
-        {
-          question:
-            "40. Por que a saída de íons $\\text{K}^{+}$ é tão importante para o retorno ao potencial de repouso após a despolarização?",
-          options: [
-            "a) $\\text{K}^{+}$ é o único íon capaz de sair da célula.",
-            "b) A saída de $\\text{K}^{+}$ repõe as cargas positivas perdidas durante a despolarização.",
-            "c) A saída de $\\text{K}^{+}$ (cargas positivas) torna o interior da célula mais negativo, revertendo a despolarização.",
-            "d) A entrada de $\\text{K}^{+}$ causa a repolarização.",
-          ],
-          correctAnswer: "c) A saída de $\\text{K}^{+}$ (cargas positivas) torna o interior da célula mais negativo, revertendo a despolarização.",
-          comment:
-            "Durante a repolarização, os canais de sódio se inativam e os canais de potássio dependentes de voltagem se abrem, permitindo que os íons $\\text{K}^{+}$ (carregados positivamente) fluam para fora da célula. Essa saída de cargas positivas remove a positividade que se acumulou durante a despolarização, restaurando o potencial de membrana negativo.",
-          topic: "Importância da Saída de Potássio na Repolarização",
-        },
-      ];
+    // Inicializa a visibilidade das seções no carregamento
+    errorDiagnosisSection.style.display = 'none';
+    topicsToReviewList.innerHTML = '';
+    statusMessage.textContent = '';
 
-      function buildQuiz() {
-        const output = [];
+    const questions = [         {           question: "1. Qual o principal fator que provoca a alteração no potencial elétrico da membrana celular?",           options: [             "a) O movimento de proteínas através da membrana.",             "b) A síntese de ATP no citoplasma.",             "c) O movimento de íons carregados através da membrana plasmática.",             "d) A replicação do DNA no núcleo.",           ],           correctAnswer: "c) O movimento de íons carregados através da membrana plasmática.",           comment: "O potencial elétrico da membrana é determinado pela distribuição desigual de cargas elétricas (íons) através da bicamada lipídica. O movimento desses íons altera o balanço de cargas e o potencial elétrico.",           topic: "Conceito Básico de Potencial de Membrana",         },         {           question: "2. No estado de repouso, como se compara o potencial elétrico do interior da célula em relação ao exterior?",           options: [             "a) Mais positivo.",             "b) Neutro.",             "c) Mais negativo.",             "d) Igual.",           ],           correctAnswer: "c) Mais negativo.",           comment: "O potencial de repouso é caracterizado por um interior celular mais negativo. Isso é mantido por gradientes iônicos, pela bomba de sódio e potássio e pela permeabilidade seletiva ao potássio.",           topic: "Potencial de Repouso",         },         {           question: "3. Qual o íon que está em maior concentração fora da célula e é crucial para a despolarização?",           options: [             "a) $\\text{K}^{+}$ (Potássio).",             "b) $\\text{Cl}^{-}$ (Cloreto).",             "c) $\\text{Na}^{+}$ (Sódio).",             "d) $\\text{Ca}^{2+}$ (Cálcio).",           ],           correctAnswer: "c) $\\text{Na}^{+}$ (Sódio).",           comment: "O íon $\\text{Na}^{+}$ é encontrado em alta concentração extracelular. Sua entrada rápida na célula através de canais específicos é a principal causa da despolarização no potencial de ação.",           topic: "Distribuição Iônica: Sódio",         },         {           question: "4. A bomba de $\\text{Na}^{+}/\\text{K}^{+}$ ATPase é fundamental para o potencial de repouso porque:",           options: [             "a) Transporta $\\text{K}^{+}$ para fora e $\\text{Na}^{+}$ para dentro da célula.",             "b) Transporta $\\text{Na}^{+}$ para fora e $\\text{K}^{+}$ para dentro da célula.",             "c) Transporta ambos os íons para fora da célula.",             "d) Transporta ambos os íons para dentro da célula.",           ],           correctAnswer: "b) Transporta $\\text{Na}^{+}$ para fora e $\\text{K}^{+}$ para dentro da célula.",           comment: "A bomba utiliza ATP para transportar 3 $\\text{Na}^{+}$ para fora e 2 $\\text{K}^{+}$ para dentro. Isso mantém os gradientes químicos e contribui para a negatividade interna (transporte eletrogênico).",           topic: "Bomba de Sódio e Potássio",         },         {           question: "5. O que acontece com o potencial de membrana durante a despolarização?",           options: [             "a) Torna-se mais negativo.",             "b) Torna-se menos negativo (mais positivo).",             "c) Permanece inalterado.",             "d) Retorna ao seu estado de repouso.",           ],           correctAnswer: "b) Torna-se menos negativo (mais positivo).",           comment: "Despolarização é a redução da diferença de potencial. O interior da célula torna-se menos negativo, movendo-se em direção ao zero ou valores positivos.",           topic: "Despolarização",         },         {           question: "6. A repolarização de uma membrana celular ocorre devido principalmente à:",           options: [             "a) Entrada de $\\text{Na}^{+}$.",             "b) Saída de $\\text{K}^{+}$.",             "c) Saída de $\\text{Cl}^{-}$.",             "d) Entrada de $\\text{Ca}^{2+}$.",           ],           correctAnswer: "b) Saída de $\\text{K}^{+}$.",           comment: "A repolarização é causada pela abertura de canais de $\\text{K}^{+}$ dependentes de voltagem. A saída de cargas positivas ($\\text{K}^{+}$) restaura a negatividade interna da célula.",           topic: "Repolarização",         },         {           question: "7. O que é a hiperpolarização?",           options: [             "a) O potencial de membrana se torna mais positivo que o potencial de repouso.",             "b) O potencial de membrana se torna mais negativo que o potencial de repouso.",             "c) O potencial de membrana atinge o limiar para um potencial de ação.",             "d) O potencial de membrana permanece em repouso.",           ],           correctAnswer: "b) O potencial de membrana se torna mais negativo que o potencial de repouso.",           comment: "A hiperpolarização ocorre quando o potencial fica abaixo do nível de repouso (ex: -80mV em uma célula de -70mV), dificultando o disparo de um novo estímulo.",           topic: "Hiperpolarização",         },         {           question: "8. O que é um canal iônico regulado por voltagem?",           options: [             "a) Um canal que abre em resposta à ligação de uma molécula sinalizadora.",             "b) Um canal que abre em resposta a uma mudança no potencial elétrico da membrana.",             "c) Um canal que está sempre aberto.",             "d) Um canal que transporta íons contra seu gradiente de concentração.",           ],           correctAnswer: "b) Um canal que abre em resposta a uma mudança no potencial elétrico da membrana.",           comment: "Estes canais possuem sensores de voltagem que mudam a conformação da proteína conforme o campo elétrico da membrana, permitindo o fluxo iônico rápido.",           topic: "Canais Iônicos Voltagem-Dependentes",         },         {           question: "9. A fase de 'limiar' em um potencial de ação refere-se ao:",           options: [             "a) Potencial máximo atingido pela despolarização.",             "b) Potencial mínimo necessário para disparar um potencial de ação.",             "c) Potencial de repouso da célula.",             "d) Potencial durante a repolarização.",           ],           correctAnswer: "b) Potencial mínimo necessário para disparar um potencial de ação.",           comment: "O limiar é o 'ponto de não retorno'. Uma vez atingido, a abertura massiva de canais de $\\text{Na}^{+}$ torna o disparo do potencial de ação inevitável.",           topic: "Limiar do Potencial de Ação",         },         {           question: "10. Qual a principal característica de um potencial de ação de 'tudo ou nada'?",           options: [             "a) Sua amplitude varia com a intensidade do estímulo.",             "b) Ele ocorre com amplitude máxima se o limiar for atingido, ou não ocorre.",             "c) Ele pode ser interrompido a qualquer momento.",             "d) Depende da quantidade de proteínas no citoplasma.",           ],           correctAnswer: "b) Ele ocorre com amplitude máxima se o limiar for atingido, ou não ocorre.",           comment: "O potencial de ação não é graduado. Se o estímulo é forte o suficiente para atingir o limiar, o sinal é gerado de forma completa e estereotipada.",           topic: "Princípio do Tudo ou Nada",         },         {           question: "11. Qual é o papel dos canais de vazamento de $\\text{K}^{+}$ no potencial de repouso?",           options: [             "a) Eles iniciam a despolarização.",             "b) Eles permitem a saída contínua de $\\text{K}^{+}$, contribuindo para a negatividade interna.",             "c) Eles bloqueiam a passagem de $\\text{K}^{+}$.",             "d) Eles transportam $\\text{K}^{+}$ ativamente para dentro da célula.",           ],           correctAnswer: "b) Eles permitem a saída contínua de $\\text{K}^{+}$, contribuindo para a negatividade interna.",           comment: "Estes canais estão sempre abertos. O $\\text{K}^{+}$ sai da célula a favor do gradiente químico, deixando cargas negativas presas no interior, gerando o potencial de repouso.",           topic: "Canais de Vazamento de Potássio",         },         {           question: "12. Em que tipo de células os potenciais de ação são fundamentais para sua função?",           options: [             "a) Células epiteliais.",             "b) Células adiposas.",             "c) Células excitáveis (neurônios e células musculares).",             "d) Células sanguíneas.",           ],           correctAnswer: "c) Células excitáveis (neurônios e células musculares).",           comment: "Apenas células excitáveis possuem a maquinaria de canais voltagem-dependentes necessária para gerar impulsos elétricos rápidos e propagáveis.",           topic: "Células Excitáveis",         },         {           question: "13. A repolarização rápida do potencial de ação é causada pela:",           options: [             "a) Abertura de canais de $\\text{Na}^{+}$ dependentes de voltagem.",             "b) Fechamento de canais de $\\text{K}^{+}$ dependentes de voltagem.",             "c) Inativação dos canais de $\\text{Na}^{+}$ e abertura dos canais de $\\text{K}^{+}$ dependentes de voltagem.",             "d) Atividade da bomba de $\\text{Na}^{+}/\\text{K}^{+}$ ATPase.",           ],           correctAnswer: "c) Inativação dos canais de $\\text{Na}^{+}$ e abertura dos canais de $\\text{K}^{+}$ dependentes de voltagem.",           comment: "Ao pico do PA, os canais de $\\text{Na}^{+}$ fecham uma 'porta' de inativação e os de $\\text{K}^{+}$ abrem, permitindo que a saída de potássio traga o potencial de volta ao negativo.",           topic: "Eventos Iônicos da Repolarização",         },         {           question: "14. O que é o período refratário absoluto de um neurônio?",           options: [             "a) O período em que um segundo potencial de ação pode ser gerado com um estímulo mais forte.",             "b) O período em que nenhum segundo potencial de ação pode ser gerado, independentemente do estímulo.",             "c) O período em que a célula está em hiperpolarização.",             "d) O período em que os canais de $\\text{K}^{+}$ estão fechados.",           ],           correctAnswer: "b) O período em que nenhum segundo potencial de ação pode ser gerado, independentemente do estímulo.",           comment: "Neste período, os canais de $\\text{Na}^{+}$ estão inativados. Isso impede que sinais se sobreponham e garante que o impulso viaje em apenas uma direção.",           topic: "Período Refratário Absoluto",         },         {           question: "15. O potencial de equilíbrio de um íon é o potencial de membrana no qual:",           options: [             "a) O íon para de se mover através da membrana.",             "b) A força elétrica e a força química são iguais e opostas (fluxo líquido zero).",             "c) O íon se move apenas por transporte ativo.",             "d) A célula morre.",           ],           correctAnswer: "b) A força elétrica e a força química são iguais e opostas (fluxo líquido zero).",           comment: "É o ponto de balanço onde a tendência do íon de sair por difusão é anulada pela atração elétrica em sentido oposto.",           topic: "Potencial de Equilíbrio Iônico",         },         {           question: "16. Para qual íon o potencial de repouso é mais próximo de seu potencial de equilíbrio?",           options: [             "a) $\\text{Na}^{+}$",             "b) $\\text{Ca}^{2+}$",             "c) $\\text{K}^{+}$",             "d) $\\text{Cl}^{-}$",           ],           correctAnswer: "c) $\\text{K}^{+}$",           comment: "Em repouso, a membrana é muito mais permeável ao $\\text{K}^{+}$. Por isso, o potencial de repouso (-70mV a -90mV) fica próximo ao equilíbrio do potássio (~-90mV).",           topic: "Potencial de Repouso e Potencial de Equilíbrio",         },         {           question: "17. O que é um potencial graduado?",           options: [             "a) Um potencial de ação que viaja longas distâncias.",             "b) Uma alteração no potencial cuja amplitude varia com a intensidade do estímulo.",             "c) Um potencial que segue o princípio de 'tudo ou nada'.",             "d) Um potencial que ocorre apenas em células não excitáveis.",           ],           correctAnswer: "b) Uma alteração no potencial cuja amplitude varia com a intensidade do estímulo.",           comment: "Potenciais graduados são locais e somáveis. Eles diminuem conforme se propagam e servem para levar a célula até o limiar do potencial de ação.",           topic: "Potenciais Graduados",         },         {           question: "18. Qual o efeito de um aumento na permeabilidade da membrana ao $\\text{Na}^{+}$?",           options: [             "a) Hiperpolarização.",             "b) Repolarização.",             "c) Despolarização.",             "d) Nenhuma alteração.",           ],           correctAnswer: "c) Despolarização.",           comment: "Como o $\\text{Na}^{+}$ é positivo e está concentrado fora, sua entrada torna o interior da célula mais positivo, causando despolarização.",           topic: "Efeito da Permeabilidade ao Sódio",         },         {           question: "19. A mielinização de um axônio acelera a condução do sinal através da:",           options: [             "a) Condução contínua.",             "b) Condução saltatória.",             "c) Potencial graduado.",             "d) Repolarização.",           ],           correctAnswer: "b) Condução saltatória.",           comment: "A mielina funciona como isolante elétrico. O potencial de ação 'salta' entre os Nodos de Ranvier, economizando tempo e energia metabólica.",           topic: "Mielinização e Condução Saltatória",         },         {           question: "20. Os Nodos de Ranvier são importantes porque:",           options: [             "a) São as únicas regiões do axônio onde o potencial de ação pode ser regenerado.",             "b) São as regiões do axônio cobertas por mielina.",             "c) São as regiões onde a bomba de $\\text{Na}^{+}/\\text{K}^{+}$ ATPase está ausente.",             "d) São os terminais sinápticos.",           ],           correctAnswer: "a) São as únicas regiões do axônio onde o potencial de ação pode ser regenerado.",           comment: "Nestas fendas sem mielina há alta densidade de canais de $\\text{Na}^{+}$ voltagem-dependentes, permitindo que o sinal elétrico seja 'reforçado' durante a condução.",           topic: "Nodos de Ranvier",         },         {           question: "21. Qual o papel da bomba de $\\text{Na}^{+}/\\text{K}^{+}$ ATPase após sequências de potenciais de ação?",           options: [             "a) Ela inicia a despolarização.",             "b) Ela restabelece os gradientes de concentração de $\\text{Na}^{+}$ e $\\text{K}^{+}$ alterados.",             "c) Ela impede a repolarização.",             "d) Ela é responsável pela fase de pico do potencial de ação.",           ],           correctAnswer: "b) Ela restabelece os gradientes de concentração de $\\text{Na}^{+}$ e $\\text{K}^{+}$ alterados.",           comment: "Embora os canais façam o trabalho rápido do sinal, a bomba faz a manutenção a longo prazo, garantindo que as concentrações de íons voltem ao padrão original.",           topic: "Função da Bomba de Sódio e Potássio no Potencial de Ação",         },         {           question: "22. Se a concentração de $\\text{K}^{+}$ extracelular aumentar significativamente (hipercalemia), o potencial de membrana em repouso:",           options: [             "a) Torna-se mais negativo (hiperpolarização).",             "b) Torna-se menos negativo (despolarização).",             "c) Não se altera.",             "d) Torna-se neutro.",           ],           correctAnswer: "b) Torna-se menos negativo (despolarização).",           comment: "Mais potássio fora reduz a força de saída do íon por difusão. Menos cargas positivas saindo tornam o interior menos negativo (despolarizado), o que pode causar arritmias fatais.",           topic: "Efeito da Concentração de Potássio Extracelular",         },         {           question: "23. Qual o principal íon responsável pela fase ascendente do potencial de ação?",           options: [             "a) $\\text{K}^{+}$",             "b) $\\text{Cl}^{-}$",             "c) $\\text{Na}^{+}$",             "d) $\\text{Ca}^{2+}$",           ],           correctAnswer: "c) $\\text{Na}^{+}$",           comment: "A fase de subida é puramente dependente do influxo massivo de $\\text{Na}^{+}$ após a abertura rápida dos canais voltagem-dependentes.",           topic: "Íons na Despolarização do Potencial de Ação",         },         {           question: "24. Os anestésicos locais funcionam bloqueando quais canais iônicos?",           options: [             "a) Canais de $\\text{K}^{+}$ dependentes de voltagem.",             "b) Canais de $\\text{Na}^{+}$ dependentes de voltagem.",             "c) Canais de $\\text{Ca}^{2+}$ dependentes de voltagem.",             "d) Canais de $\\text{Cl}^{-}$ regulados por ligante.",           ],           correctAnswer: "b) Canais de $\\text{Na}^{+}$ dependentes de voltagem.",           comment: "Ao bloquear os canais de $\\text{Na}^{+}$, os anestésicos impedem o disparo do potencial de ação. Sem sinal elétrico, o cérebro não recebe a informação da dor.",           topic: "Mecanismo de Ação de Anestésicos Locais",         },         {           question: "25. O que define o período refratário relativo?",           options: [             "a) Nenhum potencial de ação pode ser gerado.",             "b) Um segundo potencial de ação pode ser gerado, mas exige estímulo mais forte.",             "c) A célula está em repouso absoluto.",             "d) Ocorre a repolarização completa imediata.",           ],           correctAnswer: "b) Um segundo potencial de ação pode ser gerado, mas exige estímulo mais forte.",           comment: "Ocorre durante a fase final da repolarização/hiperpolarização. Como a célula está mais negativa que o normal, é necessário um estímulo maior para levá-la ao limiar.",           topic: "Período Refratário Relativo",         },         {           question: "26. Como a distribuição de íons $\\text{Cl}^{-}$ contribui para o potencial de repouso?",           options: [             "a) $\\text{Cl}^{-}$ é ativamente bombeado para fora da célula.",             "b) A alta concentração externa e a permeabilidade ao $\\text{Cl}^{-}$ contribuem para a negatividade interna.",             "c) $\\text{Cl}^{-}$ é o principal íon a despolarizar a membrana.",             "d) $\\text{Cl}^{-}$ não tem papel no potencial de repouso.",           ],           correctAnswer: "b) A alta concentração externa e a permeabilidade ao $\\text{Cl}^{-}$ contribuem para a negatividade interna.",           comment: "O cloreto tem carga negativa e sua entrada na célula (a favor do gradiente químico) ajuda a manter o ambiente interno negativo em repouso.",           topic: "Contribuição do Cloreto ao Potencial de Repouso",         },         {           question: "27. Qual o papel dos canais de $\\text{Ca}^{2+}$ voltagem-dependentes nos terminais axônicos?",           options: [             "a) Iniciar a repolarização do axônio.",             "b) Promover a liberação de neurotransmissores.",             "c) Manter o potencial de repouso sináptico.",             "d) Bloquear a propagação do impulso.",           ],           correctAnswer: "b) Promover a liberação de neurotransmissores.",           comment: "Quando o PA atinge o terminal, o cálcio entra na célula e sinaliza para que as vesículas se fundam à membrana e liberem seu conteúdo na fenda sináptica.",           topic: "Canais de Cálcio e Liberação de Neurotransmissores",         },         {           question: "28. O que é um neurotransmissor excitatório?",           options: [             "a) Uma substância que causa hiperpolarização.",             "b) Uma substância que causa despolarização, aproximando a membrana do limiar.",             "c) Uma substância que bloqueia a transmissão do sinal.",             "d) Uma substância que não altera o potencial elétrico.",           ],           correctAnswer: "b) Uma substância que causa despolarização, aproximando a membrana do limiar.",           comment: "Ele gera um PPSE (Potencial Pós-Sináptico Excitatório), geralmente abrindo canais de $\\text{Na}^{+}$ ou outros cátions.",           topic: "Neurotransmissores Excitatórios",         },         {           question: "29. O que é um neurotransmissor inibitório?",           options: [             "a) Uma substância que causa despolarização.",             "b) Uma substância que causa hiperpolarização, afastando a membrana do limiar.",             "c) Uma substância que acelera a transmissão do sinal.",             "d) Uma substância que é liberada apenas em células musculares.",           ],           correctAnswer: "b) Uma substância que causa hiperpolarização, afastando a membrana do limiar.",           comment: "Ele gera um PPSI (Potencial Pós-Sináptico Inibitório), abrindo canais de $\\text{Cl}^{-}$ (entrada de carga negativa) ou $\\text{K}^{+}$ (saída de carga positiva).",           topic: "Neurotransmissores Inibitórios",         },         {           question: "30. A Lei de Ohm relacionando corrente (I), voltagem (V) e resistência (R) é dada por:",           options: [             "a) $V = I / R$.",             "b) $V = I \\times R$.",             "c) $V = M \\times A$.",             "d) $I = R / V$.",           ],           correctAnswer: "b) $V = I \\times R$.",           comment: "Na bioeletricidade, a corrente (I) é o fluxo de íons, a voltagem (V) é o potencial de membrana e a resistência (R) é a oposição da membrana à passagem dos íons.",           topic: "Lei de Ohm em Bioeletricidade",         },         {           question: "31. O potencial de equilíbrio de um único íon é calculado usando a:",           options: [             "a) Equação de Goldman-Hodgkin-Katz.",             "b) Equação de Nernst.",             "c) Equação de Schrödinger.",             "d) Lei de Newton.",           ],           correctAnswer: "b) Equação de Nernst.",           comment: "A Equação de Nernst considera a carga do íon e a razão entre as concentrações externa e interna para definir o potencial elétrico de equilíbrio.",           topic: "Equação de Nernst",         },         {           question: "32. O potencial de repouso é mais influenciado por qual íon?",           options: [             "a) O íon com maior gradiente de pressão.",             "b) O íon para o qual a membrana é mais permeável em repouso.",             "c) O íon menos concentrado na célula.",             "d) Apenas pelos ânions proteicos intracelulares.",           ],           correctAnswer: "b) O íon para o qual a membrana é mais permeável em repouso.",           comment: "Como a permeabilidade ao $\\text{K}^{+}$ é muito alta em repouso, o potencial da célula é 'puxado' para perto do equilíbrio do potássio.",           topic: "Permeabilidade Iônica e Potencial de Repouso",         },         {           question: "33. Quais canais são os principais atores da geração e repolarização do potencial de ação?",           options: [             "a) Canais de vazamento e bombas.",             "b) Canais de $\\text{Na}^{+}$ e de $\\text{K}^{+}$ dependentes de voltagem.",             "c) Canais de $\\text{Ca}^{2+}$ de ligante apenas.",             "d) Proteínas de transporte de glicose.",           ],           correctAnswer: "b) Canais de $\\text{Na}^{+}$ e de $\\text{K}^{+}$ dependentes de voltagem.",           comment: "A abertura rápida do sódio despolariza e a abertura (mais lenta) do potássio repolariza. Este é o ciclo básico do sinal nervoso.",           topic: "Canais Iônicos no Potencial de Ação",         },         {           question: "34. Por que a propagação do potencial de ação é unidirecional?",           options: [             "a) Devido à presença de mielina.",             "b) Devido ao período refratário dos canais de $\\text{Na}^{+}$ recém-ativados.",             "c) Porque o citoplasma flui em uma única direção.",             "d) Por causa da gravidade.",           ],           correctAnswer: "b) Devido ao período refratário dos canais de $\\text{Na}^{+}$ recém-ativados.",           comment: "Após abrir, o canal de sódio entra em um estado inativo 'trancado'. Isso impede que o sinal elétrico volte para trás, forçando-o a seguir para a área ainda em repouso.",           topic: "Unidirecionalidade do Potencial de Ação",         },         {           question: "35. Se a bomba de $\\text{Na}^{+}/\\text{K}^{+}$ ATPase falhar, o que ocorre a curto/médio prazo?",           options: [             "a) A célula para de respirar imediatamente.",             "b) Perda gradual dos gradientes iônicos, do potencial de repouso e da excitabilidade.",             "c) Aumento imediato da força muscular.",             "d) Redução da produção de DNA.",           ],           correctAnswer: "b) Perda gradual dos gradientes iônicos, do potencial de repouso e da excitabilidade.",           comment: "Sem a bomba, o sódio entra e o potássio sai por vazamento até que as concentrações se igualem. Sem gradiente, não há eletricidade e a célula 'silencia'.",           topic: "Importância da Bomba de Sódio e Potássio para a Excitabilidade",         },         {           question: "36. Comparada à saltatória, a condução contínua em axônios não mielinizados é mais lenta porque:",           options: [             "a) O axônio é mais curto.",             "b) O potencial de ação precisa ser regenerado em cada ponto adjacente da membrana.",             "c) Não existem canais iônicos neles.",             "d) O sódio é mais pesado nesses nervos.",           ],           correctAnswer: "b) O potencial de ação precisa ser regenerado em cada ponto adjacente da membrana.",           comment: "Sem a mielina para 'pular' trechos, cada milímetro da membrana deve sofrer despolarização e repolarização, o que consome mais tempo.",           topic: "Condução em Axônios Não Mielinizados",         },         {           question: "37. O fortalecimento ou enfraquecimento de conexões sinápticas ao longo do tempo chama-se:",           options: [             "a) Rigidez de membrana.",             "b) Plasticidade sináptica.",             "c) Osmose neuronal.",             "d) Feedback positivo celular.",           ],           correctAnswer: "b) Plasticidade sináptica.",           comment: "É a base biológica do aprendizado. Envolve mudar a sensibilidade dos receptores ou a quantidade de neurotransmissor liberado.",           topic: "Plasticidade Sináptica",         },         {           question: "38. Os canais de vazamento de $\\text{K}^{+}$ são constitutivamente:",           options: [             "a) Fechados em repouso.",             "b) Abertos no potencial de repouso.",             "c) Ativados por acetilcolina.",             "d) Bloqueados por cálcio.",           ],           correctAnswer: "b) Abertos no potencial de repouso.",           comment: "Sua abertura constante permite que a membrana seja 'vazável' ao potássio, sendo o fator número 1 para a manutenção da carga negativa interna.",           topic: "Canais de Potássio de Repouso",         },         {           question: "39. Se um cátion (íon positivo) entra na célula, o potencial de membrana sofre uma:",           options: [             "a) Hiperpolarização.",             "b) Repolarização.",             "c) Despolarização.",             "d) Isolarização.",           ],           correctAnswer: "c) Despolarização.",           comment: "Adicionar cargas positivas ao interior negativo reduz a separação de cargas (polaridade), tornando-o mais próximo do zero (menos negativo).",           topic: "Efeito da Entrada de Íons Positivos",         },         {           question: "40. Por que o efluxo de $\\text{K}^{+}$ é essencial para a repolarização?",           options: [             "a) Porque ele remove o sódio da célula.",             "b) Porque ele neutraliza o cloreto.",             "c) Porque a saída de cargas positivas restaura a negatividade interna.",             "d) Porque o potássio traz energia para a membrana.",           ],           correctAnswer: "c) Porque a saída de cargas positivas restaura a negatividade interna.",           comment: "Ao sair da célula, o $\\text{K}^{+}$ leva consigo a carga positiva que entrou com o sódio, 'limpando' a despolarização e voltando ao repouso.",           topic: "Importância da Saída de Potássio na Repolarização",         },       ];
 
-        questions.forEach((currentQuestion, questionNumber) => {
-          const options = [];
-          for (let i = 0; i < currentQuestion.options.length; i++) {
-            options.push(
-              `<label class="option" data-question="${questionNumber}" data-value="${currentQuestion.options[i]}">
-                <img src="tesouras.png" class="scissor-icon" onclick="event.stopPropagation(); this.parentNode.classList.toggle('struck-through');">
-                ${currentQuestion.options[i]}
-              </label>`
-            );
-          }
+    function buildQuiz() {
+      const output = [];
 
-          output.push(
-            `<div class="card" id="question-${questionNumber}" data-topic="${currentQuestion.topic}">
-              <div class="question">${currentQuestion.question}</div>
-              <div class="options">${options.join("")}</div>
-              <div class="comment" id="comment-${questionNumber}"></div>
-            </div>`
+      questions.forEach((currentQuestion, questionNumber) => {
+        const options = [];
+        for (let i = 0; i < currentQuestion.options.length; i++) {
+          options.push(
+            `<label class="option" data-question="${questionNumber}" data-value="${currentQuestion.options[i]}">
+              <img src="tesouras.png" class="scissor-icon" onclick="event.stopPropagation(); this.parentNode.classList.toggle('struck-through');">
+              ${currentQuestion.options[i]}
+            </label>`
           );
-        });
+        }
 
-        quizContainer.innerHTML = output.join("");
-      }
+        output.push(
+          `<div class="card" id="question-${questionNumber}" data-topic="${currentQuestion.topic}">
+            <div class="question">${currentQuestion.question}</div>
+            <div class="options">${options.join("")}</div>
+            <div class="comment" id="comment-${questionNumber}"></div>
+          </div>`
+        );
+      });
 
-      function showResults() {
-        wrongQuestionIndices = []; 
-        errorCountByTopic = {}; // Reseta a contagem de erros por tópico
-        totalAnsweredQuestionsByTopic = {}; // Reseta a contagem de questões respondidas por tópico
-        currentWrongQuestionIndex = -1; 
-        hasErrors = false; 
-        isShowingErrors = false; 
-        isShowingDiagnosis = false;
+      quizContainer.innerHTML = output.join("");
+    }
 
-        errorDiagnosisSection.style.display = 'none';
-        topicsToReviewList.innerHTML = ''; 
+    function showResults() {
+      wrongQuestionIndices = [];
+      errorCountByTopic = {};
+      totalAnsweredQuestionsByTopic = {};
+      currentWrongQuestionIndex = -1;
+      hasErrors = false;
+      isShowingErrors = false;
+      isShowingDiagnosis = false;
 
-        const answerContainers = quizContainer.querySelectorAll(".options");
-        let correctAnswers = 0;
+      errorDiagnosisSection.style.display = 'none';
+      topicsToReviewList.innerHTML = '';
+      statusMessage.textContent = '';
 
-        questions.forEach((currentQuestion, questionNumber) => {
-          const answerContainer = answerContainers[questionNumber];
-          const userAnswerElement = answerContainer.querySelector('.option.selected');
-          const userAnswerValue = userAnswerElement ? userAnswerElement.dataset.value : undefined;
-          const commentDiv = document.getElementById(`comment-${questionNumber}`);
+      // Busca por todas as perguntas: estáticas e dinâmicas
+      const allQuestionCards = document.querySelectorAll('.quiz-container .card, #newQuestionsContent .card');
+      let correctAnswersCount = 0;
+      let totalQuestionsAnswered = 0;
 
-          // Limpa estados anteriores
-          const allOptions = answerContainer.querySelectorAll('.option');
-          allOptions.forEach(option => {
-            option.classList.remove('correct', 'incorrect');
-            const scissorIcon = option.querySelector('.scissor-icon');
-            if (scissorIcon) scissorIcon.classList.remove('hidden');
-          });
-          if (commentDiv) commentDiv.classList.remove('show');
+      console.log('🔍 Verificando', allQuestionCards.length, 'perguntas...');
 
+      allQuestionCards.forEach((card, index) => {
+        const questionEl = card.querySelector('.question') || card.querySelector('p');
+        if (!questionEl) return;
 
-          const optionElements = answerContainer.querySelectorAll('.option');
-          optionElements.forEach(option => {
-            const scissorIcon = option.querySelector('.scissor-icon');
+        const questionText = questionEl.textContent.trim();
+        const optionsContainer = card.querySelector('.options') || card;
+        const allOptions = optionsContainer.querySelectorAll('.option, label.option, label');
+        const userAnswerElement = optionsContainer.querySelector('.option.selected, label.selected');
+        const commentDiv = card.querySelector('.comment');
 
-            if (option === userAnswerElement && scissorIcon) {
-                scissorIcon.classList.add('hidden');
-            } 
-            
-            if (option.dataset.value === currentQuestion.correctAnswer) {
-                option.classList.add('correct');
-                if (commentDiv && currentQuestion.comment) {
-                    commentDiv.textContent = currentQuestion.comment;
-                    commentDiv.classList.add('show');
-                }
-            }
-          });
-
-          // ***************************************************************
-          // Lógica crucial: Apenas contabiliza se a questão foi respondida
-          // ***************************************************************
-          if (userAnswerElement) { // Se o usuário marcou alguma alternativa
-            totalAnsweredQuestionsByTopic[currentQuestion.topic] = (totalAnsweredQuestionsByTopic[currentQuestion.topic] || 0) + 1;
-
-            if (userAnswerValue !== currentQuestion.correctAnswer) {
-              userAnswerElement.classList.add('incorrect');
-              wrongQuestionIndices.push(questionNumber);
-              hasErrors = true; 
-
-              // Incrementa o contador de erros para este tópico
-              errorCountByTopic[currentQuestion.topic] = (errorCountByTopic[currentQuestion.topic] || 0) + 1;
-            } else {
-              correctAnswers++;
-            }
-          }
-          // ***************************************************************
-          // Fim da lógica crucial
-          // ***************************************************************
-        });
-
-        resultsContainer.textContent = `Você acertou ${correctAnswers} de ${questions.length} questões.`;
+        const questionTopic = card.dataset.topic || "Tópico não informado";
         
-        // Rola a página totalmente para baixo para exibir o resultado
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        console.log(`📝 Pergunta ${index + 1}: Tópico = "${questionTopic}"`);
+        console.log(`🔍 Encontradas ${allOptions.length} alternativas`);
+        
+        // Remove classes anteriores
+        allOptions.forEach(option => {
+          option.classList.remove('correct', 'incorrect', 'selected');
+        });
+        if (commentDiv) commentDiv.classList.remove('show');
 
-        if (hasErrors) {
-            errorNavBtn.style.display = 'flex';
-            arrowIcon.textContent = '⬆️'; // Seta para cima inicialmente
-            buttonText.textContent = 'Diagnóstico de Erros'; // Texto claro para diagnóstico
-            isShowingErrors = false; // Não estamos navegando erro a erro inicialmente
-            isShowingDiagnosis = false; // Ainda não mostramos o diagnóstico
+        let correctAnswerValue = null;
+        let questionComment = null;
+
+        // Verifica se é pergunta estática ou dinâmica
+        const isStatic = card.id && card.id.startsWith('question-');
+        if (isStatic) {
+          // Pergunta estática - busca nos dados originais
+          const questionData = questions.find(q => q.question.trim() === questionText);
+          if (questionData) {
+            correctAnswerValue = questionData.correctAnswer.trim();
+            questionComment = questionData.comment;
+          }
         } else {
-            errorNavBtn.style.display = 'none';
+          // Pergunta dinâmica - busca pela opção marcada como correta
+          const correctOpt = optionsContainer.querySelector('.option[data-answer="true"], label[data-answer="true"]');
+          if (correctOpt) {
+            correctAnswerValue = correctOpt.dataset.value?.trim() || correctOpt.textContent.trim();
+            console.log(`✅ Resposta correta encontrada: "${correctAnswerValue}"`);
+          } else {
+            console.log('❌ Nenhuma resposta correta encontrada para pergunta dinâmica');
+          }
+          
+          // Busca comentário no próprio card ou no div comment
+          const commentElement = card.querySelector('.comment');
+          if (commentElement && commentElement.textContent.trim()) {
+            questionComment = commentElement.textContent.trim();
+          }
         }
-      }
 
-      function scrollToQuestion(index) {
-        const questionCard = document.getElementById(`question-${index}`);
-        if (questionCard) {
-          questionCard.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+        // Processa resposta do usuário e aplica coloração
+        let userAnswer = null;
+        if (userAnswerElement) {
+          userAnswerElement.classList.add('selected');
+          userAnswer = userAnswerElement.dataset.value?.trim() || userAnswerElement.textContent.trim();
+          totalQuestionsAnswered++;
+          totalAnsweredQuestionsByTopic[questionTopic] = (totalAnsweredQuestionsByTopic[questionTopic] || 0) + 1;
+
+          console.log(`👤 Resposta do usuário: "${userAnswer}"`);
+          console.log(`🎯 Resposta correta: "${correctAnswerValue}"`);
+
+          // Verifica se a resposta está correta
+          if (userAnswer === correctAnswerValue) {
+            correctAnswersCount++;
+            console.log(`✅ Resposta correta!`);
+          } else {
+            hasErrors = true;
+            errorCountByTopic[questionTopic] = (errorCountByTopic[questionTopic] || 0) + 1;
+            console.log(`❌ Resposta incorreta para tópico: ${questionTopic}`);
+          }
         }
-      }
-      
-      function scrollToDiagnosis() {
-          errorDiagnosisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
 
-      quizContainer.addEventListener("click", function (event) {
-        const clickedElement = event.target;
-        const optionElement = clickedElement.closest('.option');
+        // Aplica coloração: SEMPRE marca a correta de verde, e a errada de vermelho se foi marcada
+        allOptions.forEach(option => {
+          const optionValue = option.dataset.value?.trim() || option.textContent.trim();
+          
+          // Marca a resposta correta de verde SEMPRE
+          if (optionValue === correctAnswerValue) {
+            option.classList.add('correct');
+            console.log(`🟢 Marcando como correta: "${optionValue}"`);
+          }
+          
+          // Se o usuário marcou uma resposta E ela está errada, marca de vermelho
+          if (userAnswer && optionValue === userAnswer && userAnswer !== correctAnswerValue) {
+            option.classList.add('incorrect');
+            console.log(`🔴 Marcando como incorreta: "${optionValue}"`);
+          }
+        });
 
-        if (optionElement) {
-            if (clickedElement.classList.contains("scissor-icon")) {
-                optionElement.classList.toggle("struck-through");
-            } 
-            else {
-                const questionNumber = optionElement.dataset.question;
-                const currentQuestionOptions = quizContainer.querySelectorAll(`.option[data-question=\"${questionNumber}\"]`);
-                currentQuestionOptions.forEach(opt => opt.classList.remove("selected"));
-                
-                optionElement.classList.add("selected");
-            }
+        // Mostra comentário se disponível
+        if (commentDiv && questionComment) {
+          commentDiv.textContent = questionComment;
+          commentDiv.classList.add('show');
         }
       });
 
-      errorNavBtn.addEventListener("click", function() {
-        if (!hasErrors) { // Se não há erros, o botão não deveria estar visível, mas por segurança
-            errorNavBtn.style.display = 'none';
-            return;
+      // Exibe resultados
+      resultsContainer.textContent = `Você acertou ${correctAnswersCount} de ${totalQuestionsAnswered} questões respondidas.`;
+
+      console.log('📊 Erros por tópico:', errorCountByTopic);
+      console.log('📊 Total por tópico:', totalAnsweredQuestionsByTopic);
+
+      // Gera diagnóstico de erros
+      if (hasErrors) {
+        for (const topic in errorCountByTopic) {
+          const errors = errorCountByTopic[topic];
+          const total = totalAnsweredQuestionsByTopic[topic] || 0;
+          if (total > 0) {
+            const percent = ((errors / total) * 100).toFixed(1);
+            const li = document.createElement('li');
+            li.textContent = `${topic}: ${percent}% de erros (${errors} de ${total} questões respondidas)`;
+            topicsToReviewList.appendChild(li);
+          }
         }
+      } else {
+        const li = document.createElement('li');
+        li.textContent = "🥳 Parabéns! Você não teve erros nas questões respondidas.";
+        topicsToReviewList.appendChild(li);
+      }
 
-        if (!isShowingErrors && !isShowingDiagnosis) { 
-            // Clicou no botão "Diagnóstico de Erros" (seta para cima) para iniciar a navegação ou ir para o diagnóstico
-            if (wrongQuestionIndices.length > 0) {
-                isShowingErrors = true; // Inicia o modo de navegação de erros
-                currentWrongQuestionIndex = 0; // Começa pelo primeiro erro
-                arrowIcon.textContent = '⬇️'; // Muda a seta para baixo para navegar pelos erros
-                buttonText.textContent = `Próximo Erro (${currentWrongQuestionIndex + 1}/${wrongQuestionIndices.length})`;
-                scrollToQuestion(wrongQuestionIndices[currentWrongQuestionIndex]);
-            } else {
-                // Não há erros para navegar, ir direto para o diagnóstico (embora hasErrors seja falso aqui)
-                // Isso é um fallback se hasErrors por algum motivo for true, mas wrongQuestionIndices estiver vazio
-                isShowingDiagnosis = true;
-                arrowIcon.textContent = '⬆️'; // Seta para cima (já está no final)
-                buttonText.textContent = 'Diagnóstico de Erros'; // Texto final
+      errorDiagnosisSection.style.display = 'block';
+      generatedQuestionsSection.style.display = 'block';
+      generateNewQuestionsBtn.style.display = 'block';
+      scrollToDiagnosis();
+    }
+
+    function scrollToQuestion(index) {
+      const questionCard = document.getElementById(`question-${index}`);
+      if (questionCard) {
+        questionCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    function scrollToDiagnosis() {
+        errorDiagnosisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function scrollToGeneratedQuestions() {
+        generatedQuestionsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Event listener para seleção de opções (funciona para estáticas e dinâmicas)
+    document.addEventListener("click", function (event) {
+      const clickedElement = event.target;
+      const optionElement = clickedElement.closest('.option');
+
+      if (optionElement) {
+          if (clickedElement.classList.contains("scissor-icon")) {
+              event.stopPropagation();
+              optionElement.classList.toggle("struck-through");
+          }
+          else {
+              const parentCard = optionElement.closest('.card');
+              const currentQuestionOptions = parentCard.querySelectorAll('.option');
+
+              currentQuestionOptions.forEach(opt => opt.classList.remove("selected"));
+              optionElement.classList.add("selected");
+          }
+      }
+    });
+
+    generateNewQuestionsBtn.addEventListener("click", async function() {
+        statusMessage.textContent = '⏳ Gerando novas perguntas...';
+        generateNewQuestionsBtn.disabled = true;
+
+        const topics = Object.keys(errorCountByTopic).filter(topic => {
+            const errorsInTopic = errorCountByTopic[topic] || 0;
+            const totalAnsweredInTopic = totalAnsweredQuestionsByTopic[topic] || 0;
+            return errorsInTopic > 0 && totalAnsweredInTopic > 0;
+        });
+
+        const topicsToSend = topics.length > 0 ? topics : ["fisiologia celular", "biologia"];
+
+        try {
+            const response = await fetch('https://www.quizia.xyz/quiz', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ topicos: topicsToSend }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            newQuestionsContent.innerHTML = '';
+            if (data && data.html) {
+                console.log('📥 HTML recebido do Flask:', data.html);
                 
-                // Preenche e exibe a seção de diagnóstico
-                topicsToReviewList.innerHTML = ''; 
-                for (const topic in errorCountByTopic) {
-                    const errorsInTopic = errorCountByTopic[topic];
-                    const totalAnsweredInTopic = totalAnsweredQuestionsByTopic[topic] || 0; // Garante que não é undefined
-                    
-                    if (totalAnsweredInTopic > 0) { // Evita divisão por zero
-                        const percentage = ((errorsInTopic / totalAnsweredInTopic) * 100).toFixed(1); 
-                        const li = document.createElement('li');
-                        li.textContent = `${topic}: ${percentage}% de erros (${errorsInTopic} de ${totalAnsweredInTopic} questões respondidas)`;
-                        topicsToReviewList.appendChild(li);
+                // Insere o HTML diretamente sem reconstrução complexa
+                newQuestionsContent.innerHTML = data.html.replace(/```html|```/g, '');
+                
+                // Adiciona tesouras e ajusta formatação apenas se necessário
+                newQuestionsContent.querySelectorAll('.card').forEach((card, cardIndex) => {
+                    // Garante que o elemento de pergunta tenha a classe correta
+                    const questionElement = card.querySelector('p');
+                    if (questionElement && !questionElement.classList.contains('question')) {
+                       questionElement.classList.add('question');
                     }
-                }
-                errorDiagnosisSection.style.display = 'block'; 
-                scrollToDiagnosis();
-                errorNavBtn.style.display = 'none'; // Esconde o botão após ir para o diagnóstico final
-            }
 
-        } else if (isShowingErrors) { 
-            // Se estamos no modo de navegar pelos erros (botão é "Próximo Erro")
-            currentWrongQuestionIndex++;
-            if (currentWrongQuestionIndex < wrongQuestionIndices.length) {
-                // Ainda há erros para revisar
-                scrollToQuestion(wrongQuestionIndices[currentWrongQuestionIndex]);
-                buttonText.textContent = `Próximo Erro (${currentWrongQuestionIndex + 1}/${wrongQuestionIndices.length})`;
+                    // Remove qualquer input de radio que possa existir e adiciona tesouras
+                    card.querySelectorAll('label').forEach((label) => {
+                        // Remove inputs de radio MAS preserva o atributo data-answer
+                        const radioInput = label.querySelector('input[type="radio"]');
+                        if (radioInput) {
+                            // PRESERVA o atributo data-answer do input no label
+                            if (radioInput.hasAttribute('data-answer')) {
+                                label.setAttribute('data-answer', radioInput.getAttribute('data-answer'));
+                            }
+                            radioInput.remove();
+                        }
+                        
+                        // Garante que tenha a classe option
+                        if (!label.classList.contains('option')) {
+                            label.classList.add('option');
+                        }
+
+                        // Garante que tenha data-value
+                        if (!label.dataset.value) {
+                            label.dataset.value = label.textContent.trim();
+                        }
+
+                        // Adiciona tesoura se não existir
+                        if (!label.querySelector('.scissor-icon')) {
+                            const scissorIcon = document.createElement('img');
+                            scissorIcon.src = 'tesouras.png';
+                            scissorIcon.className = 'scissor-icon';
+                            scissorIcon.onclick = function(e) {
+                                e.stopPropagation();
+                                label.classList.toggle('struck-through');
+                            };
+                            label.insertBefore(scissorIcon, label.firstChild);
+                        }
+                    });
+
+                    console.log(`🏷️ Card ${cardIndex}: data-topic = "${card.dataset.topic}"`);
+                    
+                    // Verifica se há opção correta marcada
+                    const correctOption = card.querySelector('label[data-answer="true"]');
+                    if (correctOption) {
+                        console.log(`✅ Opção correta encontrada: "${correctOption.dataset.value}"`);
+                    } else {
+                        console.log('❌ Nenhuma opção correta encontrada');
+                    }
+                });
             } else {
-                // Todos os erros foram revisados, agora mostra o diagnóstico
-                isShowingErrors = false; 
-                isShowingDiagnosis = true;
-                arrowIcon.textContent = '⬇️'; // Seta para baixo para o diagnóstico (porque o diagnóstico está no final)
-                buttonText.textContent = 'Diagnóstico de Erros'; // Texto final do botão
-
-                // Preenche e exibe a seção de diagnóstico
-                topicsToReviewList.innerHTML = ''; 
-                for (const topic in errorCountByTopic) {
-                    const errorsInTopic = errorCountByTopic[topic];
-                    const totalAnsweredInTopic = totalAnsweredQuestionsByTopic[topic] || 0;
-                    
-                    if (totalAnsweredInTopic > 0) {
-                        const percentage = ((errorsInTopic / totalAnsweredInTopic) * 100).toFixed(1); 
-                        const li = document.createElement('li');
-                        li.textContent = `${topic}: ${percentage}% de erros (${errorsInTopic} de ${totalAnsweredInTopic} questões respondidas)`;
-                        topicsToReviewList.appendChild(li);
-                    }
-                }
-                errorDiagnosisSection.style.display = 'block'; 
-                scrollToDiagnosis();
-                errorNavBtn.style.display = 'none'; // Esconde o botão após ir para o diagnóstico final
+                newQuestionsContent.innerHTML = "<p>Não foi possível gerar novas perguntas para os tópicos selecionados.</p>";
             }
-        } 
-        // Se isShowingDiagnosis for true, não faz nada ao clicar no botão. Ele já deve ter desaparecido.
-      });
+            
+            generatedQuestionsSection.style.display = 'block';
+            scrollToGeneratedQuestions();
+            statusMessage.textContent = '✅ Perguntas geradas com sucesso!';
+            setTimeout(() => { statusMessage.textContent = '' }, 3000);
 
-      submitButton.addEventListener("click", showResults);
+        } catch (error) {
+            console.error('Erro ao gerar novas perguntas:', error);
+            newQuestionsContent.innerHTML = `<p>Erro ao carregar novas perguntas: ${error.message}. Por favor, tente novamente.</p>`;
+            generatedQuestionsSection.style.display = 'block';
+            scrollToGeneratedQuestions();
+            statusMessage.textContent = '❌ Erro na requisição: ' + error.message;
+            setTimeout(() => { statusMessage.textContent = '' }, 5000);
+        } finally {
+            generateNewQuestionsBtn.disabled = false;
+        }
+    });
 
-      buildQuiz();
-    </script>
-  </body>
-<script src="conexao_firebase.js"></script><script src="navegacao.js"></script><script type="module" src="padrao_simulado.js"></script></html>
+    // Inicialização
+    buildQuiz();
+    errorDiagnosisSection.style.display = 'none';
+    generatedQuestionsSection.style.display = 'none';
+    generateNewQuestionsBtn.style.display = 'none';
+
+    // Event listener para o botão de verificar respostas
+    document.getElementById("verifyAnswersBtn").addEventListener("click", showResults);
+  </script>
+  <script src="conexao_firebase.js"></script><script src="navegacao.js"></script><script type="module" src="padrao_simulado.js"></script>
+
+</body>
+</html>
