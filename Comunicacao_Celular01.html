@@ -1,880 +1,633 @@
-
+<!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Simulado Módulo I - Comunicação Celular</title>
-    <style>
-      body {
-        font-family: sans-serif;
-        margin: 0;
-        padding: 20px;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        min-height: 100vh;
-        background-color: #f4f4f4;
-      }
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Questionário de Múltipla Escolha: Comunicação Celular</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      background-color: #f4f4f4;
+    }
 
-      .quiz-container {
-        max-width: 800px;
-        width: 100%;
-      }
+    .quiz-container {
+      max-width: 800px;
+      width: 100%;
+    }
 
-      h1 {
-        color: #333;
-        text-align: center;
-        margin-bottom: 30px;
-      }
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 30px;
+    }
 
-      .card {
-        background-color: white;
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .question {
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .options {
+      margin-top: 15px;
+    }
+
+    /* Estilos unificados para todas as opções (estáticas e dinâmicas) */
+    .option, label.option, label, #newQuestionsContent label {
+      display: flex; /* Para alinhar imagem e texto */
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      position: relative; /* Para posicionar a tesoura */
+    }
+
+    /* FORÇA a remoção de inputs de radio em QUALQUER lugar */
+    .option input[type="radio"], 
+    label input[type="radio"],
+    #newQuestionsContent input[type="radio"],
+    #newQuestionsContent label input[type="radio"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
+    }
+
+    .option:hover, 
+    label.option:hover, 
+    label:hover,
+    #newQuestionsContent label:hover {
+      background-color: #e9e9e9;
+    }
+
+    .option.selected, 
+    label.option.selected, 
+    label.selected,
+    #newQuestionsContent label.selected {
+      background-color: #d1e7dd;
+      border-color: #28a745;
+    }
+
+    .option.correct, 
+    label.option.correct, 
+    label.correct,
+    #newQuestionsContent label.correct {
+      background-color: #d4edda;
+      border-color: #28a745;
+    }
+
+    .option.incorrect, 
+    label.option.incorrect, 
+    label.incorrect,
+    #newQuestionsContent label.incorrect {
+      background-color: #f8d7da;
+      border-color: #dc3545;
+    }
+
+    .submit-btn {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 30px;
+    }
+
+    .submit-btn:hover {
+      background-color: #0056b3;
+    }
+
+    .results {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .scissor-icon {
+      margin-right: 10px; /* Espaço entre a tesoura e o texto da opção */
+      width: 20px; /* Ajuste conforme o tamanho da sua imagem */
+      height: 20px; /* Ajuste conforme o tamanho da sua imagem */
+      opacity: 0.5; /* Transparência como no original */
+      cursor: pointer;
+    }
+
+    .scissor-icon.hidden {
+      display: none;
+    }
+
+    .struck-through {
+      text-decoration: line-through;
+      color: #888;
+    }
+
+    .comment {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f0f0f0;
+      border-left: 4px solid #007bff;
+      font-style: italic;
+      color: #555;
+      display: none; /* Escondido por padrão */
+    }
+    .comment.show {
+      display: block; /* Mostrado quando ativado */
+    }
+
+    /* Estilos para o botão de navegação de erro / diagnóstico */
+    .error-nav-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #dc3545; /* Vermelho para erro */
+      color: white;
+      border: none;
+      border-radius: 50%; /* Torna o botão redondo */
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      display: none; /* Escondido por padrão */
+      flex-direction: column; /* Para empilhar o ícone e o contador */
+      padding: 5px; /* Ajuste o padding para acomodar texto maior */
+      box-sizing: border-box; /* Garante que padding não aumente o tamanho total */
+      text-align: center;
+    }
+
+    .error-nav-btn:hover {
+      background-color: #c82333;
+    }
+
+    .error-nav-btn .arrow-icon {
+      font-size: 30px; /* Tamanho da seta */
+      line-height: 1; /* Ajuste para centralizar */
+    }
+
+    .error-nav-btn .button-text {
+      font-size: 12px; /* Tamanho do texto abaixo da seta */
+      line-height: 1;
+      margin-top: 2px; /* Espaço entre a seta e o texto */
+    }
+
+    /* Estilos para a seção de diagnóstico de erros */
+    .error-diagnosis-section {
+        margin-top: 50px;
+        padding: 30px;
+        background-color: #ffe0b2; /* Um laranja claro ou similar */
         border-radius: 8px;
-        padding: 20px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        display: none; /* Escondido por padrão */
+        text-align: center;
+        font-size: 1.1em;
+        color: #333;
+    }
+
+    .error-diagnosis-section h2 {
+        color: #e65100; /* Laranja mais escuro */
         margin-bottom: 20px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
+        font-size: 1.8em;
+    }
 
-      .question {
-        font-weight: bold;
-        margin-bottom: 10px;
-        color: #333;
-      }
+    .error-diagnosis-section ul {
+        list-style: none; /* Remove marcadores de lista */
+        padding: 0;
+        margin: 0;
+    }
 
-      .options {
-        margin-top: 15px;
-      }
-
-      .option {
-        display: flex; /* Para alinhar imagem e texto */
-        align-items: center;
-        margin-bottom: 10px;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-        position: relative; /* Para posicionar a tesoura */
-      }
-
-      .option:hover {
-        background-color: #e9e9e9;
-      }
-
-      .option.selected {
-        background-color: #d1e7dd;
-        border-color: #28a745;
-      }
-
-      .option.correct {
-        background-color: #d4edda;
-        border-color: #28a745;
-      }
-
-      .option.incorrect {
-        background-color: #f8d7da;
-        border-color: #dc3545;
-      }
-
-      .submit-btn {
-        display: block;
-        width: 100%;
-        padding: 15px;
-        background-color: #007bff;
+    .error-diagnosis-section li {
+        background-color: #ff9800; /* Laranja */
         color: white;
-        border: none;
+        padding: 8px 15px;
+        margin: 8px 0;
         border-radius: 5px;
-        font-size: 18px;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-        margin-top: 30px;
-      }
-
-      .submit-btn:hover {
-        background-color: #0056b3;
-      }
-
-      .results {
-        text-align: center;
-        margin-top: 30px;
-        font-size: 20px;
+        display: inline-block; /* Para que os itens fiquem lado a lado */
+        margin-right: 10px;
         font-weight: bold;
-        color: #333;
-      }
+    }
+    .error-diagnosis-section li:last-child {
+        margin-right: 0;
+    }
+ .card-bloco {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+      background: #fff;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="quiz-container">
+    <h1 style="text-align:center; margin-bottom: 30px;">Questionário de Múltipla Escolha: Comunicação Celular</h1>
+    <div class="card-bloco" id="quiz"></div>
+    <button class="submit-btn" id="verifyAnswersBtn">Verificar Respostas</button>
 
-      .scissor-icon {
-        margin-right: 10px; /* Espaço entre a tesoura e o texto da opção */
-        width: 20px; /* Ajuste conforme o tamanho da sua imagem */
-        height: 20px; /* Ajuste conforme o tamanho da sua imagem */
-        opacity: 0.5; /* Transparência como no original */
-        cursor: pointer;
-      }
+    <button class="generate-questions-btn submit-btn" id="generateNewQuestionsBtn" style="display:none;">
+      Gerar Novas Perguntas
+    </button>
 
-      .scissor-icon.hidden {
-        display: none;
-      }
+    <div class="results card-bloco" id="results"></div>
+    <div id="statusMessage" style="text-align: center; margin-top: 10px; font-weight: bold; color: #007bff;"></div>
 
-      .struck-through {
-        text-decoration: line-through;
-        color: #888;
-      }
-
-      .comment {
-        margin-top: 10px;
-        padding: 10px;
-        background-color: #f0f0f0;
-        border-left: 4px solid #007bff;
-        font-style: italic;
-        color: #555;
-        display: none; /* Escondido por padrão */
-      }
-      .comment.show {
-        display: block; /* Mostrado quando ativado */
-      }
-
-      /* Estilos para o botão de navegação de erro / diagnóstico */
-      .error-nav-btn {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background-color: #dc3545; /* Vermelho para erro */
-        color: white;
-        border: none;
-        border-radius: 50%; /* Torna o botão redondo */
-        width: 60px;
-        height: 60px;
-        font-size: 24px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        cursor: pointer;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        z-index: 1000;
-        display: none; /* Escondido por padrão */
-        flex-direction: column; /* Para empilhar o ícone e o contador */
-        padding: 5px; /* Ajuste o padding para acomodar texto maior */
-        box-sizing: border-box; /* Garante que padding não aumente o tamanho total */
-        text-align: center;
-      }
-
-      .error-nav-btn:hover {
-        background-color: #c82333;
-      }
-
-      .error-nav-btn .arrow-icon {
-        font-size: 30px; /* Tamanho da seta */
-        line-height: 1; /* Ajuste para centralizar */
-      }
-
-      .error-nav-btn .button-text {
-        font-size: 12px; /* Tamanho do texto abaixo da seta */
-        line-height: 1;
-        margin-top: 2px; /* Espaço entre a seta e o texto */
-      }
-      
-      /* Estilos para a seção de diagnóstico de erros */
-      .error-diagnosis-section {
-          margin-top: 50px;
-          padding: 30px;
-          background-color: #ffe0b2; /* Um laranja claro ou similar */
-          border-radius: 8px;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-          display: none; /* Escondido por padrão */
-          text-align: center;
-          font-size: 1.1em;
-          color: #333;
-      }
-
-      .error-diagnosis-section h2 {
-          color: #e65100; /* Laranja mais escuro */
-          margin-bottom: 20px;
-          font-size: 1.8em;
-      }
-
-      .error-diagnosis-section ul {
-          list-style: none; /* Remove marcadores de lista */
-          padding: 0;
-          margin: 0;
-      }
-
-      .error-diagnosis-section li {
-          background-color: #ff9800; /* Laranja */
-          color: white;
-          padding: 8px 15px;
-          margin: 8px 0;
-          border-radius: 5px;
-          display: inline-block; /* Para que os itens fiquem lado a lado */
-          margin-right: 10px;
-          font-weight: bold;
-      }
-      .error-diagnosis-section li:last-child {
-          margin-right: 0;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="quiz-container">
-      <h1>Questionário de Múltipla Escolha: Comunicação Celular</h1>
-      <div id="quiz"></div>
-      <button class="submit-btn" id="submit">Verificar Respostas</button>
-      <div id="results" class="results"></div>
-
-      <div id="errorDiagnosis" class="error-diagnosis-section">
-        <h2>Diagnóstico de Erros</h2>
-        <p>Parece que você precisa revisar os seguintes assuntos:</p>
-        <ul id="topicsToReview">
-          </ul>
-      </div>
+    <div class="error-diagnosis-section card-bloco" id="errorDiagnosis">
+      <h2>Diagnóstico de Erros</h2>
+      <p>Parece que você precisa revisar os seguintes assuntos:</p>
+      <ul id="topicsToReview"></ul>
     </div>
 
-    <button class="error-nav-btn" id="errorNavBtn">
-      <span class="arrow-icon"></span> <span class="button-text"></span> </button>
+    <div class="generated-questions-section card-bloco" id="generatedQuestionsSection" style="display:none;">
+      <h2>Novas Perguntas Geradas</h2>
+      <div id="newQuestionsContent"></div>
+    </div>
+  </div>
+  
+  <button class="error-nav-btn" id="errorNavBtn" style="display:none;">
+    <span class="arrow-icon"></span>
+    <span class="button-text"></span>
+  </button>
 
-    <script>
-      const quizContainer = document.getElementById("quiz");
-      const submitButton = document.getElementById("submit");
-      const resultsContainer = document.getElementById("results");
-      const errorNavBtn = document.getElementById("errorNavBtn");
-      const arrowIcon = errorNavBtn.querySelector(".arrow-icon");
-      const buttonText = errorNavBtn.querySelector(".button-text");
-      const errorDiagnosisSection = document.getElementById("errorDiagnosis");
-      const topicsToReviewList = document.getElementById("topicsToReview");
+  <script>
+    const quizContainer = document.getElementById("quiz");
+    const resultsContainer = document.getElementById("results");
+    const errorNavBtn = document.getElementById("errorNavBtn");
+    const arrowIcon = errorNavBtn.querySelector(".arrow-icon");
+    const buttonText = errorNavBtn.querySelector(".button-text");
+    const errorDiagnosisSection = document.getElementById("errorDiagnosis");
+    const topicsToReviewList = document.getElementById("topicsToReview");
+    const generateNewQuestionsBtn = document.getElementById("generateNewQuestionsBtn");
+    const generatedQuestionsSection = document.getElementById("generatedQuestionsSection");
+    const newQuestionsContent = document.getElementById("newQuestionsContent");
+    const statusMessage = document.getElementById("statusMessage");
 
-      let wrongQuestionIndices = []; // Array para armazenar os índices das questões marcadas erradas
-      let errorCountByTopic = {}; // Objeto para contar erros por tópico (APENAS QUESTÕES MARCADAS ERRADO)
-      let totalAnsweredQuestionsByTopic = {}; // Objeto para contar o total de questões RESPONDIDAS por tópico
-      let currentWrongQuestionIndex = -1; 
-      let hasErrors = false; 
-      let isShowingErrors = false; // Flag para controlar se estamos navegando nos erros
-      let isShowingDiagnosis = false; // Flag para controlar se estamos na seção de diagnóstico
+    let wrongQuestionIndices = [];
+    let errorCountByTopic = {};
+    let totalAnsweredQuestionsByTopic = {};
+    let currentWrongQuestionIndex = -1;
+    let hasErrors = false;
+    let isShowingErrors = false;
+    let isShowingDiagnosis = false;
 
-      const questions = [
-        {
-          question:
-            "1. Qual é a principal função da comunicação celular em organismos multicelulares?",
-          options: [
-            "a) Apenas a produção de energia para a célula.",
-            "b) A coordenação das ações entre as diferentes células.",
-            "c) O armazenamento de informações genéticas.",
-            "d) A replicação do DNA.",
-          ],
-          correctAnswer: "b) A coordenação das ações entre as diferentes células.",
-          comment:
-            "Em organismos multicelulares, as células precisam se comunicar e cooperar para que o organismo funcione adequadamente. A comunicação celular permite que as células coordenem suas atividades, como crescimento, diferenciação, e respostas a estímulos externos e internos. Sem essa coordenação, um organismo complexo não conseguiria manter a homeostase ou desempenhar suas funções vitais.",
-          topic: "Introdução à Comunicação Celular",
-        },
-        {
-          question:
-            "2. O que é uma molécula sinalizadora na comunicação celular?",
-          options: [
-            "a) Uma estrutura que armazena nutrientes na célula.",
-            "b) Uma molécula produzida por uma célula que transporta informações para outras células.",
-            "c) Uma organela responsável pela síntese de proteínas.",
-            "d) Um componente do núcleo celular.",
-          ],
-          correctAnswer: "b) Uma molécula produzida por uma célula que transporta informações para outras células.",
-          comment:
-            "A molécula sinalizadora é a 'mensagem' que uma célula envia para outra. Ela é produzida pela célula sinalizadora e liberada no meio extracelular, onde pode ser detectada pela célula-alvo. Essas moléculas podem ser de diversas naturezas, como proteínas, hormônios, neurotransmissores, entre outros.",
-          topic: "Moléculas Sinalizadoras",
-        },
-        {
-          question:
-            "3. Qual o termo que se refere à célula que libera a molécula sinalizadora?",
-          options: [
-            "a) Célula-alvo.",
-            "b) Célula receptora.",
-            "c) Célula sinalizadora.",
-            "d) Célula efetora.",
-          ],
-          correctAnswer: "c) Célula sinalizadora.",
-          comment:
-            "A célula sinalizadora é aquela que produz e secreta as moléculas de sinalização para o ambiente extracelular, onde elas podem ser captadas por outras células.",
-          topic: "Células Envolvidas na Sinalização",
-        },
-        {
-          question:
-            "4. Qual o termo que se refere à célula que recebe e responde à molécula sinalizadora?",
-          options: [
-            "a) Célula-mãe.",
-            "b) Célula-alvo.",
-            "c) Célula sinalizadora.",
-            "d) Célula auxiliar.",
-          ],
-          correctAnswer: "b) Célula-alvo.",
-          comment:
-            "A célula-alvo é a célula que possui receptores específicos em sua superfície ou em seu interior que podem se ligar às moléculas sinalizadoras e, consequentemente, desencadear uma resposta.",
-          topic: "Células Envolvidas na Sinalização",
-        },
-        {
-          question:
-            "5. Qual a função dos receptores na comunicação celular?",
-          options: [
-            "a) Produzir moléculas sinalizadoras.",
-            "b) Armazenar energia para a célula.",
-            "c) Reconhecer e ligar-se especificamente às moléculas sinalizadoras.",
-            "d) Transportar íons através da membrana.",
-          ],
-          correctAnswer: "c) Reconhecer e ligar-se especificamente às moléculas sinalizadoras.",
-          comment:
-            "Os receptores são proteínas especializadas que se localizam na superfície da célula ou dentro dela. Eles possuem um local de ligação específico para as moléculas sinalizadoras (ligantes), e essa ligação desencadeia a cascata de eventos que levam à resposta celular.",
-          topic: "Receptores Celulares",
-        },
-        {
-          question:
-            "6. Que tipo de comunicação celular ocorre quando as moléculas sinalizadoras atuam em células vizinhas, sem entrar na corrente sanguínea?",
-          options: [
-            "a) Endócrina.",
-            "b) Parácrina.",
-            "c) Sináptica.",
-            "d) Autócrina.",
-          ],
-          correctAnswer: "b) Parácrina.",
-          comment:
-            "A sinalização parácrina envolve a liberação de moléculas sinalizadoras que atuam localmente em células adjacentes. É um tipo de comunicação de curta distância.",
-          topic: "Tipos de Sinalização: Parácrina",
-        },
-        {
-          question:
-            "7. Quando uma célula secreta moléculas sinalizadoras que atuam sobre ela mesma, o tipo de comunicação é denominado:",
-          options: [
-            "a) Endócrina.",
-            "b) Parácrina.",
-            "c) Sináptica.",
-            "d) Autócrina.",
-          ],
-          correctAnswer: "d) Autócrina.",
-          comment:
-            "Na sinalização autócrina, a própria célula que produz e secreta a molécula sinalizadora é também a célula-alvo, respondendo ao seu próprio sinal.",
-          topic: "Tipos de Sinalização: Autócrina",
-        },
-        {
-          question:
-            "8. A comunicação que utiliza a corrente sanguínea para transportar moléculas sinalizadoras (hormônios) por longas distâncias é a:",
-          options: [
-            "a) Endócrina.",
-            "b) Parácrina.",
-            "c) Sináptica.",
-            "d) Autócrina.",
-          ],
-          correctAnswer: "a) Endócrina.",
-          comment:
-            "A sinalização endócrina é caracterizada pela secreção de hormônios diretamente na corrente sanguínea, que os transporta para células-alvo distantes em todo o corpo.",
-          topic: "Tipos de Sinalização: Endócrina",
-        },
-        {
-          question:
-            "9. Qual tipo de comunicação celular ocorre entre neurônios através da liberação de neurotransmissores em uma fenda sináptica?",
-          options: [
-            "a) Endócrina.",
-            "b) Parácrina.",
-            "c) Sináptica.",
-            "d) Autócrina.",
-          ],
-          correctAnswer: "c) Sináptica.",
-          comment:
-            "A sinalização sináptica é um tipo especializado de sinalização parácrina que ocorre no sistema nervoso. Neurônios liberam neurotransmissores em uma fenda sináptica muito estreita, agindo rapidamente em células-alvo (outros neurônios, músculos ou glândulas).",
-          topic: "Tipos de Sinalização: Sináptica",
-        },
-        {
-          question:
-            "10. Qual a primeira etapa geral na transdução de sinal?",
-          options: [
-            "a) Amplificação do sinal.",
-            "b) Resposta celular.",
-            "c) Ligação do ligante ao receptor.",
-            "d) Ativação de proteínas intracelulares.",
-          ],
-          correctAnswer: "c) Ligação do ligante ao receptor.",
-          comment:
-            "A transdução de sinal começa com o reconhecimento da molécula sinalizadora (ligante) por um receptor específico. A ligação do ligante ao receptor é o evento inicial que desencadeia toda a cascata de sinalização intracelular.",
-          topic: "Etapas da Transdução de Sinal",
-        },
-        {
-          question:
-            "11. Receptores que atravessam a membrana plasmática e possuem um domínio extracelular para ligar o ligante e um domínio intracelular para iniciar a sinalização são chamados de:",
-          options: [
-            "a) Receptores intracelulares.",
-            "b) Receptores de superfície celular.",
-            "c) Canais iônicos.",
-            "d) Proteínas G.",
-          ],
-          correctAnswer: "b) Receptores de superfície celular.",
-          comment:
-            "Receptores de superfície celular (ou receptores transmembrana) são proteínas inseridas na membrana plasmática que detectam sinais externos e os transmitem para o interior da célula.",
-          topic: "Tipos de Receptores: Superfície",
-        },
-        {
-          question:
-            "12. Onde são encontrados os receptores intracelulares?",
-          options: [
-            "a) Apenas na membrana plasmática.",
-            "b) Apenas no citoplasma.",
-            "c) No citoplasma ou no núcleo.",
-            "d) Apenas no retículo endoplasmático.",
-          ],
-          correctAnswer: "c) No citoplasma ou no núcleo.",
-          comment:
-            "Receptores intracelulares são encontrados no citoplasma ou no núcleo da célula. Eles se ligam a moléculas sinalizadoras pequenas e hidrofóbicas (lipossolúveis) que podem atravessar a membrana plasmática.",
-          topic: "Tipos de Receptores: Intracelulares",
-        },
-        {
-          question:
-            "13. Qual o papel dos segundos mensageiros na transdução de sinal?",
-          options: [
-            "a) Atuar como moléculas sinalizadoras primárias.",
-            "b) Amplificar e distribuir o sinal dentro da célula.",
-            "c) Ligar-se diretamente ao receptor.",
-            "d) Transportar o ligante para o núcleo.",
-          ],
-          correctAnswer: "b) Amplificar e distribuir o sinal dentro da célula.",
-          comment:
-            "Segundos mensageiros (como AMP cíclico, Ca2+, DAG, IP3) são moléculas pequenas e não proteicas que são geradas ou liberadas em resposta à ativação do receptor. Eles amplificam o sinal e o difundem rapidamente por toda a célula, ativando proteínas-alvo.",
-          topic: "Segundos Mensageiros",
-        },
-        {
-          question:
-            "14. Um exemplo comum de segundo mensageiro é o:",
-          options: [
-            "a) ATP.",
-            "b) DNA.",
-            "c) AMP cíclico (cAMP).",
-            "d) Proteína G.",
-          ],
-          correctAnswer: "c) AMP cíclico (cAMP).",
-          comment:
-            "O AMP cíclico (cAMP) é um dos segundos mensageiros mais conhecidos, envolvido em diversas vias de sinalização intracelular, ativando proteínas quinases, como a PKA.",
-          topic: "Segundos Mensageiros: cAMP",
-        },
-        {
-          question:
-            "15. Qual a função de uma proteína quinase em uma cascata de sinalização?",
-          options: [
-            "a) Remover grupos fosfato de proteínas.",
-            "b) Adicionar grupos fosfato a proteínas.",
-            "c) Degradar proteínas.",
-            "d) Sintetizar proteínas.",
-          ],
-          correctAnswer: "b) Adicionar grupos fosfato a proteínas.",
-          comment:
-            "As proteínas quinases são enzimas que catalisam a adição de grupos fosfato (fosforilação) a outras proteínas. A fosforilação geralmente ativa ou inativa a proteína-alvo, alterando sua função e propagando o sinal.",
-          topic: "Cascata de Sinalização: Quinases",
-        },
-        {
-          question:
-            "16. O que é fosforilação na comunicação celular?",
-          options: [
-            "a) A remoção de um grupo fosfato de uma proteína.",
-            "b) A adição de um grupo fosfato a uma proteína.",
-            "c) A quebra de uma proteína.",
-            "d) A síntese de uma nova proteína.",
-          ],
-          correctAnswer: "b) A adição de um grupo fosfato a uma proteína.",
-          comment:
-            "Fosforilação é o processo de adicionar um grupo fosfato a uma molécula, geralmente uma proteína. É um mecanismo chave de regulação da atividade proteica em vias de sinalização.",
-          topic: "Fosforilação e Desfosforilação",
-        },
-        {
-          question:
-            "17. O que é desfosforilação na comunicação celular?",
-          options: [
-            "a) A adição de um grupo fosfato a uma proteína.",
-            "b) A remoção de um grupo fosfato de uma proteína.",
-            "c) A quebra de uma proteína.",
-            "d) A síntese de uma nova proteína.",
-          ],
-          correctAnswer: "b) A remoção de um grupo fosfato de uma proteína.",
-          comment:
-            "Desfosforilação é o processo inverso da fosforilação, onde uma enzima (fosfatase) remove um grupo fosfato de uma proteína, geralmente inativando-a ou alterando sua atividade, e é essencial para o desligamento do sinal.",
-          topic: "Fosforilação e Desfosforilação",
-        },
-        {
-          question:
-            "18. Qual das seguintes opções é um exemplo de resposta celular a um sinal?",
-          options: [
-            "a) Apenas a divisão celular.",
-            "b) Apenas a síntese de proteínas.",
-            "c) Alterações na expressão gênica, metabolismo, forma ou movimento celular.",
-            "d) Apenas a produção de ATP.",
-          ],
-          correctAnswer: "c) Alterações na expressão gênica, metabolismo, forma ou movimento celular.",
-          comment:
-            "As respostas celulares aos sinais são extremamente diversas e podem incluir mudanças na expressão de genes, alteração da atividade enzimática, modificação da forma celular, migração, proliferação ou até mesmo a morte celular programada (apoptose).",
-          topic: "Respostas Celulares ao Sinal",
-        },
-        {
-          question:
-            "19. Receptores acoplados à proteína G (GPCRs) são uma classe importante de receptores de superfície celular. Qual o papel da proteína G nesse sistema?",
-          options: [
-            "a) Atuar como segundo mensageiro.",
-            "b) Ligar-se diretamente ao ligante.",
-            "c) Transmitir o sinal do receptor ativado para outras proteínas intracelulares.",
-            "d) Sintetizar ATP.",
-          ],
-          correctAnswer: "c) Transmitir o sinal do receptor ativado para outras proteínas intracelulares.",
-          comment:
-            "As proteínas G são proteínas triméricas (α, β, γ) que atuam como 'interruptores' moleculares. Elas são ativadas quando um ligante se liga ao GPCR, trocando GDP por GTP, e então dissociam-se para ativar ou inibir enzimas e canais iônicos, propagando o sinal.",
-          topic: "Receptores Acoplados à Proteína G (GPCRs)",
-        },
-        {
-          question:
-            "20. A acetilcolina é um neurotransmissor que pode causar contração muscular ou diminuição da frequência cardíaca, dependendo da célula-alvo. Isso exemplifica qual característica da comunicação celular?",
-          options: [
-            "a) A especificidade da ligação ligante-receptor.",
-            "b) A amplificação do sinal.",
-            "c) A desensibilização do receptor.",
-            "d) A multiplicidade de respostas dependendo do receptor e da via intracelular.",
-          ],
-          correctAnswer: "d) A multiplicidade de respostas dependendo do receptor e da via intracelular.",
-          comment:
-            "Um mesmo ligante pode desencadear diferentes respostas em diferentes tipos celulares, pois a resposta final não depende apenas do ligante, mas principalmente do tipo de receptor presente na célula-alvo e das vias de sinalização intracelulares que são ativadas após a ligação ligante-receptor.",
-          topic: "Especificidade e Respostas Variadas",
-        },
-        {
-          question:
-            "21. O que é o feedback negativo na comunicação celular?",
-          options: [
-            "a) Um mecanismo que amplifica a resposta ao sinal.",
-            "b) Um mecanismo que desliga ou reduz a resposta ao sinal.",
-            "c) Um processo de transporte de moléculas para fora da célula.",
-            "d) Um tipo de comunicação autócrina.",
-          ],
-          correctAnswer: "b) Um mecanismo que desliga ou reduz a resposta ao sinal.",
-          comment:
-            "O feedback negativo é um mecanismo de regulação comum em vias de sinalização onde um produto ou evento posterior da via atua para inibir ou reduzir a ativação inicial, ajudando a controlar a duração e a intensidade da resposta celular.",
-          topic: "Regulação da Sinalização: Feedback Negativo",
-        },
-        {
-          question:
-            "22. Qual das seguintes opções é um exemplo de comunicação celular mediada por contato direto?",
-          options: [
-            "a) Sinalização endócrina.",
-            "b) Sinalização sináptica.",
-            "c) Gap junctions (junções comunicantes) ou plasmodesmos.",
-            "d) Sinalização parácrina.",
-          ],
-          correctAnswer: "c) Gap junctions (junções comunicantes) ou plasmodesmos.",
-          comment:
-            "Gap junctions em células animais e plasmodesmos em células vegetais permitem a comunicação direta entre citoplasmas de células adjacentes, possibilitando a troca de pequenas moléculas e íons sem a necessidade de secreção no meio extracelular.",
-          topic: "Comunicação por Contato Direto",
-        },
-        {
-          question:
-            "23. Qual a importância da especificidade na comunicação celular?",
-          options: [
-            "a) Permite que qualquer molécula sinalizadora se ligue a qualquer receptor.",
-            "b) Garante que apenas as células-alvo corretas respondam a um sinal específico.",
-            "c) Aumenta a velocidade da transdução do sinal.",
-            "d) Reduz a necessidade de receptores.",
-          ],
-          correctAnswer: "b) Garante que apenas as células-alvo corretas respondam a um sinal específico.",
-          comment:
-            "A especificidade é crucial porque garante que apenas as células que possuem o receptor correto para uma determinada molécula sinalizadora respondam a ela. Isso evita respostas indesejadas e permite a coordenação precisa das funções celulares e teciduais.",
-          topic: "Especificidade da Sinalização",
-        },
-        {
-          question:
-            "24. O que é o sistema de segundos mensageiros cAMP?",
-          options: [
-            "a) Um sistema que envolve a quebra de proteínas.",
-            "b) Um sistema onde a adenilil ciclase produz cAMP a partir de ATP, ativando a PKA.",
-            "c) Um sistema que degrada o DNA.",
-            "d) Um sistema que transporta íons através da membrana.",
-          ],
-          correctAnswer: "b) Um sistema onde a adenilil ciclase produz cAMP a partir de ATP, ativando a PKA.",
-          comment:
-            "O sistema cAMP é uma via de sinalização comum onde a ligação de um ligante a um receptor acoplado à proteína G ativa a enzima adenilil ciclase, que converte ATP em cAMP. O cAMP, por sua vez, ativa a Proteína Quinase A (PKA), que fosforila diversas proteínas-alvo.",
-          topic: "Vias de Sinalização: cAMP",
-        },
-        {
-          question:
-            "25. Qual é o papel da fosfodiesterase na via de sinalização do cAMP?",
-          options: [
-            "a) Sintetizar cAMP.",
-            "b) Amplificar o sinal de cAMP.",
-            "c) Degradadar o cAMP, encerrando o sinal.",
-            "d) Ativar a adenilil ciclase.",
-          ],
-          correctAnswer: "c) Degradadar o cAMP, encerrando o sinal.",
-          comment:
-            "A fosfodiesterase é uma enzima que hidrolisa o cAMP, convertendo-o em AMP, que não é um segundo mensageiro. Essa degradação é essencial para 'desligar' o sinal e permitir que a célula responda a novas variações na concentração de cAMP.",
-          topic: "Vias de Sinalização: Regulação do cAMP",
-        },
-        {
-          question:
-            "26. Qual é a principal diferença entre um agonista e um antagonista na comunicação celular?",
-          options: [
-            "a) Agonistas inibem a resposta, antagonistas ativam.",
-            "b) Agonistas se ligam ao receptor e ativam a resposta, antagonistas se ligam ao receptor e bloqueiam a resposta.",
-            "c) Agonistas são proteínas, antagonistas são lipídios.",
-            "d) Agonistas são produzidos pela célula, antagonistas são externos.",
-          ],
-          correctAnswer: "b) Agonistas se ligam ao receptor e ativam a resposta, antagonistas se ligam ao receptor e bloqueiam a resposta.",
-          comment:
-            "Agonistas são moléculas que se ligam a um receptor e o ativam, mimetizando o efeito do ligante natural. Antagonistas são moléculas que se ligam ao receptor, mas não o ativam, bloqueando a ligação do ligante natural e, consequentemente, a resposta.",
-          topic: "Agonistas e Antagonistas",
-        },
-        {
-          question:
-            "27. O que acontece com um receptor de superfície celular após a ligação de um ligante que causa desensibilização?",
-          options: [
-            "a) Ele aumenta sua afinidade pelo ligante.",
-            "b) Ele é internalizado ou inativado.",
-            "c) Ele se divide em dois receptores.",
-            "d) Ele começa a produzir ligantes adicionais.",
-          ],
-          correctAnswer: "b) Ele é internalizado ou inativado.",
-          comment:
-            "A desensibilização é um mecanismo de regulação negativa em que a célula reduz sua responsividade a um sinal prolongado ou excessivo. Isso pode ocorrer pela fosforilação do receptor, que impede sua interação com proteínas de sinalização, ou pela internalização do receptor (endocitose), removendo-o da superfície celular.",
-          topic: "Regulação da Sinalização: Desensibilização",
-        },
-        {
-          question:
-            "28. Qual a importância da amplificação do sinal na comunicação celular?",
-          options: [
-            "a) Garantir que apenas sinais fortes sejam percebidos.",
-            "b) Permitir que um pequeno número de ligantes gere uma resposta celular robusta.",
-            "c) Controlar a especificidade da ligação ligante-receptor.",
-            "d) Inibir a transdução do sinal.",
-          ],
-          correctAnswer: "b) Permitir que um pequeno número de ligantes gere uma resposta celular robusta.",
-          comment:
-            "A amplificação é vital porque um único ligante pode desencadear a ativação de várias moléculas subsequentes na via de sinalização, resultando em uma resposta celular amplificada que seria impossível com uma relação de 1:1 entre ligante e resposta. Isso economiza energia e permite respostas rápidas e eficazes a concentrações mínimas de ligantes.",
-          topic: "Amplificação do Sinal",
-        },
-        {
-          question:
-            "29. A comunicação celular é essencial para o funcionamento de todo o organismo. Qual seria uma consequência da falha generalizada na comunicação celular em um organismo multicelular?",
-          options: [
-            "a) Aumento da produção de energia.",
-            "b) Descoordenação de funções e possível morte do organismo.",
-            "c) Melhoria na absorção de nutrientes.",
-            "d) Redução na necessidade de oxigênio.",
-          ],
-          correctAnswer: "b) Descoordenação de funções e possível morte do organismo.",
-          comment:
-            "A falha generalizada na comunicação celular levaria à incapacidade das células de coordenarem suas atividades, resultando em desregulação de processos vitais, perda de homeostase e, em última instância, à disfunção de órgãos e sistemas, o que poderia levar à morte do organismo.",
-          topic: "Importância da Comunicação Celular",
-        },
-      ];
+    // Inicializa a visibilidade das seções no carregamento
+    errorDiagnosisSection.style.display = 'none';
+    topicsToReviewList.innerHTML = '';
+    statusMessage.textContent = '';
 
-      function buildQuiz() {
-        const output = [];
+    const questions = [         {           question: "1. Qual é a principal função da comunicação celular em organismos multicelulares?",           options: [             "a) Apenas a produção de energia para a célula.",             "b) A coordenação das ações entre as diferentes células.",             "c) O armazenamento de informações genéticas.",             "d) A replicação do DNA.",           ],           correctAnswer: "b) A coordenação das ações entre as diferentes células.",           comment: "Em organismos multicelulares, a comunicação celular permite que as células coordenem suas atividades, como crescimento e diferenciação, garantindo a homeostase e o funcionamento do organismo como um todo.",           topic: "Introdução à Comunicação Celular",         },         {           question: "2. O que é uma molécula sinalizadora na comunicação celular?",           options: [             "a) Uma estrutura que armazena nutrientes na célula.",             "b) Uma molécula produzida por uma célula que transporta informações para outras células.",             "c) Uma organela responsável pela síntese de proteínas.",             "d) Um componente do núcleo celular.",           ],           correctAnswer: "b) Uma molécula produzida por uma célula que transporta informações para outras células.",           comment: "A molécula sinalizadora (ligante) é a 'mensagem' química liberada por uma célula para influenciar o comportamento de outra célula (célula-alvo).",           topic: "Moléculas Sinalizadoras",         },         {           question: "3. Qual o termo que se refere à célula que libera a molécula sinalizadora?",           options: [             "a) Célula-alvo.",             "b) Célula receptora.",             "c) Célula sinalizadora.",             "d) Célula efetora.",           ],           correctAnswer: "c) Célula sinalizadora.",           comment: "A célula sinalizadora é a origem do sinal; ela sintetiza e secreta as moléculas de comunicação para o meio extracelular.",           topic: "Células Envolvidas na Sinalização",         },         {           question: "4. Qual o termo que se refere à célula que recebe e responde à molécula sinalizadora?",           options: [             "a) Célula-mãe.",             "b) Célula-alvo.",             "c) Célula sinalizadora.",             "d) Célula auxiliar.",           ],           correctAnswer: "b) Célula-alvo.",           comment: "A célula-alvo é aquela equipada com receptores específicos capazes de detectar e traduzir o sinal recebido em uma resposta biológica.",           topic: "Células Envolvidas na Sinalização",         },         {           question: "5. Qual a função dos receptores na comunicação celular?",           options: [             "a) Produzir moléculas sinalizadoras.",             "b) Armazenar energia para a célula.",             "c) Reconhecer e ligar-se especificamente às moléculas sinalizadoras.",             "d) Transportar íons através da membrana.",           ],           correctAnswer: "c) Reconhecer e ligar-se especificamente às moléculas sinalizadoras.",           comment: "Os receptores são proteínas de alta afinidade que funcionam como 'sensores', iniciando a cascata de sinalização intracelular após a ligação com o ligante correto.",           topic: "Receptores Celulares",         },         {           question: "6. Que tipo de comunicação celular ocorre quando as moléculas sinalizadoras atuam em células vizinhas, sem entrar na corrente sanguínea?",           options: [             "a) Endócrina.",             "b) Parácrina.",             "c) Sináptica.",             "d) Autócrina.",           ],           correctAnswer: "b) Parácrina.",           comment: "A sinalização parácrina é uma comunicação de curto alcance, onde os mediadores químicos difundem-se pelo fluido intersticial para atingir células adjacentes.",           topic: "Tipos de Sinalização: Parácrina",         },         {           question: "7. Quando uma célula secreta moléculas sinalizadoras que atuam sobre ela mesma, o tipo de comunicação é denominado:",           options: [             "a) Endócrina.",             "b) Parácrina.",             "c) Sináptica.",             "d) Autócrina.",           ],           correctAnswer: "d) Autócrina.",           comment: "Na sinalização autócrina, o ligante liberado pela célula liga-se a receptores na sua própria membrana, permitindo a autorregulação.",           topic: "Tipos de Sinalização: Autócrina",         },         {           question: "8. A comunicação que utiliza a corrente sanguínea para transportar moléculas sinalizadoras (hormônios) por longas distâncias é a:",           options: [             "a) Endócrina.",             "b) Parácrina.",             "c) Sináptica.",             "d) Autócrina.",           ],           correctAnswer: "a) Endócrina.",           comment: "A sinalização endócrina utiliza o sistema circulatório para distribuir hormônios por todo o organismo, permitindo a comunicação entre órgãos distantes.",           topic: "Tipos de Sinalização: Endócrina",         },         {           question: "9. Qual tipo de comunicação celular ocorre entre neurônios através da liberação de neurotransmissores em uma fenda sináptica?",           options: [             "a) Endócrina.",             "b) Parácrina.",             "c) Sináptica.",             "d) Autócrina.",           ],           correctAnswer: "c) Sináptica.",           comment: "A sinalização sináptica é rápida e ultraespecífica, ocorrendo em junções especializadas chamadas sinapses através de neurotransmissores.",           topic: "Tipos de Sinalização: Sináptica",         },         {           question: "10. Qual a primeira etapa geral na transdução de sinal?",           options: [             "a) Amplificação do sinal.",             "b) Resposta celular.",             "c) Ligação do ligante ao receptor.",             "d) Ativação de proteínas intracelulares.",           ],           correctAnswer: "c) Ligação do ligante ao receptor.",           comment: "A recepção (ligação ligante-receptor) é o gatilho obrigatório que altera a conformação do receptor e inicia a resposta intracelular.",           topic: "Etapas da Transdução de Sinal",         },         {           question: "11. Receptores que atravessam a membrana plasmática e possuem um domínio extracelular para ligar o ligante e um domínio intracelular para iniciar a sinalização são chamados de:",           options: [             "a) Receptores intracelulares.",             "b) Receptores de superfície celular.",             "c) Canais iônicos.",             "d) Proteínas G.",           ],           correctAnswer: "b) Receptores de superfície celular.",           comment: "Receptores de superfície são necessários para moléculas sinalizadoras hidrofílicas que não conseguem atravessar a bicamada lipídica da membrana.",           topic: "Tipos de Receptores: Superfície",         },         {           question: "12. Onde são encontrados os receptores intracelulares?",           options: [             "a) Apenas na membrana plasmática.",             "b) Apenas no citoplasma.",             "c) No citoplasma ou no núcleo.",             "d) Apenas no retículo endoplasmático.",           ],           correctAnswer: "c) No citoplasma ou no núcleo.",           comment: "Eles recebem ligantes lipossolúveis (como hormônios esteroides). Uma vez ligados, frequentemente atuam como fatores de transcrição no núcleo.",           topic: "Tipos de Receptores: Intracelulares",         },         {           question: "13. Qual o papel dos segundos mensageiros na transdução de sinal?",           options: [             "a) Atuar como moléculas sinalizadoras primárias.",             "b) Amplificar e distribuir o sinal dentro da célula.",             "c) Ligar-se diretamente ao receptor.",             "d) Transportar o ligante para o núcleo.",           ],           correctAnswer: "b) Amplificar e distribuir o sinal dentro da célula.",           comment: "Segundos mensageiros são moléculas pequenas que propagam o sinal do receptor para as proteínas efetoras, permitindo uma resposta rápida e ampla.",           topic: "Segundos Mensageiros",         },         {           question: "14. Um exemplo comum de segundo mensageiro é o:",           options: [             "a) ATP.",             "b) DNA.",             "c) AMP cíclico (cAMP).",             "d) Proteína G.",           ],           correctAnswer: "c) AMP cíclico (cAMP).",           comment: "O cAMP é gerado pela adenilil ciclase e ativa proteínas como a PKA, sendo um dos mediadores intracelulares mais importantes.",           topic: "Segundos Mensageiros: cAMP",         },         {           question: "15. Qual a função de uma proteína quinase em uma cascata de sinalização?",           options: [             "a) Remover grupos fosfato de proteínas.",             "b) Adicionar grupos fosfato a proteínas.",             "c) Degradar proteínas.",             "d) Sintetizar proteínas.",           ],           correctAnswer: "b) Adicionar grupos fosfato a proteínas.",           comment: "As quinases realizam a fosforilação, um interruptor bioquímico que altera a atividade de enzimas e outras proteínas sinalizadoras.",           topic: "Cascata de Sinalização: Quinases",         },         {           question: "16. O que é fosforilação na comunicação celular?",           options: [             "a) A remoção de um grupo fosfato de uma proteína.",             "b) A adição de um grupo fosfato a uma proteína.",             "c) A quebra de uma proteína.",             "d) A síntese de uma nova proteína.",           ],           correctAnswer: "b) A adição de um grupo fosfato a uma proteína.",           comment: "A fosforilação modifica a carga e a forma da proteína, sendo o principal mecanismo de ativação em cascatas de transdução.",           topic: "Fosforilação e Desfosforilação",         },         {           question: "17. O que é desfosforilação na comunicação celular?",           options: [             "a) A adição de um grupo fosfato a uma proteína.",             "b) A remoção de um grupo fosfato de uma proteína.",             "c) A quebra de uma proteína.",             "d) A síntese de uma nova proteína.",           ],           correctAnswer: "b) A remoção de um grupo fosfato de uma proteína.",           comment: "Realizada pelas fosfatases, a desfosforilação reverte o efeito da quinase, sendo essencial para cessar a resposta ao sinal.",           topic: "Fosforilação e Desfosforilação",         },         {           question: "18. Qual das seguintes opções é um exemplo de resposta celular a um sinal?",           options: [             "a) Apenas a divisão celular.",             "b) Apenas a síntese de proteínas.",             "c) Alterações na expressão gênica, metabolismo, forma ou movimento celular.",             "d) Apenas a produção de ATP.",           ],           correctAnswer: "c) Alterações na expressão gênica, metabolismo, forma ou movimento celular.",           comment: "As respostas são variadas: uma célula pode migrar, ativar enzimas metabólicas ou iniciar a transcrição de novos genes em resposta a um ligante.",           topic: "Respostas Celulares ao Sinal",         },         {           question: "19. Receptores acoplados à proteína G (GPCRs) são uma classe importante de receptores de superfície celular. Qual o papel da proteína G nesse sistema?",           options: [             "a) Atuar como segundo mensageiro.",             "b) Ligar-se diretamente ao ligante.",             "c) Transmitir o sinal do receptor ativado para outras proteínas intracelulares.",             "d) Sintetizar ATP.",           ],           correctAnswer: "c) Transmitir o sinal do receptor ativado para outras proteínas intracelulares.",           comment: "A proteína G atua como um transdutor, acoplando o receptor ativado a enzimas como a adenilil ciclase ou a fosfolipase C.",           topic: "Receptores Acoplados à Proteína G (GPCRs)",         },         {           question: "20. A acetilcolina é um neurotransmissor que pode causar contração muscular ou diminuição da frequência cardíaca, dependendo da célula-alvo. Isso exemplifica qual característica da comunicação celular?",           options: [             "a) A especificidade da ligação ligante-receptor.",             "b) A amplificação do sinal.",             "c) A desensibilização do receptor.",             "d) A multiplicidade de respostas dependendo do receptor e da via intracelular.",           ],           correctAnswer: "d) A multiplicidade de respostas dependendo do receptor e da via intracelular.",           comment: "A resposta final depende da 'maquinaria' interna da célula-alvo. O mesmo ligante pode induzir efeitos opostos em tecidos diferentes.",           topic: "Especificidade e Respostas Variadas",         },         {           question: "21. O que é o feedback negativo na comunicação celular?",           options: [             "a) Um mecanismo que amplifica a resposta ao sinal.",             "b) Um mecanismo que desliga ou reduz a resposta ao sinal.",             "c) Um processo de transporte de moléculas para fora da célula.",             "d) Um tipo de comunicação autócrina.",           ],           correctAnswer: "b) Um mecanismo que desliga ou reduz a resposta ao sinal.",           comment: "O feedback negativo garante que o sistema retorne ao estado inicial, prevenindo respostas excessivas ou prolongadas.",           topic: "Regulação da Sinalização: Feedback Negativo",         },         {           question: "22. Qual das seguintes opções é um exemplo de comunicação celular mediada por contato direto?",           options: [             "a) Sinalização endócrina.",             "b) Sinalização sináptica.",             "c) Gap junctions (junções comunicantes) ou plasmodesmos.",             "d) Sinalização parácrina.",           ],           correctAnswer: "c) Gap junctions (junções comunicantes) ou plasmodesmos.",           comment: "Essas estruturas permitem que pequenas moléculas passem diretamente de um citoplasma para outro, sincronizando grupos de células.",           topic: "Comunicação por Contato Direto",         },         {           question: "23. Qual a importância da especificidade na comunicação celular?",           options: [             "a) Permite que qualquer molécula sinalizadora se ligue a qualquer receptor.",             "b) Garante que apenas as células-alvo corretas respondam a um sinal específico.",             "c) Aumenta a velocidade da transdução do sinal.",             "d) Reduz a necessidade de receptores.",           ],           correctAnswer: "b) Garante que apenas as células-alvo corretas respondam a um sinal específico.",           comment: "A especificidade química entre ligante e receptor evita o 'ruído' biológico, garantindo que o sinal atinja apenas quem deve responder.",           topic: "Especificidade da Sinalização",         },         {           question: "24. O que é o sistema de segundos mensageiros cAMP?",           options: [             "a) Um sistema que envolve a quebra de proteínas.",             "b) Um sistema onde a adenilil ciclase produz cAMP a partir de ATP, ativando a PKA.",             "c) Um sistema que degrada o DNA.",             "d) Um sistema que transporta íons através da membrana.",           ],           correctAnswer: "b) Um sistema onde a adenilil ciclase produz cAMP a partir de ATP, ativando a PKA.",           comment: "Esta é uma das principais vias de sinalização: Receptor -> Proteína G -> Adenilil Ciclase -> cAMP -> PKA -> Resposta.",           topic: "Vias de Sinalização: cAMP",         },         {           question: "25. Qual é o papel da fosfodiesterase na via de sinalização do cAMP?",           options: [             "a) Sintetizar cAMP.",             "b) Amplificar o sinal de cAMP.",             "c) Degradadar o cAMP, encerrando o sinal.",             "d) Ativar a adenilil ciclase.",           ],           correctAnswer: "c) Degradadar o cAMP, encerrando o sinal.",           comment: "Ao converter cAMP em AMP, a fosfodiesterase remove o estímulo intracelular, permitindo o término da resposta celular.",           topic: "Vias de Sinalização: Regulação do cAMP",         },         {           question: "26. Qual é a principal diferença entre um agonista e um antagonista na comunicação celular?",           options: [             "a) Agonistas inibem a resposta, antagonistas ativam.",             "b) Agonistas se ligam ao receptor e ativam a resposta, antagonistas se ligam ao receptor e bloqueiam a resposta.",             "c) Agonistas são proteínas, antagonistas são lipídios.",             "d) Agonistas são produzidos pela célula, antagonistas são externos.",           ],           correctAnswer: "b) Agonistas se ligam ao receptor e ativam a resposta, antagonistas se ligam ao receptor e bloqueiam a resposta.",           comment: "Agonistas mimetizam o sinal natural; antagonistas 'ocupam' o receptor sem ativá-lo, impedindo o sinal biológico.",           topic: "Agonistas e Antagonistas",         },         {           question: "27. O que acontece com um receptor de superfície celular após a ligação de um ligante que causa desensibilização?",           options: [             "a) Ele aumenta sua afinidade pelo ligante.",             "b) Ele é internalizado ou inativado.",             "c) Ele se divide em dois receptores.",             "d) Ele começa a produzir ligantes adicionais.",           ],           correctAnswer: "b) Ele é internalizado ou inativado.",           comment: "A internalização (endocitose) do receptor reduz a quantidade de sensores na membrana, tornando a célula menos sensível ao estímulo contínuo.",           topic: "Regulação da Sinalização: Desensibilização",         },         {           question: "28. Qual a importância da amplificação do sinal na comunicação celular?",           options: [             "a) Garantir que apenas sinais fortes sejam percebidos.",             "b) Permitir que um pequeno número de ligantes gere uma resposta celular robusta.",             "c) Controlar a especificidade da ligação ligante-receptor.",             "d) Inibir a transdução do sinal.",           ],           correctAnswer: "b) Permitir que um pequeno número de ligantes gere uma resposta celular robusta.",           comment: "Cada etapa da cascata pode ativar múltiplas moléculas na etapa seguinte, transformando um sinal extracelular fraco em uma grande resposta interna.",           topic: "Amplificação do Sinal",         },         {           question: "29. A comunicação celular é essencial para o funcionamento de todo o organismo. Qual seria uma consequência da falha generalizada na comunicação celular?",           options: [             "a) Aumento da produção de energia.",             "b) Descoordenação de funções e possível morte do organismo.",             "c) Melhoria na absorção de nutrientes.",             "d) Redução na necessidade de oxigênio.",           ],           correctAnswer: "b) Descoordenação de funções e possível morte do organismo.",           comment: "Sem comunicação, as células agem de forma isolada, impedindo processos vitais como o controle da glicose, resposta imune e o batimento cardíaco coordenado.",           topic: "Importância da Comunicação Celular",         },       ];
 
-        questions.forEach((currentQuestion, questionNumber) => {
-          const options = [];
-          for (let i = 0; i < currentQuestion.options.length; i++) {
-            options.push(
-              `<label class="option" data-question="${questionNumber}" data-value="${currentQuestion.options[i]}">
-                <img src="tesouras.png" class="scissor-icon" onclick="event.stopPropagation(); this.parentNode.classList.toggle('struck-through');">
-                ${currentQuestion.options[i]}
-              </label>`
-            );
-          }
+    function buildQuiz() {
+      const output = [];
 
-          output.push(
-            `<div class="card" id="question-${questionNumber}" data-topic="${currentQuestion.topic}">
-              <div class="question">${currentQuestion.question}</div>
-              <div class="options">${options.join("")}</div>
-              <div class="comment" id="comment-${questionNumber}"></div>
-            </div>`
+      questions.forEach((currentQuestion, questionNumber) => {
+        const options = [];
+        for (let i = 0; i < currentQuestion.options.length; i++) {
+          options.push(
+            `<label class="option" data-question="${questionNumber}" data-value="${currentQuestion.options[i]}">
+              <img src="tesouras.png" class="scissor-icon" onclick="event.stopPropagation(); this.parentNode.classList.toggle('struck-through');">
+              ${currentQuestion.options[i]}
+            </label>`
           );
-        });
+        }
 
-        quizContainer.innerHTML = output.join("");
-      }
+        output.push(
+          `<div class="card" id="question-${questionNumber}" data-topic="${currentQuestion.topic}">
+            <div class="question">${currentQuestion.question}</div>
+            <div class="options">${options.join("")}</div>
+            <div class="comment" id="comment-${questionNumber}"></div>
+          </div>`
+        );
+      });
 
-      function showResults() {
-        wrongQuestionIndices = []; 
-        errorCountByTopic = {}; // Reseta a contagem de erros por tópico
-        totalAnsweredQuestionsByTopic = {}; // Reseta a contagem de questões respondidas por tópico
-        currentWrongQuestionIndex = -1; 
-        hasErrors = false; 
-        isShowingErrors = false; 
-        isShowingDiagnosis = false;
+      quizContainer.innerHTML = output.join("");
+    }
 
-        errorDiagnosisSection.style.display = 'none';
-        topicsToReviewList.innerHTML = ''; 
+    function showResults() {
+      wrongQuestionIndices = [];
+      errorCountByTopic = {};
+      totalAnsweredQuestionsByTopic = {};
+      currentWrongQuestionIndex = -1;
+      hasErrors = false;
+      isShowingErrors = false;
+      isShowingDiagnosis = false;
 
-        const answerContainers = quizContainer.querySelectorAll(".options");
-        let correctAnswers = 0;
+      errorDiagnosisSection.style.display = 'none';
+      topicsToReviewList.innerHTML = '';
+      statusMessage.textContent = '';
 
-        questions.forEach((currentQuestion, questionNumber) => {
-          const answerContainer = answerContainers[questionNumber];
-          const userAnswerElement = answerContainer.querySelector('.option.selected');
-          const userAnswerValue = userAnswerElement ? userAnswerElement.dataset.value : undefined;
-          const commentDiv = document.getElementById(`comment-${questionNumber}`);
+      // Busca por todas as perguntas: estáticas e dinâmicas
+      const allQuestionCards = document.querySelectorAll('.quiz-container .card, #newQuestionsContent .card');
+      let correctAnswersCount = 0;
+      let totalQuestionsAnswered = 0;
 
-          // Limpa estados anteriores
-          const allOptions = answerContainer.querySelectorAll('.option');
-          allOptions.forEach(option => {
-            option.classList.remove('correct', 'incorrect');
-            const scissorIcon = option.querySelector('.scissor-icon');
-            if (scissorIcon) scissorIcon.classList.remove('hidden');
-          });
-          if (commentDiv) commentDiv.classList.remove('show');
+      console.log('🔍 Verificando', allQuestionCards.length, 'perguntas...');
 
+      allQuestionCards.forEach((card, index) => {
+        const questionEl = card.querySelector('.question') || card.querySelector('p');
+        if (!questionEl) return;
 
-          const optionElements = answerContainer.querySelectorAll('.option');
-          optionElements.forEach(option => {
-            const scissorIcon = option.querySelector('.scissor-icon');
+        const questionText = questionEl.textContent.trim();
+        const optionsContainer = card.querySelector('.options') || card;
+        const allOptions = optionsContainer.querySelectorAll('.option, label.option, label');
+        const userAnswerElement = optionsContainer.querySelector('.option.selected, label.selected');
+        const commentDiv = card.querySelector('.comment');
 
-            if (option === userAnswerElement && scissorIcon) {
-                scissorIcon.classList.add('hidden');
-            } 
-            
-            if (option.dataset.value === currentQuestion.correctAnswer) {
-                option.classList.add('correct');
-                if (commentDiv && currentQuestion.comment) {
-                    commentDiv.textContent = currentQuestion.comment;
-                    commentDiv.classList.add('show');
-                }
-            }
-          });
-
-          // ***************************************************************
-          // Lógica crucial: Apenas contabiliza se a questão foi respondida
-          // ***************************************************************
-          if (userAnswerElement) { // Se o usuário marcou alguma alternativa
-            totalAnsweredQuestionsByTopic[currentQuestion.topic] = (totalAnsweredQuestionsByTopic[currentQuestion.topic] || 0) + 1;
-
-            if (userAnswerValue !== currentQuestion.correctAnswer) {
-              userAnswerElement.classList.add('incorrect');
-              wrongQuestionIndices.push(questionNumber);
-              hasErrors = true; 
-
-              // Incrementa o contador de erros para este tópico
-              errorCountByTopic[currentQuestion.topic] = (errorCountByTopic[currentQuestion.topic] || 0) + 1;
-            } else {
-              correctAnswers++;
-            }
-          }
-          // ***************************************************************
-          // Fim da lógica crucial
-          // ***************************************************************
-        });
-
-        resultsContainer.textContent = `Você acertou ${correctAnswers} de ${questions.length} questões.`;
+        const questionTopic = card.dataset.topic || "Tópico não informado";
         
-        // Rola a página totalmente para baixo para exibir o resultado
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        console.log(`📝 Pergunta ${index + 1}: Tópico = "${questionTopic}"`);
+        console.log(`🔍 Encontradas ${allOptions.length} alternativas`);
+        
+        // Remove classes anteriores
+        allOptions.forEach(option => {
+          option.classList.remove('correct', 'incorrect', 'selected');
+        });
+        if (commentDiv) commentDiv.classList.remove('show');
 
-        if (hasErrors) {
-            errorNavBtn.style.display = 'flex';
-            arrowIcon.textContent = '⬆️'; // Seta para cima inicialmente
-            buttonText.textContent = 'Diagnóstico de Erros'; // Texto claro para diagnóstico
-            isShowingErrors = false; // Não estamos navegando erro a erro inicialmente
-            isShowingDiagnosis = false; // Ainda não mostramos o diagnóstico
+        let correctAnswerValue = null;
+        let questionComment = null;
+
+        // Verifica se é pergunta estática ou dinâmica
+        const isStatic = card.id && card.id.startsWith('question-');
+        if (isStatic) {
+          // Pergunta estática - busca nos dados originais
+          const questionData = questions.find(q => q.question.trim() === questionText);
+          if (questionData) {
+            correctAnswerValue = questionData.correctAnswer.trim();
+            questionComment = questionData.comment;
+          }
         } else {
-            errorNavBtn.style.display = 'none';
+          // Pergunta dinâmica - busca pela opção marcada como correta
+          const correctOpt = optionsContainer.querySelector('.option[data-answer="true"], label[data-answer="true"]');
+          if (correctOpt) {
+            correctAnswerValue = correctOpt.dataset.value?.trim() || correctOpt.textContent.trim();
+            console.log(`✅ Resposta correta encontrada: "${correctAnswerValue}"`);
+          } else {
+            console.log('❌ Nenhuma resposta correta encontrada para pergunta dinâmica');
+          }
+          
+          // Busca comentário no próprio card ou no div comment
+          const commentElement = card.querySelector('.comment');
+          if (commentElement && commentElement.textContent.trim()) {
+            questionComment = commentElement.textContent.trim();
+          }
         }
-      }
 
-      function scrollToQuestion(index) {
-        const questionCard = document.getElementById(`question-${index}`);
-        if (questionCard) {
-          questionCard.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+        // Processa resposta do usuário e aplica coloração
+        let userAnswer = null;
+        if (userAnswerElement) {
+          userAnswerElement.classList.add('selected');
+          userAnswer = userAnswerElement.dataset.value?.trim() || userAnswerElement.textContent.trim();
+          totalQuestionsAnswered++;
+          totalAnsweredQuestionsByTopic[questionTopic] = (totalAnsweredQuestionsByTopic[questionTopic] || 0) + 1;
+
+          console.log(`👤 Resposta do usuário: "${userAnswer}"`);
+          console.log(`🎯 Resposta correta: "${correctAnswerValue}"`);
+
+          // Verifica se a resposta está correta
+          if (userAnswer === correctAnswerValue) {
+            correctAnswersCount++;
+            console.log(`✅ Resposta correta!`);
+          } else {
+            hasErrors = true;
+            errorCountByTopic[questionTopic] = (errorCountByTopic[questionTopic] || 0) + 1;
+            console.log(`❌ Resposta incorreta para tópico: ${questionTopic}`);
+          }
         }
-      }
-      
-      function scrollToDiagnosis() {
-          errorDiagnosisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
 
-      quizContainer.addEventListener("click", function (event) {
-        const clickedElement = event.target;
-        const optionElement = clickedElement.closest('.option');
+        // Aplica coloração: SEMPRE marca a correta de verde, e a errada de vermelho se foi marcada
+        allOptions.forEach(option => {
+          const optionValue = option.dataset.value?.trim() || option.textContent.trim();
+          
+          // Marca a resposta correta de verde SEMPRE
+          if (optionValue === correctAnswerValue) {
+            option.classList.add('correct');
+            console.log(`🟢 Marcando como correta: "${optionValue}"`);
+          }
+          
+          // Se o usuário marcou uma resposta E ela está errada, marca de vermelho
+          if (userAnswer && optionValue === userAnswer && userAnswer !== correctAnswerValue) {
+            option.classList.add('incorrect');
+            console.log(`🔴 Marcando como incorreta: "${optionValue}"`);
+          }
+        });
 
-        if (optionElement) {
-            if (clickedElement.classList.contains("scissor-icon")) {
-                optionElement.classList.toggle("struck-through");
-            } 
-            else {
-                const questionNumber = optionElement.dataset.question;
-                const currentQuestionOptions = quizContainer.querySelectorAll(`.option[data-question=\"${questionNumber}\"]`);
-                currentQuestionOptions.forEach(opt => opt.classList.remove("selected"));
-                
-                optionElement.classList.add("selected");
-            }
+        // Mostra comentário se disponível
+        if (commentDiv && questionComment) {
+          commentDiv.textContent = questionComment;
+          commentDiv.classList.add('show');
         }
       });
 
-      errorNavBtn.addEventListener("click", function() {
-        if (!hasErrors) { // Se não há erros, o botão não deveria estar visível, mas por segurança
-            errorNavBtn.style.display = 'none';
-            return;
+      // Exibe resultados
+      resultsContainer.textContent = `Você acertou ${correctAnswersCount} de ${totalQuestionsAnswered} questões respondidas.`;
+
+      console.log('📊 Erros por tópico:', errorCountByTopic);
+      console.log('📊 Total por tópico:', totalAnsweredQuestionsByTopic);
+
+      // Gera diagnóstico de erros
+      if (hasErrors) {
+        for (const topic in errorCountByTopic) {
+          const errors = errorCountByTopic[topic];
+          const total = totalAnsweredQuestionsByTopic[topic] || 0;
+          if (total > 0) {
+            const percent = ((errors / total) * 100).toFixed(1);
+            const li = document.createElement('li');
+            li.textContent = `${topic}: ${percent}% de erros (${errors} de ${total} questões respondidas)`;
+            topicsToReviewList.appendChild(li);
+          }
         }
+      } else {
+        const li = document.createElement('li');
+        li.textContent = "🥳 Parabéns! Você não teve erros nas questões respondidas.";
+        topicsToReviewList.appendChild(li);
+      }
 
-        if (!isShowingErrors && !isShowingDiagnosis) { 
-            // Clicou no botão "Diagnóstico de Erros" (seta para cima) para iniciar a navegação ou ir para o diagnóstico
-            if (wrongQuestionIndices.length > 0) {
-                isShowingErrors = true; // Inicia o modo de navegação de erros
-                currentWrongQuestionIndex = 0; // Começa pelo primeiro erro
-                arrowIcon.textContent = '⬇️'; // Muda a seta para baixo para navegar pelos erros
-                buttonText.textContent = `Próximo Erro (${currentWrongQuestionIndex + 1}/${wrongQuestionIndices.length})`;
-                scrollToQuestion(wrongQuestionIndices[currentWrongQuestionIndex]);
-            } else {
-                // Não há erros para navegar, ir direto para o diagnóstico (embora hasErrors seja falso aqui)
-                // Isso é um fallback se hasErrors por algum motivo for true, mas wrongQuestionIndices estiver vazio
-                isShowingDiagnosis = true;
-                arrowIcon.textContent = '⬆️'; // Seta para cima (já está no final)
-                buttonText.textContent = 'Diagnóstico de Erros'; // Texto final
+      errorDiagnosisSection.style.display = 'block';
+      generatedQuestionsSection.style.display = 'block';
+      generateNewQuestionsBtn.style.display = 'block';
+      scrollToDiagnosis();
+    }
+
+    function scrollToQuestion(index) {
+      const questionCard = document.getElementById(`question-${index}`);
+      if (questionCard) {
+        questionCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    function scrollToDiagnosis() {
+        errorDiagnosisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function scrollToGeneratedQuestions() {
+        generatedQuestionsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Event listener para seleção de opções (funciona para estáticas e dinâmicas)
+    document.addEventListener("click", function (event) {
+      const clickedElement = event.target;
+      const optionElement = clickedElement.closest('.option');
+
+      if (optionElement) {
+          if (clickedElement.classList.contains("scissor-icon")) {
+              event.stopPropagation();
+              optionElement.classList.toggle("struck-through");
+          }
+          else {
+              const parentCard = optionElement.closest('.card');
+              const currentQuestionOptions = parentCard.querySelectorAll('.option');
+
+              currentQuestionOptions.forEach(opt => opt.classList.remove("selected"));
+              optionElement.classList.add("selected");
+          }
+      }
+    });
+
+    generateNewQuestionsBtn.addEventListener("click", async function() {
+        statusMessage.textContent = '⏳ Gerando novas perguntas...';
+        generateNewQuestionsBtn.disabled = true;
+
+        const topics = Object.keys(errorCountByTopic).filter(topic => {
+            const errorsInTopic = errorCountByTopic[topic] || 0;
+            const totalAnsweredInTopic = totalAnsweredQuestionsByTopic[topic] || 0;
+            return errorsInTopic > 0 && totalAnsweredInTopic > 0;
+        });
+
+        const topicsToSend = topics.length > 0 ? topics : ["fisiologia celular", "biologia"];
+
+        try {
+            const response = await fetch('https://www.quizia.xyz/quiz', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ topicos: topicsToSend }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            newQuestionsContent.innerHTML = '';
+            if (data && data.html) {
+                console.log('📥 HTML recebido do Flask:', data.html);
                 
-                // Preenche e exibe a seção de diagnóstico
-                topicsToReviewList.innerHTML = ''; 
-                for (const topic in errorCountByTopic) {
-                    const errorsInTopic = errorCountByTopic[topic];
-                    const totalAnsweredInTopic = totalAnsweredQuestionsByTopic[topic] || 0; // Garante que não é undefined
-                    
-                    if (totalAnsweredInTopic > 0) { // Evita divisão por zero
-                        const percentage = ((errorsInTopic / totalAnsweredInTopic) * 100).toFixed(1); 
-                        const li = document.createElement('li');
-                        li.textContent = `${topic}: ${percentage}% de erros (${errorsInTopic} de ${totalAnsweredInTopic} questões respondidas)`;
-                        topicsToReviewList.appendChild(li);
+                // Insere o HTML diretamente sem reconstrução complexa
+                newQuestionsContent.innerHTML = data.html.replace(/```html|```/g, '');
+                
+                // Adiciona tesouras e ajusta formatação apenas se necessário
+                newQuestionsContent.querySelectorAll('.card').forEach((card, cardIndex) => {
+                    // Garante que o elemento de pergunta tenha a classe correta
+                    const questionElement = card.querySelector('p');
+                    if (questionElement && !questionElement.classList.contains('question')) {
+                       questionElement.classList.add('question');
                     }
-                }
-                errorDiagnosisSection.style.display = 'block'; 
-                scrollToDiagnosis();
-                errorNavBtn.style.display = 'none'; // Esconde o botão após ir para o diagnóstico final
-            }
 
-        } else if (isShowingErrors) { 
-            // Se estamos no modo de navegar pelos erros (botão é "Próximo Erro")
-            currentWrongQuestionIndex++;
-            if (currentWrongQuestionIndex < wrongQuestionIndices.length) {
-                // Ainda há erros para revisar
-                scrollToQuestion(wrongQuestionIndices[currentWrongQuestionIndex]);
-                buttonText.textContent = `Próximo Erro (${currentWrongQuestionIndex + 1}/${wrongQuestionIndices.length})`;
+                    // Remove qualquer input de radio que possa existir e adiciona tesouras
+                    card.querySelectorAll('label').forEach((label) => {
+                        // Remove inputs de radio MAS preserva o atributo data-answer
+                        const radioInput = label.querySelector('input[type="radio"]');
+                        if (radioInput) {
+                            // PRESERVA o atributo data-answer do input no label
+                            if (radioInput.hasAttribute('data-answer')) {
+                                label.setAttribute('data-answer', radioInput.getAttribute('data-answer'));
+                            }
+                            radioInput.remove();
+                        }
+                        
+                        // Garante que tenha a classe option
+                        if (!label.classList.contains('option')) {
+                            label.classList.add('option');
+                        }
+
+                        // Garante que tenha data-value
+                        if (!label.dataset.value) {
+                            label.dataset.value = label.textContent.trim();
+                        }
+
+                        // Adiciona tesoura se não existir
+                        if (!label.querySelector('.scissor-icon')) {
+                            const scissorIcon = document.createElement('img');
+                            scissorIcon.src = 'tesouras.png';
+                            scissorIcon.className = 'scissor-icon';
+                            scissorIcon.onclick = function(e) {
+                                e.stopPropagation();
+                                label.classList.toggle('struck-through');
+                            };
+                            label.insertBefore(scissorIcon, label.firstChild);
+                        }
+                    });
+
+                    console.log(`🏷️ Card ${cardIndex}: data-topic = "${card.dataset.topic}"`);
+                    
+                    // Verifica se há opção correta marcada
+                    const correctOption = card.querySelector('label[data-answer="true"]');
+                    if (correctOption) {
+                        console.log(`✅ Opção correta encontrada: "${correctOption.dataset.value}"`);
+                    } else {
+                        console.log('❌ Nenhuma opção correta encontrada');
+                    }
+                });
             } else {
-                // Todos os erros foram revisados, agora mostra o diagnóstico
-                isShowingErrors = false; 
-                isShowingDiagnosis = true;
-                arrowIcon.textContent = '⬇️'; // Seta para baixo para o diagnóstico (porque o diagnóstico está no final)
-                buttonText.textContent = 'Diagnóstico de Erros'; // Texto final do botão
-
-                // Preenche e exibe a seção de diagnóstico
-                topicsToReviewList.innerHTML = ''; 
-                for (const topic in errorCountByTopic) {
-                    const errorsInTopic = errorCountByTopic[topic];
-                    const totalAnsweredInTopic = totalAnsweredQuestionsByTopic[topic] || 0;
-                    
-                    if (totalAnsweredInTopic > 0) {
-                        const percentage = ((errorsInTopic / totalAnsweredInTopic) * 100).toFixed(1); 
-                        const li = document.createElement('li');
-                        li.textContent = `${topic}: ${percentage}% de erros (${errorsInTopic} de ${totalAnsweredInTopic} questões respondidas)`;
-                        topicsToReviewList.appendChild(li);
-                    }
-                }
-                errorDiagnosisSection.style.display = 'block'; 
-                scrollToDiagnosis();
-                errorNavBtn.style.display = 'none'; // Esconde o botão após ir para o diagnóstico final
+                newQuestionsContent.innerHTML = "<p>Não foi possível gerar novas perguntas para os tópicos selecionados.</p>";
             }
-        } 
-        // Se isShowingDiagnosis for true, não faz nada ao clicar no botão. Ele já deve ter desaparecido.
-      });
+            
+            generatedQuestionsSection.style.display = 'block';
+            scrollToGeneratedQuestions();
+            statusMessage.textContent = '✅ Perguntas geradas com sucesso!';
+            setTimeout(() => { statusMessage.textContent = '' }, 3000);
 
-      submitButton.addEventListener("click", showResults);
+        } catch (error) {
+            console.error('Erro ao gerar novas perguntas:', error);
+            newQuestionsContent.innerHTML = `<p>Erro ao carregar novas perguntas: ${error.message}. Por favor, tente novamente.</p>`;
+            generatedQuestionsSection.style.display = 'block';
+            scrollToGeneratedQuestions();
+            statusMessage.textContent = '❌ Erro na requisição: ' + error.message;
+            setTimeout(() => { statusMessage.textContent = '' }, 5000);
+        } finally {
+            generateNewQuestionsBtn.disabled = false;
+        }
+    });
 
-      buildQuiz();
-    </script>
-  </body>
-<script src="conexao_firebase.js"></script><script src="navegacao.js"></script><script type="module" src="padrao_simulado.js"></script></html>
+    // Inicialização
+    buildQuiz();
+    errorDiagnosisSection.style.display = 'none';
+    generatedQuestionsSection.style.display = 'none';
+    generateNewQuestionsBtn.style.display = 'none';
+
+    // Event listener para o botão de verificar respostas
+    document.getElementById("verifyAnswersBtn").addEventListener("click", showResults);
+  </script>
+  <script src="conexao_firebase.js"></script><script src="navegacao.js"></script><script type="module" src="padrao_simulado.js"></script>
+
+</body>
+</html>
