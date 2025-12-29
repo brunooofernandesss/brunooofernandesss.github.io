@@ -1,731 +1,633 @@
-
+<!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Quiz: Metodologia da Pesquisa</title>
-    <style>
-      body {
-        font-family: sans-serif;
-        margin: 0;
-        padding: 20px;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        min-height: 100vh;
-        background-color: #f4f4f4;
-      }
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Metodologia de Revisão Sistemática (PRISMA, PICO, Protocolos).</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      background-color: #f4f4f4;
+    }
 
-      .quiz-container {
-        max-width: 800px;
-        width: 100%;
-      }
+    .quiz-container {
+      max-width: 800px;
+      width: 100%;
+    }
 
-      h1 {
-        color: #333;
-        text-align: center;
-        margin-bottom: 30px;
-      }
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 30px;
+    }
 
-      .card {
-        background-color: white;
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .question {
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .options {
+      margin-top: 15px;
+    }
+
+    /* Estilos unificados para todas as opções (estáticas e dinâmicas) */
+    .option, label.option, label, #newQuestionsContent label {
+      display: flex; /* Para alinhar imagem e texto */
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      position: relative; /* Para posicionar a tesoura */
+    }
+
+    /* FORÇA a remoção de inputs de radio em QUALQUER lugar */
+    .option input[type="radio"], 
+    label input[type="radio"],
+    #newQuestionsContent input[type="radio"],
+    #newQuestionsContent label input[type="radio"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
+    }
+
+    .option:hover, 
+    label.option:hover, 
+    label:hover,
+    #newQuestionsContent label:hover {
+      background-color: #e9e9e9;
+    }
+
+    .option.selected, 
+    label.option.selected, 
+    label.selected,
+    #newQuestionsContent label.selected {
+      background-color: #d1e7dd;
+      border-color: #28a745;
+    }
+
+    .option.correct, 
+    label.option.correct, 
+    label.correct,
+    #newQuestionsContent label.correct {
+      background-color: #d4edda;
+      border-color: #28a745;
+    }
+
+    .option.incorrect, 
+    label.option.incorrect, 
+    label.incorrect,
+    #newQuestionsContent label.incorrect {
+      background-color: #f8d7da;
+      border-color: #dc3545;
+    }
+
+    .submit-btn {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 30px;
+    }
+
+    .submit-btn:hover {
+      background-color: #0056b3;
+    }
+
+    .results {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .scissor-icon {
+      margin-right: 10px; /* Espaço entre a tesoura e o texto da opção */
+      width: 20px; /* Ajuste conforme o tamanho da sua imagem */
+      height: 20px; /* Ajuste conforme o tamanho da sua imagem */
+      opacity: 0.5; /* Transparência como no original */
+      cursor: pointer;
+    }
+
+    .scissor-icon.hidden {
+      display: none;
+    }
+
+    .struck-through {
+      text-decoration: line-through;
+      color: #888;
+    }
+
+    .comment {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f0f0f0;
+      border-left: 4px solid #007bff;
+      font-style: italic;
+      color: #555;
+      display: none; /* Escondido por padrão */
+    }
+    .comment.show {
+      display: block; /* Mostrado quando ativado */
+    }
+
+    /* Estilos para o botão de navegação de erro / diagnóstico */
+    .error-nav-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #dc3545; /* Vermelho para erro */
+      color: white;
+      border: none;
+      border-radius: 50%; /* Torna o botão redondo */
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      display: none; /* Escondido por padrão */
+      flex-direction: column; /* Para empilhar o ícone e o contador */
+      padding: 5px; /* Ajuste o padding para acomodar texto maior */
+      box-sizing: border-box; /* Garante que padding não aumente o tamanho total */
+      text-align: center;
+    }
+
+    .error-nav-btn:hover {
+      background-color: #c82333;
+    }
+
+    .error-nav-btn .arrow-icon {
+      font-size: 30px; /* Tamanho da seta */
+      line-height: 1; /* Ajuste para centralizar */
+    }
+
+    .error-nav-btn .button-text {
+      font-size: 12px; /* Tamanho do texto abaixo da seta */
+      line-height: 1;
+      margin-top: 2px; /* Espaço entre a seta e o texto */
+    }
+
+    /* Estilos para a seção de diagnóstico de erros */
+    .error-diagnosis-section {
+        margin-top: 50px;
+        padding: 30px;
+        background-color: #ffe0b2; /* Um laranja claro ou similar */
         border-radius: 8px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-
-      .question {
-        font-weight: bold;
-        margin-bottom: 10px;
-        color: #555;
-      }
-
-      .options {
-        margin-top: 15px;
-      }
-
-      .option {
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        margin-bottom: 8px;
-        cursor: pointer;
-        transition: background-color 0.2s ease, border-color 0.2s ease;
-      }
-
-      .option:hover {
-        background-color: #e9e9e9;
-      }
-
-      .option.selected {
-        border-color: #4f46e5;
-        background-color: #e0e7ff;
-      }
-
-      .option.correct {
-        background-color: #c6f6d5;
-        color: green;
-        font-weight: bold;
-        border-color: #38a169;
-      }
-
-      .option.incorrect {
-        background-color: #f8d7da;
-        color: red;
-        border-color: #e53e3e;
-      }
-
-      .comment {
-        margin-top: 15px;
-        padding: 10px;
-        background-color: #f0f0f0;
-        border-left: 4px solid #4f46e5;
-        font-size: 0.9em;
-        color: #666;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
         display: none; /* Escondido por padrão */
-      }
-
-      .comment.show {
-        display: block; /* Visível quando 'show' é adicionado */
-      }
-
-      .button {
-        background-color: #4f46e5;
-        color: white;
-        padding: 12px 20px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        margin-top: 20px;
-        width: 100%;
-        font-size: 1.1em;
-        transition: background-color 0.2s ease;
-      }
-
-      .button:hover {
-        background-color: #3730a3;
-      }
-
-      #results {
-        margin-top: 30px;
-        font-weight: bold;
-        font-size: 1.3em;
         text-align: center;
+        font-size: 1.1em;
         color: #333;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="quiz-container">
-      <h1>Quiz: Metodologia da Pesquisa</h1>
-      <div id="quiz"></div>
-      <button id="submit" class="button">Verificar Respostas</button>
-      <div id="results"></div>
+    }
+
+    .error-diagnosis-section h2 {
+        color: #e65100; /* Laranja mais escuro */
+        margin-bottom: 20px;
+        font-size: 1.8em;
+    }
+
+    .error-diagnosis-section ul {
+        list-style: none; /* Remove marcadores de lista */
+        padding: 0;
+        margin: 0;
+    }
+
+    .error-diagnosis-section li {
+        background-color: #ff9800; /* Laranja */
+        color: white;
+        padding: 8px 15px;
+        margin: 8px 0;
+        border-radius: 5px;
+        display: inline-block; /* Para que os itens fiquem lado a lado */
+        margin-right: 10px;
+        font-weight: bold;
+    }
+    .error-diagnosis-section li:last-child {
+        margin-right: 0;
+    }
+ .card-bloco {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+      background: #fff;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="quiz-container">
+    <h1 style="text-align:center; margin-bottom: 30px;">Metodologia de Revisão Sistemática (PRISMA, PICO, Protocolos).</h1>
+    <div class="card-bloco" id="quiz"></div>
+    <button class="submit-btn" id="verifyAnswersBtn">Verificar Respostas</button>
+
+    <button class="generate-questions-btn submit-btn" id="generateNewQuestionsBtn" style="display:none;">
+      Gerar Novas Perguntas
+    </button>
+
+    <div class="results card-bloco" id="results"></div>
+    <div id="statusMessage" style="text-align: center; margin-top: 10px; font-weight: bold; color: #007bff;"></div>
+
+    <div class="error-diagnosis-section card-bloco" id="errorDiagnosis">
+      <h2>Diagnóstico de Erros</h2>
+      <p>Parece que você precisa revisar os seguintes assuntos:</p>
+      <ul id="topicsToReview"></ul>
     </div>
 
-    <script>
-      const questions = [
-        {
-          question: "Qual é o objetivo principal de uma revisão sistemática? [1]",
-          options: [
-            "Apresentar a opinião de um especialista sobre um tema.",
-            "Realizar uma busca seletiva da literatura para fundamentar uma filosofia.",
-            "Responder a uma importante questão clínica, identificando, avaliando criticamente e integrando resultados de estudos relevantes.",
-            "Descrever o panorama geral da pesquisa sobre um determinado tópico.",
-          ],
-          answer: 2,
-          comment:
-            "O objetivo principal de uma revisão sistemática é **responder a uma questão clínica importante através da análise criteriosa e integração de estudos existentes que abordem essa questão** [1, 2]. As opções a, b e d descrevem características de revisões narrativas, que se diferenciam das sistemáticas [3, 4].",
-        },
-        {
-          question:
-            "Qual é o primeiro passo fundamental para desenvolver uma revisão sistemática? [5]",
-          options: [
-            "Realizar uma busca preliminar de informações.",
-            "Formular uma questão clara e focalizada (pergunta chave).",
-            "Criar um protocolo de pesquisa.",
-            "Coletar dados dos estudos primários.",
-          ],
-          answer: 1,
-          comment:
-            "O primeiro passo para uma revisão sistemática é a **formulação de uma questão clara e focalizada, conhecida como pergunta chave** [5]. Todas as etapas subsequentes dependem diretamente dela [5].",
-        },
-        {
-          question:
-            "O que é a pergunta chave em uma revisão sistemática e qual sua importância? [5]",
-          options: [
-            "É um resumo dos resultados esperados e serve para obter financiamento.",
-            "É a dúvida clínica principal que permeia o estudo e direciona todas as etapas da revisão sistemática.",
-            "É a lista de referências bibliográficas a serem consultadas durante a pesquisa.",
-            "É a descrição detalhada dos materiais e métodos a serem utilizados.",
-          ],
-          answer: 1,
-          comment:
-            "A pergunta chave é a dúvida clínica principal do estudo e é fundamental porque **todas as etapas da revisão sistemática, como busca bibliográfica, critérios de elegibilidade, coleta de dados, entre outras, dependem diretamente dela** [5].",
-        },
-        {
-          question:
-            "Qual acrônimo é recomendado para elaborar a pergunta chave de uma revisão sistemática, e o que cada letra representa? [6]",
-          options: [
-            "SWOT: Strengths, Weaknesses, Opportunities, Threats.",
-            "PICO: Paciente, Intervenção, Comparação, Outcome (Desfecho).",
-            "SMART: Specific, Measurable, Achievable, Relevant, Time-bound.",
-            "FISH: Factors, Issues, Solutions, Help.",
-          ],
-          answer: 1,
-          comment:
-            "O acrônimo **PICO é o mais recomendado para estruturar a pergunta chave**. Cada letra representa um componente fundamental da dúvida clínica: Paciente (P), Intervenção (I), Comparação (C) e Outcome/Desfecho (O) [6].",
-        },
-        {
-          question:
-            "Em uma pergunta chave estruturada no acrônimo PICO, o que a letra 'C' representa? [6]",
-          options: [
-            "Conclusão.",
-            "Critérios de Elegibilidade.",
-            "Comparação ou Grupo Controle.",
-            "Coleta de Dados.",
-          ],
-          answer: 2,
-          comment:
-            "Na estratégia PICO, a letra 'C' representa a **Comparação, ou seja, o grupo controle** utilizado no estudo [6].",
-        },
-        {
-          question:
-            "Em uma pergunta chave estruturada no acrônimo PICO, o que a letra 'O' representa? [6]",
-          options: ["Orçamento.", "Objetivo.", "Outcome ou Desfecho no estudo.", "Organização."],
-          answer: 2,
-          comment:
-            "A letra 'O' no acrônimo PICO se refere ao **Outcome, ou Desfecho**, que são os resultados avaliados no estudo [6].",
-        },
-        {
-          question:
-            "A estratégia PICO é como montar um quebra-cabeça, pois a pergunta chave somente estará completa se... [7]",
-          options: [
-            "Tiver um título claro e conciso.",
-            "Todas as quatro peças (P, I, C, O) estiverem juntas.",
-            "A busca preliminar for exaustiva.",
-            "O protocolo de pesquisa estiver registrado em uma base de dados.",
-          ],
-          answer: 1,
-          comment:
-            "A estratégia PICO é comparada a um quebra-cabeça porque a pergunta chave só é considerada completa quando **os quatro elementos (P, I, C, O) são identificados e definidos** [7].",
-        },
-        {
-          question:
-            "A pergunta chave pode ser classificada quanto ao objetivo da revisão sistemática. Quais são alguns exemplos de classificações quanto ao objetivo? [8]",
-          options: [
-            "Pesquisas laboratoriais, pesquisas em animais, estudos observacionais.",
-            "Avaliação de uma intervenção, prognóstico, diagnóstico, etiologia, prevenção.",
-            "Busca preliminar, busca bibliográfica, coleta de dados, análise de qualidade.",
-            "Protocolo de pesquisa, critérios de elegibilidade, análise estatística.",
-          ],
-          answer: 1,
-          comment:
-            "Quanto ao objetivo, as revisões sistemáticas podem ser divididas em categorias como **avaliação de uma intervenção, prognóstico, diagnóstico de uma alteração, etiologia de uma alteração e prevenção** [8]. A opção a se refere ao delineamento experimental.",
-        },
-        {
-          question:
-            "Qual é o terceiro passo fundamental no desenvolvimento de uma revisão sistemática? [9]",
-          options: [
-            "Formulação da pergunta chave.",
-            "Criação do protocolo de pesquisa.",
-            "Busca preliminar de informações.",
-            "Determinação dos critérios de elegibilidade.",
-          ],
-          answer: 2,
-          comment:
-            "O terceiro passo fundamental é a **busca preliminar de informações**, também conhecida como busca exploratória da literatura [9, 10].",
-        },
-        {
-          question:
-            "Qual é o principal objetivo da busca preliminar de informações em uma revisão sistemática? [10]",
-          options: [
-            "Identificar todos os estudos primários relevantes para a pergunta chave.",
-            "Verificar se a pergunta chave já foi respondida por uma revisão sistemática existente.",
-            "Definir os critérios de inclusão e exclusão de estudos.",
-            "Coletar dados dos estudos potencialmente elegíveis.",
-          ],
-          answer: 1,
-          comment:
-            "A busca preliminar tem como objetivo **verificar se já existe uma revisão sistemática que aborde a pergunta chave elaborada pelo pesquisador** [10]. Isso ajuda a decidir se o trabalho de revisão sistemática deve ser realizado [11].",
-        },
-        {
-          question:
-            "Durante a busca preliminar, quais tipos de trabalhos devem ser procurados nas bases de dados? [11]",
-          options: [
-            "Artigos de estudos clínicos randomizados.",
-            "Estudos de coorte e laboratoriais.",
-            "Trabalhos específicos de revisão sistemática.",
-            "Estudos transversais e caso-controle.",
-          ],
-          answer: 2,
-          comment:
-            "Na busca preliminar, o foco é encontrar **trabalhos específicos de revisão sistemática**, não artigos de estudos primários como os clínicos randomizados ou observacionais [11].",
-        },
-        {
-          question:
-            "Se, após a busca preliminar, for encontrada uma revisão sistemática que responde à pergunta chave, isso significa necessariamente o fim do projeto? [12, 13]",
-          options: [
-            "Sim, pois a pergunta já foi respondida e não há necessidade de uma nova revisão.",
-            "Não necessariamente, pois fatores como a atualização, métodos e evidências geradas pela revisão existente podem justificar uma nova revisão ou complementação.",
-            "Sim, a menos que a revisão encontrada apresente plágio.",
-            "Não, pois a busca preliminar não é exaustiva e pode ter deixado de fora revisões importantes.",
-          ],
-          answer: 1,
-          comment:
-            "Mesmo encontrando uma revisão sistemática que responde à pergunta chave, é importante **avaliar sua atualização, a adequação dos métodos e a suficiência das evidências**. Esses fatores podem justificar a realização de uma nova revisão ou a complementação da existente [12, 13].",
-        },
-        {
-          question:
-            "O que o pesquisador deve fazer se decidir conduzir uma nova revisão sistemática mesmo existindo trabalhos prévios sobre a mesma pergunta chave? [13]",
-          options: [
-            "Copiar a metodologia da revisão existente e apenas atualizar os resultados.",
-            "Publicar a nova revisão sem mencionar os trabalhos anteriores.",
-            "Ter motivos razoáveis para justificar a nova revisão e descrever essa justificativa.",
-            "Considerar a revisão existente como plágio e não a citar.",
-          ],
-          answer: 2,
-          comment:
-            "Publicar uma nova revisão sistemática com uma pergunta chave já publicada não é plágio, desde que o pesquisador tenha **motivos razoáveis para justificar essa nova revisão e descreva essa decisão** [13].",
-        },
-        {
-          question:
-            "Qual é o quarto passo fundamental para se desenvolver uma revisão sistemática? [14]",
-          options: [
-            "Busca bibliográfica.",
-            "Definição dos critérios de elegibilidade.",
-            "Criação de um protocolo de pesquisa.",
-            "Coleta de dados.",
-          ],
-          answer: 2,
-          comment:
-            "O quarto passo fundamental é a **criação de um protocolo de pesquisa** [14].",
-        },
-        {
-          question:
-            "Por que a redação de um protocolo de pesquisa é considerada um 'padrão ouro' para a escrita adequada de uma revisão sistemática? [15]",
-          options: [
-            "Porque garante que o trabalho será publicado em um periódico de alto impacto.",
-            "Porque torna a revisão sistemática transparente e reprodutível, evitando vieses e alteração de critérios posteriores.",
-            "Porque elimina a necessidade de busca bibliográfica e coleta de dados.",
-            "Porque permite que apenas um autor realize a revisão sistemática.",
-          ],
-          answer: 1,
-          comment:
-            "A redação de um protocolo é um padrão ouro porque **torna a revisão sistemática transparente e reprodutível**. Ele permite planejar o desenvolvimento, analisar a qualidade da seleção de artigos, evitar vieses e impede que critérios sejam alterados posteriormente [15, 16].",
-        },
-        {
-          question:
-            "Onde a ideia do trabalho de revisão sistemática deve ser registrada, além da redação do protocolo? [15]",
-          options: [
-            "Em um periódico científico.",
-            "Em uma base de registros de revisões sistemáticas.",
-            "Em um gerenciador bibliográfico.",
-            "Em um software de análise estatística.",
-          ],
-          answer: 1,
-          comment:
-            "Além de redigir um protocolo, é importante registrar a ideia do trabalho em uma **base de registros de revisões sistemáticas** [15]. Isso funciona como uma 'cápsula do tempo', trazendo transparência à revisão [17].",
-        },
-        {
-          question:
-            "O que a redação de um protocolo de pesquisa impede que ocorra durante o desenvolvimento de uma revisão sistemática? [16]",
-          options: [
-            "A publicação dos resultados em um artigo científico.",
-            "A colaboração de outros pesquisadores.",
-            "A alteração de critérios em momentos posteriores e a ocorrência de esforços duplicados.",
-            "A análise estatística dos dados.",
-          ],
-          answer: 2,
-          comment:
-            "O protocolo de pesquisa impede que os **critérios da revisão sistemática sejam alterados em momentos posteriores e evita a ocorrência de esforços duplicados** [16].",
-        },
-        {
-          question:
-            "Quais são algumas das diretrizes criadas para a redação e registro do protocolo de pesquisa? [18]",
-          options: [
-            "PubMed, LILACS, SciELO.",
-            "Coleta de Dados, Análise de Qualidade, Meta-análise.",
-            "Cochrane, Próspero, Prisma P.",
-            "PICO, PICOS, PRISMA.",
-          ],
-          answer: 2,
-          comment:
-            "Existem diversas diretrizes para a redação e registro de protocolos de pesquisa, como a base **Cochrane, a base Próspero e o Prisma P** [18].",
-        },
-        {
-          question:
-            "O que pode ser suspeitado se houver grandes diferenças entre o protocolo de pesquisa registrado e o artigo de revisão sistemática submetido para publicação? [17]",
-          options: [
-            "Falta de tempo dos autores para seguir o protocolo.",
-            "Falta de transparência dos autores por ocultação de dados possivelmente desfavoráveis.",
-            "Aprimoramento da metodologia durante a execução do trabalho.",
-            "A relevância da pergunta chave mudou ao longo do tempo.",
-          ],
-          answer: 1,
-          comment:
-            "Grandes diferenças entre o protocolo registrado e o artigo submetido podem levar à suspeita de **falta de transparência dos autores, possivelmente por ocultação de dados desfavoráveis** [17].",
-        },
-        {
-          question:
-            "Qual é o quinto passo fundamental para realizar uma revisão sistemática? [19]",
-          options: [
-            "Criação do protocolo de pesquisa.",
-            "Busca bibliográfica de dados.",
-            "Definição dos critérios de elegibilidade.",
-            "Coleta de dados.",
-          ],
-          answer: 1,
-          comment:
-            "O quinto passo fundamental é a **busca bibliográfica de dados**, considerada uma etapa crucial para a qualidade da revisão sistemática [19].",
-        },
-        {
-          question:
-            "Qual é a etapa mais importante de uma revisão sistemática, segundo a fonte, representando 80% do nível de qualidade do estudo? [19]",
-          options: [
-            "Formulação da pergunta chave.",
-            "Criação do protocolo de pesquisa.",
-            "Busca bibliográfica.",
-            "Análise estatística.",
-          ],
-          answer: 2,
-          comment:
-            "A **busca bibliográfica** é considerada a etapa mais importante de uma revisão sistemática, representando 80% do nível de qualidade do estudo, pois quanto mais ampla e aprofundada, mais completa e confiável será a evidência gerada [19].",
-        },
-        {
-          question:
-            "A busca bibliográfica para uma revisão sistemática deve contemplar quais tipos de fontes de informação? [19]",
-          options: [
-            "Apenas bases de dados eletrônicas de artigos científicos.",
-            "Somente a literatura cinzenta.",
-            "Bases de dados eletrônicas e a literatura cinzenta.",
-            "Exclusivamente estudos clínicos randomizados.",
-          ],
-          answer: 2,
-          comment:
-            "A busca bibliográfica para uma revisão sistemática deve incluir tanto **bases de dados eletrônicas quanto a literatura cinzenta** (literatura não publicada em bases de dados importantes) [19].",
-        },
-        {
-          question:
-            "Além das bases de dados eletrônicas, quais são consideradas outras fontes importantes para a busca bibliográfica em uma revisão sistemática? [19]",
-          options: [
-            "Redes sociais e blogs.",
-            "Busca manual, leitura de listas de referências e literatura cinzenta.",
-            "Artigos de opinião de especialistas.",
-            "Livros didáticos e enciclopédias.",
-          ],
-          answer: 1,
-          comment:
-            "Além das bases de dados eletrônicas, a **busca manual, a leitura das listas de referências e a literatura cinzenta** são consideradas fontes adicionais importantes para minimizar o viés de publicação [19].",
-        },
-        {
-          question:
-            "Qual a importância de consultar descritores em vocabulários controlados (como MeSH para PubMed e DeCS para BVS/LILACS) na definição das palavras-chave para a busca bibliográfica? [19]",
-          options: [
-            "Para limitar a busca a um número reduzido de artigos.",
-            "Para garantir que a busca seja realizada apenas em uma base de dados.",
-            "Para identificar palavras que representem os assuntos da pesquisa e seus sinônimos nas diferentes bases de dados.",
-            "Para excluir artigos que não se encaixam na pergunta chave.",
-          ],
-          answer: 2,
-          comment:
-            "Consultar descritores em vocabulários controlados é fundamental para **identificar as palavras que representam os assuntos da pesquisa e seus sinônimos, garantindo uma busca adequada nas diferentes bases de dados** [19].",
-        },
-        {
-          question:
-            "Quais são os operadores booleanos utilizados para elaborar a estratégia de busca bibliográfica, e qual a função de cada um? [19]",
-          options: [
-            "ADD, SUBTRACT, MULTIPLY.",
-            "AND, OR, NOT.",
-            "IF, THEN, ELSE.",
-            "SUM, AVERAGE, COUNT.",
-          ],
-          answer: 1,
-          comment:
-            "Os operadores booleanos utilizados para elaborar a estratégia de busca são **AND, OR e NOT**. O OR separa descritores sinônimos dentro de um mesmo componente PICO, o AND combina os diferentes componentes PICO, e o NOT exclui termos específicos [19].",
-        },
-        {
-          question:
-            "Qual é o sexto passo fundamental para você realizar sua revisão sistemática? [20]",
-          options: [
-            "Busca bibliográfica.",
-            "Coleta de dados.",
-            "Definição de critérios de elegibilidade.",
-            "Análise de qualidade dos estudos.",
-          ],
-          answer: 2,
-          comment:
-            "O sexto passo fundamental é a **definição dos critérios de elegibilidade**, que são essenciais para a seleção dos estudos a serem incluídos na revisão sistemática [20].",
-        },
-        {
-          question:
-            "O que distingue uma revisão sistemática de uma revisão narrativa em relação aos critérios de elegibilidade? [21]",
-          options: [
-            "A revisão narrativa não utiliza critérios de elegibilidade.",
-            "A revisão sistemática não possui critérios de elegibilidade.",
-            "A revisão sistemática tem pré-definição de critérios de elegibilidade (inclusão e exclusão), enquanto a revisão narrativa não.",
-            "Ambas utilizam os mesmos critérios de elegibilidade.",
-          ],
-          answer: 2,
-          comment:
-            "Uma das características que distingue a revisão sistemática da revisão narrativa é a **pré-definição clara dos critérios de elegibilidade (inclusão e exclusão) na revisão sistemática**, o que não ocorre na revisão narrativa [21].",
-        },
-        {
-          question:
-            "O que os critérios de elegibilidade correspondem na descrição detalhada de uma revisão sistemática? [21]",
-          options: [
-            "Apenas aos participantes do trabalho.",
-            "Apenas às intervenções e comparações.",
-            "Apenas aos desfechos do estudo.",
-            "À descrição detalhada dos participantes, intervenções, comparações e desfechos.",
-          ],
-          answer: 3,
-          comment:
-            "Os critérios de elegibilidade correspondem à **descrição detalhada de quem são os participantes, quais as intervenções a serem pesquisadas, com que grupos serão feitas as comparações e quais desfechos o estudo se fundamentará** [21].",
-        },
-        {
-          question:
-            "Após definir os critérios de elegibilidade, onde eles devem ser registrados? [22]",
-          options: [
-            "Apenas na seção de resultados do artigo final.",
-            "Apenas em um gerenciador bibliográfico.",
-            "Em um protocolo de pesquisa.",
-            "Em uma base de dados de estudos primários.",
-          ],
-          answer: 2,
-          comment:
-            "Após definir os critérios de elegibilidade, eles devem ser registrados em um **protocolo de pesquisa**, orientando a etapa de identificação e seleção dos estudos [22].",
-        },
-        {
-          question:
-            "O que o protocolo PRISMA recomenda utilizar para incluir todas as informações da metodologia de uma revisão sistemática, especialmente na seção de material e métodos? [22]",
-          options: [
-            "Uma tabela com todos os estudos incluídos.",
-            "Um fluxograma padronizado.",
-            "Uma lista de palavras-chave.",
-            "Um gráfico de barras.",
-          ],
-          answer: 1,
-          comment:
-            "O protocolo PRISMA recomenda a utilização de um **fluxograma padronizado** para incluir todas as informações da metodologia de uma revisão sistemática, que deve ser apresentado na seção de material e métodos [22].",
-        },
-        {
-          question:
-            "No fluxograma PRISMA, o que representam os 'estudos identificados'? [23]",
-          options: [
-            "Todos os trabalhos excluídos após a leitura do texto completo.",
-            "Todos os estudos localizados nas diversas bases de dados após a aplicação das estratégias de busca.",
-            "Todos os estudos incluídos na análise final.",
-            "Todos os estudos potencialmente elegíveis após a leitura de título e resumo.",
-          ],
-          answer: 1,
-          comment:
-            "Os '**estudos identificados**' no fluxograma PRISMA representam o total de estudos localizados nas diversas bases de dados após a aplicação das estratégias de busca [23].",
-        },
-        {
-          question:
-            "No fluxograma PRISMA, o que representam os 'estudos incluídos'? [24]",
-          options: [
-            "Todos os estudos que não se enquadram nos critérios de elegibilidade.",
-            "Todos os estudos potencialmente elegíveis após a leitura de título e resumo.",
-            "Todos os trabalhos selecionados após a leitura integral e que preenchem todos os critérios de elegibilidade.",
-            "Todos os estudos excluídos após a leitura de texto completo.",
-          ],
-          answer: 2,
-          comment:
-            "Os '**estudos incluídos**' no fluxograma PRISMA são os trabalhos selecionados após a leitura integral e que preenchem todos os critérios de elegibilidade propostos na revisão sistemática [24].",
-        },
-        {
-          question:
-            "Qual é o sétimo passo fundamental para realizar uma revisão sistemática? [25]",
-          options: [
-            "Definição dos critérios de elegibilidade.",
-            "Busca bibliográfica.",
-            "Coleta de dados.",
-            "Análise de qualidade.",
-          ],
-          answer: 2,
-          comment:
-            "O sétimo passo fundamental é a **coleta de dados**, que é essencial para sintetizar as informações relevantes dos estudos incluídos [25].",
-        },
-        {
-          question:
-            "Como a extração ou coleta de dados em uma revisão sistemática é realizada? [25]",
-          options: [
-            "Através da leitura integral de todos os artigos e anotação livre das informações.",
-            "Através de uma ficha ou formulário padrão elaborado previamente.",
-            "Através de um software de análise estatística.",
-            "Através da consulta aos autores dos estudos primários.",
-          ],
-          answer: 1,
-          comment:
-            "A extração de dados é realizada através de uma **ficha ou formulário padrão elaborado previamente**, com o objetivo de incluir as principais informações dos estudos [25].",
-        },
-        {
-          question:
-            "Em uma revisão sistemática, quem geralmente realiza a fase de extração de dados e como as discrepâncias são resolvidas? [25]",
-          options: [
-            "Apenas um revisor, para garantir a consistência.",
-            "Dois revisores que trabalham independentemente; discrepâncias são resolvidas por um terceiro revisor ou reunião de consenso.",
-            "Apenas o autor principal da revisão sistemática.",
-            "Um estatístico, para garantir a precisão dos dados.",
-          ],
-          answer: 1,
-          comment:
-            "A fase de extração de dados é realizada por **dois revisores independentes, e as discrepâncias nos dados coletados são resolvidas por um terceiro revisor ou por uma reunião de consenso** [25].",
-        },
-        {
-          question:
-            "Qual é o nono passo fundamental para se desenvolver uma revisão sistemática? [26]",
-          options: [
-            "Coleta de dados.",
-            "Análise estatística (meta-análise).",
-            "Análise de qualidade dos estudos.",
-            "Redação do relatório.",
-          ],
-          answer: 2,
-          comment:
-            "O nono passo fundamental abordado é a **análise de qualidade dos estudos incluídos** [26].",
-        },
-        {
-          question:
-            "Em uma revisão sistemática, por que é fundamental avaliar a qualidade dos artigos incluídos e o risco de viés? [26]",
-          options: [
-            "Para aumentar o número de artigos incluídos na análise.",
-            "Para justificar a exclusão de artigos da revisão.",
-            "Para determinar a confiabilidade das conclusões da revisão sistemática.",
-            "Para facilitar a publicação do trabalho em um periódico científico.",
-          ],
-          answer: 2,
-          comment:
-            "A avaliação da qualidade dos artigos incluídos e do risco de viés é fundamental para **determinar a confiabilidade das conclusões de uma revisão sistemática**. Conclusões baseadas em artigos de alta qualidade e baixo risco de viés são mais confiáveis [26].",
-        },
-        {
-          question:
-            "Qual é a diferença entre a avaliação de qualidade metodológica e a análise do risco de viés em uma revisão sistemática? [26]",
-          options: [
-            "São termos sinônimos e se referem ao mesmo processo.",
-            "A avaliação de qualidade metodológica quantifica o impacto da qualidade, enquanto a análise do risco de viés estima o seu efeito.",
-            "A avaliação de qualidade metodológica se aplica a ensaios clínicos, enquanto a análise de risco de viés se aplica a estudos observacionais.",
-            "A avaliação de qualidade é subjetiva, enquanto a análise de risco de viés é objetiva.",
-          ],
-          answer: 1,
-          comment:
-            "A avaliação crítica dos estudos primários pode ser denominada avaliação de qualidade metodológica, enquanto a **análise do risco de viés permite uma estimativa do seu efeito**. O viés deve ser diferenciado da qualidade [26].",
-        },
-        {
-          question:
-            "Quais são alguns exemplos de escalas ou ferramentas utilizadas para a análise de qualidade ou risco de viés em estudos incluídos em revisões sistemáticas? [26]",
-          options: [
-            "PICO, PRISMA, MECIR.",
-            "Delphi, Jadad, Pedro, Newcastle-Ottawa, GRADE.",
-            "PubMed, LILACS, Web of Science.",
-            "EndNote, Mendeley, Zotero.",
-          ],
-          answer: 1,
-          comment:
-            "Existem diversas escalas e ferramentas para avaliar a qualidade e o risco de viés, como **Delphi, Jadad, Pedro (para ensaios clínicos randomizados), Newcastle-Ottawa (para estudos observacionais) e GRADE (para avaliar a certeza da evidência)** [26].",
-        },
-        {
-          question:
-            "As escalas de qualidade utilizadas na análise dos estudos incluídos em uma revisão sistemática possuem o poder de mudar a conclusão do trabalho ou excluir artigos? [26]",
-          options: [
-            "Sim, as escalas de qualidade determinam a conclusão final e quais artigos devem ser excluídos.",
-            "Não, as escalas de qualidade ajudam a dizer o quão fortes ou confiáveis são as conclusões ou evidências geradas, mas a exclusão de artigos é feita pelos critérios de elegibilidade.",
-            "Sim, se a pontuação de qualidade for baixa, o artigo deve ser excluído.",
-            "Apenas a meta-análise tem o poder de mudar a conclusão do trabalho.",
-          ],
-          answer: 1,
-          comment:
-            "As escalas de qualidade **não têm o poder de mudar a conclusão da revisão sistemática ou excluir artigos**. Elas ajudam a avaliar o quão fortes ou confiáveis são as conclusões com base nos estudos incluídos. A exclusão de artigos é determinada pelos critérios de elegibilidade pré-definidos [26].",
-        },
-      ];
+    <div class="generated-questions-section card-bloco" id="generatedQuestionsSection" style="display:none;">
+      <h2>Novas Perguntas Geradas</h2>
+      <div id="newQuestionsContent"></div>
+    </div>
+  </div>
+  
+  <button class="error-nav-btn" id="errorNavBtn" style="display:none;">
+    <span class="arrow-icon"></span>
+    <span class="button-text"></span>
+  </button>
 
-      const quizContainer = document.getElementById("quiz");
-      const submitButton = document.getElementById("submit");
-      const resultsContainer = document.getElementById("results");
+  <script>
+    const quizContainer = document.getElementById("quiz");
+    const resultsContainer = document.getElementById("results");
+    const errorNavBtn = document.getElementById("errorNavBtn");
+    const arrowIcon = errorNavBtn.querySelector(".arrow-icon");
+    const buttonText = errorNavBtn.querySelector(".button-text");
+    const errorDiagnosisSection = document.getElementById("errorDiagnosis");
+    const topicsToReviewList = document.getElementById("topicsToReview");
+    const generateNewQuestionsBtn = document.getElementById("generateNewQuestionsBtn");
+    const generatedQuestionsSection = document.getElementById("generatedQuestionsSection");
+    const newQuestionsContent = document.getElementById("newQuestionsContent");
+    const statusMessage = document.getElementById("statusMessage");
 
-      function buildQuiz() {
-        const output = [];
+    let wrongQuestionIndices = [];
+    let errorCountByTopic = {};
+    let totalAnsweredQuestionsByTopic = {};
+    let currentWrongQuestionIndex = -1;
+    let hasErrors = false;
+    let isShowingErrors = false;
+    let isShowingDiagnosis = false;
 
-        questions.forEach((currentQuestion, questionNumber) => {
-          const options = currentQuestion.options
-            .map(
-              (option, optionNumber) =>
-                `<div class="option" data-question="${questionNumber}" data-option="${optionNumber}">
-                  ${option}
-                </div>`
-            )
-            .join("");
+    // Inicializa a visibilidade das seções no carregamento
+    errorDiagnosisSection.style.display = 'none';
+    topicsToReviewList.innerHTML = '';
+    statusMessage.textContent = '';
 
-          output.push(`
-            <div class="card">
-              <div class="question">${questionNumber + 1}) ${
-                currentQuestion.question
-              }</div>
-              <div class="options">${options}</div>
-              <div class="comment" id="comment-${questionNumber}"></div>
-            </div>
-          `);
+    const questions = [     {         question: "Qual é o objetivo principal de uma revisão sistemática? [1]",         options: [             "Apresentar a opinião de um especialista sobre um tema.",             "Realizar uma busca seletiva da literatura para fundamentar uma filosofia.",             "Responder a uma importante questão clínica, identificando, avaliando criticamente e integrando resultados de estudos relevantes.",             "Descrever o panorama geral da pesquisa sobre um determinado tópico.",         ],         correctAnswer: "Responder a uma importante questão clínica, identificando, avaliando criticamente e integrando resultados de estudos relevantes.",         comment: "O objetivo principal de uma revisão sistemática é responder a uma questão clínica importante através da análise criteriosa e integração de estudos existentes que abordem essa questão.",         topic: "Conceitos de Revisão Sistemática"     },     {         question: "Qual é o primeiro passo fundamental para desenvolver uma revisão sistemática? [5]",         options: [             "Realizar uma busca preliminar de informações.",             "Formular uma questão clara e focalizada (pergunta chave).",             "Criar um protocolo de pesquisa.",             "Coletar dados dos estudos primários.",         ],         correctAnswer: "Formular uma questão clara e focalizada (pergunta chave).",         comment: "O primeiro passo para uma revisão sistemática é a formulação de uma questão clara e focalizada, conhecida como pergunta chave. Todas as etapas subsequentes dependem diretamente dela.",         topic: "Etapas da Revisão Sistemática"     },     {         question: "O que é a pergunta chave em uma revisão sistemática e qual sua importância? [5]",         options: [             "É um resumo dos resultados esperados e serve para obter financiamento.",             "É a dúvida clínica principal que permeia o estudo e direciona todas as etapas da revisão sistemática.",             "É a lista de referências bibliográficas a serem consultadas durante a pesquisa.",             "É a descrição detalhada dos materiais e métodos a serem utilizados.",         ],         correctAnswer: "É a dúvida clínica principal que permeia o estudo e direciona todas as etapas da revisão sistemática.",         comment: "A pergunta chave é o alicerce do estudo; critérios de busca, elegibilidade e coleta de dados são todos derivados dessa dúvida inicial.",         topic: "Pergunta de Pesquisa"     },     {         question: "Qual acrônimo é recomendado para elaborar a pergunta chave de uma revisão sistemática, e o que cada letra representa? [6]",         options: [             "SWOT: Strengths, Weaknesses, Opportunities, Threats.",             "PICO: Paciente, Intervenção, Comparação, Outcome (Desfecho).",             "SMART: Specific, Measurable, Achievable, Relevant, Time-bound.",             "FISH: Factors, Issues, Solutions, Help.",         ],         correctAnswer: "PICO: Paciente, Intervenção, Comparação, Outcome (Desfecho).",         comment: "O acrônimo PICO organiza a dúvida clínica em: Paciente/População (P), Intervenção (I), Comparação/Controle (C) e Outcome/Desfecho (O).",         topic: "Estratégia PICO"     },     {         question: "Em uma pergunta chave estruturada no acrônimo PICO, o que a letra 'C' representa? [6]",         options: [             "Conclusão.",             "Critérios de Elegibilidade.",             "Comparação ou Grupo Controle.",             "Coleta de Dados.",         ],         correctAnswer: "Comparação ou Grupo Controle.",         comment: "A letra 'C' representa o padrão-ouro ou o grupo que não recebeu a intervenção, servindo de base para comparar a eficácia do tratamento testado.",         topic: "Estratégia PICO"     },     {         question: "Em uma pergunta chave estruturada no acrônimo PICO, o que a letra 'O' representa? [6]",         options: ["Orçamento.", "Objetivo.", "Outcome ou Desfecho no estudo.", "Organização."],         correctAnswer: "Outcome ou Desfecho no estudo.",         comment: "O 'Outcome' é o resultado clínico esperado, como cura, redução de dor, mortalidade ou ganho de função.",         topic: "Estratégia PICO"     },     {         question: "A estratégia PICO é comparada a um quebra-cabeça porque... [7]",         options: [             "Tiver um título claro e conciso.",             "Todas as quatro peças (P, I, C, O) estiverem juntas.",             "A busca preliminar for exaustiva.",             "O protocolo de pesquisa estiver registrado em uma base de dados.",         ],         correctAnswer: "Todas as quatro peças (P, I, C, O) estiverem juntas.",         comment: "A pergunta só é considerada completa e passível de execução técnica quando os quatro elementos são definidos com precisão.",         topic: "Estratégia PICO"     },     {         question: "As revisões sistemáticas podem ser classificadas quanto ao seu objetivo. Quais são exemplos de tais categorias? [8]",         options: [             "Pesquisas laboratoriais, pesquisas em animais, estudos observacionais.",             "Avaliação de uma intervenção, prognóstico, diagnóstico, etiologia, prevenção.",             "Busca preliminar, busca bibliográfica, coleta de dados, análise de qualidade.",             "Protocolo de pesquisa, critérios de elegibilidade, análise estatística.",         ],         correctAnswer: "Avaliação de uma intervenção, prognóstico, diagnóstico, etiologia, prevenção.",         comment: "Essa classificação foca na natureza da dúvida clínica que a revisão pretende sanar para o profissional de saúde.",         topic: "Objetivos da Revisão"     },     {         question: "Qual é o terceiro passo fundamental no desenvolvimento de uma revisão sistemática? [9]",         options: [             "Formulação da pergunta chave.",             "Criação do protocolo de pesquisa.",             "Busca preliminar de informações.",             "Determinação dos critérios de elegibilidade.",         ],         correctAnswer: "Busca preliminar de informações.",         comment: "O terceiro passo é a busca exploratória, essencial para verificar a viabilidade do estudo e a existência de revisões similares.",         topic: "Etapas da Revisão Sistemática"     },     {         question: "Qual é o principal objetivo da busca preliminar de informações? [10]",         options: [             "Identificar todos os estudos primários relevantes para a pergunta chave.",             "Verificar se a pergunta chave já foi respondida por uma revisão sistemática existente.",             "Definir os critérios de inclusão e exclusão de estudos.",             "Coletar dados dos estudos potencialmente elegíveis.",         ],         correctAnswer: "Verificar se a pergunta chave já foi respondida por uma revisão sistemática existente.",         comment: "A busca preliminar evita a duplicidade de esforços desnecessários e ajuda a refinar a pergunta se já houver respostas sólidas na literatura.",         topic: "Busca Bibliográfica"     },     {         question: "Durante a busca preliminar, o pesquisador deve focar em procurar quais tipos de trabalhos? [11]",         options: [             "Artigos de estudos clínicos randomizados.",             "Estudos de coorte e laboratoriais.",             "Trabalhos específicos de revisão sistemática.",             "Estudos transversais e caso-controle.",         ],         correctAnswer: "Trabalhos específicos de revisão sistemática.",         comment: "Diferente da busca definitiva, a preliminar foca em encontrar 'revisões de revisões' para mapear o conhecimento já sintetizado.",         topic: "Busca Bibliográfica"     },     {         question: "Se uma revisão sistemática similar for encontrada na busca preliminar, isso encerra o projeto? [12, 13]",         options: [             "Sim, pois a pergunta já foi respondida e não há necessidade de uma nova revisão.",             "Não necessariamente, pois fatores como a atualização, métodos e evidências geradas pela revisão existente podem justificar uma nova revisão ou complementação.",             "Sim, a menos que a revisão encontrada apresente plágio.",             "Não, pois a busca preliminar não é exaustiva e pode ter deixado de fora revisões importantes.",         ],         correctAnswer: "Não necessariamente, pois fatores como a atualização, métodos e evidências geradas pela revisão existente podem justificar uma nova revisão ou complementação.",         comment: "Muitas vezes revisões antigas precisam de atualização com novos ensaios clínicos ou possuem falhas metodológicas que justificam um novo estudo.",         topic: "Viabilidade da Revisão"     },     {         question: "Como o pesquisador deve proceder ao decidir realizar uma revisão sobre um tema que já possui trabalhos prévios? [13]",         options: [             "Copiar a metodologia da revisão existente e apenas atualizar os resultados.",             "Publicar a nova revisão sem mencionar os trabalhos anteriores.",             "Ter motivos razoáveis para justificar a nova revisão e descrever essa justificativa.",             "Considerar a revisão existente como plágio e não a citar.",         ],         correctAnswer: "Ter motivos razoáveis para justificar a nova revisão e descrever essa justificativa.",         comment: "A transparência científica exige que o autor aponte as revisões anteriores e explique por que a sua nova abordagem é necessária.",         topic: "Ética e Transparência"     },     {         question: "Qual é o quarto passo fundamental para se desenvolver uma revisão sistemática? [14]",         options: [             "Busca bibliográfica.",             "Definição dos critérios de elegibilidade.",             "Criação de um protocolo de pesquisa.",             "Coleta de dados.",         ],         correctAnswer: "Criação de um protocolo de pesquisa.",         comment: "O protocolo funciona como o 'projeto' ou 'planta' da revisão, definindo as regras antes de iniciar a execução.",         topic: "Protocolo de Pesquisa"     },     {         question: "Por que a redação de um protocolo de pesquisa é o 'padrão ouro' na escrita científica? [15]",         options: [             "Porque garante que o trabalho será publicado em um periódico de alto impacto.",             "Porque torna a revisão sistemática transparente e reprodutível, evitando vieses e alteração de critérios posteriores.",             "Porque elimina a necessidade de busca bibliográfica e coleta de dados.",             "Porque permite que apenas um autor realize a revisão sistemática.",         ],         correctAnswer: "Porque torna a revisão sistemática transparente e reprodutível, evitando vieses e alteração de critérios posteriores.",         comment: "O protocolo impede o 'cherry-picking' (seleção seletiva de resultados favoráveis) e garante que o método não seja alterado para forçar um resultado.",         topic: "Protocolo de Pesquisa"     },     {         question: "Onde o projeto de revisão sistemática deve ser registrado oficialmente? [15]",         options: [             "Em um periódico científico.",             "Em uma base de registros de revisões sistemáticas.",             "Em um gerenciador bibliográfico.",             "Em um software de análise estatística.",         ],         correctAnswer: "Em uma base de registros de revisões sistemáticas.",         comment: "Bases como o PROSPERO servem para registrar o protocolo antes do início da coleta de dados, garantindo transparência pública.",         topic: "Registro de Protocolo"     },     {         question: "O que a redação prévia de um protocolo impede durante o desenvolvimento do estudo? [16]",         options: [             "A publicação dos resultados em um artigo científico.",             "A colaboração de outros pesquisadores.",             "A alteração de critérios em momentos posteriores e a ocorrência de esforços duplicados.",             "A análise estatística dos dados.",         ],         correctAnswer: "A alteração de critérios em momentos posteriores e a ocorrência de esforços duplicados.",         comment: "O registro público avisa a outros pesquisadores que o tema já está sendo estudado, evitando que dois grupos façam o mesmo trabalho simultaneamente.",         topic: "Protocolo de Pesquisa"     },     {         question: "Quais diretrizes são referências para a redação e registro de protocolos? [18]",         options: [             "PubMed, LILACS, SciELO.",             "Coleta de Dados, Análise de Qualidade, Meta-análise.",             "Cochrane, Próspero, Prisma P.",             "PICO, PICOS, PRISMA.",         ],         correctAnswer: "Cochrane, Próspero, Prisma P.",         comment: "O PRISMA-P (Preferred Reporting Items for Systematic Review and Meta-Analysis Protocols) é o guia específico para protocolos.",         topic: "Checklists e Diretrizes"     },     {         question: "O que sugere a existência de grandes diferenças entre o protocolo registrado e o artigo final submetido? [17]",         options: [             "Falta de tempo dos autores para seguir o protocolo.",             "Falta de transparência dos autores por ocultação de dados possivelmente desfavoráveis.",             "Aprimoramento da metodologia durante a execução do trabalho.",             "A relevância da pergunta chave mudou ao longo do tempo.",         ],         correctAnswer: "Falta de transparência dos autores por ocultação de dados possivelmente desfavoráveis.",         comment: "Mudanças injustificadas nos critérios após ver os resultados dos estudos primários sugerem manipulação para obter desfechos específicos.",         topic: "Integridade Científica"     },     {         question: "Qual é o quinto passo fundamental para realizar uma revisão sistemática? [19]",         options: [             "Criação do protocolo de pesquisa.",             "Busca bibliográfica de dados.",             "Definição dos critérios de elegibilidade.",             "Coleta de dados.",         ],         correctAnswer: "Busca bibliográfica de dados.",         comment: "A busca definitiva é a fase de 'mineração' onde todos os estudos relevantes são localizados seguindo a estratégia PICO.",         topic: "Busca Bibliográfica"     },     {         question: "Qual etapa representa cerca de 80% do nível de qualidade de uma revisão sistemática? [19]",         options: [             "Formulação da pergunta chave.",             "Criação do protocolo de pesquisa.",             "Busca bibliográfica.",             "Análise estatística.",         ],         correctAnswer: "Busca bibliográfica.",         comment: "Uma revisão sistemática é tão boa quanto a busca que a originou. Se estudos importantes ficarem de fora, a conclusão será enviesada ou incompleta.",         topic: "Busca Bibliográfica"     },     {         question: "A busca bibliográfica rigorosa deve contemplar quais tipos de fontes? [19]",         options: [             "Apenas bases de dados eletrônicas de artigos científicos.",             "Somente a literatura cinzenta.",             "Bases de dados eletrônicas e a literatura cinzenta.",             "Exclusivamente estudos clínicos randomizados.",         ],         correctAnswer: "Bases de dados eletrônicas e a literatura cinzenta.",         comment: "Bases eletrônicas (PubMed, Embase) são essenciais, mas a literatura cinzenta (teses, anais de congresso) ajuda a reduzir o viés de publicação.",         topic: "Fontes de Dados"     },     {         question: "Além das bases eletrônicas, quais fontes ajudam a minimizar o viés de publicação? [19]",         options: [             "Redes sociais e blogs.",             "Busca manual, leitura de listas de referências e literatura cinzenta.",             "Artigos de opinião de especialistas.",             "Livros didáticos e enciclopédias.",         ],         correctAnswer: "Busca manual, leitura de listas de referências e literatura cinzenta.",         comment: "A busca manual e a leitura das referências dos artigos incluídos ('snowballing') garantem que estudos não indexados sejam capturados.",         topic: "Fontes de Dados"     },     {         question: "Qual a função dos vocabulários controlados (MeSH/DeCS) na definição das palavras-chave? [19]",         options: [             "Para limitar a busca a um número reduzido de artigos.",             "Para garantir que a busca seja realizada apenas em uma base de dados.",             "Para identificar palavras que representem os assuntos da pesquisa e seus sinônimos nas diferentes bases de dados.",             "Para excluir artigos que não se encaixam na pergunta chave.",         ],         correctAnswer: "Para identificar palavras que representem os assuntos da pesquisa e seus sinônimos nas diferentes bases de dados.",         comment: "Termos controlados garantem que, independentemente do termo usado pelo autor original, o artigo seja encontrado pelo assunto indexado.",         topic: "Estratégia de Busca"     },     {         question: "Sobre os operadores booleanos na estratégia de busca, qual a função correta de cada um? [19]",         options: [             "ADD, SUBTRACT, MULTIPLY.",             "AND, OR, NOT.",             "IF, THEN, ELSE.",             "SUM, AVERAGE, COUNT.",         ],         correctAnswer: "AND, OR, NOT.",         comment: "OR agrupa sinônimos (amplia); AND cruza conceitos diferentes do PICO (restringe); NOT exclui termos indesejados.",         topic: "Estratégia de Busca"     },     {         question: "Qual é o sexto passo fundamental para realizar a revisão sistemática? [20]",         options: [             "Busca bibliográfica.",             "Coleta de dados.",             "Definição de critérios de elegibilidade.",             "Análise de qualidade dos estudos.",         ],         correctAnswer: "Definição de critérios de elegibilidade.",         comment: "Estes critérios (Inclusão/Exclusão) filtram os resultados brutos da busca para manter apenas o que é cientificamente relevante para a pergunta.",         topic: "Critérios de Elegibilidade"     },     {         question: "O que distingue a revisão sistemática da narrativa quanto aos critérios de seleção? [21]",         options: [             "A revisão narrativa não utiliza critérios de elegibilidade.",             "A revisão sistemática não possui critérios de elegibilidade.",             "A revisão sistemática tem pré-definição de critérios de elegibilidade (inclusão e exclusão), enquanto a revisão narrativa não.",             "Ambas utilizam os mesmos critérios de elegibilidade.",         ],         correctAnswer: "A revisão sistemática tem pré-definição de critérios de elegibilidade (inclusão e exclusão), enquanto a revisão narrativa não.",         comment: "Na narrativa, o autor escolhe os artigos que deseja; na sistemática, os critérios são fixos e aplicados imparcialmente.",         topic: "Sistemática vs Narrativa"     },     {         question: "Os critérios de elegibilidade abrangem quais descrições do estudo? [21]",         options: [             "Apenas aos participantes do trabalho.",             "Apenas às intervenções e comparações.",             "Apenas aos desfechos do estudo.",             "À descrição detalhada dos participantes, intervenções, comparações e desfechos.",         ],         correctAnswer: "À descrição detalhada dos participantes, intervenções, comparações e desfechos.",         comment: "Os critérios de elegibilidade são o espelho prático da estratégia PICO definida inicialmente.",         topic: "Critérios de Elegibilidade"     },     {         question: "Após definidos, os critérios de elegibilidade devem ser documentados no: [22]",         options: [             "Apenas na seção de resultados do artigo final.",             "Apenas em um gerenciador bibliográfico.",             "Em um protocolo de pesquisa.",             "Em uma base de dados de estudos primários.",         ],         correctAnswer: "Em um protocolo de pesquisa.",         comment: "A documentação prévia no protocolo garante que o pesquisador não mude as 'regras do jogo' após ver quais estudos foram encontrados.",         topic: "Protocolo de Pesquisa"     },     {         question: "O que o protocolo PRISMA recomenda para detalhar a seleção de estudos na metodologia? [22]",         options: [             "Uma tabela com todos os estudos incluídos.",             "Um fluxograma padronizado.",             "Uma lista de palavras-chave.",             "Um gráfico de barras.",         ],         correctAnswer: "Um fluxograma padronizado.",         comment: "O fluxograma PRISMA mostra visualmente o caminho desde os milhares de artigos identificados até o número final incluído.",         topic: "Diretriz PRISMA"     },     {         question: "No fluxograma PRISMA, o termo 'estudos identificados' refere-se a: [23]",         options: [             "Todos os trabalhos excluídos após a leitura do texto completo.",             "Todos os estudos localizados nas diversas bases de dados após a aplicação das estratégias de busca.",             "Todos os estudos incluídos na análise final.",             "Todos os estudos potencialmente elegíveis após a leitura de título e resumo.",         ],         correctAnswer: "Todos os estudos localizados nas diversas bases de dados após a aplicação das estratégias de busca.",         comment: "Este é o topo do funil, representando o estado bruto dos resultados da busca bibliográfica.",         topic: "Fluxograma PRISMA"     },     {         question: "No fluxograma PRISMA, os 'estudos incluídos' são: [24]",         options: [             "Todos os estudos que não se enquadram nos critérios de elegibilidade.",             "Todos os estudos potencialmente elegíveis após a leitura de título e resumo.",             "Todos os trabalhos selecionados após a leitura integral e que preenchem todos os critérios de elegibilidade.",             "Todos os estudos excluídos após a leitura de texto completo.",         ],         correctAnswer: "Todos os trabalhos selecionados após a leitura integral e que preenchem todos os critérios de elegibilidade.",         comment: "Estes são os artigos que fornecerão os dados para a síntese qualitativa e, se possível, quantitativa (meta-análise).",         topic: "Fluxograma PRISMA"     },     {         question: "Qual é o sétimo passo fundamental para realizar uma revisão sistemática? [25]",         options: [             "Definição dos critérios de elegibilidade.",             "Busca bibliográfica.",             "Coleta de dados.",             "Análise de qualidade.",         ],         correctAnswer: "Coleta de dados.",         comment: "Também chamada de extração de dados, é a fase onde se 'minera' a informação necessária de dentro dos artigos selecionados.",         topic: "Etapas da Revisão Sistemática"     },     {         question: "Como deve ser feita a extração ou coleta de dados para garantir o rigor? [25]",         options: [             "Através da leitura integral de todos os artigos e anotação livre das informações.",             "Através de uma ficha ou formulário padrão elaborado previamente.",             "Através de um software de análise estatística.",             "Através da consulta aos autores dos estudos primários.",         ],         correctAnswer: "Através de uma ficha ou formulário padrão elaborado previamente.",         comment: "O uso de um formulário padronizado garante que a mesma informação seja coletada de todos os estudos, permitindo a comparação posterior.",         topic: "Coleta de Dados"     },     {         question: "Quem deve realizar a extração de dados e como resolver conflitos? [25]",         options: [             "Apenas um revisor, para garantir a consistência.",             "Dois revisores que trabalham independentemente; discrepâncias são resolvidas por um terceiro revisor ou reunião de consenso.",             "Apenas o autor principal da revisão sistemática.",             "Um estatístico, para garantir a precisão dos dados.",         ],         correctAnswer: "Dois revisores que trabalham independentemente; discrepâncias são resolvidas por um terceiro revisor ou reunião de consenso.",         comment: "O trabalho em dupla independente minimiza o erro humano e o viés subjetivo na interpretação dos dados.",         topic: "Coleta de Dados"     },     {         question: "Qual é o nono passo fundamental abordado no desenvolvimento da revisão? [26]",         options: [             "Coleta de dados.",             "Análise estatística (meta-análise).",             "Análise de qualidade dos estudos.",             "Redação do relatório.",         ],         correctAnswer: "Análise de qualidade dos estudos.",         comment: "Avaliar o 'Risco de Viés' é vital para saber se podemos confiar nos resultados dos estudos que incluímos.",         topic: "Qualidade Metodológica"     },     {         question: "Por que avaliar a qualidade e o risco de viés dos artigos incluídos? [26]",         options: [             "Para aumentar o número de artigos incluídos na análise.",             "Para justificar a exclusão de artigos da revisão.",             "Para determinar a confiabilidade das conclusões da revisão sistemática.",             "Para facilitar a publicação do trabalho em um periódico científico.",         ],         correctAnswer: "Para determinar a confiabilidade das confiabilidade das conclusões da revisão sistemática.",         comment: "Se os estudos originais forem ruins, a revisão sistemática também terá conclusões fracas. 'Lixo entra, lixo sai'.",         topic: "Qualidade Metodológica"     },     {         question: "Qual a diferença entre qualidade metodológica e risco de viés? [26]",         options: [             "São termos sinônimos e se referem ao mesmo processo.",             "A avaliação de qualidade metodológica quantifica o impacto da qualidade, enquanto a análise do risco de viés estima o seu efeito.",             "A avaliação de qualidade metodológica se aplica a ensaios clínicos, enquanto a análise de risco de viés se aplica a estudos observacionais.",             "A avaliação de qualidade é subjetiva, enquanto a análise de risco de viés é objetiva.",         ],         correctAnswer: "A avaliação de qualidade metodológica quantifica o impacto da qualidade, enquanto a análise do risco de viés estima o seu efeito.",         comment: "Um estudo pode ter boa qualidade (foi bem relatado), mas alto risco de viés (ex: falta de cegamento que distorce o resultado).",         topic: "Qualidade vs Viés"     },     {         question: "Quais são exemplos de ferramentas para avaliar risco de viés ou certeza da evidência? [26]",         options: [             "PICO, PRISMA, MECIR.",             "Delphi, Jadad, Pedro, Newcastle-Ottawa, GRADE.",             "PubMed, LILACS, Web of Science.",             "EndNote, Mendeley, Zotero.",         ],         correctAnswer: "Delphi, Jadad, Pedro, Newcastle-Ottawa, GRADE.",         comment: "Ferramentas como Jadad/Pedro são para ensaios clínicos, Newcastle-Ottawa para observacionais e GRADE para a evidência global.",         topic: "Ferramentas de Avaliação"     },     {         question: "Escalas de qualidade têm o poder de excluir artigos da revisão? [26]",         options: [             "Sim, as escalas de qualidade determinam a conclusão final e quais artigos devem ser excluídos.",             "Não, as escalas de qualidade ajudam a dizer o quão fortes ou confiáveis são as conclusões, mas a exclusão é feita pelos critérios de elegibilidade.",             "Sim, se a pontuação de qualidade for baixa, o artigo deve ser excluído.",             "Apenas a meta-análise tem o poder de mudar a conclusão do trabalho.",         ],         correctAnswer: "Não, as escalas de qualidade ajudam a dizer o quão fortes ou confiáveis são as conclusões, mas a exclusão é feita pelos critérios de elegibilidade.",         comment: "Artigos de 'baixa qualidade' geralmente são mantidos, mas o autor avisa ao leitor que a evidência resultante é fraca ou incerta.",         topic: "Qualidade Metodológica"     } ];
+
+    function buildQuiz() {
+      const output = [];
+
+      questions.forEach((currentQuestion, questionNumber) => {
+        const options = [];
+        for (let i = 0; i < currentQuestion.options.length; i++) {
+          options.push(
+            `<label class="option" data-question="${questionNumber}" data-value="${currentQuestion.options[i]}">
+              <img src="tesouras.png" class="scissor-icon" onclick="event.stopPropagation(); this.parentNode.classList.toggle('struck-through');">
+              ${currentQuestion.options[i]}
+            </label>`
+          );
+        }
+
+        output.push(
+          `<div class="card" id="question-${questionNumber}" data-topic="${currentQuestion.topic}">
+            <div class="question">${currentQuestion.question}</div>
+            <div class="options">${options.join("")}</div>
+            <div class="comment" id="comment-${questionNumber}"></div>
+          </div>`
+        );
+      });
+
+      quizContainer.innerHTML = output.join("");
+    }
+
+    function showResults() {
+      wrongQuestionIndices = [];
+      errorCountByTopic = {};
+      totalAnsweredQuestionsByTopic = {};
+      currentWrongQuestionIndex = -1;
+      hasErrors = false;
+      isShowingErrors = false;
+      isShowingDiagnosis = false;
+
+      errorDiagnosisSection.style.display = 'none';
+      topicsToReviewList.innerHTML = '';
+      statusMessage.textContent = '';
+
+      // Busca por todas as perguntas: estáticas e dinâmicas
+      const allQuestionCards = document.querySelectorAll('.quiz-container .card, #newQuestionsContent .card');
+      let correctAnswersCount = 0;
+      let totalQuestionsAnswered = 0;
+
+      console.log('🔍 Verificando', allQuestionCards.length, 'perguntas...');
+
+      allQuestionCards.forEach((card, index) => {
+        const questionEl = card.querySelector('.question') || card.querySelector('p');
+        if (!questionEl) return;
+
+        const questionText = questionEl.textContent.trim();
+        const optionsContainer = card.querySelector('.options') || card;
+        const allOptions = optionsContainer.querySelectorAll('.option, label.option, label');
+        const userAnswerElement = optionsContainer.querySelector('.option.selected, label.selected');
+        const commentDiv = card.querySelector('.comment');
+
+        const questionTopic = card.dataset.topic || "Tópico não informado";
+        
+        console.log(`📝 Pergunta ${index + 1}: Tópico = "${questionTopic}"`);
+        console.log(`🔍 Encontradas ${allOptions.length} alternativas`);
+        
+        // Remove classes anteriores
+        allOptions.forEach(option => {
+          option.classList.remove('correct', 'incorrect', 'selected');
         });
+        if (commentDiv) commentDiv.classList.remove('show');
 
-        quizContainer.innerHTML = output.join("");
-      }
+        let correctAnswerValue = null;
+        let questionComment = null;
 
-      function showResults() {
-        let correctAnswers = 0;
-
-        questions.forEach((question, questionIndex) => {
-          const options = quizContainer.querySelectorAll(
-            `.option[data-question="${questionIndex}"]`
-          );
-          const userAnswerElement = quizContainer.querySelector(
-            `.option[data-question="${questionIndex}"].selected`
-          );
-          const userAnswer = userAnswerElement ? parseInt(userAnswerElement.dataset.option) : undefined;
-          const correctAnswer = question.answer;
-          const commentElement = document.getElementById(`comment-${questionIndex}`);
-
-          options.forEach((option) => {
-            const optionIndex = parseInt(option.dataset.option);
-            option.classList.remove("correct", "incorrect");
-            if (optionIndex === correctAnswer) {
-              option.classList.add("correct");
-            }
-            if (userAnswer !== undefined && optionIndex === userAnswer && userAnswer !== correctAnswer) {
-              option.classList.add("incorrect");
-            }
-          });
-
-          // Exibir o comentário
-          if (question.comment) {
-            commentElement.innerHTML = `<p><strong>Comentário:</strong> ${question.comment}</p>`;
-            commentElement.classList.add('show'); // Torna o comentário visível
+        // Verifica se é pergunta estática ou dinâmica
+        const isStatic = card.id && card.id.startsWith('question-');
+        if (isStatic) {
+          // Pergunta estática - busca nos dados originais
+          const questionData = questions.find(q => q.question.trim() === questionText);
+          if (questionData) {
+            correctAnswerValue = questionData.correctAnswer.trim();
+            questionComment = questionData.comment;
           }
+        } else {
+          // Pergunta dinâmica - busca pela opção marcada como correta
+          const correctOpt = optionsContainer.querySelector('.option[data-answer="true"], label[data-answer="true"]');
+          if (correctOpt) {
+            correctAnswerValue = correctOpt.dataset.value?.trim() || correctOpt.textContent.trim();
+            console.log(`✅ Resposta correta encontrada: "${correctAnswerValue}"`);
+          } else {
+            console.log('❌ Nenhuma resposta correta encontrada para pergunta dinâmica');
+          }
+          
+          // Busca comentário no próprio card ou no div comment
+          const commentElement = card.querySelector('.comment');
+          if (commentElement && commentElement.textContent.trim()) {
+            questionComment = commentElement.textContent.trim();
+          }
+        }
 
-          if (userAnswer === correctAnswer) {
-            correctAnswers++;
+        // Processa resposta do usuário e aplica coloração
+        let userAnswer = null;
+        if (userAnswerElement) {
+          userAnswerElement.classList.add('selected');
+          userAnswer = userAnswerElement.dataset.value?.trim() || userAnswerElement.textContent.trim();
+          totalQuestionsAnswered++;
+          totalAnsweredQuestionsByTopic[questionTopic] = (totalAnsweredQuestionsByTopic[questionTopic] || 0) + 1;
+
+          console.log(`👤 Resposta do usuário: "${userAnswer}"`);
+          console.log(`🎯 Resposta correta: "${correctAnswerValue}"`);
+
+          // Verifica se a resposta está correta
+          if (userAnswer === correctAnswerValue) {
+            correctAnswersCount++;
+            console.log(`✅ Resposta correta!`);
+          } else {
+            hasErrors = true;
+            errorCountByTopic[questionTopic] = (errorCountByTopic[questionTopic] || 0) + 1;
+            console.log(`❌ Resposta incorreta para tópico: ${questionTopic}`);
+          }
+        }
+
+        // Aplica coloração: SEMPRE marca a correta de verde, e a errada de vermelho se foi marcada
+        allOptions.forEach(option => {
+          const optionValue = option.dataset.value?.trim() || option.textContent.trim();
+          
+          // Marca a resposta correta de verde SEMPRE
+          if (optionValue === correctAnswerValue) {
+            option.classList.add('correct');
+            console.log(`🟢 Marcando como correta: "${optionValue}"`);
+          }
+          
+          // Se o usuário marcou uma resposta E ela está errada, marca de vermelho
+          if (userAnswer && optionValue === userAnswer && userAnswer !== correctAnswerValue) {
+            option.classList.add('incorrect');
+            console.log(`🔴 Marcando como incorreta: "${optionValue}"`);
           }
         });
 
-        resultsContainer.textContent = `Você acertou ${correctAnswers} de ${questions.length} questões.`;
-      }
-
-      quizContainer.addEventListener("click", function (event) {
-        if (event.target.classList.contains("option")) {
-          const questionNumber = event.target.dataset.question;
-          const selected = quizContainer.querySelector(
-            `.option[data-question="${questionNumber}"].selected`
-          );
-          if (selected) selected.classList.remove("selected");
-          event.target.classList.add("selected");
+        // Mostra comentário se disponível
+        if (commentDiv && questionComment) {
+          commentDiv.textContent = questionComment;
+          commentDiv.classList.add('show');
         }
       });
 
-      submitButton.addEventListener("click", showResults);
+      // Exibe resultados
+      resultsContainer.textContent = `Você acertou ${correctAnswersCount} de ${totalQuestionsAnswered} questões respondidas.`;
 
-      buildQuiz();
-    </script>
-  </body>
-<script src="conexao_firebase.js"></script><script src="navegacao.js"></script><script type="module" src="padrao_simulado.js"></script></html>
+      console.log('📊 Erros por tópico:', errorCountByTopic);
+      console.log('📊 Total por tópico:', totalAnsweredQuestionsByTopic);
+
+      // Gera diagnóstico de erros
+      if (hasErrors) {
+        for (const topic in errorCountByTopic) {
+          const errors = errorCountByTopic[topic];
+          const total = totalAnsweredQuestionsByTopic[topic] || 0;
+          if (total > 0) {
+            const percent = ((errors / total) * 100).toFixed(1);
+            const li = document.createElement('li');
+            li.textContent = `${topic}: ${percent}% de erros (${errors} de ${total} questões respondidas)`;
+            topicsToReviewList.appendChild(li);
+          }
+        }
+      } else {
+        const li = document.createElement('li');
+        li.textContent = "🥳 Parabéns! Você não teve erros nas questões respondidas.";
+        topicsToReviewList.appendChild(li);
+      }
+
+      errorDiagnosisSection.style.display = 'block';
+      generatedQuestionsSection.style.display = 'block';
+      generateNewQuestionsBtn.style.display = 'block';
+      scrollToDiagnosis();
+    }
+
+    function scrollToQuestion(index) {
+      const questionCard = document.getElementById(`question-${index}`);
+      if (questionCard) {
+        questionCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    function scrollToDiagnosis() {
+        errorDiagnosisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function scrollToGeneratedQuestions() {
+        generatedQuestionsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Event listener para seleção de opções (funciona para estáticas e dinâmicas)
+    document.addEventListener("click", function (event) {
+      const clickedElement = event.target;
+      const optionElement = clickedElement.closest('.option');
+
+      if (optionElement) {
+          if (clickedElement.classList.contains("scissor-icon")) {
+              event.stopPropagation();
+              optionElement.classList.toggle("struck-through");
+          }
+          else {
+              const parentCard = optionElement.closest('.card');
+              const currentQuestionOptions = parentCard.querySelectorAll('.option');
+
+              currentQuestionOptions.forEach(opt => opt.classList.remove("selected"));
+              optionElement.classList.add("selected");
+          }
+      }
+    });
+
+    generateNewQuestionsBtn.addEventListener("click", async function() {
+        statusMessage.textContent = '⏳ Gerando novas perguntas...';
+        generateNewQuestionsBtn.disabled = true;
+
+        const topics = Object.keys(errorCountByTopic).filter(topic => {
+            const errorsInTopic = errorCountByTopic[topic] || 0;
+            const totalAnsweredInTopic = totalAnsweredQuestionsByTopic[topic] || 0;
+            return errorsInTopic > 0 && totalAnsweredInTopic > 0;
+        });
+
+        const topicsToSend = topics.length > 0 ? topics : ["fisiologia celular", "biologia"];
+
+        try {
+            const response = await fetch('https://www.quizia.xyz/quiz', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ topicos: topicsToSend }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            newQuestionsContent.innerHTML = '';
+            if (data && data.html) {
+                console.log('📥 HTML recebido do Flask:', data.html);
+                
+                // Insere o HTML diretamente sem reconstrução complexa
+                newQuestionsContent.innerHTML = data.html.replace(/```html|```/g, '');
+                
+                // Adiciona tesouras e ajusta formatação apenas se necessário
+                newQuestionsContent.querySelectorAll('.card').forEach((card, cardIndex) => {
+                    // Garante que o elemento de pergunta tenha a classe correta
+                    const questionElement = card.querySelector('p');
+                    if (questionElement && !questionElement.classList.contains('question')) {
+                       questionElement.classList.add('question');
+                    }
+
+                    // Remove qualquer input de radio que possa existir e adiciona tesouras
+                    card.querySelectorAll('label').forEach((label) => {
+                        // Remove inputs de radio MAS preserva o atributo data-answer
+                        const radioInput = label.querySelector('input[type="radio"]');
+                        if (radioInput) {
+                            // PRESERVA o atributo data-answer do input no label
+                            if (radioInput.hasAttribute('data-answer')) {
+                                label.setAttribute('data-answer', radioInput.getAttribute('data-answer'));
+                            }
+                            radioInput.remove();
+                        }
+                        
+                        // Garante que tenha a classe option
+                        if (!label.classList.contains('option')) {
+                            label.classList.add('option');
+                        }
+
+                        // Garante que tenha data-value
+                        if (!label.dataset.value) {
+                            label.dataset.value = label.textContent.trim();
+                        }
+
+                        // Adiciona tesoura se não existir
+                        if (!label.querySelector('.scissor-icon')) {
+                            const scissorIcon = document.createElement('img');
+                            scissorIcon.src = 'tesouras.png';
+                            scissorIcon.className = 'scissor-icon';
+                            scissorIcon.onclick = function(e) {
+                                e.stopPropagation();
+                                label.classList.toggle('struck-through');
+                            };
+                            label.insertBefore(scissorIcon, label.firstChild);
+                        }
+                    });
+
+                    console.log(`🏷️ Card ${cardIndex}: data-topic = "${card.dataset.topic}"`);
+                    
+                    // Verifica se há opção correta marcada
+                    const correctOption = card.querySelector('label[data-answer="true"]');
+                    if (correctOption) {
+                        console.log(`✅ Opção correta encontrada: "${correctOption.dataset.value}"`);
+                    } else {
+                        console.log('❌ Nenhuma opção correta encontrada');
+                    }
+                });
+            } else {
+                newQuestionsContent.innerHTML = "<p>Não foi possível gerar novas perguntas para os tópicos selecionados.</p>";
+            }
+            
+            generatedQuestionsSection.style.display = 'block';
+            scrollToGeneratedQuestions();
+            statusMessage.textContent = '✅ Perguntas geradas com sucesso!';
+            setTimeout(() => { statusMessage.textContent = '' }, 3000);
+
+        } catch (error) {
+            console.error('Erro ao gerar novas perguntas:', error);
+            newQuestionsContent.innerHTML = `<p>Erro ao carregar novas perguntas: ${error.message}. Por favor, tente novamente.</p>`;
+            generatedQuestionsSection.style.display = 'block';
+            scrollToGeneratedQuestions();
+            statusMessage.textContent = '❌ Erro na requisição: ' + error.message;
+            setTimeout(() => { statusMessage.textContent = '' }, 5000);
+        } finally {
+            generateNewQuestionsBtn.disabled = false;
+        }
+    });
+
+    // Inicialização
+    buildQuiz();
+    errorDiagnosisSection.style.display = 'none';
+    generatedQuestionsSection.style.display = 'none';
+    generateNewQuestionsBtn.style.display = 'none';
+
+    // Event listener para o botão de verificar respostas
+    document.getElementById("verifyAnswersBtn").addEventListener("click", showResults);
+  </script>
+  <script src="conexao_firebase.js"></script><script src="navegacao.js"></script><script type="module" src="padrao_simulado.js"></script>
+
+</body>
+</html>
