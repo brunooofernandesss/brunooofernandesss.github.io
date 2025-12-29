@@ -1,1034 +1,633 @@
-
+<!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Simulado Módulo I - Transdução de Sinal e Receptores</title>
-    <style>
-      body {
-        font-family: sans-serif;
-        margin: 0;
-        padding: 20px;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        min-height: 100vh;
-        background-color: #f4f4f4;
-      }
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Transdução de Sinal e Mecanismos de Sinalização Intracelular</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      background-color: #f4f4f4;
+    }
 
-      .quiz-container {
-        max-width: 800px;
-        width: 100%;
-      }
+    .quiz-container {
+      max-width: 800px;
+      width: 100%;
+    }
 
-      h1 {
-        color: #333;
-        text-align: center;
-        margin-bottom: 30px;
-      }
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 30px;
+    }
 
-      .card {
-        background-color: white;
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .question {
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .options {
+      margin-top: 15px;
+    }
+
+    /* Estilos unificados para todas as opções (estáticas e dinâmicas) */
+    .option, label.option, label, #newQuestionsContent label {
+      display: flex; /* Para alinhar imagem e texto */
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      position: relative; /* Para posicionar a tesoura */
+    }
+
+    /* FORÇA a remoção de inputs de radio em QUALQUER lugar */
+    .option input[type="radio"], 
+    label input[type="radio"],
+    #newQuestionsContent input[type="radio"],
+    #newQuestionsContent label input[type="radio"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
+    }
+
+    .option:hover, 
+    label.option:hover, 
+    label:hover,
+    #newQuestionsContent label:hover {
+      background-color: #e9e9e9;
+    }
+
+    .option.selected, 
+    label.option.selected, 
+    label.selected,
+    #newQuestionsContent label.selected {
+      background-color: #d1e7dd;
+      border-color: #28a745;
+    }
+
+    .option.correct, 
+    label.option.correct, 
+    label.correct,
+    #newQuestionsContent label.correct {
+      background-color: #d4edda;
+      border-color: #28a745;
+    }
+
+    .option.incorrect, 
+    label.option.incorrect, 
+    label.incorrect,
+    #newQuestionsContent label.incorrect {
+      background-color: #f8d7da;
+      border-color: #dc3545;
+    }
+
+    .submit-btn {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 30px;
+    }
+
+    .submit-btn:hover {
+      background-color: #0056b3;
+    }
+
+    .results {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .scissor-icon {
+      margin-right: 10px; /* Espaço entre a tesoura e o texto da opção */
+      width: 20px; /* Ajuste conforme o tamanho da sua imagem */
+      height: 20px; /* Ajuste conforme o tamanho da sua imagem */
+      opacity: 0.5; /* Transparência como no original */
+      cursor: pointer;
+    }
+
+    .scissor-icon.hidden {
+      display: none;
+    }
+
+    .struck-through {
+      text-decoration: line-through;
+      color: #888;
+    }
+
+    .comment {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f0f0f0;
+      border-left: 4px solid #007bff;
+      font-style: italic;
+      color: #555;
+      display: none; /* Escondido por padrão */
+    }
+    .comment.show {
+      display: block; /* Mostrado quando ativado */
+    }
+
+    /* Estilos para o botão de navegação de erro / diagnóstico */
+    .error-nav-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #dc3545; /* Vermelho para erro */
+      color: white;
+      border: none;
+      border-radius: 50%; /* Torna o botão redondo */
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      display: none; /* Escondido por padrão */
+      flex-direction: column; /* Para empilhar o ícone e o contador */
+      padding: 5px; /* Ajuste o padding para acomodar texto maior */
+      box-sizing: border-box; /* Garante que padding não aumente o tamanho total */
+      text-align: center;
+    }
+
+    .error-nav-btn:hover {
+      background-color: #c82333;
+    }
+
+    .error-nav-btn .arrow-icon {
+      font-size: 30px; /* Tamanho da seta */
+      line-height: 1; /* Ajuste para centralizar */
+    }
+
+    .error-nav-btn .button-text {
+      font-size: 12px; /* Tamanho do texto abaixo da seta */
+      line-height: 1;
+      margin-top: 2px; /* Espaço entre a seta e o texto */
+    }
+
+    /* Estilos para a seção de diagnóstico de erros */
+    .error-diagnosis-section {
+        margin-top: 50px;
+        padding: 30px;
+        background-color: #ffe0b2; /* Um laranja claro ou similar */
         border-radius: 8px;
-        padding: 20px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        display: none; /* Escondido por padrão */
+        text-align: center;
+        font-size: 1.1em;
+        color: #333;
+    }
+
+    .error-diagnosis-section h2 {
+        color: #e65100; /* Laranja mais escuro */
         margin-bottom: 20px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
+        font-size: 1.8em;
+    }
 
-      .question {
-        font-weight: bold;
-        margin-bottom: 10px;
-        color: #333;
-      }
+    .error-diagnosis-section ul {
+        list-style: none; /* Remove marcadores de lista */
+        padding: 0;
+        margin: 0;
+    }
 
-      .options {
-        margin-top: 15px;
-      }
-
-      .option {
-        display: flex; /* Para alinhar imagem e texto */
-        align-items: center;
-        margin-bottom: 10px;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-        position: relative; /* Para posicionar a tesoura */
-      }
-
-      .option:hover {
-        background-color: #e9e9e9;
-      }
-
-      .option.selected {
-        background-color: #d1e7dd;
-        border-color: #28a745;
-      }
-
-      .option.correct {
-        background-color: #d4edda;
-        border-color: #28a745;
-      }
-
-      .option.incorrect {
-        background-color: #f8d7da;
-        border-color: #dc3545;
-      }
-
-      .submit-btn {
-        display: block;
-        width: 100%;
-        padding: 15px;
-        background-color: #007bff;
+    .error-diagnosis-section li {
+        background-color: #ff9800; /* Laranja */
         color: white;
-        border: none;
+        padding: 8px 15px;
+        margin: 8px 0;
         border-radius: 5px;
-        font-size: 18px;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-        margin-top: 30px;
-      }
-
-      .submit-btn:hover {
-        background-color: #0056b3;
-      }
-
-      .results {
-        text-align: center;
-        margin-top: 30px;
-        font-size: 20px;
+        display: inline-block; /* Para que os itens fiquem lado a lado */
+        margin-right: 10px;
         font-weight: bold;
-        color: #333;
-      }
+    }
+    .error-diagnosis-section li:last-child {
+        margin-right: 0;
+    }
+ .card-bloco {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+      background: #fff;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="quiz-container">
+    <h1 style="text-align:center; margin-bottom: 30px;">Transdução de Sinal e Mecanismos de Sinalização Intracelular</h1>
+    <div class="card-bloco" id="quiz"></div>
+    <button class="submit-btn" id="verifyAnswersBtn">Verificar Respostas</button>
 
-      .scissor-icon {
-        margin-right: 10px; /* Espaço entre a tesoura e o texto da opção */
-        width: 20px; /* Ajuste conforme o tamanho da sua imagem */
-        height: 20px; /* Ajuste conforme o tamanho da sua imagem */
-        opacity: 0.5; /* Transparência como no original */
-        cursor: pointer;
-      }
+    <button class="generate-questions-btn submit-btn" id="generateNewQuestionsBtn" style="display:none;">
+      Gerar Novas Perguntas
+    </button>
 
-      .scissor-icon.hidden {
-        display: none;
-      }
+    <div class="results card-bloco" id="results"></div>
+    <div id="statusMessage" style="text-align: center; margin-top: 10px; font-weight: bold; color: #007bff;"></div>
 
-      .struck-through {
-        text-decoration: line-through;
-        color: #888;
-      }
-
-      .comment {
-        margin-top: 10px;
-        padding: 10px;
-        background-color: #f0f0f0;
-        border-left: 4px solid #007bff;
-        font-style: italic;
-        color: #555;
-        display: none; /* Escondido por padrão */
-      }
-      .comment.show {
-        display: block; /* Mostrado quando ativado */
-      }
-
-      /* Estilos para o botão de navegação de erro / diagnóstico */
-      .error-nav-btn {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background-color: #dc3545; /* Vermelho para erro */
-        color: white;
-        border: none;
-        border-radius: 50%; /* Torna o botão redondo */
-        width: 60px;
-        height: 60px;
-        font-size: 24px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        cursor: pointer;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        z-index: 1000;
-        display: none; /* Escondido por padrão */
-        flex-direction: column; /* Para empilhar o ícone e o contador */
-        padding: 5px; /* Ajuste o padding para acomodar texto maior */
-        box-sizing: border-box; /* Garante que padding não aumente o tamanho total */
-        text-align: center;
-      }
-
-      .error-nav-btn:hover {
-        background-color: #c82333;
-      }
-
-      .error-nav-btn .arrow-icon {
-        font-size: 30px; /* Tamanho da seta */
-        line-height: 1; /* Ajuste para centralizar */
-      }
-
-      .error-nav-btn .button-text {
-        font-size: 12px; /* Tamanho do texto abaixo da seta */
-        line-height: 1;
-        margin-top: 2px; /* Espaço entre a seta e o texto */
-      }
-      
-      /* Estilos para a seção de diagnóstico de erros */
-      .error-diagnosis-section {
-          margin-top: 50px;
-          padding: 30px;
-          background-color: #ffe0b2; /* Um laranja claro ou similar */
-          border-radius: 8px;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-          display: none; /* Escondido por padrão */
-          text-align: center;
-          font-size: 1.1em;
-          color: #333;
-      }
-
-      .error-diagnosis-section h2 {
-          color: #e65100; /* Laranja mais escuro */
-          margin-bottom: 20px;
-          font-size: 1.8em;
-      }
-
-      .error-diagnosis-section ul {
-          list-style: none; /* Remove marcadores de lista */
-          padding: 0;
-          margin: 0;
-      }
-
-      .error-diagnosis-section li {
-          background-color: #ff9800; /* Laranja */
-          color: white;
-          padding: 8px 15px;
-          margin: 8px 0;
-          border-radius: 5px;
-          display: inline-block; /* Para que os itens fiquem lado a lado */
-          margin-right: 10px;
-          font-weight: bold;
-      }
-      .error-diagnosis-section li:last-child {
-          margin-right: 0;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="quiz-container">
-      <h1>Questionário de Múltipla Escolha: Transdução de Sinal e Tipos de Receptores</h1>
-      <div id="quiz"></div>
-      <button class="submit-btn" id="submit">Verificar Respostas</button>
-      <div id="results" class="results"></div>
-
-      <div id="errorDiagnosis" class="error-diagnosis-section">
-        <h2>Diagnóstico de Erros</h2>
-        <p>Parece que você precisa revisar os seguintes assuntos:</p>
-        <ul id="topicsToReview">
-          </ul>
-      </div>
+    <div class="error-diagnosis-section card-bloco" id="errorDiagnosis">
+      <h2>Diagnóstico de Erros</h2>
+      <p>Parece que você precisa revisar os seguintes assuntos:</p>
+      <ul id="topicsToReview"></ul>
     </div>
 
-    <button class="error-nav-btn" id="errorNavBtn">
-      <span class="arrow-icon"></span> <span class="button-text"></span> </button>
+    <div class="generated-questions-section card-bloco" id="generatedQuestionsSection" style="display:none;">
+      <h2>Novas Perguntas Geradas</h2>
+      <div id="newQuestionsContent"></div>
+    </div>
+  </div>
+  
+  <button class="error-nav-btn" id="errorNavBtn" style="display:none;">
+    <span class="arrow-icon"></span>
+    <span class="button-text"></span>
+  </button>
 
-    <script>
-      const quizContainer = document.getElementById("quiz");
-      const submitButton = document.getElementById("submit");
-      const resultsContainer = document.getElementById("results");
-      const errorNavBtn = document.getElementById("errorNavBtn");
-      const arrowIcon = errorNavBtn.querySelector(".arrow-icon");
-      const buttonText = errorNavBtn.querySelector(".button-text");
-      const errorDiagnosisSection = document.getElementById("errorDiagnosis");
-      const topicsToReviewList = document.getElementById("topicsToReview");
+  <script>
+    const quizContainer = document.getElementById("quiz");
+    const resultsContainer = document.getElementById("results");
+    const errorNavBtn = document.getElementById("errorNavBtn");
+    const arrowIcon = errorNavBtn.querySelector(".arrow-icon");
+    const buttonText = errorNavBtn.querySelector(".button-text");
+    const errorDiagnosisSection = document.getElementById("errorDiagnosis");
+    const topicsToReviewList = document.getElementById("topicsToReview");
+    const generateNewQuestionsBtn = document.getElementById("generateNewQuestionsBtn");
+    const generatedQuestionsSection = document.getElementById("generatedQuestionsSection");
+    const newQuestionsContent = document.getElementById("newQuestionsContent");
+    const statusMessage = document.getElementById("statusMessage");
 
-      let wrongQuestionIndices = []; // Array para armazenar os índices das questões marcadas erradas
-      let errorCountByTopic = {}; // Objeto para contar erros por tópico (APENAS QUESTÕES MARCADAS ERRADO)
-      let totalAnsweredQuestionsByTopic = {}; // Objeto para contar o total de questões RESPONDIDAS por tópico
-      let currentWrongQuestionIndex = -1; 
-      let hasErrors = false; 
-      let isShowingErrors = false; // Flag para controlar se estamos navegando nos erros
-      let isShowingDiagnosis = false; // Flag para controlar se estamos na seção de diagnóstico
+    let wrongQuestionIndices = [];
+    let errorCountByTopic = {};
+    let totalAnsweredQuestionsByTopic = {};
+    let currentWrongQuestionIndex = -1;
+    let hasErrors = false;
+    let isShowingErrors = false;
+    let isShowingDiagnosis = false;
 
-      const questions = [
-        {
-          question:
-            "1. Qual o processo pelo qual uma célula converte um tipo de sinal em outro, transmitindo-o por diversas vias internas?",
-          options: [
-            "a) Replicação celular.",
-            "b) Transdução de sinal.",
-            "c) Expressão gênica.",
-            "d) Secreção hormonal.",
-          ],
-          correctAnswer: "b) Transdução de sinal.",
-          comment:
-            "A transdução de sinal é a essência da comunicação celular interna. É a conversão de um sinal externo (o ligante) em uma série de eventos intracelulares que levam a uma resposta específica. Isso permite que a célula \"entenda\" e reaja às mensagens do ambiente.",
-          topic: "Conceito de Transdução de Sinal",
-        },
-        {
-          question:
-            "2. O que determina a capacidade de uma célula em responder a um conjunto limitado de sinais?",
-          options: [
-            "a) O tamanho da célula.",
-            "b) O conjunto de moléculas efetoras e receptores que ela possui.",
-            "c) A quantidade de energia disponível.",
-            "d) A idade da célula.",
-          ],
-          correctAnswer: "b) O conjunto de moléculas efetoras e receptores que ela possui.",
-          comment:
-            "Cada tipo celular possui um \"repertório\" específico de receptores e proteínas de sinalização intracelular. Isso garante que a célula só responda aos sinais relevantes para sua função e identidade, evitando respostas indesejadas e mantendo a especificidade.",
-          topic: "Especificidade da Resposta Celular",
-        },
-        {
-          question:
-            "3. Cite um exemplo onde a acetilcolina causa efeitos diferentes em tipos celulares distintos.",
-          options: [
-            "a) Contração muscular esquelética e aumento da frequência cardíaca.",
-            "b) Relaxamento muscular e diminuição da frequência cardíaca.",
-            "c) Contração muscular esquelética e diminuição da frequência cardíaca.",
-            "d) Secreção de insulina e contração muscular.",
-          ],
-          correctAnswer: "c) Contração muscular esquelética e diminuição da frequência cardíaca.",
-          comment:
-            "A acetilcolina é um exemplo clássico de como um mesmo sinal pode ter efeitos diversos dependendo do receptor e da via de sinalização ativada. No músculo esquelético, ela causa contração (via receptores nicotínicos). No coração, ela diminui a frequência cardíaca (via receptores muscarínicos acoplados à proteína G).",
-          topic: "Sinais Múltiplos e Receptores Variados",
-        },
-        {
-          question:
-            "4. A ativação de um receptor de superfície celular resulta na geração de moléculas pequenas e não proteicas que difundem o sinal intracelularmente. Como são chamadas essas moléculas?",
-          options: [
-            "a) Primeiros mensageiros.",
-            "b) Receptores.",
-            "c) Segundos mensageiros.",
-            "d) Enzimas.",
-          ],
-          correctAnswer: "c) Segundos mensageiros.",
-          comment:
-            "Segundos mensageiros (como cAMP, $\\text{Ca}^{2+}$, DAG, IP3) são moléculas intracelulares que atuam como intermediários na transdução de sinal, amplificando e distribuindo a mensagem recebida pelo receptor de superfície.",
-          topic: "Segundos Mensageiros",
-        },
-        {
-          question:
-            "5. Qual a função das proteínas adaptadoras nas vias de sinalização?",
-          options: [
-            "a) Sintetizar novos receptores.",
-            "b) Ligar enzimas e outras proteínas de sinalização, agindo como andaimes.",
-            "c) Degradar o sinal após sua transmissão.",
-            "d) Aumentar a especificidade da ligação ligante-receptor.",
-          ],
-          correctAnswer: "b) Ligar enzimas e outras proteínas de sinalização, agindo como andaimes.",
-          comment:
-            "Proteínas adaptadoras não possuem atividade enzimática intrínseca, mas são cruciais para a organização das vias de sinalização. Elas contêm domínios de ligação que permitem que diferentes proteínas de sinalização se agrupem em complexos, garantindo a eficiência e a especificidade da transmissão do sinal.",
-          topic: "Proteínas Adaptadoras",
-        },
-        {
-          question:
-            "6. Como as proteínas quinases e fosfatases atuam na regulação da atividade proteica em vias de sinalização?",
-          options: [
-            "a) Quinases adicionam grupos fosfato; fosfatases os removem.",
-            "b) Quinases removem grupos fosfato; fosfatases os adicionam.",
-            "c) Ambas adicionam grupos fosfato.",
-            "d) Ambas removem grupos fosfato.",
-          ],
-          correctAnswer: "a) Quinases adicionam grupos fosfato; fosfatases os removem.",
-          comment:
-            "As proteínas quinases catalisam a fosforilação (adição de grupos fosfato), enquanto as fosfatases catalisam a desfosforilação (remoção de grupos fosfato). Este ciclo de adição e remoção de fosfatos é um mecanismo chave para ligar/desligar a atividade de muitas proteínas em vias de sinalização.",
-          topic: "Regulação por Fosforilação",
-        },
-        {
-          question:
-            "7. Receptores que, ao serem ativados, formam um canal hidrofílico através da membrana plasmática, permitindo a passagem de íons, são chamados de:",
-          options: [
-            "a) Receptores acoplados à proteína G.",
-            "b) Receptores tirosina quinase.",
-            "c) Receptores nucleares.",
-            "d) Canais iônicos regulados por ligante.",
-          ],
-          correctAnswer: "d) Canais iônicos regulados por ligante.",
-          comment:
-            "Canais iônicos regulados por ligante (também conhecidos como receptores ionotrópicos) são receptores de superfície celular que funcionam como poros. A ligação do ligante causa uma mudança conformacional que abre o canal, permitindo o fluxo de íons e alterando o potencial de membrana.",
-          topic: "Tipos de Receptores: Canais Iônicos",
-        },
-        {
-          question:
-            "8. Qual a característica principal dos Receptores Acoplados à Proteína G (GPCRs)?",
-          options: [
-            "a) Atuam como enzimas.",
-            "b) Atravessam a membrana plasmática sete vezes e se associam a proteínas G.",
-            "c) Estão localizados no núcleo celular.",
-            "d) São canais para íons de cálcio.",
-          ],
-          correctAnswer: "b) Atravessam a membrana plasmática sete vezes e se associam a proteínas G.",
-          comment:
-            "GPCRs são a maior família de receptores de superfície celular. Eles são caracterizados por possuírem sete segmentos transmembrana e por interagirem com proteínas G heterotriméricas para transmitir o sinal para o interior da célula.",
-          topic: "Tipos de Receptores: GPCRs",
-        },
-        {
-          question:
-            "9. Qual o evento que ocorre na proteína G quando ela é ativada por um GPCR, levando à propagação do sinal?",
-          options: [
-            "a) Degradação de GTP.",
-            "b) Troca de GDP por GTP.",
-            "c) Fosforilação da subunidade beta.",
-            "d) Associação com um canal iônico.",
-          ],
-          correctAnswer: "b) Troca de GDP por GTP.",
-          comment:
-            "A ativação de um GPCR pelo ligante leva à troca de GDP (guanosina difosfato) por GTP (guanosina trifosfato) na subunidade alfa da proteína G. Essa troca causa a dissociação da subunidade alfa ligada ao GTP das subunidades beta/gama, permitindo que ambas as partes ativem proteínas efetoras a jusante.",
-          topic: "Ativação de Proteínas G",
-        },
-        {
-          question:
-            "10. Onde a maioria dos receptores enzimáticos está localizada?",
-          options: [
-            "a) Citoplasma.",
-            "b) Núcleo.",
-            "c) Membrana plasmática.",
-            "d) Retículo endoplasmático.",
-          ],
-          correctAnswer: "c) Membrana plasmática.",
-          comment:
-            "A maioria dos receptores enzimáticos são proteínas transmembrana com um domínio de ligação de ligante extracelular e um domínio enzimático intracelular.",
-          topic: "Tipos de Receptores: Enzimáticos",
-        },
-        {
-          question:
-            "11. Qual a atividade enzimática mais comum associada aos receptores enzimáticos?",
-          options: [
-            "a) Hidrolase.",
-            "b) Ligase.",
-            "c) Proteína quinase.",
-            "d) Fosfatase.",
-          ],
-          correctAnswer: "c) Proteína quinase.",
-          comment:
-            "A maioria dos receptores enzimáticos funcionam como proteínas tirosina quinases (RTKs), que fosforilam resíduos de tirosina em proteínas-alvo, ou estão associados a quinases.",
-          topic: "Receptores Enzimáticos: Atividade Quinase",
-        },
-        {
-          question:
-            "12. Receptores tirosina quinases (RTKs) ativados frequentemente dimerizam e se autofosforilam. Qual a função dessa autofosforilação?",
-          options: [
-            "a) Desativar o receptor.",
-            "b) Criar sítios de ligação para proteínas de sinalização intracelular.",
-            "c) Aumentar a afinidade pelo ligante.",
-            "d) Degradar o ligante.",
-          ],
-          correctAnswer: "b) Criar sítios de ligação para proteínas de sinalização intracelular.",
-          comment:
-            "A autofosforilação dos resíduos de tirosina nas RTKs cria múltiplos sítios de ancoragem para proteínas de sinalização intracelular, que possuem domínios SH2 ou PTB. Isso permite a formação de complexos de sinalização e a propagação do sinal.",
-          topic: "Receptores Tirosina Quinase (RTKs)",
-        },
-        {
-          question:
-            "13. Que tipo de moléculas sinalizadoras geralmente se ligam a receptores intracelulares?",
-          options: [
-            "a) Proteínas grandes e hidrofílicas.",
-            "b) Íons metálicos.",
-            "c) Moléculas pequenas e hidrofóbicas (lipossolúveis).",
-            "d) Carboidratos complexos.",
-          ],
-          correctAnswer: "c) Moléculas pequenas e hidrofóbicas (lipossolúveis).",
-          comment:
-            "Receptores intracelulares (nucleares ou citoplasmáticos) se ligam a hormônios esteroides, hormônios tireoidianos, retinoides e vitamina D, que são pequenas e lipossolúveis, permitindo que atravessem a membrana plasmática.",
-          topic: "Tipos de Receptores: Intracelulares",
-        },
-        {
-          question:
-            "14. Qual a principal função dos receptores intracelulares ativados?",
-          options: [
-            "a) Ativar segundos mensageiros.",
-            "b) Atuar diretamente como canais iônicos.",
-            "c) Atuar como fatores de transcrição, regulando a expressão gênica.",
-            "d) Iniciar a degradação de proteínas.",
-          ],
-          correctAnswer: "c) Atuar como fatores de transcrição, regulando a expressão gênica.",
-          comment:
-            "Muitos receptores intracelulares, uma vez ligados ao seu ligante, funcionam como fatores de transcrição. Eles se translocam para o núcleo (se já não estiverem lá) e se ligam a sequências específicas de DNA, regulando a transcrição de genes.",
-          topic: "Função dos Receptores Intracelulares",
-        },
-        {
-          question:
-            "15. Qual a principal vantagem da amplificação do sinal em uma cascata de transdução?",
-          options: [
-            "a) Garante que o sinal se degrade rapidamente.",
-            "b) Permite que um pequeno número de moléculas sinalizadoras ative uma resposta intracelular massiva.",
-            "c) Assegura a especificidade da ligação ligante-receptor.",
-            "d) Diminui a necessidade de ATP.",
-          ],
-          correctAnswer: "b) Permite que um pequeno número de moléculas sinalizadoras ative uma resposta intracelular massiva.",
-          comment:
-            "A amplificação do sinal é uma característica fundamental das vias de transdução, onde um único ligante pode levar à ativação de milhares ou milhões de moléculas efetoras a jusante, resultando em uma resposta celular robusta e rápida.",
-          topic: "Amplificação do Sinal",
-        },
-        {
-          question:
-            "16. O que é desensibilização de receptores?",
-          options: [
-            "a) O aumento da resposta celular a um sinal.",
-            "b) Um mecanismo que torna a célula mais sensível a um sinal.",
-            "c) A diminuição da resposta celular a um sinal prolongado ou muito intenso.",
-            "d) A ativação contínua do receptor.",
-          ],
-          correctAnswer: "c) A diminuição da resposta celular a um sinal prolongado ou muito intenso.",
-          comment:
-            "A desensibilização é um mecanismo de feedback negativo que protege a célula de superestimulação. Pode envolver a internalização (endocitose) do receptor, sua inativação ou fosforilação que impede a ligação de proteínas de sinalização.",
-          topic: "Regulação da Sinalização: Desensibilização",
-        },
-        {
-          question:
-            "17. Um paciente está utilizando um medicamento que bloqueia a ligação de um hormônio ao seu receptor específico, sem ativar o receptor. Este medicamento é um:",
-          options: [
-            "a) Agonista.",
-            "b) Antagonista.",
-            "c) Co-ativador.",
-            "d) Segundo mensageiro.",
-          ],
-          correctAnswer: "b) Antagonista.",
-          comment:
-            "Antagonistas são moléculas que se ligam a um receptor e impedem a ligação do ligante natural, bloqueando a resposta, mas sem ativarem o próprio receptor. Agonistas, por outro lado, ativam o receptor e mimetizam o efeito do ligante natural.",
-          topic: "Agonistas e Antagonistas",
-        },
-        {
-          question:
-            "18. Qual o papel das GTPases na comunicação celular?",
-          options: [
-            "a) Sintetizar ATP.",
-            "b) Hidrolisar GTP para GDP, agindo como interruptores moleculares.",
-            "c) Fosforilar proteínas.",
-            "d) Transportar íons.",
-          ],
-          correctAnswer: "b) Hidrolisar GTP para GDP, agindo como interruptores moleculares.",
-          comment:
-            "As GTPases (como as proteínas G triméricas e as pequenas GTPases como Ras) atuam como interruptores moleculares: ativadas quando ligadas a GTP e inativadas quando hidrolisam o GTP a GDP. Essa transição regula diversas vias de sinalização.",
-          topic: "GTPases e Chaves Moleculares",
-        },
-        {
-          question:
-            "19. Qual a função do AMP cíclico (cAMP) em muitas vias de sinalização?",
-          options: [
-            "a) Atuar como uma enzima degradadora de proteínas.",
-            "b) Ativar a proteína quinase A (PKA).",
-            "c) Inibir a síntese de ATP.",
-            "d) Ligar-se diretamente a receptores nucleares.",
-          ],
-          correctAnswer: "b) Ativar a proteína quinase A (PKA).",
-          comment:
-            "O cAMP é um segundo mensageiro chave que ativa a Proteína Quinase A (PKA). A PKA, por sua vez, fosforila uma série de proteínas-alvo na célula, desencadeando diversas respostas celulares.",
-          topic: "Vias de Sinalização: cAMP",
-        },
-        {
-          question:
-            "20. A formação de diacilglicerol (DAG) e inositol trifosfato (IP3) a partir da quebra de PIP2 é catalisada por qual enzima?",
-          options: [
-            "a) Adenilil ciclase.",
-            "b) Fosfolipase C.",
-            "c) Proteína quinase C.",
-            "d) GTPase.",
-          ],
-          correctAnswer: "b) Fosfolipase C.",
-          comment:
-            "A Fosfolipase C (PLC) é uma enzima que, ao ser ativada, cliva o fosfatidilinositol 4,5-bifosfato (PIP2) da membrana plasmática em dois segundos mensageiros: diacilglicerol (DAG) e inositol trifosfato (IP3).",
-          topic: "Vias de Sinalização: Fosfolipídios",
-        },
-        {
-          question:
-            "21. Qual o papel do IP3 na via de sinalização de fosfolipídios?",
-          options: [
-            "a) Ativar a Proteína Quinase C (PKC).",
-            "b) Atuar como uma enzima.",
-            "c) Abrir canais de cálcio no retículo endoplasmático.",
-            "d) Ligar-se a receptores de superfície celular.",
-          ],
-          correctAnswer: "c) Abrir canais de cálcio no retículo endoplasmático.",
-          comment:
-            "O IP3 (inositol trifosfato) é um segundo mensageiro hidrossolúvel que se liga a receptores de IP3 nos canais de cálcio do retículo endoplasmático, provocando a liberação de cálcio para o citosol.",
-          topic: "Sinalização de Cálcio: IP3",
-        },
-        {
-          question:
-            "22. Qual o papel do DAG na via de sinalização de fosfolipídios?",
-          options: [
-            "a) Abrir canais de cálcio.",
-            "b) Ativar a Proteína Quinase C (PKC).",
-            "c) Atuar como segundo mensageiro intracelular.",
-            "d) Inibir a transcrição gênica.",
-          ],
-          correctAnswer: "b) Ativar a Proteína Quinase C (PKC).",
-          comment:
-            "O DAG (diacilglicerol) é um segundo mensageiro lipossolúvel que permanece na membrana plasmática e, em conjunto com o cálcio liberado pelo IP3, ativa a Proteína Quinase C (PKC), que fosforila outras proteínas.",
-          topic: "Sinalização de Cálcio: DAG e PKC",
-        },
-        {
-          question:
-            "23. Qual íon atua como um importante segundo mensageiro em diversas vias de sinalização, estando envolvido na contração muscular, liberação de neurotransmissores e secreção hormonal?",
-          options: [
-            "a) Sódio ($\\text{Na}^{+}$).",
-            "b) Potássio ($\\text{K}^{+}$).",
-            "c) Cálcio ($\\text{Ca}^{2+}$).",
-            "d) Cloreto ($\\text{Cl}^{-}$).",
-          ],
-          correctAnswer: "c) Cálcio ($\\text{Ca}^{2+}$).",
-          comment:
-            "O cálcio ($\\text{Ca}^{2+}$) é um íon universal de segundo mensageiro. Sua concentração intracelular é mantida muito baixa em repouso, e seu aumento (por influxo externo ou liberação de estoques internos) atua como um sinal para uma vasta gama de processos celulares.",
-          topic: "Cálcio como Segundo Mensageiro",
-        },
-        {
-          question:
-            "24. A ligação de um ligante a um receptor pode levar à alteração na expressão gênica. Onde essa alteração geralmente ocorre?",
-          options: [
-            "a) Na membrana plasmática.",
-            "b) No citosol.",
-            "c) No núcleo.",
-            "d) No retículo endoplasmático.",
-          ],
-          correctAnswer: "c) No núcleo.",
-          comment:
-            "A expressão gênica é regulada por fatores de transcrição que atuam no núcleo. Vias de sinalização frequentemente culminam na ativação ou inativação de fatores de transcrição que se ligam ao DNA e modulam a transcrição de genes específicos.",
-          topic: "Respostas de Expressão Gênica",
-        },
-        {
-          question:
-            "25. Qual a importância da modularidade e integração das vias de sinalização?",
-          options: [
-            "a) Permite que cada via funcione de forma totalmente independente.",
-            "b) Garante que apenas um tipo de resposta seja ativado por vez.",
-            "c) Permite que as células respondam de forma complexa e coordenada a múltiplos sinais.",
-            "d) Aumenta a quantidade de ligantes necessários para uma resposta.",
-          ],
-          correctAnswer: "c) Permite que as células respondam de forma complexa e coordenada a múltiplos sinais.",
-          comment:
-            "As vias de sinalização não funcionam isoladamente. Elas interagem (integração) e compartilham componentes (modularidade), permitindo que a célula processe múltiplos sinais simultaneamente e gere respostas complexas, adaptativas e coordenadas.",
-          topic: "Modularidade e Integração de Vias",
-        },
-        {
-          question:
-            "26. Um hormônio que se liga a um receptor de superfície celular, desencadeando uma cascata de sinalização que culmina na produção de uma proteína específica, é um exemplo de qual tipo de resposta celular?",
-          options: [
-            "a) Resposta rápida (curto prazo).",
-            "b) Resposta lenta (longo prazo), envolvendo alteração da expressão gênica.",
-            "c) Resposta metabólica direta.",
-            "d) Resposta de movimento celular.",
-          ],
-          correctAnswer: "b) Resposta lenta (longo prazo), envolvendo alteração da expressão gênica.",
-          comment:
-            "A produção de novas proteínas envolve transcrição e tradução gênica, processos que levam tempo. Respostas que dependem de alterações na expressão gênica são tipicamente mais lentas e duradouras (respostas de longo prazo), em contraste com a ativação rápida de proteínas pré-existentes.",
-          topic: "Tipos de Resposta: Lenta vs. Rápida",
-        },
-        {
-          question:
-            "27. Qual a principal característica de um canal iônico regulado por voltagem?",
-          options: [
-            "a) Ele é ativado pela ligação de um neurotransmissor.",
-            "b) Ele abre ou fecha em resposta a mudanças no potencial elétrico da membrana.",
-            "c) Ele sempre permite o fluxo de todos os tipos de íons.",
-            "d) Ele está localizado exclusivamente no citoplasma.",
-          ],
-          correctAnswer: "b) Ele abre ou fecha em resposta a mudanças no potencial elétrico da membrana.",
-          comment:
-            "Canais iônicos regulados por voltagem são essenciais para a excitabilidade celular, como em neurônios e células musculares. Eles possuem \"sensores de voltagem\" que detectam mudanças no potencial de membrana e alteram sua conformação para abrir ou fechar o poro.",
-          topic: "Canais Iônicos Regulados por Voltagem",
-        },
-        {
-          question:
-            "28. A toxina colérica atua desativando a capacidade de uma proteína G de hidrolisar GTP. Qual seria o efeito disso na via de sinalização que ela regula?",
-          options: [
-            "a) Inibição completa da via.",
-            "b) Ativação prolongada da via.",
-            "c) Aumento da degradação do segundo mensageiro.",
-            "d) Diminuição da afinidade do ligante pelo receptor.",
-          ],
-          correctAnswer: "b) Ativação prolongada da via.",
-          comment:
-            "Se a proteína G não consegue hidrolisar GTP para GDP, ela permanece no seu estado ativo (ligada a GTP) por um período prolongado. Isso leva a uma ativação contínua e desregulada da via de sinalização a jusante, como visto nos sintomas da cólera (secreção excessiva de fluidos).",
-          topic: "Regulação de Proteínas G",
-        },
-        {
-          question:
-            "29. As junções comunicantes (gap junctions) permitem que células adjacentes troquem moléculas pequenas. Isso é um exemplo de qual tipo de comunicação celular?",
-          options: [
-            "a) Parácrina.",
-            "b) Endócrina.",
-            "c) Autócrina.",
-            "d) Contato direto.",
-          ],
-          correctAnswer: "d) Contato direto.",
-          comment:
-            "Junções comunicantes em animais e plasmodesmos em plantas são exemplos de comunicação por contato direto. Eles formam canais que conectam os citoplasmas de células vizinhas, permitindo a passagem de íons e pequenas moléculas sinalizadoras.",
-          topic: "Comunicação por Contato Direto",
-        },
-        {
-          question:
-            "30. Qual a importância das proteínas scaffold (andaime) na transdução de sinal?",
-          options: [
-            "a) Sintetizar proteínas.",
-            "b) Ajudar a organizar e localizar grupos de proteínas de sinalização.",
-            "c) Transportar ligantes através da membrana.",
-            "d) Degradar segundos mensageiros.",
-          ],
-          correctAnswer: "b) Ajudar a organizar e localizar grupos de proteínas de sinalização.",
-          comment:
-            "Proteínas scaffold são proteínas grandes que não possuem atividade enzimática intrínseca, mas servem como plataformas para a montagem de complexos de sinalização. Elas aumentam a eficiência da sinalização, garantem a especificidade e evitam a ativação cruzada de vias.",
-          topic: "Proteínas Scaffold",
-        },
-        {
-          question:
-            "31. Qual o papel da calmodulina na sinalização de cálcio?",
-          options: [
-            "a) Ser um canal de cálcio.",
-            "b) Ligar-se ao cálcio e atuar como um mediador na ativação de outras proteínas.",
-            "c) Bombear cálcio para fora da célula.",
-            "d) Sintetizar cálcio.",
-          ],
-          correctAnswer: "b) Ligar-se ao cálcio e atuar como um mediador na ativação de outras proteínas.",
-          comment:
-            "A calmodulina é uma proteína intracelular ligadora de cálcio que, ao se ligar ao $\\text{Ca}^{2+}$, sofre uma mudança conformacional. Esse complexo $\\text{Ca}^{2+}$/calmodulina pode então interagir e ativar outras proteínas (como quinases dependentes de cálcio/calmodulina, CaMKs), transmitindo o sinal de cálcio.",
-          topic: "Calmodulina e Sinalização de Cálcio",
-        },
-        {
-          question:
-            "32. Em uma via de sinalização, a ativação de uma proteína quinase leva à ativação de outra proteína quinase, e assim por diante. Isso é um exemplo de:",
-          options: [
-            "a) Feedback negativo.",
-            "b) Desensibilização.",
-            "c) Cascata de fosforilação.",
-            "d) Sinalização autócrina.",
-          ],
-          correctAnswer: "c) Cascata de fosforilação.",
-          comment:
-            "Uma cascata de fosforilação é uma série de reações onde uma proteína quinase fosforila e ativa a próxima quinase na sequência, e assim por diante. Essas cascatas permitem a amplificação e a diversificação do sinal.",
-          topic: "Cascata de Fosforilação",
-        },
-        {
-          question:
-            "33. Qual a principal característica que distingue os receptores nucleares dos receptores de superfície celular?",
-          options: [
-            "a) Sua localização intracelular e a capacidade de se ligarem diretamente ao DNA.",
-            "b) Sua capacidade de ativar segundos mensageiros.",
-            "c) Seu envolvimento em canais iônicos.",
-            "d) Sua ligação a proteínas G.",
-          ],
-          correctAnswer: "a) Sua localização intracelular e a capacidade de se ligarem diretamente ao DNA.",
-          comment:
-            "Receptores nucleares são encontrados no citoplasma ou núcleo e, uma vez ativados por ligantes lipossolúveis, translocam-se (se necessário) para o núcleo e atuam diretamente como fatores de transcrição, ligando-se ao DNA. Receptores de superfície, por outro lado, dependem de segundos mensageiros ou cascatas de ativação para transmitir o sinal ao núcleo.",
-          topic: "Receptores Nucleares vs. Superfície",
-        },
-        {
-          question:
-            "34. Por que a sinalização via óxido nítrico (NO) é considerada um tipo especial de comunicação celular?",
-          options: [
-            "a) É um hormônio esteroide.",
-            "b) É um gás que atua como segundo mensageiro e pode difundir através da membrana plasmática.",
-            "c) Atua apenas em receptores de superfície.",
-            "d) Requer um canal iônico para sua ação.",
-          ],
-          correctAnswer: "b) É um gás que atua como segundo mensageiro e pode difundir através da membrana plasmática.",
-          comment:
-            "O óxido nítrico (NO) é uma molécula sinalizadora gasosa que é sintetizada a partir da arginina e, devido à sua natureza gasosa, pode difundir-se diretamente através das membranas plasmáticas das células vizinhas, onde ativa a enzima guanilil ciclase para produzir cGMP. Isso o torna um mensageiro local de curta duração.",
-          topic: "Sinalização por Óxido Nítrico (NO)",
-        },
-        {
-          question:
-            "35. A quebra de um neurotransmissor na fenda sináptica por uma enzima é um exemplo de qual mecanismo de desativação de sinal?",
-          options: [
-            "a) Internalização do receptor.",
-            "b) Desensibilização do receptor.",
-            "c) Degradação do ligante.",
-            "d) Feedback negativo.",
-          ],
-          correctAnswer: "c) Degradação do ligante.",
-          comment:
-            "A degradação enzimática do ligante (neurotransmissor, neste caso) na fenda sináptica é um mecanismo rápido e eficiente para terminar a sinalização, garantindo que a resposta celular seja transitória e que a sinapse esteja pronta para o próximo sinal.",
-          topic: "Desativação do Sinal: Degradação do Ligante",
-        },
-        {
-          question:
-            "36. A cafeína é um estimulante que age inibindo a fosfodiesterase. Qual o efeito esperado no sistema de sinalização do cAMP?",
-          options: [
-            "a) Diminuição dos níveis de cAMP.",
-            "b) Aumento dos níveis de cAMP.",
-            "c) Inibição da adenilil ciclase.",
-            "d) Ativação de GPCRs.",
-          ],
-          correctAnswer: "b) Aumento dos níveis de cAMP.",
-          comment:
-            "A fosfodiesterase é responsável por degradar o cAMP. Ao inibir essa enzima, a cafeína impede a degradação do cAMP, levando a um acúmulo e, consequentemente, a uma ativação prolongada das vias de sinalização dependentes de cAMP, o que explica seus efeitos estimulantes.",
-          topic: "Farmacologia e Sinalização: Cafeína",
-        },
-        {
-          question:
-            "37. Qual a principal distinção entre um \"sinal parácrino\" e um \"sinal autócrino\"?",
-          options: [
-            "a) Parácrino atua em células distantes; autócrino atua na própria célula.",
-            "b) Parácrino atua em células vizinhas; autócrino atua na própria célula.",
-            "c) Parácrino usa a corrente sanguínea; autócrino usa sinapses.",
-            "d) Parácrino usa receptores de superfície; autócrino usa receptores intracelulares.",
-          ],
-          correctAnswer: "b) Parácrino atua em células vizinhas; autócrino atua na própria célula.",
-          comment:
-            "A sinalização parácrina envolve a liberação de moléculas sinalizadoras que atuam em células vizinhas. A sinalização autócrina ocorre quando a célula sinalizadora também é a célula-alvo, respondendo ao seu próprio sinal.",
-          topic: "Tipos de Sinalização: Parácrina e Autócrina",
-        },
-        {
-          question:
-            "38. A regulação de respostas celulares por meio de fosforilação e desfosforilação de proteínas é um mecanismo comum que envolve:",
-          options: [
-            "a) Apenas receptores intracelulares.",
-            "b) Apenas canais iônicos.",
-            "c) Proteínas quinases e proteínas fosfatases.",
-            "d) Exclusivamente a proteína G.",
-          ],
-          correctAnswer: "c) Proteínas quinases e proteínas fosfatases.",
-          comment:
-            "A fosforilação e desfosforilação, mediadas por proteínas quinases (que adicionam fosfato) e proteínas fosfatases (que removem fosfato), respectivamente, são mecanismos cruciais e onipresentes na comunicação celular para ligar e desligar a atividade de proteínas e, consequentemente, a resposta a sinais.",
-          topic: "Regulação por Fosforilação/Desfosforilação",
-        },
-        {
-          question:
-            "39. Qual a importância da amplificação do sinal na comunicação celular?",
-          options: [
-            "a) Garantir que apenas sinais fortes sejam percebidos.",
-            "b) Permitir que um pequeno número de ligantes gere uma resposta celular robusta.",
-            "c) Controlar a especificidade da ligação ligante-receptor.",
-            "d) Inibir a transdução do sinal.",
-          ],
-          correctAnswer: "b) Permitir que um pequeno número de ligantes gere uma resposta celular robusta.",
-          comment:
-            "A amplificação é vital porque um único ligante pode desencadear a ativação de várias moléculas subsequentes na via de sinalização, resultando em uma resposta celular amplificada que seria impossível com uma relação de 1:1 entre ligante e resposta. Isso economiza energia e permite respostas rápidas e eficazes a concentrações mínimas de ligantes.",
-          topic: "Amplificação do Sinal",
-        },
-        {
-          question:
-            "40. Qual a principal distinção entre um canal iônico regulado por ligante e um canal iônico regulado por voltagem?",
-          options: [
-            "a) O canal regulado por ligante só abre com voltagem, e o por voltagem só abre com ligante.",
-            "b) O canal regulado por ligante abre em resposta a uma molécula química, e o por voltagem, a uma mudança no potencial de membrana.",
-            "c) O canal regulado por ligante é apenas para sódio, e o por voltagem para potássio.",
-            "d) O canal regulado por ligante está no núcleo, e o por voltagem na membrana plasmática.",
-          ],
-          correctAnswer: "b) O canal regulado por ligante abre em resposta a uma molécula química, e o por voltagem, a uma mudança no potencial de membrana.",
-          comment:
-            "A principal diferença reside no gatilho que provoca a abertura do canal. Os canais regulados por ligantes são ativados pela ligação específica de um neurotransmissor ou outra molécula sinalizadora. Já os canais regulados por voltagem abrem e fecham em resposta a alterações no potencial elétrico através da membrana celular, sendo cruciais para a propagação de impulsos nervosos e contração muscular.",
-          topic: "Canais Iônicos: Ligante vs. Voltagem",
-        },
-      ];
+    // Inicializa a visibilidade das seções no carregamento
+    errorDiagnosisSection.style.display = 'none';
+    topicsToReviewList.innerHTML = '';
+    statusMessage.textContent = '';
 
-      function buildQuiz() {
-        const output = [];
+    const questions = [         {           question: "1. Qual o processo pelo qual uma célula converte um tipo de sinal em outro, transmitindo-o por diversas vias internas?",           options: [             "a) Replicação celular.",             "b) Transdução de sinal.",             "c) Expressão gênica.",             "d) Secreção hormonal.",           ],           correctAnswer: "b) Transdução de sinal.",           comment: "A transdução de sinal é a essência da comunicação celular interna. É a conversão de um sinal externo (o ligante) em uma série de eventos intracelulares que levam a uma resposta específica.",           topic: "Conceito de Transdução de Sinal",         },         {           question: "2. O que determina a capacidade de uma célula em responder a um conjunto limitado de sinais?",           options: [             "a) O tamanho da célula.",             "b) O conjunto de moléculas efetoras e receptores que ela possui.",             "c) A quantidade de energia disponível.",             "d) A idade da célula.",           ],           correctAnswer: "b) O conjunto de moléculas efetoras e receptores que ela possui.",           comment: "Cada tipo celular possui um 'repertório' específico de receptores. Isso garante que a célula só responda aos sinais relevantes para sua função e identidade.",           topic: "Especificidade da Resposta Celular",         },         {           question: "3. Cite um exemplo onde a acetilcolina causa efeitos diferentes em tipos celulares distintos.",           options: [             "a) Contração muscular esquelética e aumento da frequência cardíaca.",             "b) Relaxamento muscular e diminuição da frequência cardíaca.",             "c) Contração muscular esquelética e diminuição da frequência cardíaca.",             "d) Secreção de insulina e contração muscular.",           ],           correctAnswer: "c) Contração muscular esquelética e diminuição da frequência cardíaca.",           comment: "A acetilcolina causa contração no músculo esquelético (via receptores nicotínicos) e diminui a frequência cardíaca no coração (via receptores muscarínicos).",           topic: "Sinais Múltiplos e Receptores Variados",         },         {           question: "4. A ativação de um receptor de superfície gera moléculas pequenas e não proteicas que difundem o sinal. Como são chamadas?",           options: [             "a) Primeiros mensageiros.",             "b) Receptores.",             "c) Segundos mensageiros.",             "d) Enzimas.",           ],           correctAnswer: "c) Segundos mensageiros.",           comment: "Segundos mensageiros como o $cAMP$ e o $Ca^{2+}$ são intermediários que amplificam e distribuem a mensagem recebida pelo receptor de superfície.",           topic: "Segundos Mensageiros",         },         {           question: "5. Qual a função das proteínas adaptadoras nas vias de sinalização?",           options: [             "a) Sintetizar novos receptores.",             "b) Ligar enzimas e outras proteínas de sinalização, agindo como andaimes.",             "c) Degradar o sinal após sua transmissão.",             "d) Aumentar a especificidade da ligação ligante-receptor.",           ],           correctAnswer: "b) Ligar enzimas e outras proteínas de sinalização, agindo como andaimes.",           comment: "Proteínas adaptadoras ou de andaime (scaffold) agrupam diferentes proteínas de sinalização em complexos, garantindo eficiência e rapidez na transmissão.",           topic: "Proteínas Adaptadoras",         },         {           question: "6. Como as proteínas quinases e fosfatases atuam na regulação da atividade proteica?",           options: [             "a) Quinases adicionam grupos fosfato; fosfatases os removem.",             "b) Quinases removem grupos fosfato; fosfatases os adicionam.",             "c) Ambas adicionam grupos fosfato.",             "d) Ambas removem grupos fosfato.",           ],           correctAnswer: "a) Quinases adicionam grupos fosfato; fosfatases os removem.",           comment: "Este ciclo de fosforilação (quinases) e desfosforilação (fosfatases) funciona como um interruptor molecular para ligar ou desligar proteínas.",           topic: "Regulação por Fosforilação",         },         {           question: "7. Receptores que formam um canal hidrofílico permitindo a passagem de íons ao serem ativados são chamados de:",           options: [             "a) Receptores acoplados à proteína G.",             "b) Receptores tirosina quinase.",             "c) Receptores nucleares.",             "d) Canais iônicos regulados por ligante.",           ],           correctAnswer: "d) Canais iônicos regulados por ligante.",           comment: "Também chamados de receptores ionotrópicos, eles alteram o potencial de membrana rapidamente ao permitir o fluxo de íons após a ligação do ligante.",           topic: "Tipos de Receptores: Canais Iônicos",         },         {           question: "8. Qual a característica estrutural principal dos Receptores Acoplados à Proteína G (GPCRs)?",           options: [             "a) Atuam como enzimas.",             "b) Atravessam a membrana plasmática sete vezes e se associam a proteínas G.",             "c) Estão localizados no núcleo celular.",             "d) São canais para íons de cálcio.",           ],           correctAnswer: "b) Atravessam a membrana plasmática sete vezes e se associam a proteínas G.",           comment: "Os GPCRs possuem sete hélices transmembrana e utilizam proteínas G heterotriméricas ($\alpha, \beta, \gamma$) para iniciar a sinalização interna.",           topic: "Tipos de Receptores: GPCRs",         },         {           question: "9. Qual o evento que ocorre na proteína G quando ela é ativada por um GPCR?",           options: [             "a) Degradação de GTP.",             "b) Troca de GDP por GTP.",             "c) Fosforilação da subunidade beta.",             "d) Associação com um canal iônico.",           ],           correctAnswer: "b) Troca de GDP por GTP.",           comment: "A ativação leva a subunidade $\alpha$ a trocar $GDP$ por $GTP$, causando sua dissociação do complexo $\beta \gamma$ e permitindo a ativação de efetores.",           topic: "Ativação de Proteínas G",         },         {           question: "10. Onde a maioria dos receptores enzimáticos está localizada?",           options: [             "a) Citoplasma.",             "b) Núcleo.",             "c) Membrana plasmática.",             "d) Retículo endoplasmático.",           ],           correctAnswer: "c) Membrana plasmática.",           comment: "São proteínas transmembrana cujo domínio extracelular liga o sinal e o domínio intracelular possui atividade enzimática ou se associa a uma enzima.",           topic: "Tipos de Receptores: Enzimáticos",         },         {           question: "11. Qual a atividade enzimática mais comum associada aos receptores enzimáticos?",           options: [             "a) Hidrolase.",             "b) Ligase.",             "c) Proteína quinase.",             "d) Fosfatase.",           ],           correctAnswer: "c) Proteína quinase.",           comment: "Os Receptores Tirosina Quinase (RTKs) são os mais comuns, fosforilando resíduos de tirosina em proteínas de sinalização específicas.",           topic: "Receptores Enzimáticos: Atividade Quinase",         },         {           question: "12. Qual a função da autofosforilação nos receptores tirosina quinases (RTKs)?",           options: [             "a) Desativar o receptor.",             "b) Criar sítios de ligação para proteínas de sinalização intracelular.",             "c) Aumentar a afinidade pelo ligante.",             "d) Degradar o ligante.",           ],           correctAnswer: "b) Criar sítios de ligação para proteínas de sinalização intracelular.",           comment: "A autofosforilação cria ancoradouros para proteínas com domínios SH2, permitindo a montagem de grandes complexos de sinalização na membrana.",           topic: "Receptores Tirosina Quinase (RTKs)",         },         {           question: "13. Que tipo de moléculas sinalizadoras geralmente se ligam a receptores intracelulares?",           options: [             "a) Proteínas grandes e hidrofílicas.",             "b) Íons metálicos.",             "c) Moléculas pequenas e hidrofóbicas (lipossolúveis).",             "d) Carboidratos complexos.",           ],           correctAnswer: "c) Moléculas pequenas e hidrofóbicas (lipossolúveis).",           comment: "Moléculas como hormônios esteroides e tireoidianos atravessam a membrana por difusão simples para encontrar receptores no citosol ou núcleo.",           topic: "Tipos de Receptores: Intracelulares",         },         {           question: "14. Qual a principal função dos receptores intracelulares ativados?",           options: [             "a) Ativar segundos mensageiros.",             "b) Atuar diretamente como canais iônicos.",             "c) Atuar como fatores de transcrição, regulando a expressão gênica.",             "d) Iniciar a degradação de proteínas.",           ],           correctAnswer: "c) Atuar como fatores de transcrição, regulando a expressão gênica.",           comment: "Esses receptores ligam-se a sequências de DNA chamadas Elementos de Resposta, promovendo ou inibindo a transcrição de genes específicos.",           topic: "Função dos Receptores Intracelulares",         },         {           question: "15. Qual a principal vantagem da amplificação do sinal em uma cascata de transdução?",           options: [             "a) Garante que o sinal se degrade rapidamente.",             "b) Permite que um pequeno número de moléculas sinalizadoras ative uma resposta massiva.",             "c) Assegura a especificidade da ligação ligante-receptor.",             "d) Diminui a necessidade de ATP.",           ],           correctAnswer: "b) Permite que um pequeno número de moléculas sinalizadoras ative uma resposta massiva.",           comment: "Um único ligante pode gerar milhares de segundos mensageiros, que por sua vez ativam milhares de enzimas, resultando em uma resposta celular potente.",           topic: "Amplificação do Sinal",         },         {           question: "16. O que é desensibilização de receptores?",           options: [             "a) O aumento da resposta celular a um sinal.",             "b) Um mecanismo que torna a célula mais sensível a um sinal.",             "c) A diminuição da resposta celular a um sinal prolongado ou muito intenso.",             "d) A ativação contínua do receptor.",           ],           correctAnswer: "c) A diminuição da resposta celular a um sinal prolongado ou muito intenso.",           comment: "A desensibilização (ou adaptação) evita a superestimulação da célula, podendo ocorrer por fosforilação do receptor ou internalização por endocitose.",           topic: "Regulação da Sinalização: Desensibilização",         },         {           question: "17. Um medicamento que bloqueia a ligação de um hormônio ao seu receptor sem ativá-lo é um:",           options: [             "a) Agonista.",             "b) Antagonista.",             "c) Co-ativador.",             "d) Segundo mensageiro.",           ],           correctAnswer: "b) Antagonista.",           comment: "Antagonistas competem pelo sítio de ligação do receptor, impedindo a ação do ligante natural e 'silenciando' a via de sinalização.",           topic: "Agonistas e Antagonistas",         },         {           question: "18. Qual o papel das GTPases na comunicação celular?",           options: [             "a) Sintetizar ATP.",             "b) Hidrolisar GTP para GDP, agindo como interruptores moleculares.",             "c) Fosforilar proteínas.",             "d) Transportar íons.",           ],           correctAnswer: "b) Hidrolisar GTP para GDP, agindo como interruptores moleculares.",           comment: "Proteínas como Ras funcionam como chaves: ligadas a $GTP$ estão 'ON' e ao hidrolisarem para $GDP$ ficam 'OFF'.",           topic: "GTPases e Chaves Moleculares",         },         {           question: "19. Qual a função do AMP cíclico (cAMP) em muitas vias de sinalização?",           options: [             "a) Atuar como uma enzima degradadora de proteínas.",             "b) Ativar a proteína quinase A (PKA).",             "c) Inibir a síntese de ATP.",             "d) Ligar-se diretamente a receptores nucleares.",           ],           correctAnswer: "b) Ativar a proteína quinase A (PKA).",           comment: "O $cAMP$ liga-se às subunidades reguladoras da PKA, liberando as subunidades catalíticas para fosforilar proteínas-alvo.",           topic: "Vias de Sinalização: cAMP",         },         {           question: "20. A formação de diacilglicerol (DAG) e inositol trifosfato (IP3) é catalisada por qual enzima?",           options: [             "a) Adenilil ciclase.",             "b) Fosfolipase C.",             "c) Proteína quinase C.",             "d) GTPase.",           ],           correctAnswer: "b) Fosfolipase C.",           comment: "A Fosfolipase C ($PLC$) cliva o fosfolipídio de membrana $PIP_2$ para gerar os mensageiros $IP_3$ e $DAG$.",           topic: "Vias de Sinalização: Fosfolipídios",         },         {           question: "21. Qual o papel do IP3 na via de sinalização de fosfolipídios?",           options: [             "a) Ativar a Proteína Quinase C (PKC).",             "b) Atuar como uma enzima.",             "c) Abrir canais de cálcio no retículo endoplasmático.",             "d) Ligar-se a receptores de superfície celular.",           ],           correctAnswer: "c) Abrir canais de cálcio no retículo endoplasmático.",           comment: "O $IP_3$ difunde-se pelo citosol e abre canais de $Ca^{2+}$ no RE, elevando rapidamente a concentração citoplasmática desse íon.",           topic: "Sinalização de Cálcio: IP3",         },         {           question: "22. Qual o papel do DAG na via de sinalização de fosfolipídios?",           options: [             "a) Abrir canais de cálcio.",             "b) Ativar a Proteína Quinase C (PKC).",             "c) Atuar como segundo mensageiro intracelular.",             "d) Inibir a transcrição gênica.",           ],           correctAnswer: "b) Ativar a Proteína Quinase C (PKC).",           comment: "O $DAG$ permanece na membrana e, junto com o $Ca^{2+}$, recruta e ativa a $PKC$ para fosforilar proteínas efetoras.",           topic: "Sinalização de Cálcio: DAG e PKC",         },         {           question: "23. Qual íon atua como segundo mensageiro na contração muscular e liberação de neurotransmissores?",           options: [             "a) Sódio ($Na^{+}$).",             "b) Potássio ($K^{+}$).",             "c) Cálcio ($Ca^{2+}$).",             "d) Cloreto ($Cl^{-}$).",           ],           correctAnswer: "c) Cálcio ($Ca^{2+}$).",           comment: "O $Ca^{2+}$ é um sinalizador universal. Baixas concentrações citosólicas permitem que pequenos aumentos funcionem como sinais potentes.",           topic: "Cálcio como Segundo Mensageiro",         },         {           question: "24. A alteração na expressão gênica após a ligação de um ligante ocorre geralmente:",           options: [             "a) Na membrana plasmática.",             "b) No citosol.",             "c) No núcleo.",             "d) No retículo endoplasmático.",           ],           correctAnswer: "c) No núcleo.",           comment: "Vias de sinalização culminam na translocação de fatores de transcrição para o núcleo para modular a atividade do $DNA$.",           topic: "Respostas de Expressão Gênica",         },         {           question: "25. Qual a importância da modularidade e integração das vias de sinalização?",           options: [             "a) Permite que cada via funcione de forma totalmente independente.",             "b) Garante que apenas um tipo de resposta seja ativado por vez.",             "c) Permite que as células respondam de forma complexa e coordenada a múltiplos sinais.",             "d) Aumenta a quantidade de ligantes necessários para uma resposta.",           ],           correctAnswer: "c) Permite que as células respondam de forma complexa e coordenada a múltiplos sinais.",           comment: "A integração (crosstalk) permite que a célula tome decisões 'inteligentes' com base em diversas informações ambientais simultâneas.",           topic: "Modularidade e Integração de Vias",         },         {           question: "26. Respostas que envolvem a produção de novas proteínas através da expressão gênica são classificadas como:",           options: [             "a) Resposta rápida (curto prazo).",             "b) Resposta lenta (longo prazo).",             "c) Resposta metabólica direta.",             "d) Resposta de movimento celular.",           ],           correctAnswer: "b) Resposta lenta (longo prazo).",           comment: "Diferente da ativação de enzimas já presentes (rápida), a transcrição e tradução levam de minutos a horas.",           topic: "Tipos de Resposta: Lenta vs. Rápida",         },         {           question: "27. Qual a principal característica de um canal iônico regulado por voltagem?",           options: [             "a) Ele é ativado pela ligação de um neurotransmissor.",             "b) Ele abre ou fecha em resposta a mudanças no potencial elétrico da membrana.",             "c) Ele sempre permite o fluxo de todos os tipos de íons.",             "d) Ele está localizado exclusivamente no citoplasma.",           ],           correctAnswer: "b) Ele abre ou fecha em resposta a mudanças no potencial elétrico da membrana.",           comment: "Esses canais são fundamentais para a propagação do potencial de ação em neurônios e fibras musculares.",           topic: "Canais Iônicos Regulados por Voltagem",         },         {           question: "28. Se uma proteína G não consegue hidrolisar GTP para GDP, qual o efeito na via?",           options: [             "a) Inibição completa da via.",             "b) Ativação prolongada da via.",             "c) Aumento da degradação do segundo mensageiro.",             "d) Diminuição da afinidade do ligante pelo receptor.",           ],           correctAnswer: "b) Ativação prolongada da via.",           comment: "Sem a hidrólise de $GTP$, a proteína G fica 'presa' no estado ligado/ativo, enviando sinais contínuos, como ocorre na cólera.",           topic: "Regulação de Proteínas G",         },         {           question: "29. As junções comunicantes (gap junctions) são exemplos de qual comunicação?",           options: [             "a) Parácrina.",             "b) Endócrina.",             "c) Autócrina.",             "d) Contato direto.",           ],           correctAnswer: "d) Contato direto.",           comment: "Gap junctions conectam fisicamente os citoplasmas de células vizinhas, permitindo a sincronização química e elétrica.",           topic: "Comunicação por Contato Direto",         },         {           question: "30. Qual a importância das proteínas scaffold (andaime)?",           options: [             "a) Sintetizar proteínas.",             "b) Ajudar a organizar e localizar grupos de proteínas de sinalização.",             "c) Transportar ligantes através da membrana.",             "d) Degradar segundos mensageiros.",           ],           correctAnswer: "b) Ajudar a organizar e localizar grupos de proteínas de sinalização.",           comment: "Elas aumentam a eficiência evitando que as proteínas sinalizadoras precisem se encontrar por difusão aleatória no citosol.",           topic: "Proteínas Scaffold",         },         {           question: "31. Qual o papel da calmodulina na sinalização celular?",           options: [             "a) Ser um canal de cálcio.",             "b) Ligar-se ao cálcio e atuar como um mediador na ativação de outras proteínas.",             "c) Bombear cálcio para fora da célula.",             "d) Sintetizar cálcio.",           ],           correctAnswer: "b) Ligar-se ao cálcio e atuar como um mediador na ativação de outras proteínas.",           comment: "A calmodulina muda de forma ao ligar-se ao $Ca^{2+}$, ativando quinases dependentes de cálcio ($CaMKs$).",           topic: "Calmodulina e Sinalização de Cálcio",         },         {           question: "32. Uma série de reações onde uma quinase ativa a próxima é chamada de:",           options: [             "a) Feedback negativo.",             "b) Desensibilização.",             "c) Cascata de fosforilação.",             "d) Sinalização autócrina.",           ],           correctAnswer: "c) Cascata de fosforilação.",           comment: "Exemplo: a via das MAP-quinases, onde cada nível amplifica o sinal para o nível seguinte.",           topic: "Cascata de Fosforilação",         },         {           question: "33. O que distingue receptores nucleares de receptores de superfície?",           options: [             "a) Localização intracelular e capacidade de se ligarem diretamente ao DNA.",             "b) Sua capacidade de ativar segundos mensageiros.",             "c) Seu envolvimento em canais iônicos.",             "d) Sua ligação a proteínas G.",           ],           correctAnswer: "a) Localização intracelular e capacidade de se ligarem diretamente ao DNA.",           comment: "Enquanto receptores de superfície dependem de intermediários, os nucleares agem diretamente sobre os genes.",           topic: "Receptores Nucleares vs. Superfície",         },         {           question: "34. Por que a sinalização via óxido nítrico (NO) é especial?",           options: [             "a) É um hormônio esteroide.",             "b) É um gás que difunde através da membrana e ativa a guanilil ciclase.",             "c) Atua apenas em receptores de superfície.",             "d) Requer um canal iônico para sua ação.",           ],           correctAnswer: "b) Es um gás que difunde através da membrana e ativa a guanilil ciclase.",           comment: "O $NO$ atravessa membranas facilmente e induz relaxamento muscular em vasos sanguíneos ao elevar os níveis de $cGMP$.",           topic: "Sinalização por Óxido Nítrico (NO)",         },         {           question: "35. A degradação de um neurotransmissor na fenda sináptica é um mecanismo de:",           options: [             "a) Internalização do receptor.",             "b) Desensibilização do receptor.",             "c) Degradação do ligante.",             "d) Feedback negativo.",           ],           correctAnswer: "c) Degradação do ligante.",           comment: "Enzimas como a acetilcolinesterase limpam o sinal para que a sinapse possa receber um novo estímulo.",           topic: "Desativação do Sinal: Degradação do Ligante",         },         {           question: "36. A cafeína inibe a fosfodiesterase. Qual o efeito no sistema cAMP?",           options: [             "a) Diminuição dos níveis de cAMP.",             "b) Aumento dos níveis de cAMP.",             "c) Inibição da adenilil ciclase.",             "d) Ativação de GPCRs.",           ],           correctAnswer: "b) Aumento dos níveis de cAMP.",           comment: "Ao impedir a quebra do $cAMP$, a cafeína prolonga o estado de alerta e a atividade metabólica da célula.",           topic: "Farmacologia e Sinalização: Cafeína",         },         {           question: "37. Qual a distinção entre sinal parácrino e autócrino?",           options: [             "a) Parácrino atua em células distantes; autócrino atua na própria célula.",             "b) Parácrino atua em células vizinhas; autócrino atua na própria célula.",             "c) Parácrino usa a corrente sanguínea; autócrino usa sinapses.",             "d) Parácrino usa receptores de superfície; autócrino usa receptores intracelulares.",           ],           correctAnswer: "b) Parácrino atua em células vizinhas; autócrino atua na própria célula.",           comment: "Sinais parácrinos difundem-se localmente; sinais autócrinos regulam a própria célula que os emitiu.",           topic: "Tipos de Sinalização: Parácrina e Autócrina",         },         {           question: "38. A regulação por fosforilação e desfosforilação envolve quais enzimas?",           options: [             "a) Apenas receptores intracelulares.",             "b) Apenas canais iônicos.",             "c) Proteínas quinases e proteínas fosfatases.",             "d) Exclusivamente a proteína G.",           ],           correctAnswer: "c) Proteínas quinases e proteínas fosfatases.",           comment: "As quinases adicionam fosfatos de $ATP$ e as fosfatases os removem, regulando a atividade biológica das proteínas.",           topic: "Regulação por Fosforilação/Desfosforilação",         },         {           question: "39. Qual a importância da amplificação do sinal na comunicação celular?",           options: [             "a) Garantir que apenas sinais fortes sejam percebidos.",             "b) Permitir que um pequeno número de ligantes gere uma resposta robusta.",             "c) Controlar a especificidade da ligação ligante-receptor.",             "d) Inibir a transdução do sinal.",           ],           correctAnswer: "b) Permitir que um pequeno número de ligantes gere uma resposta robusta.",           comment: "Sem amplificação, a célula precisaria de quantidades impraticáveis de hormônios para gerar mudanças mensuráveis.",           topic: "Amplificação do Sinal",         },         {           question: "40. Qual a diferença entre canal regulado por ligante e por voltagem?",           options: [             "a) O canal por ligante só abre com voltagem.",             "b) O por ligante abre com molécula química, e o por voltagem com mudança de potencial.",             "c) O por ligante é só para sódio, e o por voltagem para potássio.",             "d) O por ligante está no núcleo, e o por voltagem na membrana.",           ],           correctAnswer: "b) O por ligante abre com molécula química, e o por voltagem com mudança de potencial.",           comment: "Canais por ligante (ionotrópicos) respondem a neurotransmissores; os por voltagem respondem ao campo elétrico da membrana.",           topic: "Canais Iônicos: Ligante vs. Voltagem",         },       ];
 
-        questions.forEach((currentQuestion, questionNumber) => {
-          const options = [];
-          for (let i = 0; i < currentQuestion.options.length; i++) {
-            options.push(
-              `<label class="option" data-question="${questionNumber}" data-value="${currentQuestion.options[i]}">
-                <img src="tesouras.png" class="scissor-icon" onclick="event.stopPropagation(); this.parentNode.classList.toggle('struck-through');">
-                ${currentQuestion.options[i]}
-              </label>`
-            );
-          }
+    function buildQuiz() {
+      const output = [];
 
-          output.push(
-            `<div class="card" id="question-${questionNumber}" data-topic="${currentQuestion.topic}">
-              <div class="question">${currentQuestion.question}</div>
-              <div class="options">${options.join("")}</div>
-              <div class="comment" id="comment-${questionNumber}"></div>
-            </div>`
+      questions.forEach((currentQuestion, questionNumber) => {
+        const options = [];
+        for (let i = 0; i < currentQuestion.options.length; i++) {
+          options.push(
+            `<label class="option" data-question="${questionNumber}" data-value="${currentQuestion.options[i]}">
+              <img src="tesouras.png" class="scissor-icon" onclick="event.stopPropagation(); this.parentNode.classList.toggle('struck-through');">
+              ${currentQuestion.options[i]}
+            </label>`
           );
-        });
+        }
 
-        quizContainer.innerHTML = output.join("");
-      }
+        output.push(
+          `<div class="card" id="question-${questionNumber}" data-topic="${currentQuestion.topic}">
+            <div class="question">${currentQuestion.question}</div>
+            <div class="options">${options.join("")}</div>
+            <div class="comment" id="comment-${questionNumber}"></div>
+          </div>`
+        );
+      });
 
-      function showResults() {
-        wrongQuestionIndices = []; 
-        errorCountByTopic = {}; // Reseta a contagem de erros por tópico
-        totalAnsweredQuestionsByTopic = {}; // Reseta a contagem de questões respondidas por tópico
-        currentWrongQuestionIndex = -1; 
-        hasErrors = false; 
-        isShowingErrors = false; 
-        isShowingDiagnosis = false;
+      quizContainer.innerHTML = output.join("");
+    }
 
-        errorDiagnosisSection.style.display = 'none';
-        topicsToReviewList.innerHTML = ''; 
+    function showResults() {
+      wrongQuestionIndices = [];
+      errorCountByTopic = {};
+      totalAnsweredQuestionsByTopic = {};
+      currentWrongQuestionIndex = -1;
+      hasErrors = false;
+      isShowingErrors = false;
+      isShowingDiagnosis = false;
 
-        const answerContainers = quizContainer.querySelectorAll(".options");
-        let correctAnswers = 0;
+      errorDiagnosisSection.style.display = 'none';
+      topicsToReviewList.innerHTML = '';
+      statusMessage.textContent = '';
 
-        questions.forEach((currentQuestion, questionNumber) => {
-          const answerContainer = answerContainers[questionNumber];
-          const userAnswerElement = answerContainer.querySelector('.option.selected');
-          const userAnswerValue = userAnswerElement ? userAnswerElement.dataset.value : undefined;
-          const commentDiv = document.getElementById(`comment-${questionNumber}`);
+      // Busca por todas as perguntas: estáticas e dinâmicas
+      const allQuestionCards = document.querySelectorAll('.quiz-container .card, #newQuestionsContent .card');
+      let correctAnswersCount = 0;
+      let totalQuestionsAnswered = 0;
 
-          // Limpa estados anteriores
-          const allOptions = answerContainer.querySelectorAll('.option');
-          allOptions.forEach(option => {
-            option.classList.remove('correct', 'incorrect');
-            const scissorIcon = option.querySelector('.scissor-icon');
-            if (scissorIcon) scissorIcon.classList.remove('hidden');
-          });
-          if (commentDiv) commentDiv.classList.remove('show');
+      console.log('🔍 Verificando', allQuestionCards.length, 'perguntas...');
 
+      allQuestionCards.forEach((card, index) => {
+        const questionEl = card.querySelector('.question') || card.querySelector('p');
+        if (!questionEl) return;
 
-          const optionElements = answerContainer.querySelectorAll('.option');
-          optionElements.forEach(option => {
-            const scissorIcon = option.querySelector('.scissor-icon');
+        const questionText = questionEl.textContent.trim();
+        const optionsContainer = card.querySelector('.options') || card;
+        const allOptions = optionsContainer.querySelectorAll('.option, label.option, label');
+        const userAnswerElement = optionsContainer.querySelector('.option.selected, label.selected');
+        const commentDiv = card.querySelector('.comment');
 
-            if (option === userAnswerElement && scissorIcon) {
-                scissorIcon.classList.add('hidden');
-            } 
-            
-            if (option.dataset.value === currentQuestion.correctAnswer) {
-                option.classList.add('correct');
-                if (commentDiv && currentQuestion.comment) {
-                    commentDiv.textContent = currentQuestion.comment;
-                    commentDiv.classList.add('show');
-                }
-            }
-          });
-
-          // ***************************************************************
-          // Lógica crucial: Apenas contabiliza se a questão foi respondida
-          // ***************************************************************
-          if (userAnswerElement) { // Se o usuário marcou alguma alternativa
-            totalAnsweredQuestionsByTopic[currentQuestion.topic] = (totalAnsweredQuestionsByTopic[currentQuestion.topic] || 0) + 1;
-
-            if (userAnswerValue !== currentQuestion.correctAnswer) {
-              userAnswerElement.classList.add('incorrect');
-              wrongQuestionIndices.push(questionNumber);
-              hasErrors = true; 
-
-              // Incrementa o contador de erros para este tópico
-              errorCountByTopic[currentQuestion.topic] = (errorCountByTopic[currentQuestion.topic] || 0) + 1;
-            } else {
-              correctAnswers++;
-            }
-          }
-          // ***************************************************************
-          // Fim da lógica crucial
-          // ***************************************************************
-        });
-
-        resultsContainer.textContent = `Você acertou ${correctAnswers} de ${questions.length} questões.`;
+        const questionTopic = card.dataset.topic || "Tópico não informado";
         
-        // Rola a página totalmente para baixo para exibir o resultado
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        console.log(`📝 Pergunta ${index + 1}: Tópico = "${questionTopic}"`);
+        console.log(`🔍 Encontradas ${allOptions.length} alternativas`);
+        
+        // Remove classes anteriores
+        allOptions.forEach(option => {
+          option.classList.remove('correct', 'incorrect', 'selected');
+        });
+        if (commentDiv) commentDiv.classList.remove('show');
 
-        if (hasErrors) {
-            errorNavBtn.style.display = 'flex';
-            arrowIcon.textContent = '⬆️'; // Seta para cima inicialmente
-            buttonText.textContent = 'Diagnóstico de Erros'; // Texto claro para diagnóstico
-            isShowingErrors = false; // Não estamos navegando erro a erro inicialmente
-            isShowingDiagnosis = false; // Ainda não mostramos o diagnóstico
+        let correctAnswerValue = null;
+        let questionComment = null;
+
+        // Verifica se é pergunta estática ou dinâmica
+        const isStatic = card.id && card.id.startsWith('question-');
+        if (isStatic) {
+          // Pergunta estática - busca nos dados originais
+          const questionData = questions.find(q => q.question.trim() === questionText);
+          if (questionData) {
+            correctAnswerValue = questionData.correctAnswer.trim();
+            questionComment = questionData.comment;
+          }
         } else {
-            errorNavBtn.style.display = 'none';
+          // Pergunta dinâmica - busca pela opção marcada como correta
+          const correctOpt = optionsContainer.querySelector('.option[data-answer="true"], label[data-answer="true"]');
+          if (correctOpt) {
+            correctAnswerValue = correctOpt.dataset.value?.trim() || correctOpt.textContent.trim();
+            console.log(`✅ Resposta correta encontrada: "${correctAnswerValue}"`);
+          } else {
+            console.log('❌ Nenhuma resposta correta encontrada para pergunta dinâmica');
+          }
+          
+          // Busca comentário no próprio card ou no div comment
+          const commentElement = card.querySelector('.comment');
+          if (commentElement && commentElement.textContent.trim()) {
+            questionComment = commentElement.textContent.trim();
+          }
         }
-      }
 
-      function scrollToQuestion(index) {
-        const questionCard = document.getElementById(`question-${index}`);
-        if (questionCard) {
-          questionCard.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+        // Processa resposta do usuário e aplica coloração
+        let userAnswer = null;
+        if (userAnswerElement) {
+          userAnswerElement.classList.add('selected');
+          userAnswer = userAnswerElement.dataset.value?.trim() || userAnswerElement.textContent.trim();
+          totalQuestionsAnswered++;
+          totalAnsweredQuestionsByTopic[questionTopic] = (totalAnsweredQuestionsByTopic[questionTopic] || 0) + 1;
+
+          console.log(`👤 Resposta do usuário: "${userAnswer}"`);
+          console.log(`🎯 Resposta correta: "${correctAnswerValue}"`);
+
+          // Verifica se a resposta está correta
+          if (userAnswer === correctAnswerValue) {
+            correctAnswersCount++;
+            console.log(`✅ Resposta correta!`);
+          } else {
+            hasErrors = true;
+            errorCountByTopic[questionTopic] = (errorCountByTopic[questionTopic] || 0) + 1;
+            console.log(`❌ Resposta incorreta para tópico: ${questionTopic}`);
+          }
         }
-      }
-      
-      function scrollToDiagnosis() {
-          errorDiagnosisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
 
-      quizContainer.addEventListener("click", function (event) {
-        const clickedElement = event.target;
-        const optionElement = clickedElement.closest('.option');
+        // Aplica coloração: SEMPRE marca a correta de verde, e a errada de vermelho se foi marcada
+        allOptions.forEach(option => {
+          const optionValue = option.dataset.value?.trim() || option.textContent.trim();
+          
+          // Marca a resposta correta de verde SEMPRE
+          if (optionValue === correctAnswerValue) {
+            option.classList.add('correct');
+            console.log(`🟢 Marcando como correta: "${optionValue}"`);
+          }
+          
+          // Se o usuário marcou uma resposta E ela está errada, marca de vermelho
+          if (userAnswer && optionValue === userAnswer && userAnswer !== correctAnswerValue) {
+            option.classList.add('incorrect');
+            console.log(`🔴 Marcando como incorreta: "${optionValue}"`);
+          }
+        });
 
-        if (optionElement) {
-            if (clickedElement.classList.contains("scissor-icon")) {
-                optionElement.classList.toggle("struck-through");
-            } 
-            else {
-                const questionNumber = optionElement.dataset.question;
-                const currentQuestionOptions = quizContainer.querySelectorAll(`.option[data-question=\"${questionNumber}\"]`);
-                currentQuestionOptions.forEach(opt => opt.classList.remove("selected"));
-                
-                optionElement.classList.add("selected");
-            }
+        // Mostra comentário se disponível
+        if (commentDiv && questionComment) {
+          commentDiv.textContent = questionComment;
+          commentDiv.classList.add('show');
         }
       });
 
-      errorNavBtn.addEventListener("click", function() {
-        if (!hasErrors) { // Se não há erros, o botão não deveria estar visível, mas por segurança
-            errorNavBtn.style.display = 'none';
-            return;
+      // Exibe resultados
+      resultsContainer.textContent = `Você acertou ${correctAnswersCount} de ${totalQuestionsAnswered} questões respondidas.`;
+
+      console.log('📊 Erros por tópico:', errorCountByTopic);
+      console.log('📊 Total por tópico:', totalAnsweredQuestionsByTopic);
+
+      // Gera diagnóstico de erros
+      if (hasErrors) {
+        for (const topic in errorCountByTopic) {
+          const errors = errorCountByTopic[topic];
+          const total = totalAnsweredQuestionsByTopic[topic] || 0;
+          if (total > 0) {
+            const percent = ((errors / total) * 100).toFixed(1);
+            const li = document.createElement('li');
+            li.textContent = `${topic}: ${percent}% de erros (${errors} de ${total} questões respondidas)`;
+            topicsToReviewList.appendChild(li);
+          }
         }
+      } else {
+        const li = document.createElement('li');
+        li.textContent = "🥳 Parabéns! Você não teve erros nas questões respondidas.";
+        topicsToReviewList.appendChild(li);
+      }
 
-        if (!isShowingErrors && !isShowingDiagnosis) { 
-            // Clicou no botão "Diagnóstico de Erros" (seta para cima) para iniciar a navegação ou ir para o diagnóstico
-            if (wrongQuestionIndices.length > 0) {
-                isShowingErrors = true; // Inicia o modo de navegação de erros
-                currentWrongQuestionIndex = 0; // Começa pelo primeiro erro
-                arrowIcon.textContent = '⬇️'; // Muda a seta para baixo para navegar pelos erros
-                buttonText.textContent = `Próximo Erro (${currentWrongQuestionIndex + 1}/${wrongQuestionIndices.length})`;
-                scrollToQuestion(wrongQuestionIndices[currentWrongQuestionIndex]);
-            } else {
-                // Não há erros para navegar, ir direto para o diagnóstico (embora hasErrors seja falso aqui)
-                // Isso é um fallback se hasErrors por algum motivo for true, mas wrongQuestionIndices estiver vazio
-                isShowingDiagnosis = true;
-                arrowIcon.textContent = '⬆️'; // Seta para cima (já está no final)
-                buttonText.textContent = 'Diagnóstico de Erros'; // Texto final
+      errorDiagnosisSection.style.display = 'block';
+      generatedQuestionsSection.style.display = 'block';
+      generateNewQuestionsBtn.style.display = 'block';
+      scrollToDiagnosis();
+    }
+
+    function scrollToQuestion(index) {
+      const questionCard = document.getElementById(`question-${index}`);
+      if (questionCard) {
+        questionCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    function scrollToDiagnosis() {
+        errorDiagnosisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function scrollToGeneratedQuestions() {
+        generatedQuestionsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Event listener para seleção de opções (funciona para estáticas e dinâmicas)
+    document.addEventListener("click", function (event) {
+      const clickedElement = event.target;
+      const optionElement = clickedElement.closest('.option');
+
+      if (optionElement) {
+          if (clickedElement.classList.contains("scissor-icon")) {
+              event.stopPropagation();
+              optionElement.classList.toggle("struck-through");
+          }
+          else {
+              const parentCard = optionElement.closest('.card');
+              const currentQuestionOptions = parentCard.querySelectorAll('.option');
+
+              currentQuestionOptions.forEach(opt => opt.classList.remove("selected"));
+              optionElement.classList.add("selected");
+          }
+      }
+    });
+
+    generateNewQuestionsBtn.addEventListener("click", async function() {
+        statusMessage.textContent = '⏳ Gerando novas perguntas...';
+        generateNewQuestionsBtn.disabled = true;
+
+        const topics = Object.keys(errorCountByTopic).filter(topic => {
+            const errorsInTopic = errorCountByTopic[topic] || 0;
+            const totalAnsweredInTopic = totalAnsweredQuestionsByTopic[topic] || 0;
+            return errorsInTopic > 0 && totalAnsweredInTopic > 0;
+        });
+
+        const topicsToSend = topics.length > 0 ? topics : ["fisiologia celular", "biologia"];
+
+        try {
+            const response = await fetch('https://www.quizia.xyz/quiz', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ topicos: topicsToSend }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            newQuestionsContent.innerHTML = '';
+            if (data && data.html) {
+                console.log('📥 HTML recebido do Flask:', data.html);
                 
-                // Preenche e exibe a seção de diagnóstico
-                topicsToReviewList.innerHTML = ''; 
-                for (const topic in errorCountByTopic) {
-                    const errorsInTopic = errorCountByTopic[topic];
-                    const totalAnsweredInTopic = totalAnsweredQuestionsByTopic[topic] || 0; // Garante que não é undefined
-                    
-                    if (totalAnsweredInTopic > 0) { // Evita divisão por zero
-                        const percentage = ((errorsInTopic / totalAnsweredInTopic) * 100).toFixed(1); 
-                        const li = document.createElement('li');
-                        li.textContent = `${topic}: ${percentage}% de erros (${errorsInTopic} de ${totalAnsweredInTopic} questões respondidas)`;
-                        topicsToReviewList.appendChild(li);
+                // Insere o HTML diretamente sem reconstrução complexa
+                newQuestionsContent.innerHTML = data.html.replace(/```html|```/g, '');
+                
+                // Adiciona tesouras e ajusta formatação apenas se necessário
+                newQuestionsContent.querySelectorAll('.card').forEach((card, cardIndex) => {
+                    // Garante que o elemento de pergunta tenha a classe correta
+                    const questionElement = card.querySelector('p');
+                    if (questionElement && !questionElement.classList.contains('question')) {
+                       questionElement.classList.add('question');
                     }
-                }
-                errorDiagnosisSection.style.display = 'block'; 
-                scrollToDiagnosis();
-                errorNavBtn.style.display = 'none'; // Esconde o botão após ir para o diagnóstico final
-            }
 
-        } else if (isShowingErrors) { 
-            // Se estamos no modo de navegar pelos erros (botão é "Próximo Erro")
-            currentWrongQuestionIndex++;
-            if (currentWrongQuestionIndex < wrongQuestionIndices.length) {
-                // Ainda há erros para revisar
-                scrollToQuestion(wrongQuestionIndices[currentWrongQuestionIndex]);
-                buttonText.textContent = `Próximo Erro (${currentWrongQuestionIndex + 1}/${wrongQuestionIndices.length})`;
+                    // Remove qualquer input de radio que possa existir e adiciona tesouras
+                    card.querySelectorAll('label').forEach((label) => {
+                        // Remove inputs de radio MAS preserva o atributo data-answer
+                        const radioInput = label.querySelector('input[type="radio"]');
+                        if (radioInput) {
+                            // PRESERVA o atributo data-answer do input no label
+                            if (radioInput.hasAttribute('data-answer')) {
+                                label.setAttribute('data-answer', radioInput.getAttribute('data-answer'));
+                            }
+                            radioInput.remove();
+                        }
+                        
+                        // Garante que tenha a classe option
+                        if (!label.classList.contains('option')) {
+                            label.classList.add('option');
+                        }
+
+                        // Garante que tenha data-value
+                        if (!label.dataset.value) {
+                            label.dataset.value = label.textContent.trim();
+                        }
+
+                        // Adiciona tesoura se não existir
+                        if (!label.querySelector('.scissor-icon')) {
+                            const scissorIcon = document.createElement('img');
+                            scissorIcon.src = 'tesouras.png';
+                            scissorIcon.className = 'scissor-icon';
+                            scissorIcon.onclick = function(e) {
+                                e.stopPropagation();
+                                label.classList.toggle('struck-through');
+                            };
+                            label.insertBefore(scissorIcon, label.firstChild);
+                        }
+                    });
+
+                    console.log(`🏷️ Card ${cardIndex}: data-topic = "${card.dataset.topic}"`);
+                    
+                    // Verifica se há opção correta marcada
+                    const correctOption = card.querySelector('label[data-answer="true"]');
+                    if (correctOption) {
+                        console.log(`✅ Opção correta encontrada: "${correctOption.dataset.value}"`);
+                    } else {
+                        console.log('❌ Nenhuma opção correta encontrada');
+                    }
+                });
             } else {
-                // Todos os erros foram revisados, agora mostra o diagnóstico
-                isShowingErrors = false; 
-                isShowingDiagnosis = true;
-                arrowIcon.textContent = '⬇️'; // Seta para baixo para o diagnóstico (porque o diagnóstico está no final)
-                buttonText.textContent = 'Diagnóstico de Erros'; // Texto final do botão
-
-                // Preenche e exibe a seção de diagnóstico
-                topicsToReviewList.innerHTML = ''; 
-                for (const topic in errorCountByTopic) {
-                    const errorsInTopic = errorCountByTopic[topic];
-                    const totalAnsweredInTopic = totalAnsweredQuestionsByTopic[topic] || 0;
-                    
-                    if (totalAnsweredInTopic > 0) {
-                        const percentage = ((errorsInTopic / totalAnsweredInTopic) * 100).toFixed(1); 
-                        const li = document.createElement('li');
-                        li.textContent = `${topic}: ${percentage}% de erros (${errorsInTopic} de ${totalAnsweredInTopic} questões respondidas)`;
-                        topicsToReviewList.appendChild(li);
-                    }
-                }
-                errorDiagnosisSection.style.display = 'block'; 
-                scrollToDiagnosis();
-                errorNavBtn.style.display = 'none'; // Esconde o botão após ir para o diagnóstico final
+                newQuestionsContent.innerHTML = "<p>Não foi possível gerar novas perguntas para os tópicos selecionados.</p>";
             }
-        } 
-        // Se isShowingDiagnosis for true, não faz nada ao clicar no botão. Ele já deve ter desaparecido.
-      });
+            
+            generatedQuestionsSection.style.display = 'block';
+            scrollToGeneratedQuestions();
+            statusMessage.textContent = '✅ Perguntas geradas com sucesso!';
+            setTimeout(() => { statusMessage.textContent = '' }, 3000);
 
-      submitButton.addEventListener("click", showResults);
+        } catch (error) {
+            console.error('Erro ao gerar novas perguntas:', error);
+            newQuestionsContent.innerHTML = `<p>Erro ao carregar novas perguntas: ${error.message}. Por favor, tente novamente.</p>`;
+            generatedQuestionsSection.style.display = 'block';
+            scrollToGeneratedQuestions();
+            statusMessage.textContent = '❌ Erro na requisição: ' + error.message;
+            setTimeout(() => { statusMessage.textContent = '' }, 5000);
+        } finally {
+            generateNewQuestionsBtn.disabled = false;
+        }
+    });
 
-      buildQuiz();
-    </script>
-  </body>
-<script src="conexao_firebase.js"></script><script src="navegacao.js"></script><script type="module" src="padrao_simulado.js"></script></html>
+    // Inicialização
+    buildQuiz();
+    errorDiagnosisSection.style.display = 'none';
+    generatedQuestionsSection.style.display = 'none';
+    generateNewQuestionsBtn.style.display = 'none';
+
+    // Event listener para o botão de verificar respostas
+    document.getElementById("verifyAnswersBtn").addEventListener("click", showResults);
+  </script>
+  <script src="conexao_firebase.js"></script><script src="navegacao.js"></script><script type="module" src="padrao_simulado.js"></script>
+
+</body>
+</html>
