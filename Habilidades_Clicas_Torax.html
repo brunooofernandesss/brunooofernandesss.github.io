@@ -1,659 +1,633 @@
-
+<!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>
-      Questionário: Semiologia do Exame Físico do Sistema Respiratório e Tórax
-    </title>
-    <style>
-      body {
-        font-family: sans-serif;
-        margin: 0;
-        padding: 20px;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        min-height: 100vh;
-        background-color: #f4f4f4;
-      }
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Semiologia do Tórax e Abordagem Clínica.</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      background-color: #f4f4f4;
+    }
 
-      .quiz-container {
-        max-width: 800px;
-        width: 100%;
-      }
+    .quiz-container {
+      max-width: 800px;
+      width: 100%;
+    }
 
-      h1 {
-        color: #333;
-        text-align: center;
-        margin-bottom: 30px;
-      }
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 30px;
+    }
 
-      .card {
-        background-color: white;
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .question {
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .options {
+      margin-top: 15px;
+    }
+
+    /* Estilos unificados para todas as opções (estáticas e dinâmicas) */
+    .option, label.option, label, #newQuestionsContent label {
+      display: flex; /* Para alinhar imagem e texto */
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      position: relative; /* Para posicionar a tesoura */
+    }
+
+    /* FORÇA a remoção de inputs de radio em QUALQUER lugar */
+    .option input[type="radio"], 
+    label input[type="radio"],
+    #newQuestionsContent input[type="radio"],
+    #newQuestionsContent label input[type="radio"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
+    }
+
+    .option:hover, 
+    label.option:hover, 
+    label:hover,
+    #newQuestionsContent label:hover {
+      background-color: #e9e9e9;
+    }
+
+    .option.selected, 
+    label.option.selected, 
+    label.selected,
+    #newQuestionsContent label.selected {
+      background-color: #d1e7dd;
+      border-color: #28a745;
+    }
+
+    .option.correct, 
+    label.option.correct, 
+    label.correct,
+    #newQuestionsContent label.correct {
+      background-color: #d4edda;
+      border-color: #28a745;
+    }
+
+    .option.incorrect, 
+    label.option.incorrect, 
+    label.incorrect,
+    #newQuestionsContent label.incorrect {
+      background-color: #f8d7da;
+      border-color: #dc3545;
+    }
+
+    .submit-btn {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 30px;
+    }
+
+    .submit-btn:hover {
+      background-color: #0056b3;
+    }
+
+    .results {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .scissor-icon {
+      margin-right: 10px; /* Espaço entre a tesoura e o texto da opção */
+      width: 20px; /* Ajuste conforme o tamanho da sua imagem */
+      height: 20px; /* Ajuste conforme o tamanho da sua imagem */
+      opacity: 0.5; /* Transparência como no original */
+      cursor: pointer;
+    }
+
+    .scissor-icon.hidden {
+      display: none;
+    }
+
+    .struck-through {
+      text-decoration: line-through;
+      color: #888;
+    }
+
+    .comment {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f0f0f0;
+      border-left: 4px solid #007bff;
+      font-style: italic;
+      color: #555;
+      display: none; /* Escondido por padrão */
+    }
+    .comment.show {
+      display: block; /* Mostrado quando ativado */
+    }
+
+    /* Estilos para o botão de navegação de erro / diagnóstico */
+    .error-nav-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #dc3545; /* Vermelho para erro */
+      color: white;
+      border: none;
+      border-radius: 50%; /* Torna o botão redondo */
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      display: none; /* Escondido por padrão */
+      flex-direction: column; /* Para empilhar o ícone e o contador */
+      padding: 5px; /* Ajuste o padding para acomodar texto maior */
+      box-sizing: border-box; /* Garante que padding não aumente o tamanho total */
+      text-align: center;
+    }
+
+    .error-nav-btn:hover {
+      background-color: #c82333;
+    }
+
+    .error-nav-btn .arrow-icon {
+      font-size: 30px; /* Tamanho da seta */
+      line-height: 1; /* Ajuste para centralizar */
+    }
+
+    .error-nav-btn .button-text {
+      font-size: 12px; /* Tamanho do texto abaixo da seta */
+      line-height: 1;
+      margin-top: 2px; /* Espaço entre a seta e o texto */
+    }
+
+    /* Estilos para a seção de diagnóstico de erros */
+    .error-diagnosis-section {
+        margin-top: 50px;
+        padding: 30px;
+        background-color: #ffe0b2; /* Um laranja claro ou similar */
         border-radius: 8px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-
-      .question {
-        font-weight: bold;
-        margin-bottom: 10px;
-        color: #555;
-      }
-
-      .options {
-        margin-top: 15px;
-      }
-
-      .option {
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        margin-bottom: 8px;
-        cursor: pointer;
-        transition: background-color 0.2s ease, border-color 0.2s ease;
-      }
-
-      .option:hover {
-        background-color: #e9e9e9;
-      }
-
-      .option.selected {
-        border-color: #4f46e5;
-        background-color: #e0e7ff;
-      }
-
-      .option.correct {
-        background-color: #c6f6d5;
-        color: green;
-        font-weight: bold;
-        border-color: #38a169;
-      }
-
-      .option.incorrect {
-        background-color: #f8d7da;
-        color: red;
-        border-color: #e53e3e;
-      }
-
-      .comment {
-        margin-top: 15px;
-        padding: 10px;
-        background-color: #f0f0f0;
-        border-left: 4px solid #4f46e5;
-        font-size: 0.9em;
-        color: #666;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
         display: none; /* Escondido por padrão */
-      }
-
-      .comment.show {
-        display: block; /* Visível quando 'show' é adicionado */
-      }
-
-      .button {
-        background-color: #4f46e5;
-        color: white;
-        padding: 12px 20px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        margin-top: 20px;
-        width: 100%;
-        font-size: 1.1em;
-        transition: background-color 0.2s ease;
-      }
-
-      .button:hover {
-        background-color: #3730a3;
-      }
-
-      #results {
-        margin-top: 30px;
-        font-weight: bold;
-        font-size: 1.3em;
         text-align: center;
+        font-size: 1.1em;
         color: #333;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="quiz-container">
-      <h1>Questionário: Semiologia do Exame Físico do Sistema Respiratório e Tórax</h1>
-      <div id="quiz"></div>
-      <button id="submit" class="button">Verificar Respostas</button>
-      <div id="results"></div>
+    }
+
+    .error-diagnosis-section h2 {
+        color: #e65100; /* Laranja mais escuro */
+        margin-bottom: 20px;
+        font-size: 1.8em;
+    }
+
+    .error-diagnosis-section ul {
+        list-style: none; /* Remove marcadores de lista */
+        padding: 0;
+        margin: 0;
+    }
+
+    .error-diagnosis-section li {
+        background-color: #ff9800; /* Laranja */
+        color: white;
+        padding: 8px 15px;
+        margin: 8px 0;
+        border-radius: 5px;
+        display: inline-block; /* Para que os itens fiquem lado a lado */
+        margin-right: 10px;
+        font-weight: bold;
+    }
+    .error-diagnosis-section li:last-child {
+        margin-right: 0;
+    }
+ .card-bloco {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+      background: #fff;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="quiz-container">
+    <h1 style="text-align:center; margin-bottom: 30px;">Semiologia do Tórax e Abordagem Clínica.</h1>
+    <div class="card-bloco" id="quiz"></div>
+    <button class="submit-btn" id="verifyAnswersBtn">Verificar Respostas</button>
+
+    <button class="generate-questions-btn submit-btn" id="generateNewQuestionsBtn" style="display:none;">
+      Gerar Novas Perguntas
+    </button>
+
+    <div class="results card-bloco" id="results"></div>
+    <div id="statusMessage" style="text-align: center; margin-top: 10px; font-weight: bold; color: #007bff;"></div>
+
+    <div class="error-diagnosis-section card-bloco" id="errorDiagnosis">
+      <h2>Diagnóstico de Erros</h2>
+      <p>Parece que você precisa revisar os seguintes assuntos:</p>
+      <ul id="topicsToReview"></ul>
     </div>
 
-    <script>
-      const questions = [
-        {
-          question: "Qual é a primeira etapa na sequência de abordagem do paciente, conforme ensinado pelo Dr. Rafael?",
-          options: [
-            "Inspeção.",
-            "Ausculta.",
-            "Anamnese.",
-            "Palpação."
-          ],
-          answer: 2,
-          comment: "O Dr. Rafael enfatiza que a sequência de abordagem do paciente começa com a **anamnese**, seguida do exame físico."
-        },
-        {
-          question: "A ectoscopia é sinônimo de qual parte do exame físico?",
-          options: [
-            "Percussão.",
-            "Palpação.",
-            "Ausculta.",
-            "Inspeção."
-          ],
-          answer: 3,
-          comment: "A **ectoscopia** corresponde à **inspeção** geral do paciente, avaliando aspectos visíveis."
-        },
-        {
-          question: "Qual dos seguintes dados antropométricos NÃO foi explicitamente mencionado pelo Dr. Rafael como parte da avaliação inicial do paciente?",
-          options: [
-            "Pressão arterial.",
-            "Peso.",
-            "Altura.",
-            "Temperatura."
-          ],
-          answer: 3,
-          comment: "Embora a temperatura seja um dado vital importante, o Dr. Rafael mencionou especificamente pressão, peso e altura no contexto dos dados antropométricos iniciais na ectoscopia."
-        },
-        {
-          question: "No exame físico do tórax, ao percutir uma área com acúmulo de líquido, qual som é esperado, conforme a aula?",
-          options: [
-            "Claro pulmonar.",
-            "Timpânico.",
-            "Maciço.",
-            "Hiperclaro."
-          ],
-          answer: 2,
-          comment: "A percussão de uma área com líquido (como em um derrame pleural) ou tecido denso produz um som **maciço** ou submaciço."
-        },
-        {
-          question: "Qual estrutura anatômica marca o limite superior do tórax, acima da qual já é considerado pescoço?",
-          options: [
-            "Processo xifoide.",
-            "Ângulo de Louis.",
-            "Clavícula.",
-            "Esterno."
-          ],
-          answer: 2,
-          comment: "Conforme o Dr. Rafael, a **clavícula** define o limite superior do tórax."
-        },
-        {
-          question: "Qual músculo é considerado o principal da respiração?",
-          options: [
-            "Músculos intercostais.",
-            "Esternocleidomastoideo.",
-            "Diafragma.",
-            "Escalenos."
-          ],
-          answer: 2,
-          comment: "O **diafragma** é o principal músculo responsável pelos movimentos respiratórios."
-        },
-        {
-          question: "A traqueostomia e a cricostomia são procedimentos que exigem atenção especial à linha média no pescoço devido à lateralização de quais estruturas vitais?",
-          options: [
-            "Veias jugulares e nervos frênicos.",
-            "Artérias subclávias e nervos laríngeos.",
-            "Artérias carótidas e nervo vago.",
-            "Glândula tireoide e esôfago."
-          ],
-          answer: 2,
-          comment: "O Dr. Rafael destaca a importância da linha média no pescoço para evitar lesão das **carótidas e do nervo vago** durante esses procedimentos."
-        },
-        {
-          question: "Em uma radiografia de tórax, qual a aparência esperada para as áreas com ar (pulmões saudáveis)?",
-          options: [
-            "Brancas (radiopacas).",
-            "Pretas (radiotransparentes/radiolucentes).",
-            "Cinzas.",
-            "Com múltiplas opacidades."
-          ],
-          answer: 1,
-          comment: "O ar atenua pouco a radiação, aparecendo **preto** na radiografia."
-        },
-        {
-          question: "Uma massa mediastinal, como um bócio mergulhante da tireoide, pode causar qual alteração visível no raio-x do tórax?",
-          options: [
-            "Apagamento do ângulo costofrênico.",
-            "Desvio de traqueia.",
-            "Aumento da área cardíaca.",
-            "Consolidação pulmonar."
-          ],
-          answer: 1,
-          comment: "O Dr. Rafael utilizou o exemplo de bócio mergulhante para ilustrar uma massa que pode **desviar a traqueia**."
-        },
-        {
-          question: "Qual grupo de linfonodos é o principal sítio de drenagem para o câncer de mama?",
-          options: [
-            "Linfonodos cervicais.",
-            "Linfonodos inguinais.",
-            "Linfonodos axilares.",
-            "Linfonodos epitrocleares."
-          ],
-          answer: 2,
-          comment: "O Dr. Rafael enfatizou que o câncer de mama drena primariamente para os **linfonodos axilares**, sendo um importante local para rastreamento."
-        },
-        {
-          question: "Qual dos seguintes sinais é um indicativo de câncer de mama avançado, segundo a aula?",
-          options: [
-            "Nódulos únicos e móveis.",
-            "Ausência de dor à palpação.",
-            "Pele em 'casca de laranja'.",
-            "Descarga papilar bilateral."
-          ],
-          answer: 2,
-          comment: "A **pele em 'casca de laranja'** e a retração mamilar são sinais clássicos de câncer de mama avançado."
-        },
-        {
-          question: "Em relação ao fibroadenoma da mama, qual característica o Dr. Rafael utilizou para diferenciá-lo de uma lesão maligna?",
-          options: [
-            "Causa retração mamilar.",
-            "Altera a pele da mama.",
-            "É um nódulo benigno que não altera a pele nem o mamilo.",
-            "Geralmente é acompanhado de dor intensa."
-          ],
-          answer: 2,
-          comment: "O fibroadenoma, mesmo grande, **não causa alterações na pele ou mamilo**, ao contrário das lesões malignas."
-        },
-        {
-          question: "Para a realização de uma drenagem torácica de forma segura, em que parte do espaço intercostal a punção deve ser feita para evitar o feixe vásculo-nervoso?",
-          options: [
-            "Na borda superior da costela inferior.",
-            "Na parte inferior do espaço intercostal (borda superior da costela inferior).",
-            "Na borda inferior da costela superior.",
-            "No centro do espaço intercostal."
-          ],
-          answer: 1,
-          comment: "O feixe vásculo-nervoso passa na borda inferior da costela superior. Para evitá-lo, a punção deve ser feita na parte inferior do espaço intercostal, ou seja, sobre a **borda superior da costela abaixo**."
-        },
-        {
-          question: "Uma dor torácica bem localizada, que piora com a ventilação e à palpação, é mais sugestiva de qual tipo de problema?",
-          options: [
-            "Infarto agudo do miocárdio.",
-            "Doença do refluxo gastroesofágico.",
-            "Problema na caixa torácica.",
-            "Pneumonia."
-          ],
-          answer: 2,
-          comment: "O Dr. Rafael enfatizou que dores ventilatório-dependentes e que pioram à palpação são características de **problemas da caixa torácica**, como costocondrite."
-        },
-        {
-          question: "Qual condição é uma inflamação da cartilagem da costela, com dor localizada que piora com a movimentação e inspiração?",
-          options: [
-            "Neurite intercostal.",
-            "Infarto.",
-            "Costocondrite.",
-            "Herpes Zóster."
-          ],
-          answer: 2,
-          comment: "A **costocondrite** é a inflamação da cartilagem costal com as características de dor descritas."
-        },
-        {
-          question: "Em um caso de dor neuropática com queimação e formigamento na região torácica, que pode piorar com a movimentação e tosse, qual a principal hipótese diagnóstica relacionada aos nervos intercostais?",
-          options: [
-            "Costocondrite.",
-            "Miocardite.",
-            "Neurite intercostal.",
-            "Pleurisia."
-          ],
-          answer: 2,
-          comment: "A **neurite intercostal** é a inflamação do nervo intercostal, manifestando-se com dor neuropática."
-        },
-        {
-          question: "Para localizar a segunda costela no tórax, qual ponto de referência anatômico é utilizado, conforme a aula?",
-          options: [
-            "Processo espinhoso da C7.",
-            "Incisura jugular do esterno.",
-            "Ângulo de Louis (Ângulo Esternal).",
-            "Processo xifoide."
-          ],
-          answer: 2,
-          comment: "O **Ângulo de Louis** corresponde à altura da segunda costela."
-        },
-        {
-          question: "A tosse que se inicia ou piora significativamente apenas quando o paciente deita é fortemente sugestiva de qual condição?",
-          options: [
-            "Asma.",
-            "Bronquite.",
-            "Doença do Refluxo Gastroesofágico (DRGE).",
-            "Sinusite."
-          ],
-          answer: 2,
-          comment: "A **tosse posicional**, que piora ao deitar, é uma manifestação comum da **DRGE** devido ao refluxo de conteúdo gástrico."
-        },
-        {
-          question: "Qual das seguintes linhas é utilizada para a descrição topográfica do tórax?",
-          options: [
-            "Linha médio-abdominal.",
-            "Linha médio-esternal.",
-            "Linha para-umbilical.",
-            "Linha ilíaca."
-          ],
-          answer: 1,
-          comment: "As linhas de referência no tórax incluem a **linha médio-esternal**, médio-clavicular e axilares."
-        },
-        {
-          question: "Na radiografia de tórax de um paciente com derrame pleural, qual achado é esperado devido ao acúmulo de líquido?",
-          options: [
-            "Áreas hipertransparentes (pretas).",
-            "Pulmão com infiltrados reticulares.",
-            "Áreas radiopacas (brancas) e apagamento do ângulo costofrênico.",
-            "Desvio da traqueia para o lado oposto ao derrame."
-          ],
-          answer: 2,
-          comment: "O acúmulo de líquido torna a imagem **radiopaca (branca) e apaga o ângulo costofrênico**."
-        },
-        {
-          question: "Qual dos seguintes achados no exame físico é esperado no lado do tórax de um paciente com grande derrame pleural?",
-          options: [
-            "Murmúrio vesicular aumentado.",
-            "Som claro pulmonar à percussão.",
-            "Hipomotilidade (movimento respiratório diminuído).",
-            "Frêmito toracovocal aumentado."
-          ],
-          answer: 2,
-          comment: "O volume de líquido no derrame pleural restringe o movimento do tórax, causando **hipomotilidade**."
-        },
-        {
-          question: "Na ausculta pulmonar de um paciente com derrame pleural significativo, qual é o achado esperado na área afetada?",
-          options: [
-            "Sibilos.",
-            "Crepitações.",
-            "Murmúrio vesicular abolido ou muito diminuído.",
-            "Atrito pleural."
-          ],
-          answer: 2,
-          comment: "O líquido impede a propagação do som do ar, resultando na **abolição ou diminuição do murmúrio vesicular**."
-        },
-        {
-          question: "O que é o pneumotórax, conforme a aula do Dr. Rafael?",
-          options: [
-            "Acúmulo de sangue no espaço pleural.",
-            "Acúmulo de líquido no espaço pleural.",
-            "Presença de ar no espaço pleural.",
-            "Inflamação da pleura."
-          ],
-          answer: 2,
-          comment: "**Pneumotórax** é a condição de **ar no espaço pleural**."
-        },
-        {
-          question: "Qual é a principal característica radiológica do pneumotórax?",
-          options: [
-            "Apagamento do ângulo costofrênico.",
-            "Áreas radiopacas (brancas).",
-            "Áreas bem mais pretas (radiotransparentes) sem trama vascular pulmonar.",
-            "Nódulos pulmonares."
-          ],
-          answer: 2,
-          comment: "O ar no espaço pleural torna a área **radiotransparente (preta) e sem os vasos pulmonares** normalmente visíveis."
-        },
-        {
-          question: "A inspiração é um processo:",
-          options: [
-            "Passivo.",
-            "Ativo que gasta energia.",
-            "Ativo apenas em situações de esforço.",
-            "Independente da ação muscular."
-          ],
-          answer: 1,
-          comment: "A inspiração é um processo **ativo** que envolve a contração do diafragma e outros músculos, demandando energia."
-        },
-        {
-          question: "Qual é um sinal de urgência em pacientes com falta de ar, segundo o Dr. Rafael?",
-          options: [
-            "Tosse seca.",
-            "Dor torácica que piora ao palpar.",
-            "Incapacidade de completar sentenças.",
-            "Edema unilateral de membros inferiores."
-          ],
-          answer: 2,
-          comment: "A **incapacidade de completar frases** indica um esforço respiratório significativo e é um sinal de urgência."
-        },
-        {
-          question: "Qual das seguintes causas de falta de ar foi citada como 'traiçoeira' e que pode se manifestar por dias ou semanas?",
-          options: [
-            "Ansiedade.",
-            "Asma.",
-            "Tromboembolismo Pulmonar (TEP).",
-            "Anemia."
-          ],
-          answer: 2,
-          comment: "O Dr. Rafael ressaltou que o **TEP** pode ser traiçoeiro e apresentar sintomas como falta de ar por um período prolongado."
-        },
-        {
-          question: "Qual dos seguintes fatores de risco foi associado a um paciente com TEP na aula?",
-          options: [
-            "Tabagismo crônico.",
-            "Cirurgia de quadril com acamamento.",
-            "Histórico de alergias.",
-            "Hipertensão arterial."
-          ],
-          answer: 1,
-          comment: "O Dr. Rafael deu o exemplo de pacientes que operam o quadril e ficam acamados como tendo fator de risco para **TEP**."
-        },
-        {
-          question: "A tosse causada por gotejamento pós-nasal é um sintoma comum de qual condição?",
-          options: [
-            "Doença do Refluxo Gastroesofágico.",
-            "Asma.",
-            "Sinusite.",
-            "DPOC."
-          ],
-          answer: 2,
-          comment: "O gotejamento pós-nasal, comum na **sinusite**, pode irritar as vias aéreas e causar tosse."
-        },
-        {
-          question: "Qual das seguintes condições é considerada um diagnóstico de exclusão para a tosse?",
-          options: [
-            "Asma.",
-            "Sinusite.",
-            "Tosse psicogênica.",
-            "Refluxo gastroesofágico."
-          ],
-          answer: 2,
-          comment: "A **tosse psicogênica** é um diagnóstico difícil, feito apenas após a exclusão de outras causas orgânicas."
-        },
-        {
-          question: "Quando a tosse é mais intensa pela manhã e ao fim da tarde/início da noite, qual das seguintes condições deve ser pensada, segundo o Dr. Rafael?",
-          options: [
-            "Doença do Refluxo Gastroesofágico.",
-            "Sinusite crônica.",
-            "Asma ou irritação brônquica.",
-            "Pneumonia bacteriana."
-          ],
-          answer: 2,
-          comment: "Esse padrão temporal é característico de **asma ou bronquite (irritação brônquica)**."
-        },
-        {
-          question: "Qual tipo de tosse é mais frequentemente associado à asma, conforme a aula?",
-          options: [
-            "Produtiva com grande quantidade de escarro.",
-            "Tosse seca ou com pouca secreção.",
-            "Tosse com hemoptise.",
-            "Tosse com ruído metálico."
-          ],
-          answer: 1,
-          comment: "A tosse asmática é geralmente **seca ou com pouca secreção**."
-        },
-        {
-          question: "Em um raio-x de tórax, a presença de linfonodos aumentados no hilo pulmonar pode indicar:",
-          options: [
-            "Pneumotórax.",
-            "Infarto do miocárdio.",
-            "Inflamação ou processo patológico na região.",
-            "Fratura de costela."
-          ],
-          answer: 2,
-          comment: "O aumento dos **linfonodos hilares (linfonodomegalia hilar)** é um sinal de inflamação ou doença na área."
-        },
-        {
-          question: "A neuralgia pós-herpética é uma sequela que pode ser evitada com o tratamento precoce do:",
-          options: [
-            "Herpes simples.",
-            "Herpes zóster.",
-            "Varicela.",
-            "Condrite costal."
-          ],
-          answer: 1,
-          comment: "O tratamento precoce do **herpes zóster**, idealmente em 48 horas, pode prevenir a neuralgia pós-herpética."
-        },
-        {
-          question: "Qual é a principal diferença entre um raio-x normal e um com derrame pleural em relação à cor da imagem pulmonar?",
-          options: [
-            "O pulmão normal é branco e o com derrame pleural é preto.",
-            "O pulmão normal é cinza e o com derrame pleural é branco.",
-            "O pulmão normal é preto (radiotransparente) e o com derrame pleural é branco (radiopaco).",
-            "Não há diferença na cor, apenas na forma."
-          ],
-          answer: 2,
-          comment: "O ar nos pulmões normais aparece **preto**, enquanto o líquido do derrame pleural torna a área **branca e opaca**."
-        },
-        {
-          question: "Qual das seguintes manifestações NÃO é esperada em um paciente com Doença Pulmonar Obstrutiva Crônica (DPOC) avançada?",
-          options: [
-            "Falta de ar crônica.",
-            "Dependência de oxigênio.",
-            "História de tabagismo de longa data.",
-            "Cura completa com tratamento broncodilatador."
-          ],
-          answer: 3,
-          comment: "A **DPOC é uma doença crônica e progressiva, não tendo cura completa**."
-        },
-        {
-          question: "A sensação de 'bola parada na garganta' pode ser uma manifestação extraesofágica de qual condição?",
-          options: [
-            "Asma.",
-            "Sinusite.",
-            "Doença do Refluxo Gastroesofágico (DRGE).",
-            "Amigdalite."
-          ],
-          answer: 2,
-          comment: "A **DRGE** pode causar sintomas atípicos, como a sensação de **globo faríngeo (bola na garganta)**."
-        },
-        {
-          question: "Qual dos seguintes achados na anamnese de um paciente com dor torácica indicaria que a dor NÃO é de origem na caixa torácica?",
-          options: [
-            "Piora com a movimentação.",
-            "Piora à palpação.",
-            "É bem localizada.",
-            "Não é ventilatório-dependente."
-          ],
-          answer: 3,
-          comment: "Dores de origem em órgãos internos geralmente **não pioram com a respiração ou movimentação da caixa torácica**."
-        },
-        {
-          question: "O edema de membros inferiores com cacifo (sinal da godet) bilateral é um sinal que pode estar associado a:",
-          options: [
-            "Trombose venosa profunda unilateral.",
-            "Infecção localizada.",
-            "Insuficiência cardíaca ou doenças renais.",
-            "Fratura de tornozelo."
-          ],
-          answer: 2,
-          comment: "O **edema bilateral com cacifo** é um sinal clássico de condições sistêmicas como **insuficiência cardíaca ou doenças renais**."
-        },
-        {
-          question: "Conforme a aula, qual a principal função do líquido entre as pleuras (visceral e parietal)?",
-          options: [
-            "Auxiliar na troca gasosa.",
-            "Produzir o murmúrio vesicular.",
-            "Permitir o deslizamento das pleuras sem atrito.",
-            "Proteger o pulmão contra infecções."
-          ],
-          answer: 2,
-          comment: "A pequena quantidade de líquido pleural é essencial para que as **pleuras deslizem suavemente durante a respiração**."
+    <div class="generated-questions-section card-bloco" id="generatedQuestionsSection" style="display:none;">
+      <h2>Novas Perguntas Geradas</h2>
+      <div id="newQuestionsContent"></div>
+    </div>
+  </div>
+  
+  <button class="error-nav-btn" id="errorNavBtn" style="display:none;">
+    <span class="arrow-icon"></span>
+    <span class="button-text"></span>
+  </button>
+
+  <script>
+    const quizContainer = document.getElementById("quiz");
+    const resultsContainer = document.getElementById("results");
+    const errorNavBtn = document.getElementById("errorNavBtn");
+    const arrowIcon = errorNavBtn.querySelector(".arrow-icon");
+    const buttonText = errorNavBtn.querySelector(".button-text");
+    const errorDiagnosisSection = document.getElementById("errorDiagnosis");
+    const topicsToReviewList = document.getElementById("topicsToReview");
+    const generateNewQuestionsBtn = document.getElementById("generateNewQuestionsBtn");
+    const generatedQuestionsSection = document.getElementById("generatedQuestionsSection");
+    const newQuestionsContent = document.getElementById("newQuestionsContent");
+    const statusMessage = document.getElementById("statusMessage");
+
+    let wrongQuestionIndices = [];
+    let errorCountByTopic = {};
+    let totalAnsweredQuestionsByTopic = {};
+    let currentWrongQuestionIndex = -1;
+    let hasErrors = false;
+    let isShowingErrors = false;
+    let isShowingDiagnosis = false;
+
+    // Inicializa a visibilidade das seções no carregamento
+    errorDiagnosisSection.style.display = 'none';
+    topicsToReviewList.innerHTML = '';
+    statusMessage.textContent = '';
+
+    const questions = [     {         question: "Qual é a primeira etapa na sequência de abordagem do paciente, conforme as diretrizes clínicas?",         options: [             "Inspeção.",             "Ausculta.",             "Anamnese.",             "Palpação."         ],         correctAnswer: "Anamnese.",         comment: "A abordagem correta sempre inicia pela anamnese (entrevista clínica), que fornece o contexto necessário para direcionar o exame físico subsequente.",         topic: "Sequência de Abordagem Clínica"     },     {         question: "A ectoscopia é sinônimo de qual parte do exame físico?",         options: [             "Percussão.",             "Palpação.",             "Ausculta.",             "Inspeção."         ],         correctAnswer: "Inspeção.",         comment: "A ectoscopia é a inspeção geral, onde o examinador avalia o estado geral do paciente, postura, nutrição e sinais visíveis antes de realizar manobras específicas.",         topic: "Semiologia Geral"     },     {         question: "No exame físico do tórax, ao percutir uma área com acúmulo de líquido (derrame pleural), qual som é esperado?",         options: [             "Claro pulmonar.",             "Timpânico.",             "Maciço.",             "Hiperclaro."         ],         correctAnswer: "Maciço.",         comment: "O som maciço ocorre quando percutimos áreas sem ar, como tecidos densos ou líquidos. Áreas pulmonares normais apresentam som 'claro pulmonar'.",         topic: "Percussão Torácica"     },     {         question: "Qual estrutura anatômica marca o limite superior do tórax, separando-o do pescoço?",         options: [             "Processo xifoide.",             "Ângulo de Louis.",             "Clavícula.",             "Esterno."         ],         correctAnswer: "Clavícula.",         comment: "Anatomicamente, a clavícula define o limite superior do tórax; estruturas localizadas acima desta linha são consideradas pertencentes ao pescoço.",         topic: "Anatomia Topográfica"     },     {         question: "Qual músculo é considerado o principal motor da respiração?",         options: [             "Músculos intercostais.",             "Esternocleidomastoideo.",             "Diafragma.",             "Escalenos."         ],         correctAnswer: "Diafragma.",         comment: "O diafragma é responsável pela maior parte do volume inspirado em repouso. Os demais músculos citados são considerados acessórios.",         topic: "Fisiologia Respiratória"     },     {         question: "Procedimentos na linha média do pescoço, como traqueostomias, visam evitar lesão de quais estruturas vitais lateralizadas?",         options: [             "Veias jugulares e nervos frênicos.",             "Artérias subclávias e nervos laríngeos.",             "Artérias carótidas e nervo vago.",             "Glândula tireoide e esôfago."         ],         correctAnswer: "Artérias carótidas e nervo vago.",         comment: "O feixe vasculonervoso do pescoço (carótida, jugular interna e nervo vago) situa-se lateralmente à traqueia, por isso a importância de manter a intervenção na linha média.",         topic: "Anatomia Aplicada a Procedimentos"     },     {         question: "Em uma radiografia de tórax, qual é a aparência característica dos pulmões saudáveis (preenchidos por ar)?",         options: [             "Brancas (radiopacas).",             "Pretas (radiotransparentes/radiolucentes).",             "Cinzas.",             "Com múltiplas opacidades."         ],         correctAnswer: "Pretas (radiotransparentes/radiolucentes).",         comment: "O ar oferece pouca resistência ao raio-x, permitindo que a radiação marque o filme, resultando na cor preta (radiolucência).",         topic: "Radiologia de Tórax"     },     {         question: "Qual grupo de linfonodos representa o principal sítio de drenagem linfática para o câncer de mama?",         options: [             "Linfonodos cervicais.",             "Linfonodos inguinais.",             "Linfonodos axilares.",             "Linfonodos epitrocleares."         ],         correctAnswer: "Linfonodos axilares.",         comment: "Cerca de 75% da drenagem linfática da mama ocorre para os linfonodos axilares, tornando-os fundamentais na avaliação de metástases.",         topic: "Anatomia e Patologia Mamária"     },     {         question: "Para evitar o feixe vasculonervoso durante uma drenagem de tórax, a agulha deve ser inserida em qual local do espaço intercostal?",         options: [             "Na borda superior da costela inferior.",             "Na parte inferior do espaço intercostal (rente à borda inferior da costela de cima).",             "Na borda inferior da costela superior.",             "No centro do espaço intercostal."         ],         correctAnswer: "Na borda superior da costela inferior.",         comment: "O feixe vasculonervoso (veia, artéria e nervo) passa no sulco da borda inferior de cada costela. Portanto, a margem de segurança é sempre a borda superior da costela de baixo.",         topic: "Anatomia Aplicada - Procedimentos"     },     {         question: "Qual condição clínica é caracterizada pela inflamação da cartilagem costal, gerando dor que piora à palpação e inspiração?",         options: [             "Neurite intercostal.",             "Infarto agudo do miocárdio.",             "Costocondrite.",             "Herpes Zóster."         ],         correctAnswer: "Costocondrite.",         comment: "A costocondrite causa dor na parede torácica (musculoesquelética) e é facilmente diferenciada de dores cardíacas por ser reprodutível à palpação local.",         topic: "Diagnóstico Diferencial de Dor Torácica"     },     {         question: "A tosse que piora ou se inicia predominantemente quando o paciente se deita é um sinal clínico clássico de:",         options: [             "Asma.",             "Bronquite crônica.",             "Doença do Refluxo Gastroesofágico (DRGE).",             "Sinusite aguda."         ],         correctAnswer: "Doença do Refluxo Gastroesofágico (DRGE).",         comment: "A posição supina facilita o refluxo do conteúdo gástrico para o esôfago e laringe, provocando o reflexo da tosse (tosse posicional).",         topic: "Fisiopatologia da Tosse"     },     {         question: "Na ausculta de um paciente com derrame pleural volumoso, qual alteração do murmúrio vesicular é esperada?",         options: [             "Sibilos inspiratórios.",             "Crepitações finas.",             "Murmúrio vesicular abolido ou muito diminuído.",             "Atrito pleural persistente."         ],         correctAnswer: "Murmúrio vesicular abolido ou muito diminuído.",         comment: "O líquido no espaço pleural atua como uma barreira física que impede a transmissão dos sons respiratórios para o estetoscópio.",         topic: "Exame Físico - Ausculta"     },     {         question: "Qual é a definição de Pneumotórax?",         options: [             "Presença de sangue no espaço pleural.",             "Inflamação crônica dos alvéolos.",             "Presença de ar no espaço pleural.",             "Colapso pulmonar por excesso de muco."         ],         correctAnswer: "Presença de ar no espaço pleural.",         comment: "O pneumotórax ocorre quando o ar entra no espaço entre as pleuras, causando perda da pressão negativa e colapso parcial ou total do pulmão.",         topic: "Patologia Pleural"     },     {         question: "Qual dos sinais abaixo indica insuficiência respiratória iminente (urgência) em um paciente com dispneia?",         options: [             "Tosse seca isolada.",             "Dor ao palpar as costelas.",             "Incapacidade de completar sentenças ao falar.",             "Pico febril isolado."         ],         correctAnswer: "Incapacidade de completar sentenças ao falar.",         comment: "A fala entrecortada demonstra que a reserva ventilatória do paciente está crítica, priorizando a troca gasosa em detrimento da fonação.",         topic: "Semiologia - Sinais de Gravidade"     },     {         question: "O edema bilateral de membros inferiores que deixa sinal do cacifo (Sinal de Godet) sugere uma causa:",         options: [             "Local (ex: Trombose Venosa Profunda).",             "Inflamatória cutânea (Erisipela).",             "Sistêmica (ex: Insuficiência Cardíaca ou Doença Renal).",             "Traumática (Fratura)."         ],         correctAnswer: "Sistêmica (ex: Insuficiência Cardíaca ou Doença Renal).",         comment: "Edemas bilaterais e indolores geralmente indicam retenção de sódio e água ou falha de bomba (coração), afetando o corpo de forma sistêmica.",         topic: "Semiologia - Edemas"     } ];
+
+    function buildQuiz() {
+      const output = [];
+
+      questions.forEach((currentQuestion, questionNumber) => {
+        const options = [];
+        for (let i = 0; i < currentQuestion.options.length; i++) {
+          options.push(
+            `<label class="option" data-question="${questionNumber}" data-value="${currentQuestion.options[i]}">
+              <img src="tesouras.png" class="scissor-icon" onclick="event.stopPropagation(); this.parentNode.classList.toggle('struck-through');">
+              ${currentQuestion.options[i]}
+            </label>`
+          );
         }
-      ];
 
-      const quizContainer = document.getElementById("quiz");
-      const submitButton = document.getElementById("submit");
-      const resultsContainer = document.getElementById("results");
+        output.push(
+          `<div class="card" id="question-${questionNumber}" data-topic="${currentQuestion.topic}">
+            <div class="question">${currentQuestion.question}</div>
+            <div class="options">${options.join("")}</div>
+            <div class="comment" id="comment-${questionNumber}"></div>
+          </div>`
+        );
+      });
 
-      function buildQuiz() {
-        const output = [];
+      quizContainer.innerHTML = output.join("");
+    }
 
-        questions.forEach((currentQuestion, questionNumber) => {
-          const options = currentQuestion.options
-            .map(
-              (option, optionNumber) =>
-                `<div class="option" data-question="${questionNumber}" data-option="${optionNumber}">
-                  ${option}
-                </div>`
-            )
-            .join("");
+    function showResults() {
+      wrongQuestionIndices = [];
+      errorCountByTopic = {};
+      totalAnsweredQuestionsByTopic = {};
+      currentWrongQuestionIndex = -1;
+      hasErrors = false;
+      isShowingErrors = false;
+      isShowingDiagnosis = false;
 
-          output.push(`
-            <div class="card">
-              <div class="question">${questionNumber + 1}) ${
-                currentQuestion.question
-              }</div>
-              <div class="options">${options}</div>
-              <div class="comment" id="comment-${questionNumber}"></div>
-            </div>
-          `);
+      errorDiagnosisSection.style.display = 'none';
+      topicsToReviewList.innerHTML = '';
+      statusMessage.textContent = '';
+
+      // Busca por todas as perguntas: estáticas e dinâmicas
+      const allQuestionCards = document.querySelectorAll('.quiz-container .card, #newQuestionsContent .card');
+      let correctAnswersCount = 0;
+      let totalQuestionsAnswered = 0;
+
+      console.log('🔍 Verificando', allQuestionCards.length, 'perguntas...');
+
+      allQuestionCards.forEach((card, index) => {
+        const questionEl = card.querySelector('.question') || card.querySelector('p');
+        if (!questionEl) return;
+
+        const questionText = questionEl.textContent.trim();
+        const optionsContainer = card.querySelector('.options') || card;
+        const allOptions = optionsContainer.querySelectorAll('.option, label.option, label');
+        const userAnswerElement = optionsContainer.querySelector('.option.selected, label.selected');
+        const commentDiv = card.querySelector('.comment');
+
+        const questionTopic = card.dataset.topic || "Tópico não informado";
+        
+        console.log(`📝 Pergunta ${index + 1}: Tópico = "${questionTopic}"`);
+        console.log(`🔍 Encontradas ${allOptions.length} alternativas`);
+        
+        // Remove classes anteriores
+        allOptions.forEach(option => {
+          option.classList.remove('correct', 'incorrect', 'selected');
+        });
+        if (commentDiv) commentDiv.classList.remove('show');
+
+        let correctAnswerValue = null;
+        let questionComment = null;
+
+        // Verifica se é pergunta estática ou dinâmica
+        const isStatic = card.id && card.id.startsWith('question-');
+        if (isStatic) {
+          // Pergunta estática - busca nos dados originais
+          const questionData = questions.find(q => q.question.trim() === questionText);
+          if (questionData) {
+            correctAnswerValue = questionData.correctAnswer.trim();
+            questionComment = questionData.comment;
+          }
+        } else {
+          // Pergunta dinâmica - busca pela opção marcada como correta
+          const correctOpt = optionsContainer.querySelector('.option[data-answer="true"], label[data-answer="true"]');
+          if (correctOpt) {
+            correctAnswerValue = correctOpt.dataset.value?.trim() || correctOpt.textContent.trim();
+            console.log(`✅ Resposta correta encontrada: "${correctAnswerValue}"`);
+          } else {
+            console.log('❌ Nenhuma resposta correta encontrada para pergunta dinâmica');
+          }
+          
+          // Busca comentário no próprio card ou no div comment
+          const commentElement = card.querySelector('.comment');
+          if (commentElement && commentElement.textContent.trim()) {
+            questionComment = commentElement.textContent.trim();
+          }
+        }
+
+        // Processa resposta do usuário e aplica coloração
+        let userAnswer = null;
+        if (userAnswerElement) {
+          userAnswerElement.classList.add('selected');
+          userAnswer = userAnswerElement.dataset.value?.trim() || userAnswerElement.textContent.trim();
+          totalQuestionsAnswered++;
+          totalAnsweredQuestionsByTopic[questionTopic] = (totalAnsweredQuestionsByTopic[questionTopic] || 0) + 1;
+
+          console.log(`👤 Resposta do usuário: "${userAnswer}"`);
+          console.log(`🎯 Resposta correta: "${correctAnswerValue}"`);
+
+          // Verifica se a resposta está correta
+          if (userAnswer === correctAnswerValue) {
+            correctAnswersCount++;
+            console.log(`✅ Resposta correta!`);
+          } else {
+            hasErrors = true;
+            errorCountByTopic[questionTopic] = (errorCountByTopic[questionTopic] || 0) + 1;
+            console.log(`❌ Resposta incorreta para tópico: ${questionTopic}`);
+          }
+        }
+
+        // Aplica coloração: SEMPRE marca a correta de verde, e a errada de vermelho se foi marcada
+        allOptions.forEach(option => {
+          const optionValue = option.dataset.value?.trim() || option.textContent.trim();
+          
+          // Marca a resposta correta de verde SEMPRE
+          if (optionValue === correctAnswerValue) {
+            option.classList.add('correct');
+            console.log(`🟢 Marcando como correta: "${optionValue}"`);
+          }
+          
+          // Se o usuário marcou uma resposta E ela está errada, marca de vermelho
+          if (userAnswer && optionValue === userAnswer && userAnswer !== correctAnswerValue) {
+            option.classList.add('incorrect');
+            console.log(`🔴 Marcando como incorreta: "${optionValue}"`);
+          }
         });
 
-        quizContainer.innerHTML = output.join("");
-      }
-
-      function showResults() {
-        let correctAnswers = 0;
-
-        questions.forEach((question, questionIndex) => {
-          const options = quizContainer.querySelectorAll(
-            `.option[data-question="${questionIndex}"]`
-          );
-          const userAnswerElement = quizContainer.querySelector(
-            `.option[data-question="${questionIndex}"].selected`
-          );
-          const userAnswer = userAnswerElement ? parseInt(userAnswerElement.dataset.option) : undefined;
-          const correctAnswer = question.answer;
-          const commentElement = document.getElementById(`comment-${questionIndex}`);
-
-          options.forEach((option) => {
-            const optionIndex = parseInt(option.dataset.option);
-            option.classList.remove("correct", "incorrect");
-            if (optionIndex === correctAnswer) {
-              option.classList.add("correct");
-            }
-            if (userAnswer !== undefined && optionIndex === userAnswer && userAnswer !== correctAnswer) {
-              option.classList.add("incorrect");
-            }
-          });
-
-          // Exibir o comentário
-          if (question.comment) {
-            commentElement.innerHTML = `<p><strong>Comentário:</strong> ${question.comment}</p>`;
-            commentElement.classList.add('show'); // Torna o comentário visível
-          }
-
-          if (userAnswer === correctAnswer) {
-            correctAnswers++;
-          }
-        });
-
-        resultsContainer.textContent = `Você acertou ${correctAnswers} de ${questions.length} questões.`;
-      }
-
-      quizContainer.addEventListener("click", function (event) {
-        if (event.target.classList.contains("option")) {
-          const questionNumber = event.target.dataset.question;
-          const selected = quizContainer.querySelector(
-            `.option[data-question="${questionNumber}"].selected`
-          );
-          if (selected) selected.classList.remove("selected");
-          event.target.classList.add("selected");
+        // Mostra comentário se disponível
+        if (commentDiv && questionComment) {
+          commentDiv.textContent = questionComment;
+          commentDiv.classList.add('show');
         }
       });
 
-      submitButton.addEventListener("click", showResults);
+      // Exibe resultados
+      resultsContainer.textContent = `Você acertou ${correctAnswersCount} de ${totalQuestionsAnswered} questões respondidas.`;
 
-      buildQuiz();
-    </script>
-  </body>
-<script src="conexao_firebase.js"></script><script src="navegacao.js"></script><script type="module" src="padrao_simulado.js"></script></html>
+      console.log('📊 Erros por tópico:', errorCountByTopic);
+      console.log('📊 Total por tópico:', totalAnsweredQuestionsByTopic);
+
+      // Gera diagnóstico de erros
+      if (hasErrors) {
+        for (const topic in errorCountByTopic) {
+          const errors = errorCountByTopic[topic];
+          const total = totalAnsweredQuestionsByTopic[topic] || 0;
+          if (total > 0) {
+            const percent = ((errors / total) * 100).toFixed(1);
+            const li = document.createElement('li');
+            li.textContent = `${topic}: ${percent}% de erros (${errors} de ${total} questões respondidas)`;
+            topicsToReviewList.appendChild(li);
+          }
+        }
+      } else {
+        const li = document.createElement('li');
+        li.textContent = "🥳 Parabéns! Você não teve erros nas questões respondidas.";
+        topicsToReviewList.appendChild(li);
+      }
+
+      errorDiagnosisSection.style.display = 'block';
+      generatedQuestionsSection.style.display = 'block';
+      generateNewQuestionsBtn.style.display = 'block';
+      scrollToDiagnosis();
+    }
+
+    function scrollToQuestion(index) {
+      const questionCard = document.getElementById(`question-${index}`);
+      if (questionCard) {
+        questionCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    function scrollToDiagnosis() {
+        errorDiagnosisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function scrollToGeneratedQuestions() {
+        generatedQuestionsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Event listener para seleção de opções (funciona para estáticas e dinâmicas)
+    document.addEventListener("click", function (event) {
+      const clickedElement = event.target;
+      const optionElement = clickedElement.closest('.option');
+
+      if (optionElement) {
+          if (clickedElement.classList.contains("scissor-icon")) {
+              event.stopPropagation();
+              optionElement.classList.toggle("struck-through");
+          }
+          else {
+              const parentCard = optionElement.closest('.card');
+              const currentQuestionOptions = parentCard.querySelectorAll('.option');
+
+              currentQuestionOptions.forEach(opt => opt.classList.remove("selected"));
+              optionElement.classList.add("selected");
+          }
+      }
+    });
+
+    generateNewQuestionsBtn.addEventListener("click", async function() {
+        statusMessage.textContent = '⏳ Gerando novas perguntas...';
+        generateNewQuestionsBtn.disabled = true;
+
+        const topics = Object.keys(errorCountByTopic).filter(topic => {
+            const errorsInTopic = errorCountByTopic[topic] || 0;
+            const totalAnsweredInTopic = totalAnsweredQuestionsByTopic[topic] || 0;
+            return errorsInTopic > 0 && totalAnsweredInTopic > 0;
+        });
+
+        const topicsToSend = topics.length > 0 ? topics : ["fisiologia celular", "biologia"];
+
+        try {
+            const response = await fetch('https://www.quizia.xyz/quiz', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ topicos: topicsToSend }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            newQuestionsContent.innerHTML = '';
+            if (data && data.html) {
+                console.log('📥 HTML recebido do Flask:', data.html);
+                
+                // Insere o HTML diretamente sem reconstrução complexa
+                newQuestionsContent.innerHTML = data.html.replace(/```html|```/g, '');
+                
+                // Adiciona tesouras e ajusta formatação apenas se necessário
+                newQuestionsContent.querySelectorAll('.card').forEach((card, cardIndex) => {
+                    // Garante que o elemento de pergunta tenha a classe correta
+                    const questionElement = card.querySelector('p');
+                    if (questionElement && !questionElement.classList.contains('question')) {
+                       questionElement.classList.add('question');
+                    }
+
+                    // Remove qualquer input de radio que possa existir e adiciona tesouras
+                    card.querySelectorAll('label').forEach((label) => {
+                        // Remove inputs de radio MAS preserva o atributo data-answer
+                        const radioInput = label.querySelector('input[type="radio"]');
+                        if (radioInput) {
+                            // PRESERVA o atributo data-answer do input no label
+                            if (radioInput.hasAttribute('data-answer')) {
+                                label.setAttribute('data-answer', radioInput.getAttribute('data-answer'));
+                            }
+                            radioInput.remove();
+                        }
+                        
+                        // Garante que tenha a classe option
+                        if (!label.classList.contains('option')) {
+                            label.classList.add('option');
+                        }
+
+                        // Garante que tenha data-value
+                        if (!label.dataset.value) {
+                            label.dataset.value = label.textContent.trim();
+                        }
+
+                        // Adiciona tesoura se não existir
+                        if (!label.querySelector('.scissor-icon')) {
+                            const scissorIcon = document.createElement('img');
+                            scissorIcon.src = 'tesouras.png';
+                            scissorIcon.className = 'scissor-icon';
+                            scissorIcon.onclick = function(e) {
+                                e.stopPropagation();
+                                label.classList.toggle('struck-through');
+                            };
+                            label.insertBefore(scissorIcon, label.firstChild);
+                        }
+                    });
+
+                    console.log(`🏷️ Card ${cardIndex}: data-topic = "${card.dataset.topic}"`);
+                    
+                    // Verifica se há opção correta marcada
+                    const correctOption = card.querySelector('label[data-answer="true"]');
+                    if (correctOption) {
+                        console.log(`✅ Opção correta encontrada: "${correctOption.dataset.value}"`);
+                    } else {
+                        console.log('❌ Nenhuma opção correta encontrada');
+                    }
+                });
+            } else {
+                newQuestionsContent.innerHTML = "<p>Não foi possível gerar novas perguntas para os tópicos selecionados.</p>";
+            }
+            
+            generatedQuestionsSection.style.display = 'block';
+            scrollToGeneratedQuestions();
+            statusMessage.textContent = '✅ Perguntas geradas com sucesso!';
+            setTimeout(() => { statusMessage.textContent = '' }, 3000);
+
+        } catch (error) {
+            console.error('Erro ao gerar novas perguntas:', error);
+            newQuestionsContent.innerHTML = `<p>Erro ao carregar novas perguntas: ${error.message}. Por favor, tente novamente.</p>`;
+            generatedQuestionsSection.style.display = 'block';
+            scrollToGeneratedQuestions();
+            statusMessage.textContent = '❌ Erro na requisição: ' + error.message;
+            setTimeout(() => { statusMessage.textContent = '' }, 5000);
+        } finally {
+            generateNewQuestionsBtn.disabled = false;
+        }
+    });
+
+    // Inicialização
+    buildQuiz();
+    errorDiagnosisSection.style.display = 'none';
+    generatedQuestionsSection.style.display = 'none';
+    generateNewQuestionsBtn.style.display = 'none';
+
+    // Event listener para o botão de verificar respostas
+    document.getElementById("verifyAnswersBtn").addEventListener("click", showResults);
+  </script>
+  <script src="conexao_firebase.js"></script><script src="navegacao.js"></script><script type="module" src="padrao_simulado.js"></script>
+
+</body>
+</html>
