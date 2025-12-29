@@ -1,935 +1,633 @@
-
+<!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Questionário de Múltipla Escolha: Sinapse Nervosa e Neurotransmissores</title>
-    <style>
-      body {
-        font-family: sans-serif;
-        margin: 0;
-        padding: 20px;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        min-height: 100vh;
-        background-color: #f4f4f4;
-      }
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Transmissão Sináptica e Neurotransmissores</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      background-color: #f4f4f4;
+    }
 
-      .quiz-container {
-        max-width: 800px;
-        width: 100%;
-      }
+    .quiz-container {
+      max-width: 800px;
+      width: 100%;
+    }
 
-      h1 {
-        color: #333;
-        text-align: center;
-        margin-bottom: 30px;
-      }
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 30px;
+    }
 
-      .card {
-        background-color: white;
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .question {
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .options {
+      margin-top: 15px;
+    }
+
+    /* Estilos unificados para todas as opções (estáticas e dinâmicas) */
+    .option, label.option, label, #newQuestionsContent label {
+      display: flex; /* Para alinhar imagem e texto */
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      position: relative; /* Para posicionar a tesoura */
+    }
+
+    /* FORÇA a remoção de inputs de radio em QUALQUER lugar */
+    .option input[type="radio"], 
+    label input[type="radio"],
+    #newQuestionsContent input[type="radio"],
+    #newQuestionsContent label input[type="radio"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
+    }
+
+    .option:hover, 
+    label.option:hover, 
+    label:hover,
+    #newQuestionsContent label:hover {
+      background-color: #e9e9e9;
+    }
+
+    .option.selected, 
+    label.option.selected, 
+    label.selected,
+    #newQuestionsContent label.selected {
+      background-color: #d1e7dd;
+      border-color: #28a745;
+    }
+
+    .option.correct, 
+    label.option.correct, 
+    label.correct,
+    #newQuestionsContent label.correct {
+      background-color: #d4edda;
+      border-color: #28a745;
+    }
+
+    .option.incorrect, 
+    label.option.incorrect, 
+    label.incorrect,
+    #newQuestionsContent label.incorrect {
+      background-color: #f8d7da;
+      border-color: #dc3545;
+    }
+
+    .submit-btn {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 30px;
+    }
+
+    .submit-btn:hover {
+      background-color: #0056b3;
+    }
+
+    .results {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .scissor-icon {
+      margin-right: 10px; /* Espaço entre a tesoura e o texto da opção */
+      width: 20px; /* Ajuste conforme o tamanho da sua imagem */
+      height: 20px; /* Ajuste conforme o tamanho da sua imagem */
+      opacity: 0.5; /* Transparência como no original */
+      cursor: pointer;
+    }
+
+    .scissor-icon.hidden {
+      display: none;
+    }
+
+    .struck-through {
+      text-decoration: line-through;
+      color: #888;
+    }
+
+    .comment {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f0f0f0;
+      border-left: 4px solid #007bff;
+      font-style: italic;
+      color: #555;
+      display: none; /* Escondido por padrão */
+    }
+    .comment.show {
+      display: block; /* Mostrado quando ativado */
+    }
+
+    /* Estilos para o botão de navegação de erro / diagnóstico */
+    .error-nav-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #dc3545; /* Vermelho para erro */
+      color: white;
+      border: none;
+      border-radius: 50%; /* Torna o botão redondo */
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      display: none; /* Escondido por padrão */
+      flex-direction: column; /* Para empilhar o ícone e o contador */
+      padding: 5px; /* Ajuste o padding para acomodar texto maior */
+      box-sizing: border-box; /* Garante que padding não aumente o tamanho total */
+      text-align: center;
+    }
+
+    .error-nav-btn:hover {
+      background-color: #c82333;
+    }
+
+    .error-nav-btn .arrow-icon {
+      font-size: 30px; /* Tamanho da seta */
+      line-height: 1; /* Ajuste para centralizar */
+    }
+
+    .error-nav-btn .button-text {
+      font-size: 12px; /* Tamanho do texto abaixo da seta */
+      line-height: 1;
+      margin-top: 2px; /* Espaço entre a seta e o texto */
+    }
+
+    /* Estilos para a seção de diagnóstico de erros */
+    .error-diagnosis-section {
+        margin-top: 50px;
+        padding: 30px;
+        background-color: #ffe0b2; /* Um laranja claro ou similar */
         border-radius: 8px;
-        padding: 20px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        display: none; /* Escondido por padrão */
+        text-align: center;
+        font-size: 1.1em;
+        color: #333;
+    }
+
+    .error-diagnosis-section h2 {
+        color: #e65100; /* Laranja mais escuro */
         margin-bottom: 20px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
+        font-size: 1.8em;
+    }
 
-      .question {
-        font-weight: bold;
-        margin-bottom: 10px;
-        color: #333;
-      }
+    .error-diagnosis-section ul {
+        list-style: none; /* Remove marcadores de lista */
+        padding: 0;
+        margin: 0;
+    }
 
-      .options {
-        margin-top: 15px;
-      }
-
-      .option {
-        display: flex; /* Para alinhar imagem e texto */
-        align-items: center;
-        margin-bottom: 10px;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-        position: relative; /* Para posicionar a tesoura */
-      }
-
-      .option:hover {
-        background-color: #e9e9e9;
-      }
-
-      .option.selected {
-        background-color: #d1e7dd;
-        border-color: #28a745;
-      }
-
-      .option.correct {
-        background-color: #d4edda;
-        border-color: #28a745;
-      }
-
-      .option.incorrect {
-        background-color: #f8d7da;
-        border-color: #dc3545;
-      }
-
-      .submit-btn {
-        display: block;
-        width: 100%;
-        padding: 15px;
-        background-color: #007bff;
+    .error-diagnosis-section li {
+        background-color: #ff9800; /* Laranja */
         color: white;
-        border: none;
+        padding: 8px 15px;
+        margin: 8px 0;
         border-radius: 5px;
-        font-size: 18px;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-        margin-top: 30px;
-      }
-
-      .submit-btn:hover {
-        background-color: #0056b3;
-      }
-
-      .results {
-        text-align: center;
-        margin-top: 30px;
-        font-size: 20px;
+        display: inline-block; /* Para que os itens fiquem lado a lado */
+        margin-right: 10px;
         font-weight: bold;
-        color: #333;
-      }
+    }
+    .error-diagnosis-section li:last-child {
+        margin-right: 0;
+    }
+ .card-bloco {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+      background: #fff;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="quiz-container">
+    <h1 style="text-align:center; margin-bottom: 30px;">Transmissão Sináptica e Neurotransmissores</h1>
+    <div class="card-bloco" id="quiz"></div>
+    <button class="submit-btn" id="verifyAnswersBtn">Verificar Respostas</button>
 
-      .scissor-icon {
-        margin-right: 10px; /* Espaço entre a tesoura e o texto da opção */
-        width: 20px; /* Ajuste conforme o tamanho da sua imagem */
-        height: 20px; /* Ajuste conforme o tamanho da sua imagem */
-        opacity: 0.5; /* Transparência como no original */
-        cursor: pointer;
-      }
-
-      .scissor-icon.hidden {
-        display: none;
-      }
-
-      .struck-through {
-        text-decoration: line-through;
-        color: #888;
-      }
-
-      .comment {
-        margin-top: 10px;
-        padding: 10px;
-        background-color: #f0f0f0;
-        border-left: 4px solid #007bff;
-        font-style: italic;
-        color: #555;
-        display: none; /* Escondido por padrão */
-      }
-      .comment.show {
-        display: block; /* Mostrado quando ativado */
-      }
-
-      /* Estilos para o botão de navegação de erro / diagnóstico */
-      .error-nav-btn {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background-color: #dc3545; /* Vermelho para erro */
-        color: white;
-        border: none;
-        border-radius: 50%; /* Torna o botão redondo */
-        width: 60px;
-        height: 60px;
-        font-size: 24px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        cursor: pointer;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        z-index: 1000;
-        display: none; /* Escondido por padrão */
-        flex-direction: column; /* Para empilhar o ícone e o contador */
-        padding: 5px; /* Ajuste o padding para acomodar texto maior */
-        box-sizing: border-box; /* Garante que padding não aumente o tamanho total */
-        text-align: center;
-      }
-
-      .error-nav-btn:hover {
-        background-color: #c82333;
-      }
-
-      .error-nav-btn .arrow-icon {
-        font-size: 30px; /* Tamanho da seta */
-        line-height: 1; /* Ajuste para centralizar */
-      }
-
-      .error-nav-btn .button-text {
-        font-size: 12px; /* Tamanho do texto abaixo da seta */
-        line-height: 1;
-        margin-top: 2px; /* Espaço entre a seta e o texto */
-      }
-      
-      /* Estilos para a seção de diagnóstico de erros */
-      .error-diagnosis-section {
-          margin-top: 50px;
-          padding: 30px;
-          background-color: #ffe0b2; /* Um laranja claro ou similar */
-          border-radius: 8px;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-          display: none; /* Escondido por padrão */
-          text-align: center;
-          font-size: 1.1em;
-          color: #333;
-      }
-
-      .error-diagnosis-section h2 {
-          color: #e65100; /* Laranja mais escuro */
-          margin-bottom: 20px;
-          font-size: 1.8em;
-      }
-
-      .error-diagnosis-section ul {
-          list-style: none; /* Remove marcadores de lista */
-          padding: 0;
-          margin: 0;
-      }
-
-      .error-diagnosis-section li {
-          background-color: #ff9800; /* Laranja */
-          color: white;
-          padding: 8px 15px;
-          margin: 8px 0;
-          border-radius: 5px;
-          display: inline-block; /* Para que os itens fiquem lado a lado */
-          margin-right: 10px;
-          font-weight: bold;
-      }
-      .error-diagnosis-section li:last-child {
-          margin-right: 0;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="quiz-container">
-      <h1>Questionário de Múltipla Escolha: Sinapse Nervosa e Neurotransmissores</h1>
-      <div id="quiz"></div>
-      <button class="submit-btn" id="submit">Verificar Respostas</button>
-      <div id="results" class="results"></div>
-
-      <div id="errorDiagnosis" class="error-diagnosis-section">
-        <h2>Diagnóstico de Erros</h2>
-        <p>Parece que você precisa revisar os seguintes assuntos:</p>
-        <ul id="topicsToReview">
-        </ul>
-      </div>
-    </div>
-
-    <button class="error-nav-btn" id="errorNavBtn">
-      <span class="arrow-icon"></span> <span class="button-text"></span>
+    <button class="generate-questions-btn submit-btn" id="generateNewQuestionsBtn" style="display:none;">
+      Gerar Novas Perguntas
     </button>
 
-    <script>
-      const quizContainer = document.getElementById("quiz");
-      const submitButton = document.getElementById("submit");
-      const resultsContainer = document.getElementById("results");
-      const errorNavBtn = document.getElementById("errorNavBtn");
-      const arrowIcon = errorNavBtn.querySelector(".arrow-icon");
-      const buttonText = errorNavBtn.querySelector(".button-text");
-      const errorDiagnosisSection = document.getElementById("errorDiagnosis");
-      const topicsToReviewList = document.getElementById("topicsToReview");
+    <div class="results card-bloco" id="results"></div>
+    <div id="statusMessage" style="text-align: center; margin-top: 10px; font-weight: bold; color: #007bff;"></div>
 
-      let wrongQuestionIndices = [];
-      let errorCountByTopic = {};
-      let totalAnsweredQuestionsByTopic = {};
-      let currentWrongQuestionIndex = -1;
-      let hasErrors = false;
-      let isShowingErrors = false;
-      let isShowingDiagnosis = false;
+    <div class="error-diagnosis-section card-bloco" id="errorDiagnosis">
+      <h2>Diagnóstico de Erros</h2>
+      <p>Parece que você precisa revisar os seguintes assuntos:</p>
+      <ul id="topicsToReview"></ul>
+    </div>
 
-      // SUAS 40 QUESTÕES ORIGINAIS COM TÓPICOS SUGERIDOS
-      const questions = [
-        {
-          question: "1. Qual é a primeira etapa na transmissão de um sinal em um neurônio, conforme o slide?",
-          options: [
-            "a) Geração de despolarização.",
-            "b) Ativação de canais iônicos voltagem-dependentes.",
-            "c) Estímulo.",
-            "d) Propagação da alteração (PA).",
-          ],
-          correctAnswer: "c) Estímulo.",
-          comment: "A primeira etapa é o estímulo, que pode ser elétrico, químico ou mecânico, e que inicia a cadeia de eventos que levarão à transmissão do sinal.",
-          topic: "Estímulo Neural e Potencial de Ação",
-        },
-        {
-          question: "2. O que acontece com o potencial de membrana em repouso de um neurônio após o recebimento de um estímulo?",
-          options: [
-            "a) Ele se torna mais negativo.",
-            "b) Sua polaridade é alterada.",
-            "c) Ele permanece inalterado.",
-            "d) Cessa a atividade elétrica.",
-          ],
-          correctAnswer: "b) Sua polaridade é alterada.",
-          comment: "Um estímulo suficientemente forte (acima do limiar) causa uma alteração na permeabilidade da membrana a íons, o que resulta na mudança da polaridade do potencial de membrana, levando à despolarização e à geração de um potencial de ação.",
-          topic: "Potencial de Ação e Despolarização",
-        },
-        {
-          question: "3. Qual é a fase que ocorre imediatamente após a ativação de canais iônicos voltagem-dependentes?",
-          options: [
-            "a) Potencial de repouso.",
-            "b) Potencial de ação (despolarização).",
-            "c) Hiperpolarização.",
-            "d) Período refratário.",
-          ],
-          correctAnswer: "b) Potencial de ação (despolarização).",
-          comment: "A ativação dos canais iônicos voltagem-dependentes (principalmente os de sódio) leva à despolarização da membrana, que é a fase ascendente do potencial de ação.",
-          topic: "Fases do Potencial de Ação",
-        },
-        {
-          question: "4. A propagação da alteração (PA) na membrana do neurônio segue qual princípio?",
-          options: [
-            "a) É proporcional à intensidade do estímulo.",
-            "b) É um processo de 'tudo ou nada'.",
-            "c) Diminui de amplitude com a distância.",
-            "d) Requer um estímulo contínuo para se propagar.",
-          ],
-          correctAnswer: "b) É um processo de 'tudo ou nada'.",
-          comment: "O potencial de ação é um evento de 'tudo ou nada': se o estímulo atingir o limiar, um potencial de ação de amplitude constante é gerado e se propaga sem diminuição ao longo do axônio. Se o limiar não for atingido, não há potencial de ação.",
-          topic: "Princípio do Tudo ou Nada",
-        },
-        {
-          question: "5. Qual é o papel da bainha de mielina na transmissão do impulso nervoso?",
-          options: [
-            "a) Aumentar a resistência da membrana, diminuindo a velocidade.",
-            "b) Acelerar a condução do impulso nervoso (condução saltatória).",
-            "c) Impedir completamente a transmissão do sinal.",
-            "d) Armazenar neurotransmissores.",
-          ],
-          correctAnswer: "b) Acelerar a condução do impulso nervoso (condução saltatória).",
-          comment: "A bainha de mielina isola eletricamente o axônio, permitindo que o potencial de ação 'salte' de um nódulo de Ranvier para o outro (condução saltatória), o que aumenta drasticamente a velocidade de transmissão.",
-          topic: "Bainha de Mielina e Condução",
-        },
-        {
-          question: "6. O que são os nódulos de Ranvier?",
-          options: [
-            "a) Regiões mielinizadas do axônio.",
-            "b) Lacunas na bainha de mielina onde ocorre a despolarização.",
-            "c) Estruturas que produzem neurotransmissores.",
-            "d) Ramificações dos dendritos.",
-          ],
-          correctAnswer: "b) Lacunas na bainha de mielina onde ocorre a despolarização.",
-          comment: "Os nódulos de Ranvier são pequenas lacunas desmielinizadas ao longo do axônio, ricas em canais iônicos voltagem-dependentes, onde o potencial de ação é regenerado durante a condução saltatória.",
-          topic: "Nódulos de Ranvier",
-        },
-        {
-          question: "7. Em qual tipo de sinapse ocorre a transmissão direta de corrente elétrica entre as células?",
-          options: [
-            "a) Sinapse química.",
-            "b) Sinapse elétrica.",
-            "c) Sinapse mista.",
-            "d) Sinapse excitatória.",
-          ],
-          correctAnswer: "b) Sinapse elétrica.",
-          comment: "Nas sinapses elétricas, as células estão conectadas por junções comunicantes (gap junctions), que permitem o fluxo direto e rápido de íons e, portanto, de corrente elétrica entre elas, sem a necessidade de neurotransmissores.",
-          topic: "Tipos de Sinapse",
-        },
-        {
-          question: "8. Qual é a principal vantagem da sinapse química sobre a sinapse elétrica?",
-          options: [
-            "a) Maior velocidade de transmissão.",
-            "b) Bidirecionalidade da transmissão.",
-            "c) Capacidade de modulação e integração de sinais.",
-            "d) Menor gasto energético.",
-          ],
-          correctAnswer: "c) Capacidade de modulação e integração de sinais.",
-          comment: "Sinapses químicas, embora mais lentas, permitem uma maior plasticidade e complexidade na sinalização. Elas podem ser excitatórias ou inibitórias, e a intensidade do sinal pode ser modulada, permitindo a integração de múltiplos sinais.",
-          topic: "Vantagens da Sinapse Química",
-        },
-        {
-          question: "9. O que acontece quando o potencial de ação chega ao terminal pré-sináptico em uma sinapse química?",
-          options: [
-            "a) Liberação de potássio.",
-            "b) Abertura de canais de cálcio voltagem-dependentes.",
-            "c) Fechamento da fenda sináptica.",
-            "d) Inativação dos neurotransmissores.",
-          ],
-          correctAnswer: "b) Abertura de canais de cálcio voltagem-dependentes.",
-          comment: "A despolarização do terminal pré-sináptico pela chegada do potencial de ação abre canais de cálcio dependentes de voltagem, permitindo o influxo de Ca2+, que é essencial para a liberação de neurotransmissores.",
-          topic: "Eventos na Sinapse Química",
-        },
-        {
-          question: "10. Qual a função das vesículas sinápticas?",
-          options: [
-            "a) Degradar neurotransmissores.",
-            "b) Armazenar e liberar neurotransmissores na fenda sináptica.",
-            "c) Produzir energia para o neurônio.",
-            "d) Transportar íons através da membrana.",
-          ],
-          correctAnswer: "b) Armazenar e liberar neurotransmissores na fenda sináptica.",
-          comment: "As vesículas sinápticas são pequenos sacos membranosos que contêm neurotransmissores. Quando o Ca2+ entra no terminal, elas se fundem com a membrana pré-sináptica e liberam os neurotransmissores por exocitose.",
-          topic: "Vesículas Sinápticas",
-        },
-        {
-          question: "11. O que são os receptores pós-sinápticos?",
-          options: [
-            "a) Moléculas que sintetizam neurotransmissores.",
-            "b) Canais iônicos que transportam cálcio para o neurônio pré-sináptico.",
-            "c) Proteínas na membrana pós-sináptica que se ligam a neurotransmissores.",
-            "d) Estruturas responsáveis pela recaptação de neurotransmissores.",
-          ],
-          correctAnswer: "c) Proteínas na membrana pós-sináptica que se ligam a neurotransmissores.",
-          comment: "Receptores pós-sinápticos são proteínas especializadas localizadas na membrana da célula pós-sináptica que se ligam especificamente aos neurotransmissores, desencadeando uma resposta na célula receptora.",
-          topic: "Receptores Pós-Sinápticos",
-        },
-        {
-          question: "12. Qual é a principal diferença entre receptores ionotrópicos e metabotrópicos?",
-          options: [
-            "a) Ionotrópicos degradam neurotransmissores, metabotrópicos os sintetizam.",
-            "b) Ionotrópicos são mais lentos, metabotrópicos são mais rápidos.",
-            "c) Ionotrópicos são canais iônicos diretos, metabotrópicos ativam segundos mensageiros.",
-            "d) Ionotrópicos usam ATP, metabotrópicos não.",
-          ],
-          correctAnswer: "c) Ionotrópicos são canais iônicos diretos, metabotrópicos ativam segundos mensageiros.",
-          comment: "Receptores ionotrópicos são canais iônicos que se abrem diretamente quando um neurotransmissor se liga. Receptores metabotrópicos, por outro lado, são acoplados a proteínas G e atuam ativando segundos mensageiros, levando a efeitos mais lentos e duradouros.",
-          topic: "Tipos de Receptores",
-        },
-        {
-          question: "13. O que é um Potencial Pós-Sináptico Excitatório (PPSE)?",
-          options: [
-            "a) Uma hiperpolarização da membrana pós-sináptica.",
-            "b) Uma despolarização da membrana pós-sináptica que torna mais provável o disparo de um PA.",
-            "c) A inibição da liberação de neurotransmissores.",
-            "d) O fechamento de canais de sódio.",
-          ],
-          correctAnswer: "b) Uma despolarização da membrana pós-sináptica que torna mais provável o disparo de um PA.",
-          comment: "Um PPSE é uma despolarização (torna o potencial mais positivo) da membrana pós-sináptica, aproximando-a do limiar e aumentando a probabilidade de gerar um potencial de ação.",
-          topic: "PPSE e PPSI",
-        },
-        {
-          question: "14. O que é um Potencial Pós-Sináptico Inibitório (PPSI)?",
-          options: [
-            "a) Uma despolarização da membrana pós-sináptica.",
-            "b) Uma hiperpolarização da membrana pós-sináptica que torna menos provável o disparo de um PA.",
-            "c) O aumento da liberação de neurotransmissores.",
-            "d) A abertura de canais de sódio.",
-          ],
-          correctAnswer: "b) Uma hiperpolarização da membrana pós-sináptica que torna menos provável o disparo de um PA.",
-          comment: "Um PPSI é uma hiperpolarização (torna o potencial mais negativo) ou estabilização da membrana pós-sináptica, afastando-a do limiar e diminuindo a probabilidade de gerar um potencial de ação.",
-          topic: "PPSE e PPSI",
-        },
-        {
-          question: "15. Qual o processo de soma de PPSEs de diferentes sinapses que chegam ao neurônio ao mesmo tempo?",
-          options: [
-            "a) Soma temporal.",
-            "b) Soma espacial.",
-            "c) Potenciação.",
-            "d) Habituação.",
-          ],
-          correctAnswer: "b) Soma espacial.",
-          comment: "A soma espacial ocorre quando múltiplos PPSEs de diferentes sinapses chegam à mesma célula pós-sináptica simultaneamente e se somam para atingir o limiar.",
-          topic: "Somação Sináptica",
-        },
-        {
-          question: "16. Qual o processo de soma de PPSEs de uma única sinapse que ocorrem em rápida sucessão?",
-          options: [
-            "a) Soma espacial.",
-            "b) Soma temporal.",
-            "c) Integração.",
-            "d) Modulação.",
-          ],
-          correctAnswer: "b) Soma temporal.",
-          comment: "A soma temporal ocorre quando um único terminal pré-sináptico dispara repetidamente em rápida sucessão, fazendo com que os PPSEs gerados se somem no tempo para atingir o limiar de disparo.",
-          topic: "Somação Sináptica",
-        },
-        {
-          question: "17. A acetilcolina é um neurotransmissor liberado na:",
-          options: [
-            "a) Medula espinhal.",
-            "b) Junção neuromuscular.",
-            "c) Glândula adrenal.",
-            "d) Tireoide.",
-          ],
-          correctAnswer: "b) Junção neuromuscular.",
-          comment: "A acetilcolina é o principal neurotransmissor envolvido na transmissão do sinal dos nervos motores para os músculos esqueléticos na junção neuromuscular, causando a contração muscular.",
-          topic: "Neurotransmissores Específicos",
-        },
-        {
-          question: "18. Qual neurotransmissor está associado à regulação do humor, sono e apetite?",
-          options: ["a) Dopamina.", "b) GABA.", "c) Serotonina.", "d) Glutamato."],
-          correctAnswer: "c) Serotonina.",
-          comment: "A serotonina (5-HT) é um neurotransmissor monoamina que desempenha um papel crucial em diversas funções cerebrais, incluindo o humor, sono, apetite e bem-estar. Níveis desregulados de serotonina são frequentemente associados a distúrbios de humor como a depressão.",
-          topic: "Neurotransmissores Específicos",
-        },
-        {
-          question: "19. A dopamina está envolvida principalmente em quais vias cerebrais?",
-          options: [
-            "a) Vias sensoriais de dor.",
-            "b) Vias de recompensa, motivação e movimento.",
-            "c) Vias de regulação da temperatura.",
-            "d) Vias de controle da respiração.",
-          ],
-          correctAnswer: "b) Vias de recompensa, motivação e movimento.",
-          comment: "A dopamina é um neurotransmissor fundamental para o sistema de recompensa do cérebro, motivação, prazer e coordenação motora. Disfunções nas vias dopaminérgicas estão implicadas em condições como a Doença de Parkinson e a dependência de drogas.",
-          topic: "Neurotransmissores Específicos",
-        },
-        {
-          question: "20. Qual é o principal neurotransmissor inibitório no cérebro?",
-          options: ["a) Glutamato.", "b) Glicina.", "c) Noradrenalina.", "d) GABA."],
-          correctAnswer: "d) GABA.",
-          comment: "O Ácido Gama-aminobutírico (GABA) é o principal neurotransmissor inibitório do sistema nervoso central. Ele atua reduzindo a excitabilidade neuronal, o que é importante para modular a atividade cerebral e prevenir a superestimulação.",
-          topic: "Neurotransmissores Específicos",
-        },
-        {
-          question: "21. Qual é o principal neurotransmissor excitatório no cérebro?",
-          options: ["a) Acetilcolina.", "b) Serotonina.", "c) Glutamato.", "d) Dopamina."],
-          correctAnswer: "c) Glutamato.",
-          comment: "O glutamato é o principal neurotransmissor excitatório do sistema nervoso central, crucial para processos como a aprendizagem e a formação da memória através da potenciação sináptica.",
-          topic: "Neurotransmissores Específicos",
-        },
-        {
-          question: "22. A noradrenalina (norepinefrina) está associada a qual sistema do corpo?",
-          options: [
-            "a) Sistema digestório.",
-            "b) Sistema nervoso autônomo (resposta de 'luta ou fuga').",
-            "c) Sistema endócrino.",
-            "d) Sistema circulatório.",
-          ],
-          correctAnswer: "b) Sistema nervoso autônomo (resposta de 'luta ou fuga').",
-          comment: "A noradrenalina atua tanto como neurotransmissor quanto como hormônio e é um componente chave do sistema nervoso simpático, responsável pela resposta de 'luta ou fuga', aumentando o estado de alerta, frequência cardíaca e prontidão do corpo para o estresse.",
-          topic: "Neurotransmissores Específicos",
-        },
-        {
-          question: "23. Qual o processo de remoção de neurotransmissores da fenda sináptica que envolve sua quebra por enzimas?",
-          options: [
-            "a) Recaptação.",
-            "b) Difusão.",
-            "c) Degradação enzimática.",
-            "d) Armazenamento.",
-          ],
-          correctAnswer: "c) Degradação enzimática.",
-          comment: "A degradação enzimática, como a que ocorre com a acetilcolina pela acetilcolinesterase, é um mecanismo pelo qual os neurotransmissores são inativados e removidos da fenda sináptica, garantindo a cessação rápida do sinal.",
-          topic: "Remoção de Neurotransmissores",
-        },
-        {
-          question: "24. A recaptação de neurotransmissores é um mecanismo pelo qual:",
-          options: [
-            "a) Eles são degradados por enzimas.",
-            "b) Eles são absorvidos de volta para o neurônio pré-sináptico ou células da glia.",
-            "c) Eles se difundem para fora da fenda sináptica.",
-            "d) Eles se ligam a novos receptores.",
-          ],
-          correctAnswer: "b) Eles são absorvidos de volta para o neurônio pré-sináptico ou células da glia.",
-          comment: "A recaptação é um processo ativo de transporte que remove neurotransmissores da fenda sináptica, permitindo sua reutilização ou degradação dentro do neurônio pré-sináptico ou células gliais, sendo crucial para regular a duração e intensidade do sinal sináptico.",
-          topic: "Remoção de Neurotransmissores",
-        },
-        {
-          question: "25. Qual é o papel da bomba de sódio-potássio na manutenção do potencial de repouso da membrana?",
-          options: [
-            "a) Ela produz neurotransmissores.",
-            "b) Ela transporta íons contra seus gradientes de concentração, mantendo o interior negativo.",
-            "c) Ela degrada proteínas da membrana.",
-            "d) Ela gera o potencial de ação.",
-          ],
-          correctAnswer: "b) Ela transporta íons contra seus gradientes de concentração, mantendo o interior negativo.",
-          comment: "A bomba de sódio-potássio (Na+/K+ ATPase) utiliza ATP para bombear 3 íons Na+ para fora da célula e 2 íons K+ para dentro, mantendo os gradientes eletroquímicos e contribuindo significativamente para o potencial de membrana em repouso, que é negativo no interior.",
-          topic: "Potencial de Repouso",
-        },
-        {
-          question: "26. O que é Potenciação de Longo Prazo (LTP)?",
-          options: [
-            "a) Uma diminuição persistente na força da sinapse.",
-            "b) Um aumento duradouro na força da transmissão sináptica.",
-            "c) A inibição do disparo neuronal.",
-            "d) A morte de neurônios.",
-          ],
-          correctAnswer: "b) Um aumento duradouro na força da transmissão sináptica.",
-          comment: "A Potenciação de Longo Prazo (LTP) é um fenômeno de plasticidade sináptica caracterizado por um aumento persistente na eficiência da transmissão sináptica após uma estimulação de alta frequência, sendo um mecanismo celular fundamental para o aprendizado e a memória.",
-          topic: "Plasticidade Sináptica",
-        },
-        {
-          question: "27. A Depressão de Longo Prazo (LTD) é o oposto da LTP, caracterizada por:",
-          options: [
-            "a) Um aumento na excitabilidade neuronal.",
-            "b) Uma diminuição persistente na força da transmissão sináptica.",
-            "c) A formação de novas sinapses.",
-            "d) Aceleração da condução do PA.",
-          ],
-          correctAnswer: "b) Uma diminuição persistente na força da transmissão sináptica.",
-          comment: "A Depressão de Longo Prazo (LTD) é outra forma de plasticidade sináptica que resulta em uma redução duradoura da eficácia da transmissão sináptica. Junto com a LTP, a LTD é importante para o ajuste fino e a eliminação de sinapses, contribuindo para a dinâmica da rede neural.",
-          topic: "Plasticidade Sináptica",
-        },
-        {
-          question: "28. Qual a importância da plasticidade sináptica para o sistema nervoso?",
-          options: [
-            "a) Manter as sinapses inalteradas ao longo da vida.",
-            "b) Permitir o aprendizado e a memória através da modificação da força sináptica.",
-            "c) Apenas garantir a transmissão rápida de sinais.",
-            "d) Degradar neurotransmissores excessivos.",
-          ],
-          correctAnswer: "b) Permitir o aprendizado e a memória através da modificação da força sináptica.",
-          comment: "A plasticidade sináptica é a base neural para processos como aprendizado e memória, pois permite que as conexões entre os neurônios sejam fortalecidas ou enfraquecidas em resposta à experiência, adaptando o cérebro a novas informações e habilidades.",
-          topic: "Importância da Plasticidade Sináptica",
-        },
-        {
-          question: "29. O que é inibição pré-sináptica?",
-          options: [
-            "a) Um mecanismo que aumenta a liberação de neurotransmissores.",
-            "b) Um mecanismo que reduz a quantidade de neurotransmissor liberada pelo terminal pré-sináptico.",
-            "c) Uma alteração na sensibilidade dos receptores pós-sinápticos.",
-            "d) A degradação de neurotransmissores antes de serem liberados.",
-          ],
-          correctAnswer: "b) Um mecanismo que reduz a quantidade de neurotransmissor liberada pelo terminal pré-sináptico.",
-          comment: "A inibição pré-sináptica ocorre quando um neurônio, ao fazer sinapse no terminal de outro neurônio, reduz a quantidade de neurotransmissor que será liberada por este último, diminuindo seletivamente a magnitude da resposta pós-sináptica sem afetar outras sinapses do neurônio.",
-          topic: "Modulação Sináptica",
-        },
-        {
-          question: "30. O que é facilitação pré-sináptica?",
-          options: [
-            "a) Uma redução na liberação de neurotransmissores.",
-            "b) Um aumento na quantidade de neurotransmissor liberada pelo terminal pré-sináptico.",
-            "c) Aumento da inibição pós-sináptica.",
-            "d) Fechamento de canais de cálcio.",
-          ],
-          correctAnswer: "b) Um aumento na quantidade de neurotransmissor liberada pelo terminal pré-sináptico.",
-          comment: "A facilitação pré-sináptica é o oposto da inibição, onde um neurônio atua no terminal pré-sináptico de outro, aumentando a quantidade de neurotransmissor liberado, resultando em uma resposta pós-sináptica mais forte.",
-          topic: "Modulação Sináptica",
-        },
-        {
-          question: "31. Qual a importância da reciclagem de vesículas sinápticas?",
-          options: [
-            "a) Garantir o descarte de neurotransmissores velhos.",
-            "b) Permitir a rápida reposição de vesículas e a continuidade da transmissão sináptica.",
-            "c) Diminuir o gasto energético do neurônio.",
-            "d) Aumentar o período refratário.",
-          ],
-          correctAnswer: "b) Permitir a rápida reposição de vesículas e a continuidade da transmissão sináptica.",
-          comment: "Após a fusão com a membrana pré-sináptica e liberação de neurotransmissores, as vesículas são endocitadas e recicladas dentro do terminal. Esse processo rápido e eficiente é vital para manter um suprimento constante de vesículas prontas para liberar neurotransmissores, garantindo a sustentabilidade da sinalização sináptica.",
-          topic: "Reciclagem de Vesículas",
-        },
-        {
-          question: "32. O que acontece com a permeabilidade da membrana pós-sináptica quando um neurotransmissor inibitório se liga ao seu receptor?",
-          options: [
-            "a) Aumenta a permeabilidade a íons sódio (Na+).",
-            "b) Diminui a permeabilidade a todos os íons.",
-            "c) Aumenta a permeabilidade a íons cloreto (Cl-) ou potássio (K+), tornando a membrana mais negativa.",
-            "d) Não há alteração na permeabilidade.",
-          ],
-          correctAnswer: "c) Aumenta a permeabilidade a íons cloreto (Cl-) ou potássio (K+), tornando a membrana mais negativa.",
-          comment: "Neurotransmissores inibitórios (como GABA ou glicina) geralmente abrem canais para íons Cl- (que entram, deixando o interior mais negativo) ou canais para íons K+ (que saem, deixando o interior mais negativo), resultando em hiperpolarização ou estabilização da membrana e dificultando o disparo de um potencial de ação.",
-          topic: "Ação de Neurotransmissores Inibitórios",
-        },
-        {
-          question: "33. A liberação de neurotransmissores é um processo de qual tipo de transporte?",
-          options: [
-            "a) Transporte ativo primário.",
-            "b) Difusão facilitada.",
-            "c) Exocitose.",
-            "d) Endocitose.",
-          ],
-          correctAnswer: "c) Exocitose.",
-          comment: "A liberação de neurotransmissores das vesículas sinápticas para a fenda sináptica é um exemplo clássico de exocitose, um processo de transporte em massa que move substâncias para fora da célula.",
-          topic: "Transporte de Neurotransmissores",
-        },
-        {
-          question: "34. Qual a função dos autorreceptores no terminal pré-sináptico?",
-          options: [
-            "a) Receber sinais de outros neurônios.",
-            "b) Degradar neurotransmissores.",
-            "c) Regular a própria liberação de neurotransmissores pelo terminal.",
-            "d) Ativar a recaptação.",
-          ],
-          correctAnswer: "c) Regular a própria liberação de neurotransmissores pelo terminal.",
-          comment: "Autorreceptores são receptores localizados na membrana do neurônio pré-sináptico que se ligam ao neurotransmissor que o próprio neurônio libera. Sua ativação geralmente resulta em uma diminuição da liberação subsequente de neurotransmissores, agindo como um mecanismo de feedback negativo para controlar a sinalização.",
-          topic: "Autorreceptores e Regulação Sináptica",
-        },
-        {
-          question: "35. O que são os canais de sódio voltagem-dependentes?",
-          options: [
-            "a) Canais que se abrem em resposta à ligação de um neurotransmissor.",
-            "b) Canais que se abrem em resposta a mudanças no potencial elétrico da membrana.",
-            "c) Canais que transportam sódio para fora da célula.",
-            "d) Canais sempre abertos para o sódio.",
-          ],
-          correctAnswer: "b) Canais que se abrem em resposta a mudanças no potencial elétrico da membrana.",
-          comment: "Canais de sódio voltagem-dependentes são proteínas transmembrana que se abrem quando a membrana atinge um determinado limiar de despolarização, permitindo o influxo rápido de íons sódio e iniciando a fase ascendente do potencial de ação.",
-          topic: "Canais Iônicos",
-        },
-        {
-          question: "36. Qual a função do período refratário do potencial de ação?",
-          options: [
-            "a) Permitir a soma de múltiplos estímulos.",
-            "b) Garantir que o potencial de ação se propague em apenas uma direção e regular a frequência de disparo.",
-            "c) Aumentar a amplitude do potencial de ação.",
-            "d) Diminuir a velocidade de condução.",
-          ],
-          correctAnswer: "b) Garantir que o potencial de ação se propague em apenas uma direção e regular a frequência de disparo.",
-          comment: "O período refratário (absoluto e relativo) impede que um novo potencial de ação seja gerado imediatamente após um anterior, garantindo que o sinal se propague unidirecionalmente e limitando a frequência máxima de disparos do neurônio.",
-          topic: "Período Refratário",
-        },
-        {
-          question: "37. A miastenia gravis é uma doença autoimune que afeta a transmissão sináptica. Qual parte da sinapse ela ataca principalmente?",
-          options: [
-            "a) Canais de cálcio pré-sinápticos.",
-            "b) Vesículas de acetilcolina.",
-            "c) Receptores de acetilcolina na membrana pós-sináptica.",
-            "d) A enzima acetilcolinesterase.",
-          ],
-          correctAnswer: "c) Receptores de acetilcolina na membrana pós-sináptica.",
-          comment: "A miastenia gravis é caracterizada pela produção de anticorpos que atacam e destroem os receptores de acetilcolina na junção neuromuscular, levando à fraqueza muscular progressiva devido à diminuição da resposta ao neurotransmissor.",
-          topic: "Doenças da Sinapse",
-        },
-        {
-          question: "38. Qual dos seguintes não é um mecanismo de remoção de neurotransmissores da fenda sináptica?",
-          options: [
-            "a) Difusão para fora da fenda.",
-            "b) Degradação enzimática.",
-            "c) Síntese de novos neurotransmissores.",
-            "d) Recaptação por transportadores.",
-          ],
-          correctAnswer: "c) Síntese de novos neurotransmissores.",
-          comment: "A síntese de novos neurotransmissores ocorre dentro do neurônio pré-sináptico (ou no corpo celular), mas não é um mecanismo de remoção dos neurotransmissores da fenda sináptica após a liberação. Os mecanismos de remoção são difusão, degradação enzimática e recaptação.",
-          topic: "Remoção de Neurotransmissores",
-        },
-        {
-          question: "39. Toxinas como a do botulismo (Botox) agem na sinapse de que forma?",
-          options: [
-            "a) Aumentando a liberação de acetilcolina.",
-            "b) Bloqueando a liberação de acetilcolina, causando paralisia muscular.",
-            "c) Ativando os receptores de acetilcolina.",
-            "d) Degradando a acetilcolina na fenda.",
-          ],
-          correctAnswer: "b) Bloqueando a liberação de acetilcolina, causando paralisia muscular.",
-          comment: "A toxina botulínica age clivando proteínas SNARE nos terminais nervosos colinérgicos, impedindo a fusão das vesículas e, consequentemente, o bloqueio da liberação de acetilcolina, o que leva à paralisia flácida dos músculos.",
-          topic: "Toxinas e Sinapse",
-        },
-        {
-          question: "40. Qual o efeito da liberação de GABA (ácido gama-aminobutírico) na maioria das sinapses centrais?",
-          options: [
-            "a) Excitatório, causando despolarização.",
-            "b) Inibitório, causando hiperpolarização ou estabilização do potencial de membrana.",
-            "c) Aumento da liberação de outros neurotransmissores.",
-            "d) Degradação de receptores pós-sinápticos.",
-          ],
-          correctAnswer: "b) Inibitório, causando hiperpolarização ou estabilização do potencial de membrana.",
-          comment: "O GABA é o principal neurotransmissor inibitório do sistema nervoso central. Ele se liga a receptores GABA (principalmente GABAA, que são canais de Cl-) e causa a entrada de Cl- na célula, hiperpolarizando ou estabilizando o potencial de membrana e dificultando a geração de um potencial de ação.",
-          topic: "Ação de Neurotransmissores Inibitórios",
-        },
-      ];
+    <div class="generated-questions-section card-bloco" id="generatedQuestionsSection" style="display:none;">
+      <h2>Novas Perguntas Geradas</h2>
+      <div id="newQuestionsContent"></div>
+    </div>
+  </div>
+  
+  <button class="error-nav-btn" id="errorNavBtn" style="display:none;">
+    <span class="arrow-icon"></span>
+    <span class="button-text"></span>
+  </button>
 
-      function buildQuiz() {
-        const output = [];
+  <script>
+    const quizContainer = document.getElementById("quiz");
+    const resultsContainer = document.getElementById("results");
+    const errorNavBtn = document.getElementById("errorNavBtn");
+    const arrowIcon = errorNavBtn.querySelector(".arrow-icon");
+    const buttonText = errorNavBtn.querySelector(".button-text");
+    const errorDiagnosisSection = document.getElementById("errorDiagnosis");
+    const topicsToReviewList = document.getElementById("topicsToReview");
+    const generateNewQuestionsBtn = document.getElementById("generateNewQuestionsBtn");
+    const generatedQuestionsSection = document.getElementById("generatedQuestionsSection");
+    const newQuestionsContent = document.getElementById("newQuestionsContent");
+    const statusMessage = document.getElementById("statusMessage");
 
-        questions.forEach((currentQuestion, questionNumber) => {
-          const options = [];
-          for (let i = 0; i < currentQuestion.options.length; i++) {
-            options.push(
-              `<label class="option" data-question="${questionNumber}" data-value="${currentQuestion.options[i]}">
-                <img src="tesouras.png" class="scissor-icon" onclick="event.stopPropagation(); this.parentNode.classList.toggle('struck-through');">
-                ${currentQuestion.options[i]}
-              </label>`
-            );
-          }
+    let wrongQuestionIndices = [];
+    let errorCountByTopic = {};
+    let totalAnsweredQuestionsByTopic = {};
+    let currentWrongQuestionIndex = -1;
+    let hasErrors = false;
+    let isShowingErrors = false;
+    let isShowingDiagnosis = false;
 
-          output.push(
-            `<div class="card" id="question-${questionNumber}" data-topic="${currentQuestion.topic}">
-              <div class="question">${currentQuestion.question}</div>
-              <div class="options">${options.join("")}</div>
-              <div class="comment" id="comment-${questionNumber}"></div>
-            </div>`
+    // Inicializa a visibilidade das seções no carregamento
+    errorDiagnosisSection.style.display = 'none';
+    topicsToReviewList.innerHTML = '';
+    statusMessage.textContent = '';
+
+    const questions = [         {           question: "1. Qual é a primeira etapa na transmissão de um sinal em um neurônio, conforme a fisiologia básica?",           options: [             "a) Geração de despolarização.",             "b) Ativação de canais iônicos voltagem-dependentes.",             "c) Estímulo.",             "d) Propagação da alteração (PA).",           ],           correctAnswer: "c) Estímulo.",           comment: "A primeira etapa é o estímulo (elétrico, químico ou mecânico), que altera a permeabilidade da membrana e inicia a cadeia de eventos necessária para a transmissão do sinal.",           topic: "Estímulo Neural e Potencial de Ação",         },         {           question: "2. O que acontece com o potencial de membrana em repouso de um neurônio após o recebimento de um estímulo supra-limiar?",           options: [             "a) Ele se torna mais negativo.",             "b) Sua polaridade é alterada (despolarização).",             "c) Ele permanece inalterado.",             "d) Cessa a atividade elétrica.",           ],           correctAnswer: "b) Sua polaridade é alterada (despolarização).",           comment: "Um estímulo acima do limiar causa a abertura de canais iônicos, resultando na mudança da polaridade (o interior torna-se menos negativo), gerando o potencial de ação.",           topic: "Potencial de Ação e Despolarização",         },         {           question: "3. Qual é a fase que ocorre imediatamente após a ativação dos canais iônicos de sódio voltagem-dependentes?",           options: [             "a) Potencial de repouso.",             "b) Potencial de ação (despolarização).",             "c) Hiperpolarização.",             "d) Período refratário.",           ],           correctAnswer: "b) Potencial de ação (despolarização).",           comment: "A ativação rápida dos canais de sódio permite o influxo massivo de cargas positivas, caracterizando a fase de despolarização do potencial de ação.",           topic: "Fases do Potencial de Ação",         },         {           question: "4. A propagação do Potencial de Ação (PA) na membrana do neurônio segue qual princípio?",           options: [             "a) É proporcional à intensidade do estímulo.",             "b) É um processo de 'tudo ou nada'.",             "c) Diminui de amplitude com a distância.",             "d) Requer um estímulo contínuo para se propagar.",           ],           correctAnswer: "b) É um processo de 'tudo ou nada'.",           comment: "O princípio do 'tudo ou nada' dita que, se o limiar for atingido, o PA ocorre com amplitude máxima e constante. Se não atingir, nada ocorre.",           topic: "Princípio do Tudo ou Nada",         },         {           question: "5. Qual é a função da bainha de mielina na transmissão do impulso nervoso?",           options: [             "a) Aumentar a resistência da membrana, diminuindo a velocidade.",             "b) Acelerar a condução do impulso nervoso através da condução saltatória.",             "c) Impedir completamente a transmissão do sinal.",             "d) Armazenar neurotransmissores.",           ],           correctAnswer: "b) Acelerar a condução do impulso nervoso através da condução saltatória.",           comment: "A mielina atua como isolante elétrico, forçando o potencial de ação a 'saltar' entre os nódulos de Ranvier, o que aumenta a velocidade e economiza energia.",           topic: "Bainha de Mielina e Condução",         },         {           question: "6. O que caracterizam os nódulos de Ranvier?",           options: [             "a) Regiões mielinizadas do axônio.",             "b) Lacunas na bainha de mielina onde ocorre a despolarização.",             "c) Estruturas que produzem neurotransmissores.",             "d) Ramificações dos dendritos.",           ],           correctAnswer: "b) Lacunas na bainha de mielina onde ocorre a despolarização.",           comment: "São pontos de interrupção da mielina ricos em canais de sódio e potássio, permitindo a regeneração do potencial de ação durante a condução.",           topic: "Nódulos de Ranvier",         },         {           question: "7. Em qual tipo de sinapse ocorre a passagem direta de íons através de junções comunicantes?",           options: [             "a) Sinapse química.",             "b) Sinapse elétrica.",             "c) Sinapse mista.",             "d) Sinapse excitatória.",           ],           correctAnswer: "b) Sinapse elétrica.",           comment: "Nas sinapses elétricas, as gap junctions permitem o fluxo direto de corrente elétrica entre células, garantindo uma transmissão extremamente rápida e sincronizada.",           topic: "Tipos de Sinapse",         },         {           question: "8. Qual a principal vantagem funcional da sinapse química sobre a elétrica?",           options: [             "a) Maior velocidade de transmissão.",             "b) Bidirecionalidade da transmissão.",             "c) Capacidade de modulação, amplificação e integração de sinais.",             "d) Menor gasto energético.",           ],           correctAnswer: "c) Capacidade de modulação, amplificação e integração de sinais.",           comment: "Diferente da elétrica, a sinapse química permite processar informações: o sinal pode ser invertido (inibição) ou amplificado através de segundos mensageiros.",           topic: "Vantagens da Sinapse Química",         },         {           question: "9. O que o influxo de Cálcio ($Ca^{2+}$) provoca no terminal pré-sináptico?",           options: [             "a) Liberação de potássio.",             "b) Fusão das vesículas sinápticas e liberação de neurotransmissores.",             "c) Fechamento da fenda sináptica.",             "d) Inativação imediata dos receptores.",           ],           correctAnswer: "b) Fusão das vesículas sinápticas e liberação de neurotransmissores.",           comment: "O cálcio funciona como o sinal intracelular que ativa as proteínas de fusão (SNAREs), resultando na exocitose do neurotransmissor na fenda sináptica.",           topic: "Eventos na Sinapse Química",         },         {           question: "10. Qual a função das vesículas sinápticas no neurônio?",           options: [             "a) Degradar neurotransmissores.",             "b) Armazenar e proteger neurotransmissores até sua liberação.",             "c) Produzir energia (ATP) para o neurônio.",             "d) Transportar íons sódio através da membrana.",           ],           correctAnswer: "b) Armazenar e proteger neurotransmissores até sua liberação.",           comment: "As vesículas protegem os neurotransmissores da degradação enzimática citoplasmática e garantem que eles sejam liberados em quantidades quantificadas (quantas).",           topic: "Vesículas Sinápticas",         },         {           question: "11. Os receptores pós-sinápticos são caracterizados como:",           options: [             "a) Moléculas que sintetizam neurotransmissores.",             "b) Canais que transportam cálcio para fora da célula.",             "c) Proteínas de membrana que reconhecem e se ligam a neurotransmissores específicos.",             "d) Estruturas pré-sinápticas de recaptação.",           ],           correctAnswer: "c) Proteínas de membrana que reconhecem e se ligam a neurotransmissores específicos.",           comment: "Eles convertem o sinal químico (neurotransmissor) de volta em um sinal elétrico ou metabólico na célula receptora.",           topic: "Receptores Pós-Sinápticos",         },         {           question: "12. Qual a diferença fundamental entre receptores ionotrópicos e metabotrópicos?",           options: [             "a) Ionotrópicos são mais lentos.",             "b) Metabotrópicos são canais iônicos diretos.",             "c) Ionotrópicos são canais iônicos diretos; metabotrópicos ativam cascatas de segundos mensageiros.",             "d) Ionotrópicos dependem de síntese proteica.",           ],           correctAnswer: "c) Ionotrópicos são canais iônicos diretos; metabotrópicos ativam cascatas de segundos mensageiros.",           comment: "Receptores ionotrópicos agem em milissegundos. Metabotrópicos (acoplados à proteína G) agem em segundos ou minutos, alterando o metabolismo celular.",           topic: "Tipos de Receptores",         },         {           question: "13. Um Potencial Pós-Sináptico Excitatório (PPSE) resulta em:",           options: [             "a) Hiperpolarização da membrana.",             "b) Despolarização local, aproximando o neurônio do limiar de disparo.",             "c) Inibição da atividade elétrica neuronal.",             "d) Fechamento permanente de canais de sódio.",           ],           correctAnswer: "b) Despolarização local, aproximando o neurônio do limiar de disparo.",           comment: "O PPSE ocorre geralmente pela abertura de canais de cátions ($Na^{+}$ ou $Ca^{2+}$), tornando o interior da célula menos negativo.",           topic: "PPSE e PPSI",         },         {           question: "14. O Potencial Pós-Sináptico Inibitório (PPSI) atua da seguinte forma:",           options: [             "a) Provoca despolarização rápida.",             "b) Causa hiperpolarização, dificultando o disparo de um potencial de ação.",             "c) Aumenta a liberação de cálcio pré-sináptico.",             "d) Abre canais de sódio voltagem-dependentes.",           ],           correctAnswer: "b) Causa hiperpolarização, dificultando o disparo de um potencial de ação.",           comment: "O PPSI ocorre pela abertura de canais de Cloro ($Cl^{-}$) ou Potássio ($K^{+}$), afastando o potencial de membrana do limiar de disparo.",           topic: "PPSE e PPSI",         },         {           question: "15. A 'Soma Espacial' na integração sináptica ocorre quando:",           options: [             "a) Uma sinapse dispara repetidamente.",             "b) Múltiplas sinapses em locais diferentes disparam simultaneamente.",             "c) O neurônio morre por excesso de estímulo.",             "d) O sinal viaja no sentido inverso (retrógrado).",           ],           correctAnswer: "b) Múltiplas sinapses em locais diferentes disparam simultaneamente.",           comment: "O neurônio soma as despolarizações vindas de diferentes pontos de seu corpo e dendritos para decidir se dispara um potencial de ação.",           topic: "Somação Sináptica",         },         {           question: "16. A 'Soma Temporal' é definida pelo processo onde:",           options: [             "a) Diferentes neurônios estimulam a mesma célula.",             "b) Um único terminal sináptico dispara em alta frequência, somando seus efeitos no tempo.",             "c) O tempo de vida do neurônio é reduzido.",             "d) A sinapse torna-se elétrica temporariamente.",           ],           correctAnswer: "b) Um único terminal sináptico dispara em alta frequência, somando seus efeitos no tempo.",           comment: "Se os estímulos de uma mesma sinapse chegarem antes que o potencial anterior se dissipe, eles se acumulam até atingir o limiar.",           topic: "Somação Sináptica",         },         {           question: "17. Onde a Acetilcolina (ACh) exerce seu principal papel motor?",           options: [             "a) Na medula renal.",             "b) Na junção neuromuscular dos músculos esqueléticos.",             "c) Exclusivamente no córtex visual.",             "d) Na síntese de hormônios tireoidianos.",           ],           correctAnswer: "b) Na junção neuromuscular dos músculos esqueléticos.",           comment: "A ACh é o neurotransmissor que comanda a contração voluntária dos nossos músculos, ligando-se a receptores nicotínicos na placa motora.",           topic: "Neurotransmissores Específicos",         },         {           question: "18. Qual o papel sistêmico da Serotonina (5-HT)?",           options: [             "a) Controle exclusivo da pressão arterial.",             "b) Regulação do humor, sono, apetite e funções neuroendócrinas.",             "c) Principal estimulante da dor aguda.",             "d) Ativação da resposta de luta ou fuga.",           ],           correctAnswer: "b) Regulação do humor, sono, apetite e funções neuroendócrinas.",           comment: "A serotonina é moduladora. Baixos níveis estão ligados à depressão, enquanto níveis adequados promovem sensação de bem-estar.",           topic: "Neurotransmissores Específicos",         },         {           question: "19. A Dopamina é central em quais processos neurológicos?",           options: [             "a) Apenas na regulação da temperatura.",             "b) No sistema de recompensa, motivação, prazer e controle motor.",             "c) Na inibição da medula espinhal.",             "d) Na recepção de estímulos auditivos.",           ],           correctAnswer: "b) No sistema de recompensa, motivação, prazer e controle motor.",           comment: "Disfunções na dopamina estão associadas ao Parkinson (falta na via motora) e à dependência química (via de recompensa).",           topic: "Neurotransmissores Específicos",         },         {           question: "20. O GABA (Ácido Gama-aminobutírico) é conhecido por ser:",           options: [             "a) O principal estimulante cerebral.",             "b) Um precursor da adrenalina.",             "c) O principal neurotransmissor inibitório do sistema nervoso central.",             "d) Uma proteína de transporte de oxigênio.",           ],           correctAnswer: "c) O principal neurotransmissor inibitório do sistema nervoso central.",           comment: "O GABA 'freia' o cérebro. Medicamentos ansiolíticos (como benzodiazepínicos) geralmente potencializam a ação deste neurotransmissor.",           topic: "Neurotransmissores Específicos",         },         {           question: "21. Qual a função vital do Glutamato no cérebro?",           options: [             "a) Provocar sono profundo.",             "b) Inibir a dor crônica.",             "c) Atuar como o principal neurotransmissor excitatório, essencial para memória e aprendizagem.",             "d) Reduzir a frequência cardíaca.",           ],           correctAnswer: "c) Atuar como o principal neurotransmissor excitatório, essencial para memória e aprendizagem.",           comment: "O glutamato é o neurotransmissor mais abundante do SNC. Em excesso, porém, pode ser neurotóxico (excitotoxicidade).",           topic: "Neurotransmissores Específicos",         },         {           question: "22. Em situações de estresse e emergência, qual neurotransmissor é liberado pelo sistema simpático?",           options: [             "a) Melatonina.",             "b) Noradrenalina (Norepinefrina).",             "c) GABA.",             "d) Insulina.",           ],           correctAnswer: "b) Noradrenalina (Norepinefrina).",           comment: "A noradrenalina prepara o corpo para a ação, aumentando a vigilância, a frequência cardíaca e desviando o fluxo sanguíneo para os músculos.",           topic: "Neurotransmissores Específicos",         },         {           question: "23. Como ocorre a desativação da Acetilcolina na fenda sináptica?",           options: [             "a) Por recaptação total pela glia.",             "b) Por difusão simples para o sangue.",             "c) Por degradação enzimática pela Acetilcolinesterase.",             "d) Por absorção pelo núcleo celular.",           ],           correctAnswer: "c) Por degradação enzimática pela Acetilcolinesterase.",           comment: "A enzima quebra a ACh em colina e acetato, interrompendo o estímulo para evitar contrações musculares contínuas e descontroladas.",           topic: "Remoção de Neurotransmissores",         },         {           question: "24. O processo de 'Recaptação' de neurotransmissores permite:",           options: [             "a) A destruição permanente do sinal.",             "b) A economia e reutilização do neurotransmissor pelo neurônio pré-sináptico.",             "c) Que o sinal se espalhe por todo o corpo.",             "d) A transformação de sinal químico em elétrico.",           ],           correctAnswer: "b) A economia e reutilização do neurotransmissor pelo neurônio pré-sináptico.",           comment: "Muitos neurotransmissores (como serotonina e dopamina) são 'recolhidos' por transportadores para serem usados novamente, um alvo comum de antidepressivos.",           topic: "Remoção de Neurotransmissores",         },         {           question: "25. Qual a função da Bomba de Sódio-Potássio ($Na^{+}/K^{+}$ ATPase) para a eletricidade neural?",           options: [             "a) Gerar o potencial de ação instantaneamente.",             "b) Manter os gradientes iônicos e o potencial de repouso negativo no interior.",             "c) Facilitar a entrada de cálcio.",             "d) Produzir neurotransmissores gasosos.",           ],           correctAnswer: "b) Manter os gradientes iônicos e o potencial de repouso negativo no interior.",           comment: "A bomba gasta muita energia (ATP) para manter a célula 'carregada' como uma bateria, pronta para disparar um novo sinal.",           topic: "Potencial de Repouso",         },         {           question: "26. O fenômeno da Potenciação de Longo Prazo (LTP) está na base de qual processo?",           options: [             "a) Do esquecimento de traumas.",             "b) Do aprendizado e da formação de memórias de longa duração.",             "c) Da degeneração neuronal acelerada.",             "d) Da paralisia muscular.",           ],           correctAnswer: "b) Do aprendizado e da formação de memórias de longa duração.",           comment: "LTP é o fortalecimento duradouro de uma sinapse após uso repetido. É como se a 'estrada' entre dois neurônios ficasse mais larga e rápida.",           topic: "Plasticidade Sináptica",         },         {           question: "27. A Depressão de Longo Prazo (LTD) atua:",           options: [             "a) Causando depressão clínica (transtorno mental).",             "b) Reduzindo a força da sinapse, sendo importante para 'limpar' conexões pouco usadas.",             "c) Aumentando a velocidade do pensamento.",             "d) Criando novas conexões elétricas.",           ],           correctAnswer: "b) Reduzindo a força da sinapse, sendo importante para 'limpar' conexões pouco usadas.",           comment: "LTD é essencial para o equilíbrio plástico do cérebro, permitindo que novas informações sejam gravadas sem sobrecarregar o sistema.",           topic: "Plasticidade Sináptica",         },         {           question: "28. Plasticidade Sináptica refere-se a:",           options: [             "a) Rigidez das conexões neuronais.",             "b) Capacidade do sistema nervoso de alterar a força e a estrutura das sinapses com base na experiência.",             "c) Substituição de neurônios por células plásticas.",             "d) Produção excessiva de mielina.",           ],           correctAnswer: "b) Capacidade do sistema nervoso de alterar a força e a estrutura das sinapses com base na experiência.",           comment: "É a prova biológica de que nosso cérebro muda fisicamente conforme aprendemos algo novo ou nos adaptamos ao ambiente.",           topic: "Importância da Plasticidade Sináptica",         },         {           question: "29. O que ocorre na 'Inibição Pré-sináptica'?",           options: [             "a) O neurônio pós-sináptico para de funcionar.",             "b) Um neurônio modulador reduz a liberação de neurotransmissores de um terminal específico.",             "c) Os receptores são destruídos por enzimas.",             "d) A bainha de mielina se rompe.",           ],           correctAnswer: "b) Um neurônio modulador reduz a liberação de neurotransmissores de um terminal específico.",           comment: "É um controle seletivo. O modulador fecha canais de cálcio no terminal pré-sináptico, diminuindo a força daquela sinapse específica.",           topic: "Modulação Sináptica",         },         {           question: "30. A 'Facilitação Pré-sináptica' resulta em:",           options: [             "a) Menor resposta na célula seguinte.",             "b) Maior liberação de neurotransmissores e, consequentemente, um sinal pós-sináptico mais forte.",             "c) Morte celular programada.",             "d) Bloqueio dos canais de sódio.",           ],           correctAnswer: "b) Maior liberação de neurotransmissores e, consequentemente, um sinal pós-sináptico mais forte.",           comment: "O neurônio facilitador prolonga a abertura dos canais de cálcio, fazendo com que mais vesículas sejam liberadas na fenda.",           topic: "Modulação Sináptica",         },         {           question: "31. Por que a 'Reciclagem de Vesículas' é crucial na sinapse?",           options: [             "a) Para evitar que o neurônio engorde.",             "b) Para manter o suprimento de vesículas e permitir a transmissão contínua sem exaustão.",             "c) Para fabricar novas mitocôndrias.",             "d) Para sinalizar para o núcleo que o sinal foi enviado.",           ],           correctAnswer: "b) Para manter o suprimento de vesículas e permitir a transmissão contínua sem exaustão.",           comment: "Sem reciclagem (endocitose), o terminal ficaria sem membrana e sem reservatório para os neurotransmissores em poucos minutos de atividade intensa.",           topic: "Reciclagem de Vesículas",         },         {           question: "32. Qual a mudança iônica comum em uma sinapse inibitória?",           options: [             "a) Entrada massiva de Sódio ($Na^{+}$).",             "b) Influxo de Cloro ($Cl^{-}$) ou efluxo de Potássio ($K^{+}$).",             "c) Entrada de Cálcio ($Ca^{2+}$) no citoplasma.",             "d) Bloqueio de todos os poros da membrana.",           ],           correctAnswer: "b) Influxo de Cloro ($Cl^{-}$) ou efluxo de Potássio ($K^{+}$).",           comment: "Ao tornar o interior da célula mais negativo (hiperpolarização), o neurotransmissor inibitório afasta o potencial do limiar de disparo.",           topic: "Ação de Neurotransmissores Inibitórios",         },         {           question: "33. A exocitose de neurotransmissores é disparada por qual íon?",           options: [             "a) Magnésio ($Mg^{2+}$).",             "b) Cloreto ($Cl^{-}$).",             "c) Cálcio ($Ca^{2+}$).",             "d) Ferro ($Fe^{2+}$).",           ],           correctAnswer: "c) Cálcio ($Ca^{2+}$).",           comment: "A entrada de $Ca^{2+}$ através de canais voltagem-dependentes no terminal axônico é o sinal absoluto para a liberação química.",           topic: "Transporte de Neurotransmissores",         },         {           question: "34. Qual o papel dos 'Autorreceptores' localizados no neurônio pré-sináptico?",           options: [             "a) Aumentar a velocidade do impulso.",             "b) Monitorar a concentração de neurotransmissor na fenda e inibir novas liberações (feedback negativo).",             "c) Destruir as vesículas sinápticas.",             "d) Captar oxigênio da fenda sináptica.",           ],           correctAnswer: "b) Monitorar a concentração de neurotransmissor na fenda e inibir novas liberações (feedback negativo).",           comment: "Eles funcionam como um sensor de transbordamento: se há muito sinal na fenda, os autorreceptores avisam o neurônio para 'parar' a liberação.",           topic: "Autorreceptores e Regulação Sináptica",         },         {           question: "35. Os canais de sódio voltagem-dependentes abrem quando:",           options: [             "a) O neurônio fica mais negativo.",             "b) A membrana atinge o potencial de limiar (~-55mV).",             "c) O neurotransmissor GABA se liga a eles.",             "d) A luz atinge o axônio.",           ],           correctAnswer: "b) A membrana atinge o potencial de limiar (~-55mV).",           comment: "Eles são a chave do potencial de ação. Sua abertura súbita inverte a polaridade da célula, gerando o sinal elétrico.",           topic: "Canais Iônicos",         },         {           question: "36. O período refratário absoluto garante que:",           options: [             "a) O impulso nervoso seja bidirecional.",             "b) Dois potenciais de ação não se sobreponham, mantendo a integridade do sinal.",             "c) O neurônio nunca se canse.",             "d) O sódio nunca saia da célula.",           ],           correctAnswer: "b) Dois potenciais de ação não se sobreponham, mantendo a integridade do sinal.",           comment: "Como os canais de sódio estão inativos, a região recém-despolarizada não pode disparar novamente, forçando o sinal a seguir adiante.",           topic: "Período Refratário",         },         {           question: "37. Na Miastenia Gravis, a fraqueza ocorre porque:",           options: [             "a) O músculo desaparece.",             "b) Anticorpos bloqueiam os receptores de Acetilcolina na fibra muscular.",             "c) O cérebro para de enviar sinais.",             "d) O nervo é cortado.",           ],           correctAnswer: "b) Anticorpos bloqueiam os receptores de Acetilcolina na fibra muscular.",           comment: "É uma doença da fenda sináptica: o neurotransmissor é liberado, mas não encontra receptores 'vagos' para agir, impedindo a contração eficiente.",           topic: "Doenças da Sinapse",         },         {           question: "38. Qual destes NÃO retira o neurotransmissor da fenda?",           options: [             "a) Difusão.",             "b) Recaptação por transportadores.",             "c) Síntese de novos ligantes no citoplasma pré-sináptico.",             "d) Degradação enzimática.",           ],           correctAnswer: "c) Síntese de novos ligantes no citoplasma pré-sináptico.",           comment: "A síntese ocorre 'dentro' da célula. Para retirar o sinal 'da fenda' (fora), os mecanismos são recaptação, quebra enzimática ou difusão lateral.",           topic: "Remoção de Neurotransmissores",         },         {           question: "39. O Botox age bloqueando qual etapa sináptica?",           options: [             "a) A síntese de neurotransmissor.",             "b) A fusão das vesículas de Acetilcolina no terminal nervoso, impedindo a contração.",             "c) A abertura dos canais de potássio.",             "d) O fluxo sanguíneo para o músculo.",           ],           correctAnswer: "b) A fusão das vesículas de Acetilcolina no terminal nervoso, impedindo a contração.",           comment: "A toxina botulínica quebra proteínas de fusão. Sem liberação de ACh, o músculo não recebe o comando para contrair, resultando em relaxamento (paralisia).",           topic: "Toxinas e Sinapse",         },         {           question: "40. Receptores GABA-A no cérebro funcionam principalmente como:",           options: [             "a) Canais de Sódio.",             "b) Canais de Cloreto ($Cl^{-}$), gerando inibição por hiperpolarização.",             "c) Receptores nucleares de hormônios.",             "d) Bombas de prótons.",           ],           correctAnswer: "b) Canais de Cloreto ($Cl^{-}$), gerando inibição por hiperpolarização.",           comment: "A entrada de carga negativa ($Cl^{-}$) torna o neurônio 'super-negativo', exigindo um estímulo muito maior para atingir o limiar.",           topic: "Ação de Neurotransmissores Inibitórios",         },       ];
+
+    function buildQuiz() {
+      const output = [];
+
+      questions.forEach((currentQuestion, questionNumber) => {
+        const options = [];
+        for (let i = 0; i < currentQuestion.options.length; i++) {
+          options.push(
+            `<label class="option" data-question="${questionNumber}" data-value="${currentQuestion.options[i]}">
+              <img src="tesouras.png" class="scissor-icon" onclick="event.stopPropagation(); this.parentNode.classList.toggle('struck-through');">
+              ${currentQuestion.options[i]}
+            </label>`
           );
+        }
+
+        output.push(
+          `<div class="card" id="question-${questionNumber}" data-topic="${currentQuestion.topic}">
+            <div class="question">${currentQuestion.question}</div>
+            <div class="options">${options.join("")}</div>
+            <div class="comment" id="comment-${questionNumber}"></div>
+          </div>`
+        );
+      });
+
+      quizContainer.innerHTML = output.join("");
+    }
+
+    function showResults() {
+      wrongQuestionIndices = [];
+      errorCountByTopic = {};
+      totalAnsweredQuestionsByTopic = {};
+      currentWrongQuestionIndex = -1;
+      hasErrors = false;
+      isShowingErrors = false;
+      isShowingDiagnosis = false;
+
+      errorDiagnosisSection.style.display = 'none';
+      topicsToReviewList.innerHTML = '';
+      statusMessage.textContent = '';
+
+      // Busca por todas as perguntas: estáticas e dinâmicas
+      const allQuestionCards = document.querySelectorAll('.quiz-container .card, #newQuestionsContent .card');
+      let correctAnswersCount = 0;
+      let totalQuestionsAnswered = 0;
+
+      console.log('🔍 Verificando', allQuestionCards.length, 'perguntas...');
+
+      allQuestionCards.forEach((card, index) => {
+        const questionEl = card.querySelector('.question') || card.querySelector('p');
+        if (!questionEl) return;
+
+        const questionText = questionEl.textContent.trim();
+        const optionsContainer = card.querySelector('.options') || card;
+        const allOptions = optionsContainer.querySelectorAll('.option, label.option, label');
+        const userAnswerElement = optionsContainer.querySelector('.option.selected, label.selected');
+        const commentDiv = card.querySelector('.comment');
+
+        const questionTopic = card.dataset.topic || "Tópico não informado";
+        
+        console.log(`📝 Pergunta ${index + 1}: Tópico = "${questionTopic}"`);
+        console.log(`🔍 Encontradas ${allOptions.length} alternativas`);
+        
+        // Remove classes anteriores
+        allOptions.forEach(option => {
+          option.classList.remove('correct', 'incorrect', 'selected');
         });
+        if (commentDiv) commentDiv.classList.remove('show');
 
-        quizContainer.innerHTML = output.join("");
-      }
+        let correctAnswerValue = null;
+        let questionComment = null;
 
-      function showResults() {
-        // Resetar estados e contadores
-        wrongQuestionIndices = [];
-        errorCountByTopic = {};
-        totalAnsweredQuestionsByTopic = {};
-        currentWrongQuestionIndex = -1;
-        hasErrors = false;
-        isShowingErrors = false;
-        isShowingDiagnosis = false;
+        // Verifica se é pergunta estática ou dinâmica
+        const isStatic = card.id && card.id.startsWith('question-');
+        if (isStatic) {
+          // Pergunta estática - busca nos dados originais
+          const questionData = questions.find(q => q.question.trim() === questionText);
+          if (questionData) {
+            correctAnswerValue = questionData.correctAnswer.trim();
+            questionComment = questionData.comment;
+          }
+        } else {
+          // Pergunta dinâmica - busca pela opção marcada como correta
+          const correctOpt = optionsContainer.querySelector('.option[data-answer="true"], label[data-answer="true"]');
+          if (correctOpt) {
+            correctAnswerValue = correctOpt.dataset.value?.trim() || correctOpt.textContent.trim();
+            console.log(`✅ Resposta correta encontrada: "${correctAnswerValue}"`);
+          } else {
+            console.log('❌ Nenhuma resposta correta encontrada para pergunta dinâmica');
+          }
+          
+          // Busca comentário no próprio card ou no div comment
+          const commentElement = card.querySelector('.comment');
+          if (commentElement && commentElement.textContent.trim()) {
+            questionComment = commentElement.textContent.trim();
+          }
+        }
 
-        errorDiagnosisSection.style.display = 'none';
-        topicsToReviewList.innerHTML = '';
+        // Processa resposta do usuário e aplica coloração
+        let userAnswer = null;
+        if (userAnswerElement) {
+          userAnswerElement.classList.add('selected');
+          userAnswer = userAnswerElement.dataset.value?.trim() || userAnswerElement.textContent.trim();
+          totalQuestionsAnswered++;
+          totalAnsweredQuestionsByTopic[questionTopic] = (totalAnsweredQuestionsByTopic[questionTopic] || 0) + 1;
 
-        const answerContainers = quizContainer.querySelectorAll(".options");
-        let correctAnswers = 0;
+          console.log(`👤 Resposta do usuário: "${userAnswer}"`);
+          console.log(`🎯 Resposta correta: "${correctAnswerValue}"`);
 
-        questions.forEach((currentQuestion, questionNumber) => {
-          const answerContainer = answerContainers[questionNumber];
-          const userAnswerElement = answerContainer.querySelector('.option.selected');
-          const userAnswerValue = userAnswerElement ? userAnswerElement.dataset.value : undefined;
-          const commentDiv = document.getElementById(`comment-${questionNumber}`);
+          // Verifica se a resposta está correta
+          if (userAnswer === correctAnswerValue) {
+            correctAnswersCount++;
+            console.log(`✅ Resposta correta!`);
+          } else {
+            hasErrors = true;
+            errorCountByTopic[questionTopic] = (errorCountByTopic[questionTopic] || 0) + 1;
+            console.log(`❌ Resposta incorreta para tópico: ${questionTopic}`);
+          }
+        }
 
-          // Limpa estados anteriores
-          const allOptions = answerContainer.querySelectorAll('.option');
-          allOptions.forEach(option => {
-            option.classList.remove('correct', 'incorrect');
-            const scissorIcon = option.querySelector('.scissor-icon');
-            if (scissorIcon) scissorIcon.classList.remove('hidden'); // Garante que a tesoura volte a aparecer
-            option.classList.remove('struck-through'); // Remove o riscado também
-          });
-          if (commentDiv) commentDiv.classList.remove('show');
-
-
-          const optionElements = answerContainer.querySelectorAll('.option');
-          optionElements.forEach(option => {
-            const scissorIcon = option.querySelector('.scissor-icon');
-
-            // Se a opção foi selecionada, esconde a tesoura dela
-            if (option === userAnswerElement && scissorIcon) {
-                scissorIcon.classList.add('hidden');
-            }
-
-            if (option.dataset.value === currentQuestion.correctAnswer) {
-                option.classList.add('correct');
-                if (commentDiv && currentQuestion.comment) {
-                    commentDiv.textContent = currentQuestion.comment;
-                    commentDiv.classList.add('show');
-                }
-            }
-          });
-
-          if (userAnswerElement) {
-            // Garante que o tópico seja considerado apenas se a questão foi respondida
-            totalAnsweredQuestionsByTopic[currentQuestion.topic] = (totalAnsweredQuestionsByTopic[currentQuestion.topic] || 0) + 1;
-
-            if (userAnswerValue !== currentQuestion.correctAnswer) {
-              userAnswerElement.classList.add('incorrect');
-              wrongQuestionIndices.push(questionNumber);
-              hasErrors = true;
-
-              errorCountByTopic[currentQuestion.topic] = (errorCountByTopic[currentQuestion.topic] || 0) + 1;
-            } else {
-              correctAnswers++;
-            }
+        // Aplica coloração: SEMPRE marca a correta de verde, e a errada de vermelho se foi marcada
+        allOptions.forEach(option => {
+          const optionValue = option.dataset.value?.trim() || option.textContent.trim();
+          
+          // Marca a resposta correta de verde SEMPRE
+          if (optionValue === correctAnswerValue) {
+            option.classList.add('correct');
+            console.log(`🟢 Marcando como correta: "${optionValue}"`);
+          }
+          
+          // Se o usuário marcou uma resposta E ela está errada, marca de vermelho
+          if (userAnswer && optionValue === userAnswer && userAnswer !== correctAnswerValue) {
+            option.classList.add('incorrect');
+            console.log(`🔴 Marcando como incorreta: "${optionValue}"`);
           }
         });
 
-        resultsContainer.textContent = `Você acertou ${correctAnswers} de ${questions.length} questões.`;
-
-        // Rola a página até o final para exibir o resultado e o botão (se houver erros)
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-
-        if (hasErrors) {
-            errorNavBtn.style.display = 'flex'; // Exibe o botão de navegação
-            arrowIcon.textContent = '⬇️'; // Seta para baixo inicialmente para rolar para a primeira questão errada
-            buttonText.textContent = 'Revisar Erros'; // Texto inicial do botão
-            isShowingErrors = false; // Começa como falso para que o primeiro clique ative a navegação
-            isShowingDiagnosis = false; // Não está mostrando o diagnóstico ainda
-        } else {
-            errorNavBtn.style.display = 'none'; // Esconde o botão se não houver erros
-        }
-      }
-
-      function scrollToQuestion(index) {
-        const questionCard = document.getElementById(`question-${index}`);
-        if (questionCard) {
-          questionCard.scrollIntoView({ behavior: 'smooth', block: 'center' }); // Rola para o centro da questão
-        }
-      }
-
-      function scrollToDiagnosis() {
-          errorDiagnosisSection.scrollIntoView({ behavior: 'smooth', block: 'start' }); // Rola para o início da seção de diagnóstico
-      }
-
-      quizContainer.addEventListener("click", function (event) {
-        const clickedElement = event.target;
-        const optionElement = clickedElement.closest('.option'); // Encontra o div .option mais próximo
-
-        if (optionElement) {
-            // Se o clique foi diretamente na tesoura
-            if (clickedElement.classList.contains("scissor-icon")) {
-                optionElement.classList.toggle("struck-through");
-            }
-            // Se o clique foi em qualquer outra parte do bloco da alternativa
-            else {
-                const questionNumber = optionElement.dataset.question;
-                // Desseleciona todas as outras opções da mesma questão
-                const currentQuestionOptions = quizContainer.querySelectorAll(`.option[data-question=\"${questionNumber}\"]`);
-                currentQuestionOptions.forEach(opt => opt.classList.remove("selected"));
-
-                // Seleciona a opção clicada
-                optionElement.classList.add("selected");
-            }
+        // Mostra comentário se disponível
+        if (commentDiv && questionComment) {
+          commentDiv.textContent = questionComment;
+          commentDiv.classList.add('show');
         }
       });
 
-      errorNavBtn.addEventListener("click", function() {
-        if (!hasErrors) { // Não deve aparecer se não há erros, mas por segurança
-            errorNavBtn.style.display = 'none';
-            return;
+      // Exibe resultados
+      resultsContainer.textContent = `Você acertou ${correctAnswersCount} de ${totalQuestionsAnswered} questões respondidas.`;
+
+      console.log('📊 Erros por tópico:', errorCountByTopic);
+      console.log('📊 Total por tópico:', totalAnsweredQuestionsByTopic);
+
+      // Gera diagnóstico de erros
+      if (hasErrors) {
+        for (const topic in errorCountByTopic) {
+          const errors = errorCountByTopic[topic];
+          const total = totalAnsweredQuestionsByTopic[topic] || 0;
+          if (total > 0) {
+            const percent = ((errors / total) * 100).toFixed(1);
+            const li = document.createElement('li');
+            li.textContent = `${topic}: ${percent}% de erros (${errors} de ${total} questões respondidas)`;
+            topicsToReviewList.appendChild(li);
+          }
         }
+      } else {
+        const li = document.createElement('li');
+        li.textContent = "🥳 Parabéns! Você não teve erros nas questões respondidas.";
+        topicsToReviewList.appendChild(li);
+      }
 
-        if (!isShowingErrors && !isShowingDiagnosis) { // Estado inicial: não mostrando erros nem diagnóstico
-            if (wrongQuestionIndices.length > 0) {
-                isShowingErrors = true; // Entra no modo de navegação de erros
-                currentWrongQuestionIndex = 0; // Começa pelo primeiro erro
-                arrowIcon.textContent = '⬇️'; // Seta para baixo para indicar "próximo"
-                buttonText.textContent = `Próximo Erro (${currentWrongQuestionIndex + 1}/${wrongQuestionIndices.length})`;
-                scrollToQuestion(wrongQuestionIndices[currentWrongQuestionIndex]); // Rola para o primeiro erro
-            } else { // Se de alguma forma não há erros (botão não deveria estar visível)
-                // Transita para o diagnóstico direto
-                isShowingDiagnosis = true;
-                arrowIcon.textContent = '⬆️'; // Seta para cima para o diagnóstico
-                buttonText.textContent = 'Diagnóstico de Erros';
+      errorDiagnosisSection.style.display = 'block';
+      generatedQuestionsSection.style.display = 'block';
+      generateNewQuestionsBtn.style.display = 'block';
+      scrollToDiagnosis();
+    }
 
-                topicsToReviewList.innerHTML = '';
-                for (const topic in errorCountByTopic) {
-                    const errorsInTopic = errorCountByTopic[topic];
-                    const totalAnsweredInTopic = totalAnsweredQuestionsByTopic[topic] || 0;
+    function scrollToQuestion(index) {
+      const questionCard = document.getElementById(`question-${index}`);
+      if (questionCard) {
+        questionCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
 
-                    if (totalAnsweredInTopic > 0) {
-                        const percentage = ((errorsInTopic / totalAnsweredInTopic) * 100).toFixed(1);
-                        const li = document.createElement('li');
-                        li.textContent = `${topic}: ${percentage}% de erros (${errorsInTopic} de ${totalAnsweredInTopic} questões respondidas)`;
-                        topicsToReviewList.appendChild(li);
-                    }
-                }
-                errorDiagnosisSection.style.display = 'block';
-                scrollToDiagnosis();
-                errorNavBtn.style.display = 'none'; // Esconde o botão após ir para o diagnóstico final
+    function scrollToDiagnosis() {
+        errorDiagnosisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function scrollToGeneratedQuestions() {
+        generatedQuestionsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Event listener para seleção de opções (funciona para estáticas e dinâmicas)
+    document.addEventListener("click", function (event) {
+      const clickedElement = event.target;
+      const optionElement = clickedElement.closest('.option');
+
+      if (optionElement) {
+          if (clickedElement.classList.contains("scissor-icon")) {
+              event.stopPropagation();
+              optionElement.classList.toggle("struck-through");
+          }
+          else {
+              const parentCard = optionElement.closest('.card');
+              const currentQuestionOptions = parentCard.querySelectorAll('.option');
+
+              currentQuestionOptions.forEach(opt => opt.classList.remove("selected"));
+              optionElement.classList.add("selected");
+          }
+      }
+    });
+
+    generateNewQuestionsBtn.addEventListener("click", async function() {
+        statusMessage.textContent = '⏳ Gerando novas perguntas...';
+        generateNewQuestionsBtn.disabled = true;
+
+        const topics = Object.keys(errorCountByTopic).filter(topic => {
+            const errorsInTopic = errorCountByTopic[topic] || 0;
+            const totalAnsweredInTopic = totalAnsweredQuestionsByTopic[topic] || 0;
+            return errorsInTopic > 0 && totalAnsweredInTopic > 0;
+        });
+
+        const topicsToSend = topics.length > 0 ? topics : ["fisiologia celular", "biologia"];
+
+        try {
+            const response = await fetch('https://www.quizia.xyz/quiz', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ topicos: topicsToSend }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-        } else if (isShowingErrors) { // Está no modo de navegação de erros
-            currentWrongQuestionIndex++; // Vai para o próximo erro
-            if (currentWrongQuestionIndex < wrongQuestionIndices.length) {
-                scrollToQuestion(wrongQuestionIndices[currentWrongQuestionIndex]); // Rola para o próximo erro
-                buttonText.textContent = `Próximo Erro (${currentWrongQuestionIndex + 1}/${wrongQuestionIndices.length})`;
-            } else { // Todos os erros foram revisados
-                isShowingErrors = false; // Sai do modo de navegação de erros
-                isShowingDiagnosis = true; // Entra no modo de diagnóstico
-                arrowIcon.textContent = '⬆️'; // Seta para cima para o diagnóstico
-                buttonText.textContent = 'Diagnóstico de Erros';
+            const data = await response.json();
 
-                topicsToReviewList.innerHTML = '';
-                for (const topic in errorCountByTopic) {
-                    const errorsInTopic = errorCountByTopic[topic];
-                    const totalAnsweredInTopic = totalAnsweredQuestionsByTopic[topic] || 0;
-
-                    if (totalAnsweredInTopic > 0) {
-                        const percentage = ((errorsInTopic / totalAnsweredInTopic) * 100).toFixed(1);
-                        const li = document.createElement('li');
-                        li.textContent = `${topic}: ${percentage}% de erros (${errorsInTopic} de ${totalAnsweredInTopic} questões respondidas)`;
-                        topicsToReviewList.appendChild(li);
+            newQuestionsContent.innerHTML = '';
+            if (data && data.html) {
+                console.log('📥 HTML recebido do Flask:', data.html);
+                
+                // Insere o HTML diretamente sem reconstrução complexa
+                newQuestionsContent.innerHTML = data.html.replace(/```html|```/g, '');
+                
+                // Adiciona tesouras e ajusta formatação apenas se necessário
+                newQuestionsContent.querySelectorAll('.card').forEach((card, cardIndex) => {
+                    // Garante que o elemento de pergunta tenha a classe correta
+                    const questionElement = card.querySelector('p');
+                    if (questionElement && !questionElement.classList.contains('question')) {
+                       questionElement.classList.add('question');
                     }
-                }
-                errorDiagnosisSection.style.display = 'block';
-                scrollToDiagnosis();
-                errorNavBtn.style.display = 'none'; // Esconde o botão após ir para o diagnóstico final
+
+                    // Remove qualquer input de radio que possa existir e adiciona tesouras
+                    card.querySelectorAll('label').forEach((label) => {
+                        // Remove inputs de radio MAS preserva o atributo data-answer
+                        const radioInput = label.querySelector('input[type="radio"]');
+                        if (radioInput) {
+                            // PRESERVA o atributo data-answer do input no label
+                            if (radioInput.hasAttribute('data-answer')) {
+                                label.setAttribute('data-answer', radioInput.getAttribute('data-answer'));
+                            }
+                            radioInput.remove();
+                        }
+                        
+                        // Garante que tenha a classe option
+                        if (!label.classList.contains('option')) {
+                            label.classList.add('option');
+                        }
+
+                        // Garante que tenha data-value
+                        if (!label.dataset.value) {
+                            label.dataset.value = label.textContent.trim();
+                        }
+
+                        // Adiciona tesoura se não existir
+                        if (!label.querySelector('.scissor-icon')) {
+                            const scissorIcon = document.createElement('img');
+                            scissorIcon.src = 'tesouras.png';
+                            scissorIcon.className = 'scissor-icon';
+                            scissorIcon.onclick = function(e) {
+                                e.stopPropagation();
+                                label.classList.toggle('struck-through');
+                            };
+                            label.insertBefore(scissorIcon, label.firstChild);
+                        }
+                    });
+
+                    console.log(`🏷️ Card ${cardIndex}: data-topic = "${card.dataset.topic}"`);
+                    
+                    // Verifica se há opção correta marcada
+                    const correctOption = card.querySelector('label[data-answer="true"]');
+                    if (correctOption) {
+                        console.log(`✅ Opção correta encontrada: "${correctOption.dataset.value}"`);
+                    } else {
+                        console.log('❌ Nenhuma opção correta encontrada');
+                    }
+                });
+            } else {
+                newQuestionsContent.innerHTML = "<p>Não foi possível gerar novas perguntas para os tópicos selecionados.</p>";
             }
+            
+            generatedQuestionsSection.style.display = 'block';
+            scrollToGeneratedQuestions();
+            statusMessage.textContent = '✅ Perguntas geradas com sucesso!';
+            setTimeout(() => { statusMessage.textContent = '' }, 3000);
+
+        } catch (error) {
+            console.error('Erro ao gerar novas perguntas:', error);
+            newQuestionsContent.innerHTML = `<p>Erro ao carregar novas perguntas: ${error.message}. Por favor, tente novamente.</p>`;
+            generatedQuestionsSection.style.display = 'block';
+            scrollToGeneratedQuestions();
+            statusMessage.textContent = '❌ Erro na requisição: ' + error.message;
+            setTimeout(() => { statusMessage.textContent = '' }, 5000);
+        } finally {
+            generateNewQuestionsBtn.disabled = false;
         }
-        // Se isShowingDiagnosis for true, não faz nada ao clicar no botão. Ele já deve ter desaparecido.
-      });
+    });
 
-      submitButton.addEventListener("click", showResults);
+    // Inicialização
+    buildQuiz();
+    errorDiagnosisSection.style.display = 'none';
+    generatedQuestionsSection.style.display = 'none';
+    generateNewQuestionsBtn.style.display = 'none';
 
-      buildQuiz();
-    </script>
-  </body>
-<script src="conexao_firebase.js"></script><script src="navegacao.js"></script><script type="module" src="padrao_simulado.js"></script></html>
+    // Event listener para o botão de verificar respostas
+    document.getElementById("verifyAnswersBtn").addEventListener("click", showResults);
+  </script>
+  <script src="conexao_firebase.js"></script><script src="navegacao.js"></script><script type="module" src="padrao_simulado.js"></script>
+
+</body>
+</html>
