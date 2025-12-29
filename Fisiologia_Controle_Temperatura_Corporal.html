@@ -1,887 +1,633 @@
-
+<!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Simulado Módulo I - Fisiologia do Controle da Temperatura Corporal</title>
-    <style>
-      body {
-        font-family: sans-serif;
-        margin: 0;
-        padding: 20px;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        min-height: 100vh;
-        background-color: #f4f4f4;
-      }
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Fisiologia da Termorregulação</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      background-color: #f4f4f4;
+    }
 
-      .quiz-container {
-        max-width: 800px;
-        width: 100%;
-      }
+    .quiz-container {
+      max-width: 800px;
+      width: 100%;
+    }
 
-      h1 {
-        color: #333;
-        text-align: center;
-        margin-bottom: 30px;
-      }
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 30px;
+    }
 
-      .card {
-        background-color: white;
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .question {
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .options {
+      margin-top: 15px;
+    }
+
+    /* Estilos unificados para todas as opções (estáticas e dinâmicas) */
+    .option, label.option, label, #newQuestionsContent label {
+      display: flex; /* Para alinhar imagem e texto */
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      position: relative; /* Para posicionar a tesoura */
+    }
+
+    /* FORÇA a remoção de inputs de radio em QUALQUER lugar */
+    .option input[type="radio"], 
+    label input[type="radio"],
+    #newQuestionsContent input[type="radio"],
+    #newQuestionsContent label input[type="radio"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
+    }
+
+    .option:hover, 
+    label.option:hover, 
+    label:hover,
+    #newQuestionsContent label:hover {
+      background-color: #e9e9e9;
+    }
+
+    .option.selected, 
+    label.option.selected, 
+    label.selected,
+    #newQuestionsContent label.selected {
+      background-color: #d1e7dd;
+      border-color: #28a745;
+    }
+
+    .option.correct, 
+    label.option.correct, 
+    label.correct,
+    #newQuestionsContent label.correct {
+      background-color: #d4edda;
+      border-color: #28a745;
+    }
+
+    .option.incorrect, 
+    label.option.incorrect, 
+    label.incorrect,
+    #newQuestionsContent label.incorrect {
+      background-color: #f8d7da;
+      border-color: #dc3545;
+    }
+
+    .submit-btn {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 30px;
+    }
+
+    .submit-btn:hover {
+      background-color: #0056b3;
+    }
+
+    .results {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .scissor-icon {
+      margin-right: 10px; /* Espaço entre a tesoura e o texto da opção */
+      width: 20px; /* Ajuste conforme o tamanho da sua imagem */
+      height: 20px; /* Ajuste conforme o tamanho da sua imagem */
+      opacity: 0.5; /* Transparência como no original */
+      cursor: pointer;
+    }
+
+    .scissor-icon.hidden {
+      display: none;
+    }
+
+    .struck-through {
+      text-decoration: line-through;
+      color: #888;
+    }
+
+    .comment {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f0f0f0;
+      border-left: 4px solid #007bff;
+      font-style: italic;
+      color: #555;
+      display: none; /* Escondido por padrão */
+    }
+    .comment.show {
+      display: block; /* Mostrado quando ativado */
+    }
+
+    /* Estilos para o botão de navegação de erro / diagnóstico */
+    .error-nav-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #dc3545; /* Vermelho para erro */
+      color: white;
+      border: none;
+      border-radius: 50%; /* Torna o botão redondo */
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      display: none; /* Escondido por padrão */
+      flex-direction: column; /* Para empilhar o ícone e o contador */
+      padding: 5px; /* Ajuste o padding para acomodar texto maior */
+      box-sizing: border-box; /* Garante que padding não aumente o tamanho total */
+      text-align: center;
+    }
+
+    .error-nav-btn:hover {
+      background-color: #c82333;
+    }
+
+    .error-nav-btn .arrow-icon {
+      font-size: 30px; /* Tamanho da seta */
+      line-height: 1; /* Ajuste para centralizar */
+    }
+
+    .error-nav-btn .button-text {
+      font-size: 12px; /* Tamanho do texto abaixo da seta */
+      line-height: 1;
+      margin-top: 2px; /* Espaço entre a seta e o texto */
+    }
+
+    /* Estilos para a seção de diagnóstico de erros */
+    .error-diagnosis-section {
+        margin-top: 50px;
+        padding: 30px;
+        background-color: #ffe0b2; /* Um laranja claro ou similar */
         border-radius: 8px;
-        padding: 20px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        display: none; /* Escondido por padrão */
+        text-align: center;
+        font-size: 1.1em;
+        color: #333;
+    }
+
+    .error-diagnosis-section h2 {
+        color: #e65100; /* Laranja mais escuro */
         margin-bottom: 20px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
+        font-size: 1.8em;
+    }
 
-      .question {
-        font-weight: bold;
-        margin-bottom: 10px;
-        color: #333;
-      }
+    .error-diagnosis-section ul {
+        list-style: none; /* Remove marcadores de lista */
+        padding: 0;
+        margin: 0;
+    }
 
-      .options {
-        margin-top: 15px;
-      }
-
-      .option {
-        display: flex; /* Para alinhar imagem e texto */
-        align-items: center;
-        margin-bottom: 10px;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-        position: relative; /* Para posicionar a tesoura */
-      }
-
-      .option:hover {
-        background-color: #e9e9e9;
-      }
-
-      .option.selected {
-        background-color: #d1e7dd;
-        border-color: #28a745;
-      }
-
-      .option.correct {
-        background-color: #d4edda;
-        border-color: #28a745;
-      }
-
-      .option.incorrect {
-        background-color: #f8d7da;
-        border-color: #dc3545;
-      }
-
-      .submit-btn {
-        display: block;
-        width: 100%;
-        padding: 15px;
-        background-color: #007bff;
+    .error-diagnosis-section li {
+        background-color: #ff9800; /* Laranja */
         color: white;
-        border: none;
+        padding: 8px 15px;
+        margin: 8px 0;
         border-radius: 5px;
-        font-size: 18px;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-        margin-top: 30px;
-      }
-
-      .submit-btn:hover {
-        background-color: #0056b3;
-      }
-
-      .results {
-        text-align: center;
-        margin-top: 30px;
-        font-size: 20px;
+        display: inline-block; /* Para que os itens fiquem lado a lado */
+        margin-right: 10px;
         font-weight: bold;
-        color: #333;
-      }
+    }
+    .error-diagnosis-section li:last-child {
+        margin-right: 0;
+    }
+ .card-bloco {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+      background: #fff;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="quiz-container">
+    <h1 style="text-align:center; margin-bottom: 30px;">Fisiologia da Termorregulação</h1>
+    <div class="card-bloco" id="quiz"></div>
+    <button class="submit-btn" id="verifyAnswersBtn">Verificar Respostas</button>
 
-      .scissor-icon {
-        margin-right: 10px; /* Espaço entre a tesoura e o texto da opção */
-        width: 20px; /* Ajuste conforme o tamanho da sua imagem */
-        height: 20px; /* Ajuste conforme o tamanho da sua imagem */
-        opacity: 0.5; /* Transparência como no original */
-        cursor: pointer;
-      }
+    <button class="generate-questions-btn submit-btn" id="generateNewQuestionsBtn" style="display:none;">
+      Gerar Novas Perguntas
+    </button>
 
-      .scissor-icon.hidden {
-        display: none;
-      }
+    <div class="results card-bloco" id="results"></div>
+    <div id="statusMessage" style="text-align: center; margin-top: 10px; font-weight: bold; color: #007bff;"></div>
 
-      .struck-through {
-        text-decoration: line-through;
-        color: #888;
-      }
-
-      .comment {
-        margin-top: 10px;
-        padding: 10px;
-        background-color: #f0f0f0;
-        border-left: 4px solid #007bff;
-        font-style: italic;
-        color: #555;
-        display: none; /* Escondido por padrão */
-      }
-      .comment.show {
-        display: block; /* Mostrado quando ativado */
-      }
-
-      /* Estilos para o botão de navegação de erro / diagnóstico */
-      .error-nav-btn {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background-color: #dc3545; /* Vermelho para erro */
-        color: white;
-        border: none;
-        border-radius: 50%; /* Torna o botão redondo */
-        width: 60px;
-        height: 60px;
-        font-size: 24px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        cursor: pointer;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        z-index: 1000;
-        display: none; /* Escondido por padrão */
-        flex-direction: column; /* Para empilhar o ícone e o contador */
-        padding: 5px; /* Ajuste o padding para acomodar texto maior */
-        box-sizing: border-box; /* Garante que padding não aumente o tamanho total */
-        text-align: center;
-      }
-
-      .error-nav-btn:hover {
-        background-color: #c82333;
-      }
-
-      .error-nav-btn .arrow-icon {
-        font-size: 30px; /* Tamanho da seta */
-        line-height: 1; /* Ajuste para centralizar */
-      }
-
-      .error-nav-btn .button-text {
-        font-size: 12px; /* Tamanho do texto abaixo da seta */
-        line-height: 1;
-        margin-top: 2px; /* Espaço entre a seta e o texto */
-      }
-      
-      /* Estilos para a seção de diagnóstico de erros */
-      .error-diagnosis-section {
-          margin-top: 50px;
-          padding: 30px;
-          background-color: #ffe0b2; /* Um laranja claro ou similar */
-          border-radius: 8px;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-          display: none; /* Escondido por padrão */
-          text-align: center;
-          font-size: 1.1em;
-          color: #333;
-      }
-
-      .error-diagnosis-section h2 {
-          color: #e65100; /* Laranja mais escuro */
-          margin-bottom: 20px;
-          font-size: 1.8em;
-      }
-
-      .error-diagnosis-section ul {
-          list-style: none; /* Remove marcadores de lista */
-          padding: 0;
-          margin: 0;
-      }
-
-      .error-diagnosis-section li {
-          background-color: #ff9800; /* Laranja */
-          color: white;
-          padding: 8px 15px;
-          margin: 8px 0;
-          border-radius: 5px;
-          display: inline-block; /* Para que os itens fiquem lado a lado */
-          margin-right: 10px;
-          font-weight: bold;
-      }
-      .error-diagnosis-section li:last-child {
-          margin-right: 0;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="quiz-container">
-      <h1>Questionário de Múltipla Escolha: Controle da Temperatura Corporal</h1>
-      <div id="quiz"></div>
-      <button class="submit-btn" id="submit">Verificar Respostas</button>
-      <div id="results" class="results"></div>
-
-      <div id="errorDiagnosis" class="error-diagnosis-section">
-        <h2>Diagnóstico de Erros</h2>
-        <p>Parece que você precisa revisar os seguintes assuntos:</p>
-        <ul id="topicsToReview">
-          </ul>
-      </div>
+    <div class="error-diagnosis-section card-bloco" id="errorDiagnosis">
+      <h2>Diagnóstico de Erros</h2>
+      <p>Parece que você precisa revisar os seguintes assuntos:</p>
+      <ul id="topicsToReview"></ul>
     </div>
 
-    <button class="error-nav-btn" id="errorNavBtn">
-      <span class="arrow-icon"></span> <span class="button-text"></span> </button>
+    <div class="generated-questions-section card-bloco" id="generatedQuestionsSection" style="display:none;">
+      <h2>Novas Perguntas Geradas</h2>
+      <div id="newQuestionsContent"></div>
+    </div>
+  </div>
+  
+  <button class="error-nav-btn" id="errorNavBtn" style="display:none;">
+    <span class="arrow-icon"></span>
+    <span class="button-text"></span>
+  </button>
 
-    <script>
-      const quizContainer = document.getElementById("quiz");
-      const submitButton = document.getElementById("submit");
-      const resultsContainer = document.getElementById("results");
-      const errorNavBtn = document.getElementById("errorNavBtn");
-      const arrowIcon = errorNavBtn.querySelector(".arrow-icon");
-      const buttonText = errorNavBtn.querySelector(".button-text");
-      const errorDiagnosisSection = document.getElementById("errorDiagnosis");
-      const topicsToReviewList = document.getElementById("topicsToReview");
+  <script>
+    const quizContainer = document.getElementById("quiz");
+    const resultsContainer = document.getElementById("results");
+    const errorNavBtn = document.getElementById("errorNavBtn");
+    const arrowIcon = errorNavBtn.querySelector(".arrow-icon");
+    const buttonText = errorNavBtn.querySelector(".button-text");
+    const errorDiagnosisSection = document.getElementById("errorDiagnosis");
+    const topicsToReviewList = document.getElementById("topicsToReview");
+    const generateNewQuestionsBtn = document.getElementById("generateNewQuestionsBtn");
+    const generatedQuestionsSection = document.getElementById("generatedQuestionsSection");
+    const newQuestionsContent = document.getElementById("newQuestionsContent");
+    const statusMessage = document.getElementById("statusMessage");
 
-      let wrongQuestionIndices = []; 
-      let errorCountByTopic = {}; 
-      let totalAnsweredQuestionsByTopic = {}; 
-      let currentWrongQuestionIndex = -1; 
-      let hasErrors = false; 
-      let isShowingErrors = false; 
-      let isShowingDiagnosis = false; 
+    let wrongQuestionIndices = [];
+    let errorCountByTopic = {};
+    let totalAnsweredQuestionsByTopic = {};
+    let currentWrongQuestionIndex = -1;
+    let hasErrors = false;
+    let isShowingErrors = false;
+    let isShowingDiagnosis = false;
 
-      const questions = [
-        {
-          question:
-            "1. A Termorregulação é definida como um processo fisiológico essencial para manter a temperatura interna do organismo em torno de qual faixa de valores?",
-          options: [
-            "a) 35,0°C a 36,0°C.",
-            "b) 36,5°C a 37,5°C.",
-            "c) 37,0°C a 38,0°C.",
-            "d) 38,0°C a 39,0°C.",
-          ],
-          correctAnswer: "b) 36,5°C a 37,5°C.",
-          comment:
-            "O Slide 1 define a termorregulação como o processo que mantém a temperatura interna do corpo na faixa de 36,5°C a 37,5°C para a homeostase.",
-          topic: "Faixa Normal de Temperatura Corporal",
-        },
-        {
-          question:
-            "2. Qual dos seguintes NÃO é um mecanismo de produção de calor pelo corpo, conforme o Slide 1?",
-          options: [
-            "a) Processos metabólicos.",
-            "b) Contração muscular (tremores).",
-            "c) Vasoconstrição.",
-            "d) Produção de calor no tecido adiposo marrom (TAM).",
-          ],
-          correctAnswer: "c) Vasoconstrição.",
-          comment:
-            "A vasoconstrição é um mecanismo de conservação de calor, ou seja, ela ajuda a reduzir a perda de calor para o ambiente, e não a produzi-lo.",
-          topic: "Mecanismos de Produção de Calor",
-        },
-        {
-          question:
-            "3. A piloereção (arrepios) é um mecanismo de:",
-          options: [
-            "a) Produção de calor.",
-            "b) Perda de calor.",
-            "c) Conservação de calor.",
-            "d) Regulação da sede.",
-          ],
-          correctAnswer: "c) Conservação de calor.",
-          comment:
-            "A piloereção é um mecanismo de conservação de calor, criando uma camada de ar isolante sobre a pele, embora menos eficaz em humanos do que em animais com pelagem densa.",
-          topic: "Mecanismos de Conservação de Calor",
-        },
-        {
-          question:
-            "4. Qual é a principal estrutura cerebral responsável pelo controle do 'set point' da temperatura corporal?",
-          options: [
-            "a) Córtex cerebral.",
-            "b) Cerebelo.",
-            "c) Hipotálamo.",
-            "d) Medula espinhal.",
-          ],
-          correctAnswer: "c) Hipotálamo.",
-          comment:
-            "O hipotálamo atua como o termostato do corpo, integrando as informações dos termorreceptores e coordenando as respostas para manter a temperatura dentro de uma faixa ideal (o 'set point').",
-          topic: "Centro Termorregulador",
-        },
-        {
-          question:
-            "5. O que ocorre com os vasos sanguíneos da pele em um ambiente quente para facilitar a perda de calor?",
-          options: [
-            "a) Vasoconstrição.",
-            "b) Vasodilatação.",
-            "c) Sem alteração.",
-            "d) Aumento da permeabilidade capilar.",
-          ],
-          correctAnswer: "b) Vasodilatação.",
-          comment:
-            "A vasodilatação cutânea aumenta o fluxo sanguíneo para a superfície da pele, facilitando a transferência de calor para o ambiente por convecção e radiação.",
-          topic: "Mecanismos de Perda de Calor: Vasodilatação",
-        },
-        {
-          question:
-            "6. A transpiração (sudorese) é um mecanismo eficaz de perda de calor, principalmente por qual processo físico?",
-          options: [
-            "a) Convecção.",
-            "b) Condução.",
-            "c) Evaporação.",
-            "d) Radiação.",
-          ],
-          correctAnswer: "c) Evaporação.",
-          comment:
-            "A evaporação do suor da superfície da pele dissipa grandes quantidades de calor latente, sendo o mecanismo mais eficaz em altas temperaturas ambientais.",
-          topic: "Mecanismos de Perda de Calor: Transpiração",
-        },
-        {
-          question:
-            "7. Qual é a principal via de perda de calor em um ambiente frio, conforme as porcentagens apresentadas?",
-          options: [
-            "a) Evaporação.",
-            "b) Condução.",
-            "c) Radiação e convecção.",
-            "d) Excreção.",
-          ],
-          correctAnswer: "c) Radiação e convecção.",
-          comment:
-            "Em um ambiente frio, a radiação (transferência de calor para objetos mais frios ao redor) e a convecção (transferência de calor para o ar em movimento) são as principais formas de perda de calor corporal.",
-          topic: "Perda de Calor no Frio",
-        },
-        {
-          question:
-            "8. A febre é caracterizada por uma elevação da temperatura corporal devido a:",
-          options: [
-            "a) Incapacidade de transpirar.",
-            "b) Aumento do 'set point' hipotalâmico em resposta a pirógenos.",
-            "c) Perda excessiva de líquidos.",
-            "d) Danos irreversíveis ao hipotálamo.",
-          ],
-          correctAnswer: "b) Aumento do 'set point' hipotalâmico em resposta a pirógenos.",
-          comment:
-            "A febre é uma resposta regulada, onde o hipotálamo eleva o 'set point' da temperatura em resposta a substâncias pirogênicas (produzidas pelo corpo ou por microrganismos), fazendo com que o corpo 'busque' uma temperatura mais alta.",
-          topic: "Febre",
-        },
-        {
-          question:
-            "9. Qual tipo de termorreceptores detecta as mudanças na temperatura do ambiente e da pele?",
-          options: [
-            "a) Termorreceptores centrais.",
-            "b) Termorreceptores periféricos.",
-            "c) Nociceptores.",
-            "d) Proprioceptores.",
-          ],
-          correctAnswer: "b) Termorreceptores periféricos.",
-          comment:
-            "Os termorreceptores periféricos, localizados principalmente na pele, fornecem informações ao hipotálamo sobre a temperatura externa, permitindo respostas rápidas às mudanças ambientais.",
-          topic: "Termorreceptores Periféricos",
-        },
-        {
-          question:
-            "10. O que são pirógenos e qual sua relação com a febre?",
-          options: [
-            "a) São substâncias que diminuem a temperatura corporal.",
-            "b) São microrganismos que causam infecções.",
-            "c) São substâncias (exógenas ou endógenas) que elevam o 'set point' hipotalâmico, induzindo a febre.",
-            "d) São células do sistema imunológico.",
-          ],
-          correctAnswer: "c) São substâncias (exógenas ou endógenas) que elevam o 'set point' hipotalâmico, induzindo a febre.",
-          comment:
-            "Pirógenos são agentes que causam febre, atuando no hipotálamo para elevar o ponto de ajuste da temperatura.",
-          topic: "Pirógenos",
-        },
-        {
-          question:
-            "11. Qual dos seguintes é um benefício da febre, conforme discutido nos slides?",
-          options: [
-            "a) Aumento do apetite.",
-            "b) Diminuição da atividade metabólica.",
-            "c) Inibição do crescimento de microrganismos e aumento da atividade imunológica.",
-            "d) Diminuição da demanda de oxigênio.",
-          ],
-          correctAnswer: "c) Inibição do crescimento de microrganismos e aumento da atividade imunológica.",
-          comment:
-            "A febre é uma resposta adaptativa que pode inibir o crescimento de patógenos e otimizar a função de certas células imunes, auxiliando na defesa do corpo contra infecções.",
-          topic: "Benefícios da Febre",
-        },
-        {
-          question:
-            "12. Qual é a condição em que a temperatura corporal está abaixo do normal, resultando em diminuição das funções metabólicas e fisiológicas?",
-          options: [
-            "a) Hipertermia.",
-            "b) Febre.",
-            "c) Hipotermia.",
-            "d) Insolação.",
-          ],
-          correctAnswer: "c) Hipotermia.",
-          comment:
-            "Hipotermia é a condição em que a temperatura corporal cai abaixo de 35°C (95°F), o que pode levar a disfunção de órgãos e, em casos graves, à morte.",
-          topic: "Hipotermia",
-        },
-        {
-          question:
-            "13. Em casos de hipotermia, os tremores musculares (calafrios) são um mecanismo de:",
-          options: [
-            "a) Perda de calor.",
-            "b) Produção de calor.",
-            "c) Conservação de calor.",
-            "d) Regulação da sede.",
-          ],
-          correctAnswer: "b) Produção de calor.",
-          comment:
-            "Os tremores musculares são contrações musculares involuntárias que geram calor através do aumento do metabolismo muscular, sendo uma resposta fisiológica primária ao frio.",
-          topic: "Mecanismos de Produção de Calor: Tremores",
-        },
-        {
-          question:
-            "14. Qual das seguintes afirmações sobre termorreceptores centrais está correta?",
-          options: [
-            "a) Estão localizados apenas na pele.",
-            "b) São responsáveis por detectar a temperatura interna do corpo, como a do sangue.",
-            "c) Respondem apenas a estímulos de dor.",
-            "d) Não enviam sinais ao hipotálamo.",
-          ],
-          correctAnswer: "b) São responsáveis por detectar a temperatura interna do corpo, como a do sangue.",
-          comment:
-            "Termorreceptores centrais, encontrados no hipotálamo, medula espinhal e em vísceras, monitoram a temperatura do 'core' corporal, fornecendo informações vitais para a regulação.",
-          topic: "Termorreceptores Centrais",
-        },
-        {
-          question:
-            "15. A 'Aclimatação ao Calor' envolve adaptações fisiológicas que incluem:",
-          options: [
-            "a) Diminuição da produção de suor.",
-            "b) Aumento da temperatura corporal basal.",
-            "c) Inibição da vasodilatação.",
-            "d) Início mais precoce da transpiração e maior volume de suor diluído, com menor perda de eletrólitos.",
-          ],
-          correctAnswer: "d) Início mais precoce da transpiração e maior volume de suor diluído, com menor perda de eletrólitos.",
-          comment:
-            "A aclimatação ao calor permite que o corpo lide melhor com altas temperaturas, com suor mais eficiente (mais volume e menos eletrólitos) e vasodilatação mais eficaz, melhorando a perda de calor.",
-          topic: "Aclimatação ao Calor",
-        },
-        {
-          question:
-            "16. Qual é a principal diferença entre 'Febre' e 'Hipertermia'?",
-          options: [
-            "a) A febre é uma resposta fisiológica; a hipertermia é sempre patológica.",
-            "b) A febre é regulada pelo hipotálamo com um 'set point' elevado; a hipertermia é um aumento descontrolado da temperatura corporal sem alteração do 'set point'.",
-            "c) A hipertermia sempre envolve infecção.",
-            "d) A febre só ocorre em crianças; a hipertermia em adultos.",
-          ],
-          correctAnswer: "b) A febre é regulada pelo hipotálamo com um 'set point' elevado; a hipertermia é um aumento descontrolado da temperatura corporal sem alteração do 'set point'.",
-          comment:
-            "Esta é uma distinção crucial: a febre é um processo regulado pelo cérebro, enquanto a hipertermia é uma falha nos mecanismos de dissipação de calor, onde o corpo superaquece independentemente do 'set point'.",
-          topic: "Febre vs Hipertermia",
-        },
-        {
-          question:
-            "17. Em ambientes muito frios, a redução do fluxo sanguíneo para as extremidades (vasoconstrição) pode levar a:",
-          options: [
-            "a) Aumento da temperatura nas extremidades.",
-            "b) Congelamento (frostbite).",
-            "c) Maior perda de calor pela pele.",
-            "d) Aumento da sensibilidade ao toque.",
-          ],
-          correctAnswer: "b) Congelamento (frostbite).",
-          comment:
-            "A vasoconstrição intensa e prolongada nas extremidades para conservar o calor central pode comprometer a circulação local, levando a lesões por congelamento.",
-          topic: "Efeitos do Frio Extremo",
-        },
-        {
-          question:
-            "18. A 'Radiação' é um mecanismo de transferência de calor que envolve:",
-          options: [
-            "a) Contato direto com uma superfície.",
-            "b) Transferência de calor através de correntes de ar ou água.",
-            "c) Perda de calor na forma de raios infravermelhos, sem contato direto.",
-            "d) Perda de calor pela evaporação de líquidos.",
-          ],
-          correctAnswer: "c) Perda de calor na forma de raios infravermelhos, sem contato direto.",
-          comment:
-            "A radiação é a transferência de energia na forma de ondas eletromagnéticas. O corpo humano irradia calor para objetos mais frios ao redor e absorve calor de objetos mais quentes.",
-          topic: "Mecanismos de Perda/Ganho de Calor: Radiação",
-        },
-        {
-          question:
-            "19. Qual dos seguintes mecanismos de perda de calor é mais eficiente em um ambiente úmido e quente?",
-          options: [
-            "a) Condução.",
-            "b) Radiação.",
-            "c) Evaporação.",
-            "d) Convecção.",
-          ],
-          correctAnswer: "c) Evaporação.",
-          comment:
-            "Em ambientes úmidos, a evaporação torna-se menos eficiente, mas em um cenário onde se busca eficiência na perda de calor em ambientes úmidos e quentes, a evaporação ainda é a principal via, embora dificultada pela umidade.",
-          topic: "Mecanismos de Perda de Calor: Eficiência",
-        },
-        {
-          question:
-            "20. A 'Condução' é a transferência de calor que ocorre por:",
-          options: [
-            "a) Movimento de ar ou líquido.",
-            "b) Contato direto entre superfícies de diferentes temperaturas.",
-            "c) Ondas eletromagnéticas.",
-            "d) Evaporação de líquidos.",
-          ],
-          correctAnswer: "b) Contato direto entre superfícies de diferentes temperaturas.",
-          comment:
-            "A condução é a transferência de calor de um objeto para outro por contato físico direto, como sentar em uma cadeira fria ou colocar uma bolsa de gelo na pele.",
-          topic: "Mecanismos de Perda/Ganho de Calor: Condução",
-        },
-        {
-          question:
-            "21. Em casos de exaustão pelo calor, qual é a principal causa?",
-          options: [
-            "a) Danos cerebrais diretos.",
-            "b) Desidratação e desequilíbrio eletrolítico devido à perda excessiva de suor.",
-            "c) Infecção bacteriana.",
-            "d) Aumento da pressão arterial.",
-          ],
-          correctAnswer: "b) Desidratação e desequilíbrio eletrolítico devido à perda excessiva de suor.",
-          comment:
-            "A exaustão pelo calor é uma condição mais leve de doença relacionada ao calor, causada principalmente pela perda de água e sal pelo suor sem reposição adequada, levando à desidratação.",
-          topic: "Distúrbios do Calor: Exaustão",
-        },
-        {
-          question:
-            "22. O 'Tecido Adiposo Marrom (TAM)' é particularmente importante na termogênese de qual grupo, conforme mencionado nos slides?",
-          options: [
-            "a) Adultos atletas.",
-            "b) Idosos.",
-            "c) Recém-nascidos e bebês.",
-            "d) Pessoas com hipotireoidismo.",
-          ],
-          correctAnswer: "c) Recém-nascidos e bebês.",
-          comment:
-            "O TAM é abundante em recém-nascidos e bebês, sendo crucial para a termogênese sem tremores, uma vez que eles não conseguem tremer eficazmente para gerar calor.",
-          topic: "Tecido Adiposo Marrom (TAM)",
-        },
-        {
-          question:
-            "23. O que acontece com a taxa metabólica basal (TMB) quando a temperatura corporal diminui significativamente (hipotermia)?",
-          options: [
-            "a) Aumenta drasticamente.",
-            "b) Diminui.",
-            "c) Permanece inalterada.",
-            "d) Aumenta inicialmente e depois diminui.",
-          ],
-          correctAnswer: "b) Diminui.",
-          comment:
-            "A hipotermia deprime o metabolismo celular em geral, resultando em uma diminuição da taxa metabólica. Este princípio é usado na hipotermia terapêutica.",
-          topic: "Hipotermia e Metabolismo",
-        },
-        {
-          question:
-            "24. A 'Convecção' é a transferência de calor por:",
-          options: [
-            "a) Contato direto.",
-            "b) Ondas eletromagnéticas.",
-            "c) Movimento de fluidos (ar ou água) sobre a superfície corporal.",
-            "d) Evaporação.",
-          ],
-          correctAnswer: "c) Movimento de fluidos (ar ou água) sobre a superfície corporal.",
-          comment:
-            "A convecção envolve o movimento de massas de ar ou água. O ar quente próximo à pele sobe e é substituído por ar mais frio, removendo o calor do corpo.",
-          topic: "Mecanismos de Perda/Ganho de Calor: Convecção",
-        },
-        {
-          question:
-            "25. Qual das seguintes glândulas endócrinas tem um papel importante no aumento da produção de calor metabólico a longo prazo?",
-          options: [
-            "a) Adrenal.",
-            "b) Tireoide.",
-            "c) Pâncreas.",
-            "d) Hipófise.",
-          ],
-          correctAnswer: "b) Tireoide.",
-          comment:
-            "Os hormônios da tireoide (T3 e T4) aumentam a taxa metabólica basal da maioria das células do corpo, resultando em maior produção de calor. Uma tireoide hipoativa (hipotireoidismo) pode causar intolerância ao frio.",
-          topic: "Hormônios e Termogênese",
-        },
-        {
-          question:
-            "26. O que são os 'calafrios' e por que ocorrem em resposta ao frio?",
-          options: [
-            "a) São suores excessivos para resfriar o corpo.",
-            "b) São contrações musculares involuntárias que geram calor para aumentar a temperatura corporal.",
-            "c) São um sintoma de desidratação.",
-            "d) São uma resposta à febre alta.",
-          ],
-          correctAnswer: "b) São contrações musculares involuntárias que geram calor para aumentar a temperatura corporal.",
-          comment:
-            "Calafrios são tremores musculares incontroláveis, um mecanismo reflexo do corpo para gerar calor quando o 'set point' da temperatura é percebido como muito baixo (no frio ou no início da febre).",
-          topic: "Calafrios e Termogênese",
-        },
-        {
-          question:
-            "27. Qual é a principal diferença entre 'insolação' e 'intermação' conforme as classificações?",
-          options: [
-            "a) São sinônimos e não há diferença.",
-            "b) Insolação é mais grave que intermação.",
-            "c) Insolação é causada pela exposição solar direta; intermação pela exposição a calor intenso sem necessariamente ser solar direta, ambos representam a forma mais grave de hipertermia.",
-            "d) Intermação é uma forma de hipotermia.",
-          ],
-          correctAnswer: "c) Insolação é causada pela exposição solar direta; intermação pela exposição a calor intenso sem necessariamente ser solar direta, ambos representam a forma mais grave de hipertermia.",
-          comment:
-            "Ambas são formas de hipertermia grave. A distinção se baseia na causa: insolação é devido à exposição direta ao sol, e intermação por exposição a calor intenso em qualquer ambiente, com ambos os casos envolvendo a falha dos mecanismos de termorregulação.",
-          topic: "Distúrbios do Calor: Insolação vs Intermação",
-        },
-        {
-          question:
-            "28. A 'hipotermia terapêutica' é utilizada em algumas situações clínicas para:",
-          options: [
-            "a) Aumentar a atividade metabólica cerebral.",
-            "b) Proteger órgãos de danos isquêmicos, diminuindo a demanda metabólica.",
-            "c) Induzir febre artificialmente.",
-            "d) Acelerar a recuperação de lesões musculares.",
-          ],
-          correctAnswer: "b) Proteger órgãos de danos isquêmicos, diminuindo a demanda metabólica.",
-          comment:
-            "A hipotermia induzida e controlada é usada clinicamente para diminuir o metabolismo e a demanda de oxigênio de tecidos como o cérebro e o coração, protegendo-os de lesões, por exemplo, após parada cardíaca ou trauma cerebral.",
-          topic: "Hipotermia Terapêutica",
-        },
-        {
-          question:
-            "29. O gráfico no Slide 7 que mostra 'Respostas Fisiológicas ao Calor' indica que um dos primeiros mecanismos ativados para perder calor é:",
-          options: [
-            "a) Tremores.",
-            "b) Aumento da diurese.",
-            "c) Vasodilatação cutânea.",
-            "d) Piloereção.",
-          ],
-          correctAnswer: "c) Vasodilatação cutânea.",
-          comment:
-            "O gráfico mostra que a vasodilatação cutânea (aumento do fluxo sanguíneo para a pele) é uma das primeiras respostas para dissipar calor do corpo para o ambiente, seguida pela transpiração.",
-          topic: "Respostas Fisiológicas ao Calor",
-        },
-        {
-          question:
-            "30. Qual a importância da 'zona termoneutra' para o controle da temperatura corporal?",
-          options: [
-            "a) É a faixa de temperatura ambiental onde o corpo precisa produzir calor ativamente.",
-            "b) É a faixa de temperatura ambiental onde o corpo pode manter sua temperatura central com o mínimo de esforço metabólico.",
-            "c) É a temperatura na qual ocorre a hipertermia.",
-            "d) É a temperatura na qual o corpo começa a tremer.",
-          ],
-          correctAnswer: "b) É a faixa de temperatura ambiental onde o corpo pode manter sua temperatura central com o mínimo de esforço metabólico.",
-          comment:
-            "A zona termoneutra é o intervalo de temperatura ambiente em que o corpo pode manter a temperatura corporal central constante apenas ajustando o fluxo sanguíneo para a pele, sem a necessidade de suar ou tremer, minimizando o gasto energético.",
-          topic: "Zona Termoneutra",
-        },
-      ];
+    // Inicializa a visibilidade das seções no carregamento
+    errorDiagnosisSection.style.display = 'none';
+    topicsToReviewList.innerHTML = '';
+    statusMessage.textContent = '';
 
-      function buildQuiz() {
-        const output = [];
+    const questions = [         {           question: "1. A Termorregulação é definida como um processo fisiológico essencial para manter a temperatura interna do organismo em torno de qual faixa de valores?",           options: [             "a) 35,0°C a 36,0°C.",             "b) 36,5°C a 37,5°C.",             "c) 37,0°C a 38,0°C.",             "d) 38,0°C a 39,0°C.",           ],           correctAnswer: "b) 36,5°C a 37,5°C.",           comment: "A homeostase térmica humana exige que o 'core' (núcleo central) do corpo permaneça estável entre 36,5°C e 37,5°C para que as reações enzimáticas e o metabolismo celular ocorram de forma otimizada.",           topic: "Faixa Normal de Temperatura Corporal",         },         {           question: "2. Qual dos seguintes NÃO é um mecanismo de produção de calor pelo corpo?",           options: [             "a) Processos metabólicos.",             "b) Contração muscular (tremores).",             "c) Vasoconstrição.",             "d) Produção de calor no tecido adiposo marrom (TAM).",           ],           correctAnswer: "c) Vasoconstrição.",           comment: "A vasoconstrição periférica reduz o fluxo de sangue para a pele, diminuindo a troca de calor com o ambiente. Portanto, ela atua na conservação do calor já existente, não na geração de novo calor.",           topic: "Mecanismos de Produção de Calor",         },         {           question: "3. A piloereção (arrepios) é classificada como um mecanismo de:",           options: [             "a) Produção de calor.",             "b) Perda de calor.",             "c) Conservação de calor.",             "d) Regulação da sede.",           ],           correctAnswer: "c) Conservação de calor.",           comment: "A piloereção tenta criar uma camada de ar estático (isolante) rente à pele. Embora seja vestigial e pouco eficiente em humanos, em outros mamíferos é uma forma primária de evitar a perda térmica.",           topic: "Mecanismos de Conservação de Calor",         },         {           question: "4. Qual é a principal estrutura cerebral responsável pelo controle do 'set point' da temperatura corporal?",           options: [             "a) Córtex cerebral.",             "b) Cerebelo.",             "c) Hipotálamo.",             "d) Medula espinhal.",           ],           correctAnswer: "c) Hipotálamo.",           comment: "O hipotálamo (especificamente as áreas pré-óptica e posterior) funciona como o termostato biológico, recebendo sinais de sensores térmicos e ativando mecanismos de resfriamento ou aquecimento.",           topic: "Centro Termorregulador",         },         {           question: "5. O que ocorre com os vasos sanguíneos da pele em um ambiente quente para facilitar a perda de calor?",           options: [             "a) Vasoconstrição.",             "b) Vasodilatação.",             "c) Sem alteração.",             "d) Aumento da permeabilidade capilar.",           ],           correctAnswer: "b) Vasodilatação.",           comment: "Ao dilatar os vasos cutâneos, o corpo desvia o sangue quente do centro para a periferia, facilitando a dissipação do calor para o meio externo por radiação e convecção.",           topic: "Mecanismos de Perda de Calor: Vasodilatação",         },         {           question: "6. A transpiração (sudorese) dissipa calor principalmente através de qual processo físico?",           options: [             "a) Convecção.",             "b) Condução.",             "c) Evaporação.",             "d) Radiação.",           ],           correctAnswer: "c) Evaporação.",           comment: "A evaporação é o método mais potente de resfriamento. Quando o suor passa do estado líquido para o gasoso, ele retira energia térmica (calor latente) da pele, resfriando o corpo.",           topic: "Mecanismos de Perda de Calor: Transpiração",         },         {           question: "7. Qual é a principal via de perda de calor em um ambiente frio, considerando um corpo em repouso?",           options: [             "a) Evaporação.",             "b) Condução.",             "c) Radiação e convecção.",             "d) Excreção.",           ],           correctAnswer: "c) Radiação e convecção.",           comment: "Em condições de frio, a maior parte do calor é perdida por radiação infravermelha para objetos distantes e por convecção para as moléculas de ar que tocam a pele e se movem.",           topic: "Perda de Calor no Frio",         },         {           question: "8. A febre diferencia-se da hipertermia simples porque nela ocorre:",           options: [             "a) Incapacidade de transpirar.",             "b) Aumento do 'set point' hipotalâmico em resposta a pirógenos.",             "c) Perda excessiva de líquidos.",             "d) Danos irreversíveis ao hipotálamo.",           ],           correctAnswer: "b) Aumento do 'set point' hipotalâmico em resposta a pirógenos.",           comment: "Na febre, o termostato é 'ajustado para cima'. O corpo não está superaquecido por falha de resfriamento, mas sim porque o cérebro decidiu que a nova temperatura 'normal' deve ser mais alta para combater uma infecção.",           topic: "Febre",         },         {           question: "9. Qual tipo de termorreceptores detecta as mudanças na temperatura da pele?",           options: [             "a) Termorreceptores centrais.",             "b) Termorreceptores periféricos.",             "c) Nociceptores.",             "d) Proprioceptores.",           ],           correctAnswer: "b) Termorreceptores periféricos.",           comment: "Os receptores periféricos (terminações nervosas para frio e calor na derme) agem como um sistema de alerta precoce, informando ao cérebro sobre as condições do ambiente externo.",           topic: "Termorreceptores Periféricos",         },         {           question: "10. Qual a função biológica dos pirógenos?",           options: [             "a) São substâncias que diminuem a temperatura corporal.",             "b) São microrganismos que causam infecções.",             "c) São substâncias que elevam o 'set point' hipotalâmico.",             "d) São células do sistema imunológico.",           ],           correctAnswer: "c) São substâncias que elevam o 'set point' hipotalâmico.",           comment: "Pirógenos endógenos (como as citocinas IL-1 e IL-6) ou exógenos (como endotoxinas bacterianas) induzem a síntese de prostaglandinas no hipotálamo, elevando o ponto de ajuste térmico.",           topic: "Pirógenos",         },         {           question: "11. Qual dos seguintes é um benefício evolutivo da febre?",           options: [             "a) Aumento do apetite.",             "b) Diminuição da atividade metabólica.",             "c) Inibição do crescimento de microrganismos e otimização da resposta imune.",             "d) Diminuição da demanda de oxigênio.",           ],           correctAnswer: "c) Inibição do crescimento de microrganismos e otimização da resposta imune.",           comment: "A temperatura elevada dificulta a replicação de vários vírus e bactérias e acelera a quimiotaxia e a proliferação de linfócitos, agindo como uma tática de defesa.",           topic: "Benefícios da Febre",         },         {           question: "12. Hipotermia clínica é definida por uma temperatura central abaixo de:",           options: [             "a) 36,0°C.",             "b) 35,5°C.",             "c) 35,0°C.",             "d) 34,0°C.",           ],           correctAnswer: "c) 35,0°C.",           comment: "Abaixo de 35,0°C, o corpo entra em estado de hipotermia, onde a velocidade das reações químicas cai e o sistema nervoso começa a apresentar depressão de consciência.",           topic: "Hipotermia",         },         {           question: "13. Os calafrios (tremores musculares) visam:",           options: [             "a) Perda de calor.",             "b) Produção de calor via trabalho mecânico muscular.",             "c) Conservação de calor.",             "d) Regulação do pH sanguíneo.",           ],           correctAnswer: "b) Produção de calor via trabalho mecânico muscular.",           comment: "O tremor é uma atividade muscular rítmica que não produz movimento útil, mas libera calor como subproduto da quebra de ATP, sendo uma resposta emergencial ao frio.",           topic: "Mecanismos de Produção de Calor: Tremores",         },         {           question: "14. Os termorreceptores centrais monitoram principalmente:",           options: [             "a) A temperatura do ar ambiente.",             "b) A temperatura do sangue que irriga o hipotálamo e órgãos internos.",             "c) A dor causada por queimaduras.",             "d) A pressão arterial nas extremidades.",           ],           correctAnswer: "b) A temperatura do sangue que irriga o hipotálamo e órgãos internos.",           comment: "Eles detectam a temperatura do 'núcleo' do corpo. Se a temperatura do sangue interno sobe ou desce, esses receptores ativam os mecanismos mais potentes de regulação.",           topic: "Termorreceptores Centrais",         },         {           question: "15. A aclimatação ao calor resulta em qual adaptação no suor?",           options: [             "a) Suor mais concentrado em sal.",             "b) Menor volume total de suor.",             "c) Interrupção da vasodilatação periférica.",             "d) Suor mais volumoso, precoce e com baixa concentração de sódio.",           ],           correctAnswer: "d) Suor mais volumoso, precoce e com baixa concentração de sódio.",           comment: "Após dias no calor, as glândulas sudoríparas tornam-se mais eficientes: produzem mais líquido para resfriamento, mas reabsorvem melhor o sódio para evitar a desidratação eletrolítica.",           topic: "Aclimatação ao Calor",         },         {           question: "16. A hipertermia, diferentemente da febre, é caracterizada por:",           options: [             "a) Uso de pirógenos endógenos.",             "b) Superaquecimento por excesso de produção ou falha na dissipação, sem mudar o 'set point'.",             "c) Ser sempre causada por vírus.",             "d) Ocorrer apenas durante o sono.",           ],           correctAnswer: "b) Superaquecimento por excesso de produção ou falha na dissipação, sem mudar o 'set point'.",           comment: "Na hipertermia (como na insolação), o hipotálamo quer manter 37°C, mas o corpo não consegue esfriar devido ao ambiente extremo ou exercício exaustivo.",           topic: "Febre vs Hipertermia",         },         {           question: "17. A vasoconstrição periférica intensa no frio protege o calor central, mas pode causar:",           options: [             "a) Sudorese fria.",             "b) Lesões teciduais por isquemia/congelamento (frostbite).",             "c) Hipertensão pulmonar imediata.",             "d) Dilatação das pupilas.",           ],           correctAnswer: "b) Lesões teciduais por isquemia/congelamento (frostbite).",           comment: "Ao fechar o fluxo para as extremidades (dedos, orelhas, nariz), o corpo sacrifica esses tecidos para manter o coração e cérebro aquecidos.",           topic: "Efeitos do Frio Extremo",         },         {           question: "18. A Radiação térmica corporal ocorre via:",           options: [             "a) Contato com a água fria.",             "b) Ventilação forçada.",             "c) Emissão de ondas infravermelhas para o ambiente.",             "d) Quebra de moléculas de gordura.",           ],           correctAnswer: "c) Emissão de ondas infravermelhas para o ambiente.",           comment: "O corpo humano se comporta como um radiador, emitindo energia térmica para qualquer objeto ao redor que esteja em uma temperatura menor.",           topic: "Mecanismos de Perda/Ganho de Calor: Radiação",         },         {           question: "19. Em um dia de 40°C com 95% de umidade, por que sentimos mais calor?",           options: [             "a) Porque a condução aumenta.",             "b) Porque a radiação se torna nula.",             "c) Porque a umidade impede a evaporação do suor, dificultando o resfriamento.",             "d) Porque o metabolismo basal dobra.",           ],           correctAnswer: "c) Porque a umidade impede a evaporação do suor, dificultando o resfriamento.",           comment: "O suor só resfria se evaporar. Se o ar já está saturado de água (umidade alta), o suor escorre mas não evapora, impedindo a dissipação de calor.",           topic: "Mecanismos de Perda de Calor: Eficiência",         },         {           question: "20. Encostar a mão em um metal gelado e sentir o frio instantâneo é um exemplo de:",           options: [             "a) Convecção.",             "b) Condução.",             "c) Radiação.",             "d) Evaporação.",           ],           correctAnswer: "b) Contato direto entre superfícies de diferentes temperaturas.",           comment: "A condução exige o contato físico molecular. O calor flui do objeto mais quente para o mais frio até o equilíbrio térmico.",           topic: "Mecanismos de Perda/Ganho de Calor: Condução",         },         {           question: "21. A exaustão pelo calor costuma apresentar-se clinicamente com:",           options: [             "a) Pele seca e quente, sem suor.",             "b) Sudorese profusa, fraqueza e hipotensão por desidratação.",             "c) Aumento da força muscular.",             "d) Bradicardia severa.",           ],           correctAnswer: "b) Desidratação e desequilíbrio eletrolítico devido à perda excessiva de suor.",           comment: "Diferente da insolação, na exaustão o corpo ainda tenta se resfriar (suor presente), mas entra em colapso pelo baixo volume sanguíneo (hipovolemia).",           topic: "Distúrbios do Calor: Exaustão",         },         {           question: "22. Qual a função da termogenina (UCP-1) no tecido adiposo marrom (TAM)?",           options: [             "a) Armazenar triglicerídeos.",             "b) Produzir ATP de forma eficiente.",             "c) Desacoplar a cadeia respiratória para gerar calor em vez de ATP.",             "d) Inibir a ação da tireoide.",           ],           correctAnswer: "c) Recém-nascidos e bebês.",           comment: "O TAM possui mitocôndrias especiais que dissipam a energia da oxidação de gorduras diretamente como calor, o que é vital para bebês que não tremem.",           topic: "Tecido Adiposo Marrom (TAM)",         },         {           question: "23. Qual o impacto da hipotermia severa no coração?",           options: [             "a) Taquicardia extrema.",             "b) Diminuição da frequência cardíaca e do metabolismo (bradicardia).",             "c) Aumento da contratilidade.",             "d) Não há impacto cardíaco.",           ],           correctAnswer: "b) Diminui.",           comment: "O frio diminui a velocidade de despolarização do nó sinoatrial, levando à bradicardia e queda do débito cardíaco conforme o metabolismo desacelera.",           topic: "Hipotermia e Metabolismo",         },         {           question: "24. O uso de um ventilador ajuda a esfriar o corpo principalmente por:",           options: [             "a) Condução.",             "b) Radiação.",             "c) Convecção (ao remover a camada de ar quente sobre a pele).",             "d) Termogênese química.",           ],           correctAnswer: "c) Movimento de fluidos (ar ou água) sobre a superfície corporal.",           comment: "A convecção remove o ar que foi aquecido pelo corpo e o substitui por ar 'novo', acelerando a troca térmica.",           topic: "Mecanismos de Perda/Ganho de Calor: Convecção",         },         {           question: "25. Por que pacientes com hipotireoidismo sentem mais frio?",           options: [             "a) Porque tremem demais.",             "b) Porque possuem metabolismo basal reduzido e menor produção de calor interno.",             "c) Porque a pele fica mais fina.",             "d) Porque os vasos estão sempre dilatados.",           ],           correctAnswer: "b) Tireoide.",           comment: "Os hormônios tireoidianos regulam a 'velocidade' das células. Com menos hormônio, o 'fogo' interno do metabolismo é mais baixo.",           topic: "Hormônios e Termogênese",         },         {           question: "26. No início de uma febre, por que o paciente sente frio e treme (calafrios)?",           options: [             "a) Porque a temperatura externa caiu.",             "b) Porque o hipotálamo subiu o 'alvo' térmico e a temperatura atual parece 'fria' para o novo padrão.",             "c) Porque o paciente perdeu sangue.",             "d) Porque o suor evaporou rápido demais.",           ],           correctAnswer: "b) São contrações musculares involuntárias que geram calor para aumentar a temperatura corporal.",           comment: "Se o 'alvo' mudou para 39°C, o corpo a 37°C sente que está 'congelando'. Os calafrios servem para elevar a temperatura até o novo alvo.",           topic: "Calafrios e Termogênese",         },         {           question: "27. A insolação (heatstroke) é uma emergência médica definida por:",           options: [             "a) Temperatura > 38°C e suor excessivo.",             "b) Temperatura < 35°C e tremores.",             "c) Temperatura central > 40°C, pele seca e disfunção do sistema nervoso central.",             "d) Apenas vermelhidão na pele.",           ],           correctAnswer: "c) Insolação é causada pela exposição solar direta; intermação pela exposição a calor intenso sem necessariamente ser solar direta, ambos representam a forma mais grave de hipertermia.",           comment: "Nesta fase, os mecanismos de resfriamento falham (o paciente para de suar) e o calor frita as proteínas cerebrais, causando delírio ou coma.",           topic: "Distúrbios do Calor: Insolação vs Intermação",         },         {           question: "28. Qual a lógica por trás da hipotermia induzida em cirurgias cardíacas?",           options: [             "a) Evitar infecções.",             "b) Reduzir o consumo de oxigênio dos tecidos, protegendo-os contra a isquemia.",             "c) Facilitar a coagulação sanguínea.",             "d) Aumentar a pressão arterial.",           ],           correctAnswer: "b) Proteger órgãos de danos isquêmicos, diminuindo a demanda metabólica.",           comment: "Células frias 'trabalham' menos e precisam de quase nada de oxigênio, permitindo que o cirurgião manipule órgãos com fluxo reduzido temporariamente.",           topic: "Hipotermia Terapêutica",         },         {           question: "29. De acordo com o ciclo de respostas ao calor, a primeira linha de defesa é hemodinâmica. Qual é ela?",           options: [             "a) Aumento da frequência cardíaca.",             "b) Vasodilatação cutânea.",             "c) Produção de urina.",             "d) Glicogenólise.",           ],           correctAnswer: "c) Vasodilatação cutânea.",           comment: "Antes de gastar água com o suor, o corpo tenta simplesmente 'jogar o calor para fora' trazendo o sangue para perto da superfície cutânea.",           topic: "Respostas Fisiológicas ao Calor",         },         {           question: "30. Na zona termoneutra, a regulação da temperatura é feita exclusivamente por:",           options: [             "a) Tremores intensos.",             "b) Suor profuso.",             "c) Ajustes no calibre dos vasos sanguíneos periféricos.",             "d) Mudança na dieta.",           ],           correctAnswer: "b) É a faixa de temperatura ambiental onde o corpo pode manter sua temperatura central com o mínimo de esforço metabólico.",           comment: "Nesta faixa (aprox. 25-30°C para pessoas nuas), o corpo está em equilíbrio perfeito, mantendo a temperatura central sem custos metabólicos extras.",           topic: "Zona Termoneutra",         },       ];
 
-        questions.forEach((currentQuestion, questionNumber) => {
-          const options = [];
-          for (let i = 0; i < currentQuestion.options.length; i++) {
-            options.push(
-              `<label class="option" data-question="${questionNumber}" data-value="${currentQuestion.options[i]}">
-                <img src="tesouras.png" class="scissor-icon" onclick="event.stopPropagation(); this.parentNode.classList.toggle('struck-through');">
-                ${currentQuestion.options[i]}
-              </label>`
-            );
-          }
+    function buildQuiz() {
+      const output = [];
 
-          output.push(
-            `<div class="card" id="question-${questionNumber}" data-topic="${currentQuestion.topic}">
-              <div class="question">${currentQuestion.question}</div>
-              <div class="options">${options.join("")}</div>
-              <div class="comment" id="comment-${questionNumber}"></div>
-            </div>`
+      questions.forEach((currentQuestion, questionNumber) => {
+        const options = [];
+        for (let i = 0; i < currentQuestion.options.length; i++) {
+          options.push(
+            `<label class="option" data-question="${questionNumber}" data-value="${currentQuestion.options[i]}">
+              <img src="tesouras.png" class="scissor-icon" onclick="event.stopPropagation(); this.parentNode.classList.toggle('struck-through');">
+              ${currentQuestion.options[i]}
+            </label>`
           );
+        }
+
+        output.push(
+          `<div class="card" id="question-${questionNumber}" data-topic="${currentQuestion.topic}">
+            <div class="question">${currentQuestion.question}</div>
+            <div class="options">${options.join("")}</div>
+            <div class="comment" id="comment-${questionNumber}"></div>
+          </div>`
+        );
+      });
+
+      quizContainer.innerHTML = output.join("");
+    }
+
+    function showResults() {
+      wrongQuestionIndices = [];
+      errorCountByTopic = {};
+      totalAnsweredQuestionsByTopic = {};
+      currentWrongQuestionIndex = -1;
+      hasErrors = false;
+      isShowingErrors = false;
+      isShowingDiagnosis = false;
+
+      errorDiagnosisSection.style.display = 'none';
+      topicsToReviewList.innerHTML = '';
+      statusMessage.textContent = '';
+
+      // Busca por todas as perguntas: estáticas e dinâmicas
+      const allQuestionCards = document.querySelectorAll('.quiz-container .card, #newQuestionsContent .card');
+      let correctAnswersCount = 0;
+      let totalQuestionsAnswered = 0;
+
+      console.log('🔍 Verificando', allQuestionCards.length, 'perguntas...');
+
+      allQuestionCards.forEach((card, index) => {
+        const questionEl = card.querySelector('.question') || card.querySelector('p');
+        if (!questionEl) return;
+
+        const questionText = questionEl.textContent.trim();
+        const optionsContainer = card.querySelector('.options') || card;
+        const allOptions = optionsContainer.querySelectorAll('.option, label.option, label');
+        const userAnswerElement = optionsContainer.querySelector('.option.selected, label.selected');
+        const commentDiv = card.querySelector('.comment');
+
+        const questionTopic = card.dataset.topic || "Tópico não informado";
+        
+        console.log(`📝 Pergunta ${index + 1}: Tópico = "${questionTopic}"`);
+        console.log(`🔍 Encontradas ${allOptions.length} alternativas`);
+        
+        // Remove classes anteriores
+        allOptions.forEach(option => {
+          option.classList.remove('correct', 'incorrect', 'selected');
+        });
+        if (commentDiv) commentDiv.classList.remove('show');
+
+        let correctAnswerValue = null;
+        let questionComment = null;
+
+        // Verifica se é pergunta estática ou dinâmica
+        const isStatic = card.id && card.id.startsWith('question-');
+        if (isStatic) {
+          // Pergunta estática - busca nos dados originais
+          const questionData = questions.find(q => q.question.trim() === questionText);
+          if (questionData) {
+            correctAnswerValue = questionData.correctAnswer.trim();
+            questionComment = questionData.comment;
+          }
+        } else {
+          // Pergunta dinâmica - busca pela opção marcada como correta
+          const correctOpt = optionsContainer.querySelector('.option[data-answer="true"], label[data-answer="true"]');
+          if (correctOpt) {
+            correctAnswerValue = correctOpt.dataset.value?.trim() || correctOpt.textContent.trim();
+            console.log(`✅ Resposta correta encontrada: "${correctAnswerValue}"`);
+          } else {
+            console.log('❌ Nenhuma resposta correta encontrada para pergunta dinâmica');
+          }
+          
+          // Busca comentário no próprio card ou no div comment
+          const commentElement = card.querySelector('.comment');
+          if (commentElement && commentElement.textContent.trim()) {
+            questionComment = commentElement.textContent.trim();
+          }
+        }
+
+        // Processa resposta do usuário e aplica coloração
+        let userAnswer = null;
+        if (userAnswerElement) {
+          userAnswerElement.classList.add('selected');
+          userAnswer = userAnswerElement.dataset.value?.trim() || userAnswerElement.textContent.trim();
+          totalQuestionsAnswered++;
+          totalAnsweredQuestionsByTopic[questionTopic] = (totalAnsweredQuestionsByTopic[questionTopic] || 0) + 1;
+
+          console.log(`👤 Resposta do usuário: "${userAnswer}"`);
+          console.log(`🎯 Resposta correta: "${correctAnswerValue}"`);
+
+          // Verifica se a resposta está correta
+          if (userAnswer === correctAnswerValue) {
+            correctAnswersCount++;
+            console.log(`✅ Resposta correta!`);
+          } else {
+            hasErrors = true;
+            errorCountByTopic[questionTopic] = (errorCountByTopic[questionTopic] || 0) + 1;
+            console.log(`❌ Resposta incorreta para tópico: ${questionTopic}`);
+          }
+        }
+
+        // Aplica coloração: SEMPRE marca a correta de verde, e a errada de vermelho se foi marcada
+        allOptions.forEach(option => {
+          const optionValue = option.dataset.value?.trim() || option.textContent.trim();
+          
+          // Marca a resposta correta de verde SEMPRE
+          if (optionValue === correctAnswerValue) {
+            option.classList.add('correct');
+            console.log(`🟢 Marcando como correta: "${optionValue}"`);
+          }
+          
+          // Se o usuário marcou uma resposta E ela está errada, marca de vermelho
+          if (userAnswer && optionValue === userAnswer && userAnswer !== correctAnswerValue) {
+            option.classList.add('incorrect');
+            console.log(`🔴 Marcando como incorreta: "${optionValue}"`);
+          }
         });
 
-        quizContainer.innerHTML = output.join("");
+        // Mostra comentário se disponível
+        if (commentDiv && questionComment) {
+          commentDiv.textContent = questionComment;
+          commentDiv.classList.add('show');
+        }
+      });
+
+      // Exibe resultados
+      resultsContainer.textContent = `Você acertou ${correctAnswersCount} de ${totalQuestionsAnswered} questões respondidas.`;
+
+      console.log('📊 Erros por tópico:', errorCountByTopic);
+      console.log('📊 Total por tópico:', totalAnsweredQuestionsByTopic);
+
+      // Gera diagnóstico de erros
+      if (hasErrors) {
+        for (const topic in errorCountByTopic) {
+          const errors = errorCountByTopic[topic];
+          const total = totalAnsweredQuestionsByTopic[topic] || 0;
+          if (total > 0) {
+            const percent = ((errors / total) * 100).toFixed(1);
+            const li = document.createElement('li');
+            li.textContent = `${topic}: ${percent}% de erros (${errors} de ${total} questões respondidas)`;
+            topicsToReviewList.appendChild(li);
+          }
+        }
+      } else {
+        const li = document.createElement('li');
+        li.textContent = "🥳 Parabéns! Você não teve erros nas questões respondidas.";
+        topicsToReviewList.appendChild(li);
       }
 
-      function showResults() {
-        wrongQuestionIndices = []; 
-        errorCountByTopic = {}; 
-        totalAnsweredQuestionsByTopic = {}; 
-        currentWrongQuestionIndex = -1; 
-        hasErrors = false; 
-        isShowingErrors = false; 
-        isShowingDiagnosis = false;
+      errorDiagnosisSection.style.display = 'block';
+      generatedQuestionsSection.style.display = 'block';
+      generateNewQuestionsBtn.style.display = 'block';
+      scrollToDiagnosis();
+    }
 
-        errorDiagnosisSection.style.display = 'none';
-        topicsToReviewList.innerHTML = ''; 
+    function scrollToQuestion(index) {
+      const questionCard = document.getElementById(`question-${index}`);
+      if (questionCard) {
+        questionCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
 
-        const answerContainers = quizContainer.querySelectorAll(".options");
-        let correctAnswers = 0;
+    function scrollToDiagnosis() {
+        errorDiagnosisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 
-        questions.forEach((currentQuestion, questionNumber) => {
-          const answerContainer = answerContainers[questionNumber];
-          const userAnswerElement = answerContainer.querySelector('.option.selected');
-          const userAnswerValue = userAnswerElement ? userAnswerElement.dataset.value : undefined;
-          const commentDiv = document.getElementById(`comment-${questionNumber}`);
+    function scrollToGeneratedQuestions() {
+        generatedQuestionsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 
-          // Limpa estados anteriores
-          const allOptions = answerContainer.querySelectorAll('.option');
-          allOptions.forEach(option => {
-            option.classList.remove('correct', 'incorrect');
-            const scissorIcon = option.querySelector('.scissor-icon');
-            if (scissorIcon) scissorIcon.classList.add('hidden'); // Esconder tesouras inicialmente
-          });
-          if (commentDiv) commentDiv.classList.remove('show');
+    // Event listener para seleção de opções (funciona para estáticas e dinâmicas)
+    document.addEventListener("click", function (event) {
+      const clickedElement = event.target;
+      const optionElement = clickedElement.closest('.option');
 
+      if (optionElement) {
+          if (clickedElement.classList.contains("scissor-icon")) {
+              event.stopPropagation();
+              optionElement.classList.toggle("struck-through");
+          }
+          else {
+              const parentCard = optionElement.closest('.card');
+              const currentQuestionOptions = parentCard.querySelectorAll('.option');
 
-          const optionElements = answerContainer.querySelectorAll('.option');
-          optionElements.forEach(option => {
-            const scissorIcon = option.querySelector('.scissor-icon');
+              currentQuestionOptions.forEach(opt => opt.classList.remove("selected"));
+              optionElement.classList.add("selected");
+          }
+      }
+    });
 
-            if (option === userAnswerElement && scissorIcon) {
-                scissorIcon.classList.add('hidden');
-            } else if (scissorIcon) {
-                scissorIcon.classList.remove('hidden'); // Mostrar tesoura para opções não selecionadas
+    generateNewQuestionsBtn.addEventListener("click", async function() {
+        statusMessage.textContent = '⏳ Gerando novas perguntas...';
+        generateNewQuestionsBtn.disabled = true;
+
+        const topics = Object.keys(errorCountByTopic).filter(topic => {
+            const errorsInTopic = errorCountByTopic[topic] || 0;
+            const totalAnsweredInTopic = totalAnsweredQuestionsByTopic[topic] || 0;
+            return errorsInTopic > 0 && totalAnsweredInTopic > 0;
+        });
+
+        const topicsToSend = topics.length > 0 ? topics : ["fisiologia celular", "biologia"];
+
+        try {
+            const response = await fetch('https://www.quizia.xyz/quiz', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ topicos: topicsToSend }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            newQuestionsContent.innerHTML = '';
+            if (data && data.html) {
+                console.log('📥 HTML recebido do Flask:', data.html);
+                
+                // Insere o HTML diretamente sem reconstrução complexa
+                newQuestionsContent.innerHTML = data.html.replace(/```html|```/g, '');
+                
+                // Adiciona tesouras e ajusta formatação apenas se necessário
+                newQuestionsContent.querySelectorAll('.card').forEach((card, cardIndex) => {
+                    // Garante que o elemento de pergunta tenha a classe correta
+                    const questionElement = card.querySelector('p');
+                    if (questionElement && !questionElement.classList.contains('question')) {
+                       questionElement.classList.add('question');
+                    }
+
+                    // Remove qualquer input de radio que possa existir e adiciona tesouras
+                    card.querySelectorAll('label').forEach((label) => {
+                        // Remove inputs de radio MAS preserva o atributo data-answer
+                        const radioInput = label.querySelector('input[type="radio"]');
+                        if (radioInput) {
+                            // PRESERVA o atributo data-answer do input no label
+                            if (radioInput.hasAttribute('data-answer')) {
+                                label.setAttribute('data-answer', radioInput.getAttribute('data-answer'));
+                            }
+                            radioInput.remove();
+                        }
+                        
+                        // Garante que tenha a classe option
+                        if (!label.classList.contains('option')) {
+                            label.classList.add('option');
+                        }
+
+                        // Garante que tenha data-value
+                        if (!label.dataset.value) {
+                            label.dataset.value = label.textContent.trim();
+                        }
+
+                        // Adiciona tesoura se não existir
+                        if (!label.querySelector('.scissor-icon')) {
+                            const scissorIcon = document.createElement('img');
+                            scissorIcon.src = 'tesouras.png';
+                            scissorIcon.className = 'scissor-icon';
+                            scissorIcon.onclick = function(e) {
+                                e.stopPropagation();
+                                label.classList.toggle('struck-through');
+                            };
+                            label.insertBefore(scissorIcon, label.firstChild);
+                        }
+                    });
+
+                    console.log(`🏷️ Card ${cardIndex}: data-topic = "${card.dataset.topic}"`);
+                    
+                    // Verifica se há opção correta marcada
+                    const correctOption = card.querySelector('label[data-answer="true"]');
+                    if (correctOption) {
+                        console.log(`✅ Opção correta encontrada: "${correctOption.dataset.value}"`);
+                    } else {
+                        console.log('❌ Nenhuma opção correta encontrada');
+                    }
+                });
+            } else {
+                newQuestionsContent.innerHTML = "<p>Não foi possível gerar novas perguntas para os tópicos selecionados.</p>";
             }
             
-            if (option.dataset.value === currentQuestion.correctAnswer) {
-                option.classList.add('correct');
-                if (commentDiv && currentQuestion.comment) {
-                    commentDiv.textContent = currentQuestion.comment;
-                    commentDiv.classList.add('show');
-                }
-            }
-          });
+            generatedQuestionsSection.style.display = 'block';
+            scrollToGeneratedQuestions();
+            statusMessage.textContent = '✅ Perguntas geradas com sucesso!';
+            setTimeout(() => { statusMessage.textContent = '' }, 3000);
 
-          // ***************************************************************
-          // Lógica crucial: Apenas contabiliza se a questão foi respondida
-          // ***************************************************************
-          if (userAnswerElement) { 
-            totalAnsweredQuestionsByTopic[currentQuestion.topic] = (totalAnsweredQuestionsByTopic[currentQuestion.topic] || 0) + 1;
-
-            if (userAnswerValue !== currentQuestion.correctAnswer) {
-              userAnswerElement.classList.add('incorrect');
-              wrongQuestionIndices.push(questionNumber);
-              hasErrors = true; 
-
-              // Incrementa o contador de erros para este tópico
-              errorCountByTopic[currentQuestion.topic] = (errorCountByTopic[currentQuestion.topic] || 0) + 1;
-            } else {
-              correctAnswers++;
-            }
-          }
-          // ***************************************************************
-          // Fim da lógica crucial
-          // ***************************************************************
-        });
-
-        resultsContainer.textContent = `Você acertou ${correctAnswers} de ${questions.length} questões.`;
-        
-        // Rola a página totalmente para baixo para exibir o resultado
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-
-        if (hasErrors) {
-            errorNavBtn.style.display = 'flex';
-            arrowIcon.textContent = '⬆️'; 
-            buttonText.textContent = 'Diagnóstico de Erros'; 
-            isShowingErrors = false; 
-            isShowingDiagnosis = false; 
-        } else {
-            errorNavBtn.style.display = 'none';
+        } catch (error) {
+            console.error('Erro ao gerar novas perguntas:', error);
+            newQuestionsContent.innerHTML = `<p>Erro ao carregar novas perguntas: ${error.message}. Por favor, tente novamente.</p>`;
+            generatedQuestionsSection.style.display = 'block';
+            scrollToGeneratedQuestions();
+            statusMessage.textContent = '❌ Erro na requisição: ' + error.message;
+            setTimeout(() => { statusMessage.textContent = '' }, 5000);
+        } finally {
+            generateNewQuestionsBtn.disabled = false;
         }
-      }
+    });
 
-      function scrollToQuestion(index) {
-        const questionCard = document.getElementById(`question-${index}`);
-        if (questionCard) {
-          questionCard.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
-        }
-      }
-      
-      function scrollToDiagnosis() {
-          errorDiagnosisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+    // Inicialização
+    buildQuiz();
+    errorDiagnosisSection.style.display = 'none';
+    generatedQuestionsSection.style.display = 'none';
+    generateNewQuestionsBtn.style.display = 'none';
 
-      quizContainer.addEventListener("click", function (event) {
-        const clickedElement = event.target;
-        const optionElement = clickedElement.closest('.option');
+    // Event listener para o botão de verificar respostas
+    document.getElementById("verifyAnswersBtn").addEventListener("click", showResults);
+  </script>
+  <script src="conexao_firebase.js"></script><script src="navegacao.js"></script><script type="module" src="padrao_simulado.js"></script>
 
-        if (optionElement) {
-            if (clickedElement.classList.contains("scissor-icon")) {
-                optionElement.classList.toggle("struck-through");
-            } 
-            else {
-                const questionNumber = optionElement.dataset.question;
-                const currentQuestionOptions = quizContainer.querySelectorAll(`.option[data-question=\"${questionNumber}\"]`);
-                currentQuestionOptions.forEach(opt => opt.classList.remove("selected"));
-                
-                optionElement.classList.add("selected");
-            }
-        }
-      });
-
-      errorNavBtn.addEventListener("click", function() {
-        if (!hasErrors) { 
-            errorNavBtn.style.display = 'none';
-            return;
-        }
-
-        if (!isShowingErrors && !isShowingDiagnosis) { 
-            if (wrongQuestionIndices.length > 0) {
-                isShowingErrors = true; 
-                currentWrongQuestionIndex = 0; 
-                arrowIcon.textContent = '⬇️'; 
-                buttonText.textContent = `Próximo Erro (${currentWrongQuestionIndex + 1}/${wrongQuestionIndices.length})`;
-                scrollToQuestion(wrongQuestionIndices[currentWrongQuestionIndex]);
-            } else {
-                isShowingDiagnosis = true;
-                arrowIcon.textContent = '⬆️'; 
-                buttonText.textContent = 'Diagnóstico de Erros'; 
-                
-                topicsToReviewList.innerHTML = ''; 
-                for (const topic in errorCountByTopic) {
-                    const errorsInTopic = errorCountByTopic[topic];
-                    const totalAnsweredInTopic = totalAnsweredQuestionsByTopic[topic] || 0; 
-                    
-                    if (totalAnsweredInTopic > 0) { 
-                        const percentage = ((errorsInTopic / totalAnsweredInTopic) * 100).toFixed(1); 
-                        const li = document.createElement('li');
-                        li.textContent = `${topic}: ${percentage}% de erros (${errorsInTopic} de ${totalAnsweredInTopic} questões respondidas)`;
-                        topicsToReviewList.appendChild(li);
-                    }
-                }
-                errorDiagnosisSection.style.display = 'block'; 
-                scrollToDiagnosis();
-                errorNavBtn.style.display = 'none'; 
-            }
-
-        } else if (isShowingErrors) { 
-            currentWrongQuestionIndex++;
-            if (currentWrongQuestionIndex < wrongQuestionIndices.length) {
-                scrollToQuestion(wrongQuestionIndices[currentWrongQuestionIndex]);
-                buttonText.textContent = `Próximo Erro (${currentWrongQuestionIndex + 1}/${wrongQuestionIndices.length})`;
-            } else {
-                isShowingErrors = false; 
-                isShowingDiagnosis = true;
-                arrowIcon.textContent = '⬇️'; 
-                buttonText.textContent = 'Diagnóstico de Erros'; 
-
-                topicsToReviewList.innerHTML = ''; 
-                for (const topic in errorCountByTopic) {
-                    const errorsInTopic = errorCountByTopic[topic];
-                    const totalAnsweredInTopic = totalAnsweredQuestionsByTopic[topic] || 0;
-                    
-                    if (totalAnsweredInTopic > 0) {
-                        const percentage = ((errorsInTopic / totalAnsweredInTopic) * 100).toFixed(1); 
-                        const li = document.createElement('li');
-                        li.textContent = `${topic}: ${percentage}% de erros (${errorsInTopic} de ${totalAnsweredInTopic} questões respondidas)`;
-                        topicsToReviewList.appendChild(li);
-                    }
-                }
-                errorDiagnosisSection.style.display = 'block'; 
-                scrollToDiagnosis();
-                errorNavBtn.style.display = 'none'; 
-            }
-        } 
-      });
-
-      submitButton.addEventListener("click", showResults);
-
-      buildQuiz();
-    </script>
-  </body>
-<script src="conexao_firebase.js"></script><script src="navegacao.js"></script><script type="module" src="padrao_simulado.js"></script></html>
+</body>
+</html>
