@@ -66,7 +66,6 @@
             gap: 12px;
             padding: 6px 12px;
             border-radius: 6px;
-            cursor: pointer;
         }
 
         .user-avatar {
@@ -114,6 +113,7 @@
             text-decoration: none; border-radius: 4px;
             font-size: 14px; margin-bottom: 2px;
             transition: background 0.2s;
+            cursor: pointer;
         }
         .menu a.active { background: rgba(0,0,0,0.08); font-weight: 600; }
         .menu a:hover:not(.active) { background: rgba(0,0,0,0.04); }
@@ -142,7 +142,6 @@
             transition: all 0.2s;
         }
         .upload-label { background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); }
-        .upload-label:hover { background: var(--hover-bg); }
 
         .kanban-board {
             display: flex; gap: 16px; overflow-x: auto;
@@ -166,9 +165,6 @@
             border: 1px solid transparent;
         }
         .card-title { font-size: 14px; font-weight: 500; margin-bottom: 8px; }
-        .card-meta { font-size: 11px; color: var(--text-secondary); display: flex; gap: 8px; }
-        .pill { padding: 2px 6px; border-radius: 3px; font-size: 10px; display: flex; align-items: center; gap: 4px; }
-        .pill-pdf { background: rgba(235, 87, 87, 0.1); color: #EB5757; }
 
         @media (max-width: 768px) {
             .sidebar { display: none; }
@@ -201,16 +197,16 @@
                 </div>
             </div>
             <nav class="menu">
-                <a href="#" class="active"><i class="fas fa-columns"></i> Board de Estudos</a>
+                <a id="menuBoard" class="active"><i class="fas fa-columns"></i> Board de Estudos</a>
                 <a href="#"><i class="fas fa-book-medical"></i> Meus Resumos</a>
-                <a href="#"><i class="fas fa-file-pdf"></i> Biblioteca PDF</a>
+                <a id="menuPdf"><i class="fas fa-file-pdf"></i> Biblioteca PDF</a>
             </nav>
         </aside>
 
         <main class="main-content">
             <div class="cover-image"></div>
             <div class="page-icon">🩺</div>
-            <h1 class="page-title">Planner Semanal</h1>
+            <h1 class="page-title" id="pageTitle">Planner Semanal</h1>
 
             <section class="quick-actions">
                 <button class="btn-primary" onclick="addNewTask('todo')">
@@ -240,16 +236,19 @@
                     <div class="task-container" id="col-done"></div>
                 </div>
             </section>
+
+            <section id="pdfLibrary" style="display:none; margin-top:20px;">
+                <h2 style="font-size:22px; margin-bottom:16px;">📚 Biblioteca de PDFs</h2>
+                <div id="pdfList" style="display:flex; flex-direction:column; gap:10px;"></div>
+            </section>
         </main>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "SUA_API_KEY",
@@ -282,25 +281,22 @@
             }
         });
 
+        // UPLOAD PDF
         window.uploadPDF = async function () {
             const fileInput = document.getElementById("pdfInput");
             const btnLabel = document.getElementById("pdfBtnLabel");
             const file = fileInput.files[0];
             
-            // Validação de tipo e tamanho (Ajuste 1)
             if (!file || file.type !== "application/pdf") return alert("Selecione um PDF");
             if (file.size > 10 * 1024 * 1024) return alert("O PDF deve ter no máximo 10MB");
 
             try {
-                // Feedback Visual (Ajuste 2)
                 const originalText = btnLabel.innerHTML;
                 btnLabel.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Enviando...`;
-                btnLabel.style.opacity = "0.6";
                 btnLabel.style.pointerEvents = "none";
 
                 const fileName = `${Date.now()}_${file.name}`;
-                const caminho = `planners/${usuarioAtual.uid}/${fileName}`;
-                const storageRef = ref(storage, caminho);
+                const storageRef = ref(storage, `planners/${usuarioAtual.uid}/${fileName}`);
 
                 await uploadBytes(storageRef, file);
                 const url = await getDownloadURL(storageRef);
@@ -311,29 +307,83 @@
                     criadoEm: serverTimestamp()
                 });
 
-                // Restaura UI
                 btnLabel.innerHTML = originalText;
-                btnLabel.style.opacity = "1";
                 btnLabel.style.pointerEvents = "auto";
                 fileInput.value = "";
-                
                 alert("PDF enviado com sucesso! ✅");
+                if(document.getElementById("pdfLibrary").style.display === "block") carregarBibliotecaPDF();
             } catch (e) {
-                console.error("Erro no Firebase:", e);
-                alert("Erro ao enviar: " + e.message);
-                btnLabel.style.opacity = "1";
-                btnLabel.style.pointerEvents = "auto";
+                console.error(e);
+                alert("Erro no upload.");
             }
         };
+
+        // CARREGAR BIBLIOTECA
+        async function carregarBibliotecaPDF() {
+            if (!usuarioAtual) return;
+            const lista = document.getElementById("pdfList");
+            lista.innerHTML = "Carregando PDFs...";
+
+            try {
+                const q = query(collection(db, "planners", usuarioAtual.uid, "arquivos"), orderBy("criadoEm", "desc"));
+                const snap = await getDocs(q);
+                
+                if (snap.empty) {
+                    lista.innerHTML = "<span style='color:#6b7280'>Nenhum PDF enviado ainda.</span>";
+                    return;
+                }
+
+                lista.innerHTML = "";
+                snap.forEach(doc => {
+                    const pdf = doc.data();
+                    const item = document.createElement("div");
+                    item.style = "display:flex; justify-content:space-between; align-items:center; padding:12px; border:1px solid #e5e7eb; border-radius:6px; background:#fff; cursor:pointer;";
+                    item.innerHTML = `
+                        <div>
+                            <strong>${pdf.nome}</strong><br>
+                            <span style="font-size:11px;color:#6b7280">${pdf.criadoEm?.toDate().toLocaleDateString() || ""}</span>
+                        </div>
+                        <i class="fas fa-external-link-alt" style="color:#2563eb"></i>
+                    `;
+                    item.onclick = () => window.open(pdf.url, "_blank");
+                    lista.appendChild(item);
+                });
+            } catch (e) {
+                console.error(e);
+                lista.innerHTML = "Erro ao carregar PDFs.";
+            }
+        }
+
+        // NAVEGAÇÃO SIDEBAR
+        document.getElementById("menuPdf").addEventListener("click", (e) => {
+            e.preventDefault();
+            document.getElementById("menuBoard").classList.remove("active");
+            document.getElementById("menuPdf").classList.add("active");
+            document.querySelector(".kanban-board").style.display = "none";
+            document.querySelector(".quick-actions").style.display = "none";
+            document.getElementById("pageTitle").textContent = "Biblioteca de PDFs";
+            document.getElementById("pdfLibrary").style.display = "block";
+            carregarBibliotecaPDF();
+        });
+
+        document.getElementById("menuBoard").addEventListener("click", (e) => {
+            e.preventDefault();
+            document.getElementById("menuPdf").classList.remove("active");
+            document.getElementById("menuBoard").classList.add("active");
+            document.querySelector(".kanban-board").style.display = "flex";
+            document.querySelector(".quick-actions").style.display = "flex";
+            document.getElementById("pageTitle").textContent = "Planner Semanal";
+            document.getElementById("pdfLibrary").style.display = "none";
+        });
     </script>
 
     <script>
+        // KANBAN LOGIC
         let tasks = [];
         window.addNewTask = (col) => {
             const title = prompt("Assunto do estudo:");
             if(title) {
-                const task = { id: 't'+Date.now(), title, column: col };
-                tasks.push(task);
+                tasks.push({ id: 't'+Date.now(), title, column: col });
                 renderBoard();
             }
         };
@@ -356,7 +406,6 @@
         }
 
         window.allowDrop = (ev) => ev.preventDefault();
-        window.drag = (ev) => ev.dataTransfer.setData("text", ev.target.id);
         window.drop = (ev) => {
             ev.preventDefault();
             const id = ev.dataTransfer.getData("text");
