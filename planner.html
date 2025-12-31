@@ -53,139 +53,78 @@
             font-weight: 700;
             font-size: 1.125rem;
             color: var(--brand-color);
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            display: flex; align-items: center; gap: 10px;
             text-decoration: none;
         }
         .navbar-brand i { color: var(--accent-color); }
 
-        .user-profile {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 6px 12px;
-            border-radius: 6px;
-        }
-
-        .user-avatar {
-            width: 32px; height: 32px;
-            background-color: var(--brand-color);
-            color: white; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.875rem; font-weight: 600;
-        }
-
         .app-container {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
+            display: flex; flex: 1; overflow: hidden;
         }
 
         .sidebar {
-            width: 240px;
-            background: var(--bg-sidebar);
+            width: 240px; background: var(--bg-sidebar);
             border-right: 1px solid var(--border-color);
-            padding: 20px 12px;
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
-        }
-
-        .sidebar-profile {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 24px;
-            padding: 6px;
-        }
-
-        .sidebar-avatar {
-            width: 20px; height: 20px;
-            background: #E16259; color: white;
-            font-size: 12px; display: flex; align-items: center; justify-content: center;
-            border-radius: 3px;
+            padding: 20px 12px; display: flex; flex-direction: column; flex-shrink: 0;
         }
 
         .menu a {
             display: flex; align-items: center; gap: 10px;
-            padding: 6px 10px; color: var(--text-primary);
+            padding: 8px 10px; color: var(--text-primary);
             text-decoration: none; border-radius: 4px;
             font-size: 14px; margin-bottom: 2px;
-            transition: background 0.2s;
-            cursor: pointer;
+            transition: background 0.2s; cursor: pointer;
         }
         .menu a.active { background: rgba(0,0,0,0.08); font-weight: 600; }
+        .menu a:hover:not(.active) { background: rgba(0,0,0,0.04); }
 
         .main-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px 60px 40px;
+            flex: 1; overflow-y: auto; padding: 20px 60px 40px;
             background-color: var(--bg-white);
         }
 
-        .cover-image {
-            height: 140px;
-            background: linear-gradient(120deg, #FFC0CB 0%, #87CEEB 100%);
-            margin: -20px -60px 40px;
-            opacity: 0.8;
-        }
-        .page-icon { font-size: 78px; margin-top: -80px; margin-bottom: 10px; }
-        .page-title { font-size: 40px; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.02em; }
+        .page-title { font-size: 40px; font-weight: 700; margin-bottom: 20px; letter-spacing: -0.02em; }
 
         .quick-actions { display: flex; gap: 12px; margin-bottom: 32px; }
         .btn-primary, .upload-label {
             background: var(--accent-color); color: white; border: none;
             padding: 8px 16px; border-radius: 4px; font-size: 14px;
             cursor: pointer; display: flex; align-items: center; gap: 6px;
-            transition: all 0.2s;
         }
         .upload-label { background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); }
 
-        .kanban-board {
-            display: flex; gap: 16px; overflow-x: auto;
-            padding-bottom: 20px; min-height: 400px;
-        }
+        .kanban-board { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 20px; min-height: 400px; }
         .column { min-width: 260px; width: 260px; display: flex; flex-direction: column; }
         .column-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .tag { padding: 2px 8px; border-radius: 3px; font-size: 12px; font-weight: 500; }
-        
-        .tag-gray { background: var(--tag-gray-bg); color: var(--tag-gray-text); }
-        .tag-blue { background: var(--tag-blue-bg); color: var(--tag-blue-text); }
-        .tag-green { background: var(--tag-green-bg); color: var(--tag-green-text); }
-        .tag-red { background: var(--tag-red-bg); color: var(--tag-red-text); }
 
         .task-container { flex: 1; padding: 4px; min-height: 100px; }
 
         .card {
             background: white; padding: 12px 14px;
             border-radius: 4px; box-shadow: var(--shadow-card);
-            margin-bottom: 10px; cursor: grab;
-            border: 1px solid transparent;
+            margin-bottom: 10px; cursor: grab; border: 1px solid transparent;
         }
-        .card-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
-        .card-meta { font-size: 11px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; margin-top: 8px;}
-        
-        .pill { padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+        .card-title { font-size: 14px; font-weight: 600; line-height: 1.4; }
+        .pill { padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; }
         .pill-red { background: rgba(235, 87, 87, 0.1); color: #EB5757; }
         .pill-blue { background: rgba(35, 131, 226, 0.1); color: #2383E2; }
 
-        @media (max-width: 768px) {
-            .sidebar { display: none; }
-            .main-content { padding: 20px 20px 40px; }
-        }
+        /* Dashboard Styles */
+        .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 20px; }
+        .stat-card { background: #fff; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: var(--shadow-card); text-align: center; }
+        .stat-card strong { font-size: 28px; color: var(--accent-color); display: block; margin-bottom: 4px; }
+        .stat-card span { font-size: 12px; color: var(--text-secondary); font-weight: 500; }
     </style>
 </head>
 <body>
 
     <nav class="navbar">
-        <a href="index.html" class="navbar-brand">
-            <i class="fas fa-graduation-cap"></i> Medicina UNIP
-        </a>
+        <a href="#" class="navbar-brand"><i class="fas fa-graduation-cap"></i> Medicina UNIP</a>
         <div class="user-profile">
             <div style="text-align: right; margin-right: 12px;">
                 <div id="displayUser" style="font-size: 14px; font-weight: 600;">Carregando...</div>
-                <div id="displayEmail" style="font-size: 11px; color: var(--text-secondary);">Verificando...</div>
+                <div id="displayEmail" style="font-size: 11px; color: var(--text-secondary);">Firebase Auth</div>
             </div>
             <div class="user-avatar" id="userAvatar">?</div>
         </div>
@@ -193,36 +132,23 @@
 
     <div class="app-container">
         <aside class="sidebar">
-            <div class="sidebar-profile">
-                <div class="sidebar-avatar" id="sidebarAvatar">U</div>
-                <div style="display: flex; flex-direction: column;">
-                    <span id="sidebarUser" style="font-size: 13px; font-weight: 600;">Usuário</span>
-                    <span id="sidebarStatus" style="font-size: 11px; color: var(--text-secondary);">Online</span>
-                </div>
-            </div>
             <nav class="menu">
                 <a id="menuBoard" class="active"><i class="fas fa-columns"></i> Board de Estudos</a>
-                <a href="#"><i class="fas fa-book-medical"></i> Meus Resumos</a>
                 <a id="menuPdf"><i class="fas fa-file-pdf"></i> Biblioteca PDF</a>
+                <a id="menuDashboard"><i class="fas fa-chart-line"></i> Dashboard</a>
             </nav>
         </aside>
 
         <main class="main-content">
-            <div class="cover-image"></div>
-            <div class="page-icon">🩺</div>
             <h1 class="page-title" id="pageTitle">Planner Semanal</h1>
 
-            <section class="quick-actions">
-                <button class="btn-primary" onclick="addNewTask('todo')">
-                    <i class="fas fa-plus"></i> Novo Card
-                </button>
+            <section class="quick-actions" id="actionArea">
+                <button class="btn-primary" onclick="addNewTask('todo')"><i class="fas fa-plus"></i> Novo Card</button>
                 <input type="file" id="pdfInput" hidden onchange="window.uploadPDF()">
-                <label for="pdfInput" class="upload-label" id="pdfBtnLabel">
-                    <i class="fas fa-cloud-upload-alt"></i> Anexar PDF & Revisão
-                </label>
+                <label for="pdfInput" class="upload-label" id="pdfBtnLabel"><i class="fas fa-cloud-upload-alt"></i> Anexar PDF & Revisão</label>
             </section>
 
-            <section class="kanban-board">
+            <section class="kanban-board" id="boardArea">
                 <div class="column" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)">
                     <div class="column-header"><span class="tag tag-gray">A Fazer</span><span class="count">0</span></div>
                     <div class="task-container" id="col-todo"></div>
@@ -241,9 +167,17 @@
                 </div>
             </section>
 
-            <section id="pdfLibrary" style="display:none; margin-top:20px;">
-                <h2 style="font-size:22px; margin-bottom:16px;">📚 Biblioteca de PDFs</h2>
+            <section id="pdfLibrary" style="display:none;">
                 <div id="pdfList" style="display:flex; flex-direction:column; gap:10px;"></div>
+            </section>
+
+            <section id="dashboardArea" style="display:none;">
+                <div class="dash-grid">
+                    <div class="stat-card"><strong id="metricAdherence">0%</strong><span>Revisões no Prazo</span></div>
+                    <div class="stat-card"><strong id="metricLate" style="color:#EB5757">0</strong><span>Revisões Atrasadas</span></div>
+                    <div class="stat-card"><strong id="metricStreak">0</strong><span>Streak (Dias Seguidos)</span></div>
+                    <div class="stat-card"><strong id="metricD30">0</strong><span>Memória Longo Prazo (D30)</span></div>
+                </div>
             </section>
         </main>
     </div>
@@ -271,168 +205,177 @@
         let usuarioAtual = null;
 
         onAuthStateChanged(auth, (user) => {
-            if (!user) {
-                window.location.href = "login.html";
-            } else {
+            if (!user) window.location.href = "login.html";
+            else {
                 usuarioAtual = user;
-                const name = user.displayName || "Estudante";
-                const initials = name.substring(0, 2).toUpperCase();
-                document.getElementById('displayUser').textContent = name;
+                document.getElementById('displayUser').textContent = user.displayName || "Estudante";
                 document.getElementById('displayEmail').textContent = user.email;
-                document.getElementById('userAvatar').textContent = initials;
-                document.getElementById('sidebarUser').textContent = name;
-                document.getElementById('sidebarAvatar').textContent = initials;
+                document.getElementById('userAvatar').textContent = (user.displayName || "E").substring(0,2).toUpperCase();
             }
         });
 
-        // UPLOAD PDF COM AUTOMAÇÃO DE REVISÃO
+        // UPLOAD COM CICLOS DE REVISÃO E METADADOS
         window.uploadPDF = async function () {
             const fileInput = document.getElementById("pdfInput");
             const btnLabel = document.getElementById("pdfBtnLabel");
             const file = fileInput.files[0];
-            
             if (!file || file.type !== "application/pdf") return alert("Selecione um PDF");
 
             try {
                 const originalText = btnLabel.innerHTML;
-                btnLabel.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Agendando Ciclos...`;
-                btnLabel.style.pointerEvents = "none";
-
+                btnLabel.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Sincronizando...`;
                 const fileName = `${Date.now()}_${file.name}`;
                 const storageRef = ref(storage, `planners/${usuarioAtual.uid}/${fileName}`);
 
                 await uploadBytes(storageRef, file);
                 const url = await getDownloadURL(storageRef);
 
-                // 1. Salva na Biblioteca
-                await addDoc(collection(db, "planners", usuarioAtual.uid, "arquivos"), {
-                    nome: file.name,
-                    url: url,
-                    criadoEm: serverTimestamp()
-                });
+                await addDoc(collection(db, "planners", usuarioAtual.uid, "arquivos"), { nome: file.name, url, criadoEm: serverTimestamp() });
 
-                // 2. Lógica de Revisão Espaçada (Agendar Cards)
+                // AGENDAMENTO D1, D7, D30
                 const ciclos = [
-                    { label: "Revisão 24h (D1)", dias: 1, col: "review" },
-                    { label: "Revisão 7 dias (D7)", dias: 7, col: "todo" },
-                    { label: "Revisão 30 dias (D30)", dias: 30, col: "todo" }
+                    { label: "D1", dias: 1, col: "review" },
+                    { label: "D7", dias: 7, col: "todo" },
+                    { label: "D30", dias: 30, col: "todo" }
                 ];
 
-                ciclos.forEach(ciclo => {
-                    const dataAgendada = new Date();
-                    dataAgendada.setDate(dataAgendada.getDate() + ciclo.dias);
-                    
-                    const task = {
-                        id: 't' + Date.now() + ciclo.dias,
-                        title: `[${ciclo.label}] ${file.name}`,
-                        column: ciclo.col,
-                        date: dataAgendada.toLocaleDateString(),
-                        pdf: url
-                    };
-                    tasks.push(task);
+                ciclos.forEach(c => {
+                    const data = new Date();
+                    data.setDate(data.getDate() + c.dias);
+                    tasks.push({
+                        id: 't' + Date.now() + c.dias,
+                        title: `[${c.label}] ${file.name}`,
+                        column: c.col,
+                        pdf: url,
+                        reviewType: c.label,
+                        scheduledFor: data,
+                        completedAt: null
+                    });
                 });
 
                 renderBoard();
-
                 btnLabel.innerHTML = originalText;
-                btnLabel.style.pointerEvents = "auto";
                 fileInput.value = "";
-                alert("Material enviado! Ciclos de revisão D1, D7 e D30 agendados no seu Kanban. 🧠");
-                
-            } catch (e) {
-                console.error(e);
-                alert("Erro no upload.");
-            }
+                alert("Ciclo Cognitivo Agendado! 🧠");
+            } catch (e) { console.error(e); alert("Erro no upload."); }
         };
 
-        // BIBLIOTECA E NAVEGAÇÃO
-        async function carregarBibliotecaPDF() {
-            if (!usuarioAtual) return;
+        // CARREGAR BIBLIOTECA
+        async function carregarBiblioteca() {
             const lista = document.getElementById("pdfList");
-            lista.innerHTML = "Sincronizando biblioteca...";
-
-            try {
-                const q = query(collection(db, "planners", usuarioAtual.uid, "arquivos"), orderBy("criadoEm", "desc"));
-                const snap = await getDocs(q);
-                lista.innerHTML = snap.empty ? "Vazio." : "";
-                snap.forEach(doc => {
-                    const pdf = doc.data();
-                    const item = document.createElement("div");
-                    item.style = "display:flex; justify-content:space-between; align-items:center; padding:12px; border:1px solid #e5e7eb; border-radius:6px; background:#fff; cursor:pointer;";
-                    item.innerHTML = `<div><strong>${pdf.nome}</strong></div><i class="fas fa-external-link-alt" style="color:#2563eb"></i>`;
-                    item.onclick = () => window.open(pdf.url, "_blank");
-                    lista.appendChild(item);
-                });
-            } catch (e) { console.error(e); }
+            lista.innerHTML = "Carregando...";
+            const q = query(collection(db, "planners", usuarioAtual.uid, "arquivos"), orderBy("criadoEm", "desc"));
+            const snap = await getDocs(q);
+            lista.innerHTML = "";
+            snap.forEach(doc => {
+                const pdf = doc.data();
+                const item = document.createElement("div");
+                item.className = "card";
+                item.style.cursor = "pointer";
+                item.innerHTML = `<strong>${pdf.nome}</strong>`;
+                item.onclick = () => window.open(pdf.url, "_blank");
+                lista.appendChild(item);
+            });
         }
 
-        document.getElementById("menuPdf").addEventListener("click", () => {
-            document.querySelector(".kanban-board").style.display = "none";
-            document.querySelector(".quick-actions").style.display = "none";
-            document.getElementById("pdfLibrary").style.display = "block";
-            carregarBibliotecaPDF();
-        });
-
-        document.getElementById("menuBoard").addEventListener("click", () => {
-            document.querySelector(".kanban-board").style.display = "flex";
-            document.querySelector(".quick-actions").style.display = "flex";
+        // NAVEGAÇÃO
+        const hideAll = () => {
+            document.getElementById("boardArea").style.display = "none";
             document.getElementById("pdfLibrary").style.display = "none";
-        });
+            document.getElementById("dashboardArea").style.display = "none";
+            document.getElementById("actionArea").style.display = "none";
+            document.querySelectorAll(".menu a").forEach(a => a.classList.remove("active"));
+        };
+
+        document.getElementById("menuBoard").onclick = () => {
+            hideAll();
+            document.getElementById("boardArea").style.display = "flex";
+            document.getElementById("actionArea").style.display = "flex";
+            document.getElementById("menuBoard").classList.add("active");
+            document.getElementById("pageTitle").textContent = "Planner Semanal";
+        };
+
+        document.getElementById("menuPdf").onclick = () => {
+            hideAll();
+            document.getElementById("pdfLibrary").style.display = "block";
+            document.getElementById("menuPdf").classList.add("active");
+            document.getElementById("pageTitle").textContent = "Biblioteca PDF";
+            carregarBiblioteca();
+        };
+
+        document.getElementById("menuDashboard").onclick = () => {
+            hideAll();
+            document.getElementById("dashboardArea").style.display = "block";
+            document.getElementById("menuDashboard").classList.add("active");
+            document.getElementById("pageTitle").textContent = "Dashboard Cognitivo";
+            calcularDashboard();
+        };
     </script>
 
     <script>
-        // LÓGICA DO BOARD COM REVISÃO ESPAÇADA
-        let tasks = [
-            { id: 'start', title: 'Exemplo: Revisão de Anatomia', column: 'review', date: 'Amanhã', pdf: null }
-        ];
+        // KANBAN & DASHBOARD LOGIC (LOCAL)
+        let tasks = [];
 
         window.addNewTask = (col) => {
-            const title = prompt("O que você vai estudar?");
+            const title = prompt("Assunto:");
             if(title) {
-                tasks.push({ id: 't'+Date.now(), title, column: col, date: 'Hoje', pdf: null });
+                tasks.push({ id: 't'+Date.now(), title, column: col, scheduledFor: new Date(), completedAt: null });
                 renderBoard();
             }
         };
 
         function renderBoard() {
-            ['todo', 'doing', 'review', 'done'].forEach(col => {
-                const container = document.getElementById(`col-${col}`);
-                if (!container) return;
+            ['todo', 'doing', 'review', 'done'].forEach(colId => {
+                const container = document.getElementById(`col-${colId}`);
                 container.innerHTML = '';
-                const colTasks = tasks.filter(t => t.column === col);
+                const colTasks = tasks.filter(t => t.column === colId);
                 colTasks.forEach(t => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.draggable = true;
-                    card.id = t.id;
-                    card.addEventListener('dragstart', (e) => e.dataTransfer.setData("text", e.target.id));
+                    const el = document.createElement('div');
+                    el.className = 'card';
+                    el.draggable = true;
+                    el.id = t.id;
+                    el.addEventListener('dragstart', (e) => e.dataTransfer.setData("text", e.target.id));
                     
-                    let badges = `<div class="card-meta">`;
-                    if(t.pdf) badges += `<span class="pill pill-red"><i class="far fa-file-pdf"></i> Material</span>`;
-                    if(t.column === 'review') badges += `<span class="pill pill-blue"><i class="far fa-calendar"></i> ${t.date}</span>`;
+                    let badges = `<div style="margin-top:8px;">`;
+                    if(t.pdf) badges += `<span class="pill pill-red"><i class="far fa-file-pdf"></i> Material</span> `;
+                    if(t.reviewType) badges += `<span class="pill pill-blue"><i class="far fa-clock"></i> ${t.reviewType}</span>`;
                     badges += `</div>`;
 
-                    card.innerHTML = `<div class="card-title">${t.title}</div>${badges}`;
-                    if(t.pdf) card.onclick = () => window.open(t.pdf, '_blank');
-                    
-                    container.appendChild(card);
+                    el.innerHTML = `<div class="card-title">${t.title}</div>${badges}`;
+                    container.appendChild(el);
                 });
-                document.querySelector(`#${col} .count`).textContent = colTasks.length;
+                document.querySelector(`#${colId} .count`).textContent = colTasks.length;
             });
         }
 
-        window.allowDrop = (ev) => ev.preventDefault();
-        window.drop = (ev) => {
-            ev.preventDefault();
-            const id = ev.dataTransfer.getData("text");
-            const col = ev.target.closest('.column');
-            if(col) {
-                const task = tasks.find(t => t.id === id);
-                if(task) { task.column = col.id; renderBoard(); }
+        function calcularDashboard() {
+            const hoje = new Date();
+            const revisoes = tasks.filter(t => t.reviewType);
+            const feitas = revisoes.filter(t => t.completedAt);
+            const noPrazo = feitas.filter(t => t.completedAt <= t.scheduledFor);
+            const atrasadas = revisoes.filter(t => !t.completedAt && t.scheduledFor < hoje);
+
+            document.getElementById("metricAdherence").textContent = revisoes.length ? Math.round((noPrazo.length / revisoes.length) * 100) + "%" : "0%";
+            document.getElementById("metricLate").textContent = atrasadas.length;
+            document.getElementById("metricD30").textContent = revisoes.filter(t => t.reviewType === "D30").length;
+            
+            const diasUnicos = [...new Set(feitas.map(t => t.completedAt.toDateString()))];
+            document.getElementById("metricStreak").textContent = diasUnicos.length;
+        }
+
+        window.allowDrop = (e) => e.preventDefault();
+        window.drop = (e) => {
+            e.preventDefault();
+            const id = e.dataTransfer.getData("text");
+            const col = e.target.closest('.column');
+            const task = tasks.find(t => t.id === id);
+            if(task && col) {
+                task.column = col.id;
+                if(col.id === "done" && !task.completedAt) task.completedAt = new Date();
+                renderBoard();
+                if(document.getElementById("dashboardArea").style.display === "block") calcularDashboard();
             }
         };
-
-        renderBoard();
     </script>
 </body>
 </html>
