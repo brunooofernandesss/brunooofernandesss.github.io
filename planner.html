@@ -113,8 +113,10 @@
             padding: 6px 10px; color: var(--text-primary);
             text-decoration: none; border-radius: 4px;
             font-size: 14px; margin-bottom: 2px;
+            transition: background 0.2s;
         }
         .menu a.active { background: rgba(0,0,0,0.08); font-weight: 600; }
+        .menu a:hover:not(.active) { background: rgba(0,0,0,0.04); }
 
         .main-content {
             flex: 1;
@@ -130,15 +132,17 @@
             opacity: 0.8;
         }
         .page-icon { font-size: 78px; margin-top: -80px; margin-bottom: 10px; }
-        .page-title { font-size: 40px; font-weight: 700; margin-bottom: 10px; }
+        .page-title { font-size: 40px; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.02em; }
 
         .quick-actions { display: flex; gap: 12px; margin-bottom: 32px; }
         .btn-primary, .upload-label {
             background: var(--accent-color); color: white; border: none;
             padding: 8px 16px; border-radius: 4px; font-size: 14px;
             cursor: pointer; display: flex; align-items: center; gap: 6px;
+            transition: all 0.2s;
         }
         .upload-label { background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); }
+        .upload-label:hover { background: var(--hover-bg); }
 
         .kanban-board {
             display: flex; gap: 16px; overflow-x: auto;
@@ -213,7 +217,7 @@
                     <i class="fas fa-plus"></i> Novo Card
                 </button>
                 <input type="file" id="pdfInput" hidden onchange="window.uploadPDF()">
-                <label for="pdfInput" class="upload-label">
+                <label for="pdfInput" class="upload-label" id="pdfBtnLabel">
                     <i class="fas fa-cloud-upload-alt"></i> Anexar PDF
                 </label>
             </section>
@@ -280,11 +284,20 @@
 
         window.uploadPDF = async function () {
             const fileInput = document.getElementById("pdfInput");
+            const btnLabel = document.getElementById("pdfBtnLabel");
             const file = fileInput.files[0];
+            
+            // Validação de tipo e tamanho (Ajuste 1)
             if (!file || file.type !== "application/pdf") return alert("Selecione um PDF");
+            if (file.size > 10 * 1024 * 1024) return alert("O PDF deve ter no máximo 10MB");
 
             try {
-                // Ajuste 2: Timestamp para evitar sobrescrever
+                // Feedback Visual (Ajuste 2)
+                const originalText = btnLabel.innerHTML;
+                btnLabel.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Enviando...`;
+                btnLabel.style.opacity = "0.6";
+                btnLabel.style.pointerEvents = "none";
+
                 const fileName = `${Date.now()}_${file.name}`;
                 const caminho = `planners/${usuarioAtual.uid}/${fileName}`;
                 const storageRef = ref(storage, caminho);
@@ -298,17 +311,23 @@
                     criadoEm: serverTimestamp()
                 });
 
-                alert("PDF enviado! ✅");
-                // Ajuste 1: Limpar input
+                // Restaura UI
+                btnLabel.innerHTML = originalText;
+                btnLabel.style.opacity = "1";
+                btnLabel.style.pointerEvents = "auto";
                 fileInput.value = "";
+                
+                alert("PDF enviado com sucesso! ✅");
             } catch (e) {
-                alert("Erro no upload");
+                console.error("Erro no Firebase:", e);
+                alert("Erro ao enviar: " + e.message);
+                btnLabel.style.opacity = "1";
+                btnLabel.style.pointerEvents = "auto";
             }
         };
     </script>
 
     <script>
-        // Lógica simples de Kanban para teste local
         let tasks = [];
         window.addNewTask = (col) => {
             const title = prompt("Assunto do estudo:");
@@ -322,6 +341,7 @@
         function renderBoard() {
             ['todo', 'doing', 'review', 'done'].forEach(col => {
                 const container = document.getElementById(`col-${col}`);
+                if (!container) return;
                 container.innerHTML = '';
                 const colTasks = tasks.filter(t => t.column === col);
                 colTasks.forEach(t => {
@@ -330,7 +350,8 @@
                     card.innerHTML = `<div class="card-title">${t.title}</div>`;
                     container.appendChild(card);
                 });
-                document.querySelector(`#${col} .count`).textContent = colTasks.length;
+                const countEl = document.querySelector(`#${col} .count`);
+                if(countEl) countEl.textContent = colTasks.length;
             });
         }
 
@@ -339,9 +360,11 @@
         window.drop = (ev) => {
             ev.preventDefault();
             const id = ev.dataTransfer.getData("text");
-            const colId = ev.target.closest('.column').id;
-            const task = tasks.find(t => t.id === id);
-            if(task) { task.column = colId; renderBoard(); }
+            const col = ev.target.closest('.column');
+            if(col) {
+                const task = tasks.find(t => t.id === id);
+                if(task) { task.column = col.id; renderBoard(); }
+            }
         };
     </script>
 </body>
