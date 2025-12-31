@@ -9,7 +9,6 @@
     
     <style>
         :root {
-            /* Paleta Enterprise */
             --bg-body: #f3f4f6;
             --bg-white: #ffffff;
             --border-color: #e5e7eb;
@@ -18,12 +17,8 @@
             --brand-color: #0f172a;
             --accent-color: #2563eb;
             --hover-bg: #f9fafb;
-
-            /* Paleta Notion */
             --bg-sidebar: #F7F7F5;
             --shadow-card: rgba(15, 15, 15, 0.1) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 2px 4px;
-            
-            /* Tags do Kanban */
             --tag-gray-bg: rgba(155,154,151,0.2); --tag-gray-text: #5A5A55;
             --tag-blue-bg: rgba(35,131,226,0.2); --tag-blue-text: #185EAC;
             --tag-green-bg: rgba(77,171,154,0.2); --tag-green-text: #2B593F;
@@ -42,7 +37,6 @@
             overflow: hidden;
         }
 
-        /* --- NAVBAR SUPERIOR --- */
         .navbar {
             background-color: var(--bg-white);
             border-bottom: 1px solid var(--border-color);
@@ -72,10 +66,8 @@
             gap: 12px;
             padding: 6px 12px;
             border-radius: 6px;
-            transition: background 0.2s;
             cursor: pointer;
         }
-        .user-profile:hover { background-color: var(--hover-bg); }
 
         .user-avatar {
             width: 32px; height: 32px;
@@ -85,21 +77,12 @@
             font-size: 0.875rem; font-weight: 600;
         }
 
-        .user-info-text {
-            display: flex; flex-direction: column;
-            line-height: 1.2; text-align: right;
-        }
-        .user-name { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
-        .user-meta { font-size: 0.75rem; color: var(--text-secondary); }
-
-        /* --- APP CONTAINER --- */
         .app-container {
             display: flex;
             flex: 1;
             overflow: hidden;
         }
 
-        /* --- SIDEBAR LATERAL --- */
         .sidebar {
             width: 240px;
             background: var(--bg-sidebar);
@@ -116,36 +99,13 @@
             gap: 10px;
             margin-bottom: 24px;
             padding: 6px;
-            border-radius: 4px;
-            color: var(--text-secondary);
-            cursor: default;
         }
-        .sidebar-profile:hover { background-color: rgba(0,0,0,0.04); }
 
         .sidebar-avatar {
             width: 20px; height: 20px;
             background: #E16259; color: white;
             font-size: 12px; display: flex; align-items: center; justify-content: center;
             border-radius: 3px;
-            flex-shrink: 0;
-        }
-        
-        .sidebar-user-info {
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        .sidebar-user-name {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-primary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .sidebar-user-status {
-            font-size: 11px;
-            color: var(--text-secondary);
         }
 
         .menu a {
@@ -153,115 +113,62 @@
             padding: 6px 10px; color: var(--text-primary);
             text-decoration: none; border-radius: 4px;
             font-size: 14px; margin-bottom: 2px;
-            transition: background 0.1s;
         }
-        .menu a:hover { background: rgba(0,0,0,0.05); }
         .menu a.active { background: rgba(0,0,0,0.08); font-weight: 600; }
-        .menu i { width: 18px; color: var(--text-secondary); text-align: center; }
 
-        /* --- MAIN CONTENT --- */
         .main-content {
             flex: 1;
             overflow-y: auto;
             padding: 20px 60px 40px;
-            position: relative;
             background-color: var(--bg-white);
         }
 
-        /* Nav Tags */
-        .nav-tags {
-            display: flex; gap: 8px; margin-bottom: 30px;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 12px;
-        }
-        .nav-tag {
-            display: inline-flex; align-items: center;
-            padding: 6px 12px;
-            background-color: transparent;
-            border-radius: 4px;
-            color: var(--text-secondary);
-            font-size: 0.85rem; font-weight: 500;
-            text-decoration: none; transition: all 0.15s ease;
-        }
-        .nav-tag:hover { color: var(--text-primary); background-color: rgba(0, 0, 0, 0.05); }
-        .nav-tag.active { background-color: #e5e7eb; color: var(--brand-color); font-weight: 600; cursor: default; }
-
-        /* Notion Header */
         .cover-image {
             height: 140px;
             background: linear-gradient(120deg, #FFC0CB 0%, #87CEEB 100%);
             margin: -20px -60px 40px;
             opacity: 0.8;
         }
-        .page-icon { font-size: 78px; margin-top: -80px; margin-bottom: 10px; padding-left: 4px; }
-        .page-title { font-size: 40px; font-weight: 700; margin: 0 0 10px 0; letter-spacing: -0.02em; }
-        
-        .page-controls {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 24px; padding-bottom: 10px;
-        }
-        .last-edited { color: var(--text-secondary); font-size: 12px; }
+        .page-icon { font-size: 78px; margin-top: -80px; margin-bottom: 10px; }
+        .page-title { font-size: 40px; font-weight: 700; margin-bottom: 10px; }
 
-        /* Quick Actions */
         .quick-actions { display: flex; gap: 12px; margin-bottom: 32px; }
         .btn-primary, .upload-label {
             background: var(--accent-color); color: white; border: none;
             padding: 8px 16px; border-radius: 4px; font-size: 14px;
             cursor: pointer; display: flex; align-items: center; gap: 6px;
-            transition: background 0.2s;
         }
         .upload-label { background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); }
-        .upload-label:hover { background: var(--hover-bg); }
-        .btn-primary:hover { background: #1a6fb0; }
 
-        /* Kanban Board */
         .kanban-board {
             display: flex; gap: 16px; overflow-x: auto;
             padding-bottom: 20px; min-height: 400px;
         }
         .column { min-width: 260px; width: 260px; display: flex; flex-direction: column; }
-        .column-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 4px; }
+        .column-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .tag { padding: 2px 8px; border-radius: 3px; font-size: 12px; font-weight: 500; }
         
-        /* Tag Colors */
         .tag-gray { background: var(--tag-gray-bg); color: var(--tag-gray-text); }
         .tag-blue { background: var(--tag-blue-bg); color: var(--tag-blue-text); }
         .tag-green { background: var(--tag-green-bg); color: var(--tag-green-text); }
         .tag-red { background: var(--tag-red-bg); color: var(--tag-red-text); }
 
-        .count { color: var(--text-secondary); font-size: 12px; }
         .task-container { flex: 1; padding: 4px; min-height: 100px; }
 
-        /* Cards */
         .card {
             background: white; padding: 12px 14px;
             border-radius: 4px; box-shadow: var(--shadow-card);
-            margin-bottom: 10px; cursor: grab; position: relative;
-            border: 1px solid transparent; transition: box-shadow 0.2s;
+            margin-bottom: 10px; cursor: grab;
+            border: 1px solid transparent;
         }
-        .card:hover { background: #FCFCFC; }
-        .card:active { cursor: grabbing; }
-        .card-title { font-size: 14px; font-weight: 500; color: var(--text-primary); margin-bottom: 8px; line-height: 1.4; }
-        
-        .card-meta { font-size: 11px; color: var(--text-secondary); display: flex; gap: 8px; flex-wrap: wrap; }
+        .card-title { font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+        .card-meta { font-size: 11px; color: var(--text-secondary); display: flex; gap: 8px; }
         .pill { padding: 2px 6px; border-radius: 3px; font-size: 10px; display: flex; align-items: center; gap: 4px; }
         .pill-pdf { background: rgba(235, 87, 87, 0.1); color: #EB5757; }
-        .pill-date { background: rgba(35, 131, 226, 0.1); color: #2383E2; }
 
-        .add-task-ghost {
-            padding: 8px; color: var(--text-secondary); font-size: 14px;
-            cursor: pointer; border-radius: 4px; transition: 0.2s;
-            display: flex; align-items: center; gap: 6px;
-        }
-        .add-task-ghost:hover { background: rgba(0,0,0,0.05); color: var(--text-primary); }
-
-        /* Mobile */
         @media (max-width: 768px) {
             .sidebar { display: none; }
             .main-content { padding: 20px 20px 40px; }
-            .cover-image { margin: -20px -20px 30px; }
-            .navbar { padding: 0 16px; }
-            .user-info-text { display: none; }
         }
     </style>
 </head>
@@ -271,110 +178,62 @@
         <a href="index.html" class="navbar-brand">
             <i class="fas fa-graduation-cap"></i> Medicina UNIP
         </a>
-
-        <div class="user-profile" id="userProfileArea">
-            <div class="user-info-text">
-                <span class="user-name" id="displayUser">Carregando...</span>
-                <div class="user-meta">
-                    <span id="displayEmail">Verificando...</span>
-                </div>
+        <div class="user-profile">
+            <div style="text-align: right; margin-right: 12px;">
+                <div id="displayUser" style="font-size: 14px; font-weight: 600;">Carregando...</div>
+                <div id="displayEmail" style="font-size: 11px; color: var(--text-secondary);">Verificando...</div>
             </div>
-            <div class="user-avatar" id="userAvatar">
-                <i class="fas fa-user"></i>
-            </div>
+            <div class="user-avatar" id="userAvatar">?</div>
         </div>
     </nav>
 
     <div class="app-container">
-        
         <aside class="sidebar">
             <div class="sidebar-profile">
                 <div class="sidebar-avatar" id="sidebarAvatar">U</div>
-                <div class="sidebar-user-info">
-                    <span class="sidebar-user-name" id="sidebarUser">Carregando...</span>
-                    <span class="sidebar-user-status" id="sidebarStatus">Estudante</span>
+                <div style="display: flex; flex-direction: column;">
+                    <span id="sidebarUser" style="font-size: 13px; font-weight: 600;">Usuário</span>
+                    <span id="sidebarStatus" style="font-size: 11px; color: var(--text-secondary);">Online</span>
                 </div>
             </div>
             <nav class="menu">
                 <a href="#" class="active"><i class="fas fa-columns"></i> Board de Estudos</a>
                 <a href="#"><i class="fas fa-book-medical"></i> Meus Resumos</a>
                 <a href="#"><i class="fas fa-file-pdf"></i> Biblioteca PDF</a>
-                <a href="#"><i class="fas fa-chart-line"></i> Desempenho</a>
             </nav>
         </aside>
 
         <main class="main-content">
-            
-            <div class="nav-tags">
-                <a href="index.html" class="nav-tag">Simulados</a>
-                <a href="resumos.html" class="nav-tag">Resumos</a>
-                <a href="planner.html" class="nav-tag active">Planner de Estudos</a>
-            </div>
-
             <div class="cover-image"></div>
             <div class="page-icon">🩺</div>
-            
-            <header>
-                <h1 class="page-title">Planner Semanal</h1>
-                <div class="page-controls">
-                    <span class="last-edited">Sincronizado automaticamente</span>
-                    <button class="upload-label" style="border:none; color:var(--text-secondary);">
-                        <i class="fas fa-ellipsis-h"></i>
-                    </button>
-                </div>
-            </header>
+            <h1 class="page-title">Planner Semanal</h1>
 
             <section class="quick-actions">
                 <button class="btn-primary" onclick="addNewTask('todo')">
                     <i class="fas fa-plus"></i> Novo Card
                 </button>
-                <div style="position: relative;">
-                    <input type="file" id="pdfInput" hidden onchange="window.uploadPDF()">
-                    <label for="pdfInput" class="upload-label">
-                        <i class="fas fa-cloud-upload-alt"></i> Anexar PDF
-                    </label>
-                </div>
+                <input type="file" id="pdfInput" hidden onchange="window.uploadPDF()">
+                <label for="pdfInput" class="upload-label">
+                    <i class="fas fa-cloud-upload-alt"></i> Anexar PDF
+                </label>
             </section>
 
             <section class="kanban-board">
                 <div class="column" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)">
-                    <div class="column-header">
-                        <span class="tag tag-gray">A Fazer</span>
-                        <span class="count">0</span>
-                    </div>
+                    <div class="column-header"><span class="tag tag-gray">A Fazer</span><span class="count">0</span></div>
                     <div class="task-container" id="col-todo"></div>
-                    <div class="add-task-ghost" onclick="addNewTask('todo')"><i class="fas fa-plus"></i> Novo</div>
                 </div>
-
                 <div class="column" id="doing" ondrop="drop(event)" ondragover="allowDrop(event)">
-                    <div class="column-header">
-                        <span class="tag tag-blue">Estudando</span>
-                        <span class="count">0</span>
-                    </div>
+                    <div class="column-header"><span class="tag tag-blue">Estudando</span><span class="count">0</span></div>
                     <div class="task-container" id="col-doing"></div>
                 </div>
-
                 <div class="column" id="review" ondrop="drop(event)" ondragover="allowDrop(event)">
-                    <div class="column-header">
-                        <span class="tag tag-red">Revisão Espaçada</span>
-                        <span class="count">0</span>
-                    </div>
+                    <div class="column-header"><span class="tag tag-red">Revisão</span><span class="count">0</span></div>
                     <div class="task-container" id="col-review"></div>
                 </div>
-
                 <div class="column" id="done" ondrop="drop(event)" ondragover="allowDrop(event)">
-                    <div class="column-header">
-                        <span class="tag tag-green">Concluído</span>
-                        <span class="count">0</span>
-                    </div>
+                    <div class="column-header"><span class="tag tag-green">Concluído</span><span class="count">0</span></div>
                     <div class="task-container" id="col-done"></div>
-                </div>
-            </section>
-
-            <section style="margin-top:40px; border-top:1px solid var(--border-color); padding-top:20px;">
-                <h3 style="font-size:18px; font-weight:600; margin-bottom:16px;">Progresso</h3>
-                <div style="height:250px; width:100%;">
-                    <canvas id="studyChart"></canvas>
                 </div>
             </section>
         </main>
@@ -388,7 +247,6 @@
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // CONFIGURAÇÃO UNIFICADA
         const firebaseConfig = {
             apiKey: "SUA_API_KEY",
             authDomain: "simuladosmedicina-6a01b.firebaseapp.com",
@@ -405,165 +263,86 @@
 
         let usuarioAtual = null;
 
-        // CONTROLE DE ACESSO E UI
         onAuthStateChanged(auth, (user) => {
             if (!user) {
-                alert("Acesso restrito. Faça login.");
                 window.location.href = "login.html";
             } else {
                 usuarioAtual = user;
                 const name = user.displayName || "Estudante";
-                const email = user.email || "";
-                const initials = name.split(" ").map(n => n[0]).join("").substring(0,2).toUpperCase();
-
-                // Atualiza UI
+                const initials = name.substring(0, 2).toUpperCase();
                 document.getElementById('displayUser').textContent = name;
-                document.getElementById('displayEmail').textContent = email;
+                document.getElementById('displayEmail').textContent = user.email;
                 document.getElementById('userAvatar').textContent = initials;
                 document.getElementById('sidebarUser').textContent = name;
                 document.getElementById('sidebarAvatar').textContent = initials;
-                document.getElementById('sidebarStatus').textContent = "Online";
             }
         });
 
-        // FUNÇÃO DE UPLOAD GLOBAL
         window.uploadPDF = async function () {
             const fileInput = document.getElementById("pdfInput");
             const file = fileInput.files[0];
-
-            if (!file || file.type !== "application/pdf") {
-                alert("Selecione um arquivo PDF válido.");
-                return;
-            }
+            if (!file || file.type !== "application/pdf") return alert("Selecione um PDF");
 
             try {
-                const caminho = `planners/${usuarioAtual.uid}/${file.name}`;
+                // Ajuste 2: Timestamp para evitar sobrescrever
+                const fileName = `${Date.now()}_${file.name}`;
+                const caminho = `planners/${usuarioAtual.uid}/${fileName}`;
                 const storageRef = ref(storage, caminho);
 
-                console.log("Fazendo upload...");
                 await uploadBytes(storageRef, file);
-                
                 const url = await getDownloadURL(storageRef);
 
-                await addDoc(
-                    collection(db, "planners", usuarioAtual.uid, "arquivos"),
-                    {
-                        nome: file.name,
-                        url: url,
-                        criadoEm: serverTimestamp()
-                    }
-                );
+                await addDoc(collection(db, "planners", usuarioAtual.uid, "arquivos"), {
+                    nome: file.name,
+                    url: url,
+                    criadoEm: serverTimestamp()
+                });
 
-                alert("PDF enviado com sucesso e salvo no seu perfil! ✅");
-            } catch (error) {
-                console.error(error);
-                alert("Erro ao enviar: " + error.message);
+                alert("PDF enviado! ✅");
+                // Ajuste 1: Limpar input
+                fileInput.value = "";
+            } catch (e) {
+                alert("Erro no upload");
             }
         };
     </script>
 
     <script>
-        let tasks = [
-            { id: 't1', title: 'Fisiologia Renal: Néfron', column: 'todo', pdf: 'Guyton.pdf' },
-            { id: 't2', title: 'Farmacologia: Anti-hipertensivos', column: 'doing', pdf: null },
-            { id: 't3', title: 'Anatomia: Plexo Braquial', column: 'review', date: '2023-12-25' },
-            { id: 't4', title: 'Patologia: Inflamação', column: 'done', pdf: null }
-        ];
-
-        document.addEventListener('DOMContentLoaded', () => {
-            renderBoard();
-            initChart();
-        });
-
-        function renderBoard() {
-            ['todo', 'doing', 'review', 'done'].forEach(col => {
-                const container = document.getElementById(`col-${col}`);
-                if(!container) return;
-                container.innerHTML = '';
-                const colTasks = tasks.filter(t => t.column === col);
-                colTasks.forEach(task => container.appendChild(createCard(task)));
-                document.querySelector(`#${col} .count`).textContent = colTasks.length;
-            });
-        }
-
-        function createCard(task) {
-            const el = document.createElement('div');
-            el.className = 'card';
-            el.draggable = true;
-            el.id = task.id;
-            el.addEventListener('dragstart', drag);
-
-            let metaHtml = '';
-            if(task.pdf) metaHtml += `<span class="pill pill-pdf"><i class="far fa-file-pdf"></i> PDF</span>`;
-            if(task.column === 'review') metaHtml += `<span class="pill pill-date"><i class="far fa-clock"></i> +3 dias</span>`;
-
-            el.innerHTML = `
-                <div class="card-title">${task.title}</div>
-                <div class="card-meta">${metaHtml}</div>
-            `;
-            return el;
-        }
-
-        window.allowDrop = (ev) => ev.preventDefault();
-        window.drag = (ev) => {
-            ev.dataTransfer.setData("text", ev.target.id);
-            ev.target.style.opacity = "0.5";
-        };
-        document.addEventListener("dragend", (ev) => ev.target.style.opacity = "1");
-
-        window.drop = (ev) => {
-            ev.preventDefault();
-            const data = ev.dataTransfer.getData("text");
-            const targetCol = ev.target.closest('.column');
-            if(targetCol) {
-                const task = tasks.find(t => t.id === data);
-                if(task) {
-                    task.column = targetCol.id;
-                    renderBoard();
-                }
-            }
-        };
-
+        // Lógica simples de Kanban para teste local
+        let tasks = [];
         window.addNewTask = (col) => {
-            const title = prompt("Nova tarefa:");
+            const title = prompt("Assunto do estudo:");
             if(title) {
-                tasks.push({ id: 't'+Date.now(), title, column: col });
+                const task = { id: 't'+Date.now(), title, column: col };
+                tasks.push(task);
                 renderBoard();
             }
         };
 
-        function initChart() {
-            const canvas = document.getElementById('studyChart');
-            if(!canvas) return;
-            const ctx = canvas.getContext('2d');
-            let gradient = ctx.createLinearGradient(0, 0, 0, 400);
-            gradient.addColorStop(0, 'rgba(37, 99, 235, 0.2)');
-            gradient.addColorStop(1, 'rgba(37, 99, 235, 0)');
-
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
-                    datasets: [{
-                        label: 'Revisões',
-                        data: [2, 4, 3, 5, 2, 6, 4],
-                        borderColor: '#2563eb',
-                        backgroundColor: gradient,
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: {display:false} },
-                    scales: {
-                        x: { grid: {display:false} },
-                        y: { beginAtZero: true, border: {dash: [4,4]} }
-                    }
-                }
+        function renderBoard() {
+            ['todo', 'doing', 'review', 'done'].forEach(col => {
+                const container = document.getElementById(`col-${col}`);
+                container.innerHTML = '';
+                const colTasks = tasks.filter(t => t.column === col);
+                colTasks.forEach(t => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `<div class="card-title">${t.title}</div>`;
+                    container.appendChild(card);
+                });
+                document.querySelector(`#${col} .count`).textContent = colTasks.length;
             });
         }
+
+        window.allowDrop = (ev) => ev.preventDefault();
+        window.drag = (ev) => ev.dataTransfer.setData("text", ev.target.id);
+        window.drop = (ev) => {
+            ev.preventDefault();
+            const id = ev.dataTransfer.getData("text");
+            const colId = ev.target.closest('.column').id;
+            const task = tasks.find(t => t.id === id);
+            if(task) { task.column = colId; renderBoard(); }
+        };
     </script>
 </body>
 </html>
