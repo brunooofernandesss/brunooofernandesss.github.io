@@ -44,9 +44,6 @@
         .pill { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; margin-top: 10px; display: inline-flex; align-items: center; gap: 4px; }
         .pill-red { background: rgba(235, 87, 87, 0.1); color: #EB5757; }
         .pill-blue { background: rgba(35, 131, 226, 0.1); color: #2383E2; }
-        
-        .stat-card { padding: 20px; background: #fff; border: 1px solid var(--border-color); border-radius: 12px; text-align: center; }
-        .stat-card strong { font-size: 28px; color: var(--accent-color); display: block; }
     </style>
 </head>
 <body>
@@ -54,7 +51,7 @@
     <nav class="navbar">
         <div style="font-weight: 700; color: var(--brand-color); font-size: 1.1rem;"><i class="fas fa-graduation-cap"></i> Medicina UNIP</div>
         <div id="userInfo" style="font-size: 13px; text-align: right;">
-            <div id="displayUser" style="font-weight: 600;">Carregando...</div>
+            <div id="displayUser" style="font-weight: 600;">Aguardando...</div>
             <div id="userPlan" style="color: var(--accent-color); font-size: 10px; font-weight: 800;">PLANO FREE</div>
         </div>
     </nav>
@@ -75,7 +72,7 @@
 
             <section class="quick-actions" id="actionArea">
                 <button class="btn-primary" id="btnNovaTask"><i class="fas fa-plus"></i> Novo Assunto</button>
-                <input type="file" id="pdfInput" hidden>
+                <input type="file" id="pdfInput" hidden onchange="uploadPDF()">
                 <label for="pdfInput" class="upload-label" id="labelPdf"><i class="fas fa-cloud-upload-alt"></i> Upload & Ciclo Cognitivo</label>
             </section>
 
@@ -94,14 +91,12 @@
                 </div>
             </section>
 
-            <section id="pdfLibrary" style="display:none;"></section>
+            <section id="pdfLibrary" style="display:none;">
+                <h2 style="font-size:22px; margin-bottom:16px;">📚 Meus PDFs</h2>
+                <div id="pdfList" style="display:flex; flex-direction:column; gap:10px;"></div>
+            </section>
 
             <section id="dashboardArea" style="display:none;">
-                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:30px;">
-                    <div class="stat-card"><strong id="metricAdherence">0%</strong><span>Aderência</span></div>
-                    <div class="stat-card"><strong id="metricLate" style="color:#EB5757">0</strong><span>Atrasadas</span></div>
-                    <div class="stat-card"><strong id="metricStreak">0</strong><span>Dias de Estudo</span></div>
-                </div>
                 <div style="background:#fff; padding:24px; border:1px solid #eee; border-radius:12px;">
                     <canvas id="graficoSemanal"></canvas>
                 </div>
@@ -110,82 +105,44 @@
     </div>
 
     <script type="module">
-        // 1. Verifique se o caminho do seu arquivo é exatamente este abaixo.
-        // Se o firebase.js estiver dentro de uma pasta 'js', use './js/firebase.js'
+        // CORREÇÃO 4: Confirme se o caminho é exatamente este
         import { auth, db, storage } from './firebase.js'; 
-        
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-        import { collection, addDoc, getDocs, updateDoc, doc, setDoc, getDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+        import { collection, addDoc, getDocs, updateDoc, doc, getDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
         import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-storage.js";
 
         let tasks = [];
         let usuarioAtual = null;
-        let chartInstance = null;
 
-        // INICIALIZAÇÃO E SEGURANÇA
         onAuthStateChanged(auth, async (user) => {
             if (!user) {
                 window.location.href = "login.html";
             } else {
                 usuarioAtual = user;
                 document.getElementById('displayUser').textContent = user.displayName || "Estudante";
-                
-                try {
-                    const userDoc = await getDoc(doc(db, "planners", user.uid));
-                    if (!userDoc.exists()) {
-                        await setDoc(doc(db, "planners", user.uid), { plan: "free", hasLateReviews: false });
-                    } else {
-                        document.getElementById("userPlan").textContent = `PLANO ${userDoc.data().plan.toUpperCase()}`;
-                    }
-                    await carregarTasks();
-                } catch (e) {
-                    console.error("Erro ao carregar perfil:", e);
-                }
+                await carregarTasks();
             }
         });
 
-        // CARREGAR TAREFAS DO FIRESTORE
-        async function carregarTasks() {
-            if (!usuarioAtual) return;
-            const snap = await getDocs(collection(db, "planners", usuarioAtual.uid, "tasks"));
-            tasks = [];
-            snap.forEach(d => {
-                const data = d.data();
-                tasks.push({
-                    id: d.id, ...data,
-                    scheduledFor: data.scheduledFor ? new Date(data.scheduledFor) : null,
-                    completedAt: data.completedAt ? new Date(data.completedAt) : null
-                });
-            });
-            renderBoard();
-            verificarAtrasos();
-        }
-
-        // NOVO ASSUNTO (MANUAL)
-        document.getElementById("btnNovaTask").onclick = async () => {
-            const title = prompt("Qual assunto você vai estudar?");
-            if (title && usuarioAtual) {
-                await addDoc(collection(db, "planners", usuarioAtual.uid, "tasks"), {
-                    title: title,
-                    column: "todo",
-                    scheduledFor: new Date().toISOString(),
-                    completedAt: null
-                });
-                carregarTasks();
-            }
-        };
-
-        // UPLOAD PDF
+        // CORREÇÃO 2: Salvar no Firestore ao fazer upload
         window.uploadPDF = async function() {
             const fileInput = document.getElementById("pdfInput");
             const file = fileInput.files[0];
             if (!file || !usuarioAtual) return;
 
             try {
-                const storageRef = ref(storage, `planners/${usuarioAtual.uid}/${Date.now()}_${file.name}`);
+                const storageRef = ref(storage, `planners/${usuarioAtual.uid}/arquivos/${Date.now()}_${file.name}`);
                 await uploadBytes(storageRef, file);
                 const url = await getDownloadURL(storageRef);
 
+                // SALVA NA BIBLIOTECA (PASSO 2 DO DIAGNÓSTICO)
+                await addDoc(collection(db, "planners", usuarioAtual.uid, "arquivos"), {
+                    nome: file.name,
+                    url: url,
+                    criadoEm: serverTimestamp()
+                });
+
+                // GERA REVISÕES NO KANBAN
                 const ciclos = [{ label: "D1", dias: 1, col: "review" }, { label: "D7", dias: 7, col: "todo" }];
                 for (const c of ciclos) {
                     const data = new Date();
@@ -199,13 +156,21 @@
                         type: c.label
                     });
                 }
+                
+                alert("Upload e agendamento concluídos!");
                 carregarTasks();
                 fileInput.value = "";
-                alert("Ciclo criado!");
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("Erro no upload:", e); }
         };
 
-        // DRAG AND DROP
+        async function carregarTasks() {
+            if (!usuarioAtual) return;
+            const snap = await getDocs(collection(db, "planners", usuarioAtual.uid, "tasks"));
+            tasks = [];
+            snap.forEach(d => tasks.push({ id: d.id, ...d.data() }));
+            renderBoard();
+        }
+
         window.handleTaskMove = async (taskId, newCol) => {
             const taskDoc = doc(db, "planners", usuarioAtual.uid, "tasks", taskId);
             const updates = { column: newCol };
@@ -214,86 +179,35 @@
             carregarTasks();
         };
 
-        // NAVEGAÇÃO DA BARRA LATERAL (CORRIGIDO)
-        const menuLinks = {
-            board: document.getElementById("menuBoard"),
-            pdf: document.getElementById("menuPdf"),
-            dash: document.getElementById("menuDashboard")
+        // NAVEGAÇÃO
+        document.getElementById("menuBoard").onclick = () => {
+            document.getElementById("boardArea").style.display = "flex";
+            document.getElementById("pdfLibrary").style.display = "none";
+            document.getElementById("dashboardArea").style.display = "none";
         };
 
-        menuLinks.board.onclick = () => {
-            switchView('board');
-        };
-
-        menuLinks.pdf.onclick = async () => {
-            switchView('pdf');
-            const library = document.getElementById("pdfLibrary");
-            library.innerHTML = "Carregando biblioteca...";
+        document.getElementById("menuPdf").onclick = async () => {
+            document.getElementById("boardArea").style.display = "none";
+            document.getElementById("pdfLibrary").style.display = "block";
+            document.getElementById("dashboardArea").style.display = "none";
+            
+            // CARREGA BIBLIOTECA
+            const list = document.getElementById("pdfList");
+            list.innerHTML = "Carregando...";
             const q = query(collection(db, "planners", usuarioAtual.uid, "arquivos"), orderBy("criadoEm", "desc"));
             const snap = await getDocs(q);
-            library.innerHTML = snap.empty ? "Nenhum PDF." : "";
+            list.innerHTML = "";
             snap.forEach(d => {
                 const p = d.data();
                 const div = document.createElement("div");
-                div.style = "padding:12px; border:1px solid #eee; margin-bottom:8px; border-radius:6px; cursor:pointer; background:#fff;";
+                div.style = "padding:12px; border:1px solid #eee; border-radius:6px; cursor:pointer; background:#fff;";
                 div.innerHTML = `<strong>${p.nome}</strong>`;
                 div.onclick = () => window.open(p.url, "_blank");
-                library.appendChild(div);
+                list.appendChild(div);
             });
         };
 
-        menuLinks.dash.onclick = () => {
-            switchView('dash');
-            atualizarMetricas();
-            gerarGrafico();
-        };
-
-        function switchView(view) {
-            document.getElementById("boardArea").style.display = view === 'board' ? "flex" : "none";
-            document.getElementById("actionArea").style.display = view === 'board' ? "flex" : "none";
-            document.getElementById("pdfLibrary").style.display = view === 'pdf' ? "block" : "none";
-            document.getElementById("dashboardArea").style.display = view === 'dash' ? "block" : "none";
-            
-            Object.values(menuLinks).forEach(l => l.classList.remove("active"));
-            if(view === 'board') menuLinks.board.classList.add("active");
-            if(view === 'pdf') menuLinks.pdf.classList.add("active");
-            if(view === 'dash') menuLinks.dash.classList.add("active");
-        }
-
-        // GRÁFICO E MÉTRICAS
-        function atualizarMetricas() {
-            const revisoes = tasks.filter(t => t.type);
-            const feitas = revisoes.filter(t => t.completedAt);
-            const noPrazo = feitas.filter(t => t.completedAt <= t.scheduledFor);
-            const atrasadas = revisoes.filter(t => !t.completedAt && t.scheduledFor < new Date());
-            
-            document.getElementById("metricAdherence").textContent = revisoes.length ? Math.round((noPrazo.length / revisoes.length)*100)+"%" : "0%";
-            document.getElementById("metricLate").textContent = atrasadas.length;
-            document.getElementById("metricStreak").textContent = [...new Set(feitas.map(t => t.completedAt.toDateString()))].length;
-        }
-
-        function gerarGrafico() {
-            if (chartInstance) chartInstance.destroy();
-            const contagem = [0,0,0,0,0,0,0];
-            tasks.forEach(t => { if (t.completedAt) contagem[t.completedAt.getDay()]++; });
-            chartInstance = new Chart(document.getElementById('graficoSemanal'), {
-                type: 'bar',
-                data: {
-                    labels: ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"],
-                    datasets: [{ label: 'Revisões', data: contagem, backgroundColor: '#2563eb' }]
-                }
-            });
-        }
-
-        function verificarAtrasos() {
-            const atrasadas = tasks.filter(t => t.column === "review" && !t.completedAt && t.scheduledFor < new Date());
-            const banner = document.getElementById("lateBanner");
-            if (atrasadas.length > 0) {
-                banner.innerHTML = `⚠️ Você tem ${atrasadas.length} revisões pendentes!`;
-                banner.style.display = "block";
-            } else { banner.style.display = "none"; }
-        }
-
+        // RENDER KANBAN
         function renderBoard() {
             ['todo', 'review', 'done'].forEach(colId => {
                 const container = document.getElementById(`col-${colId}`);
@@ -305,11 +219,7 @@
                     card.className = 'card';
                     card.draggable = true;
                     card.id = t.id;
-                    card.innerHTML = `
-                        <div style="font-size:13.5px; font-weight:600;">${t.title}</div>
-                        ${t.type ? `<span class="pill pill-blue">${t.type}</span>` : ''}
-                        ${t.pdf ? `<span class="pill pill-red">PDF</span>` : ''}
-                    `;
+                    card.innerHTML = `<div style="font-size:13.5px; font-weight:600;">${t.title}</div>`;
                     card.addEventListener('dragstart', e => e.dataTransfer.setData("text", e.target.id));
                     container.appendChild(card);
                 });
