@@ -6,171 +6,66 @@
     <title>Planner de Estudos | Medicina UNIP</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
         :root {
-            --bg-body: #f3f4f6;
-            --bg-white: #ffffff;
-            --border-color: #e5e7eb;
-            --text-primary: #111827;
-            --text-secondary: #6b7280;
-            --brand-color: #0f172a;
-            --accent-color: #2563eb;
-            --hover-bg: #f9fafb;
-            --bg-sidebar: #F7F7F5;
-            --shadow-card: rgba(15, 15, 15, 0.1) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 2px 4px;
+            --bg-body: #f3f4f6; --bg-white: #ffffff; --border-color: #e5e7eb;
+            --text-primary: #111827; --text-secondary: #6b7280;
+            --brand-color: #0f172a; --accent-color: #2563eb; --hover-bg: #f9fafb;
+            --bg-sidebar: #F7F7F5; --shadow-card: rgba(15, 15, 15, 0.1) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 2px 4px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: var(--bg-body); 
-            color: var(--text-primary); 
-            display: flex; 
-            flex-direction: column; 
-            height: 100vh; 
-            overflow: hidden; 
-        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-body); color: var(--text-primary); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
-        /* --- NAVBAR (IDÊNTICA AO INDEX) --- */
+        /* --- NAVBAR --- */
         .navbar {
-            background-color: var(--bg-white);
-            border-bottom: 1px solid var(--border-color);
-            padding: 0 32px;
-            height: 64px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
+            background-color: var(--bg-white); border-bottom: 1px solid var(--border-color);
+            padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 1000;
         }
-
-        .navbar-brand {
-            font-weight: 700;
-            font-size: 1.125rem;
-            color: var(--brand-color);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-        }
+        .navbar-brand { font-weight: 700; font-size: 1.125rem; color: var(--brand-color); display: flex; align-items: center; gap: 10px; text-decoration: none; }
         .navbar-brand i { color: var(--accent-color); }
 
-        .user-profile {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 6px 12px;
-            border-radius: 6px;
-        }
-
-        .user-avatar {
-            width: 32px; height: 32px;
-            background-color: var(--brand-color);
-            color: white; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.875rem; font-weight: 600;
-        }
-
-        .user-info-text {
-            display: flex; flex-direction: column;
-            line-height: 1.2; text-align: right;
-        }
-        .user-name { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
+        .user-profile { display: flex; align-items: center; gap: 12px; }
+        .user-avatar { width: 32px; height: 32px; background-color: var(--brand-color); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; font-weight: 600; }
+        .user-info-text { display: flex; flex-direction: column; line-height: 1.2; text-align: right; }
+        .user-name { font-size: 0.875rem; font-weight: 600; }
         .user-meta { font-size: 0.75rem; color: var(--text-secondary); }
 
         /* --- LAYOUT --- */
         .app-container { display: flex; flex: 1; overflow: hidden; }
-        
-        .sidebar { 
-            width: 240px; 
-            background: var(--bg-sidebar); 
-            border-right: 1px solid var(--border-color); 
-            padding: 20px 12px; 
-            flex-shrink: 0; 
-        }
-        
-        .menu a { 
-            display: flex; 
-            align-items: center; 
-            gap: 10px; 
-            padding: 10px; 
-            color: var(--text-primary); 
-            text-decoration: none; 
-            border-radius: 6px; 
-            font-size: 14px; 
-            cursor: pointer; 
-            margin-bottom: 4px;
-        }
-        .menu a:hover { background: rgba(0,0,0,0.04); }
+        .sidebar { width: 240px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); padding: 20px 12px; flex-shrink: 0; }
+        .menu a { display: flex; align-items: center; gap: 10px; padding: 10px; color: var(--text-primary); text-decoration: none; border-radius: 6px; font-size: 14px; cursor: pointer; margin-bottom: 4px; }
         .menu a.active { background: rgba(0,0,0,0.08); font-weight: 600; }
 
-        .main-content { 
-            flex: 1; 
-            overflow-y: auto; 
-            padding: 40px 60px; 
-            background-color: var(--bg-white); 
-        }
-        
+        .main-content { flex: 1; overflow-y: auto; padding: 40px 60px; background-color: var(--bg-white); }
         .page-title { font-size: 1.875rem; font-weight: 700; margin-bottom: 24px; letter-spacing: -0.025em; }
 
-        /* MENSAGEM DE STATUS */
-        #statusFeedback {
-            padding: 10px; border-radius: 6px; font-size: 13px; font-weight: 500;
-            margin-bottom: 20px; display: none;
-        }
+        .status-msg { font-size: 13px; font-weight: 500; margin-bottom: 15px; padding: 10px; border-radius: 6px; display: none; }
 
-        .quick-actions { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
-        .btn-primary, .upload-label { 
-            background: var(--accent-color); 
-            color: white; 
-            border: none; 
-            padding: 10px 16px; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            display: flex; 
-            align-items: center; 
-            gap: 8px; 
-            font-size: 14px; 
-        }
+        .quick-actions { display: flex; gap: 12px; margin-bottom: 32px; }
+        .btn-primary, .upload-label { background: var(--accent-color); color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; }
         .upload-label { background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); }
 
-        /* BOARD */
+        /* KANBAN */
         .kanban-board { display: flex; gap: 24px; }
         .column { flex: 1; min-width: 250px; }
-        .column-title { font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; }
         .task-container { min-height: 300px; background: #f9fafb; border-radius: 8px; padding: 12px; border: 1px dashed #eee; display: flex; flex-direction: column; gap: 12px; }
-
-        .card { 
-            background: white; padding: 14px; border-radius: 8px; 
-            box-shadow: var(--shadow-card); font-size: 0.875rem; 
-        }
-
-        /* BIBLIOTECA */
-        .lib-item {
-            padding: 16px; border: 1px solid var(--border-color);
-            border-radius: 8px; margin-bottom: 12px;
-            display: flex; align-items: center; justify-content: space-between;
-            background: white; 
-        }
-        .btn-view { color: var(--accent-color); text-decoration: none; font-weight: 600; font-size: 13px; }
+        .card { background: white; padding: 14px; border-radius: 8px; box-shadow: var(--shadow-card); font-size: 0.875rem; }
+        
+        .lib-item { padding: 16px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
     <nav class="navbar">
-        <a href="index.html" class="navbar-brand">
-            <i class="fas fa-graduation-cap"></i> Medicina UNIP
-        </a>
-
+        <a href="index.html" class="navbar-brand"><i class="fas fa-graduation-cap"></i> Medicina UNIP</a>
         <div class="user-profile">
             <div class="user-info-text">
                 <span class="user-name" id="displayUser">Carregando...</span>
-                <div class="user-meta">
-                    <span id="displayIp">0.0.0.0</span>
-                </div>
+                <div class="user-meta"><span id="displayIp">0.0.0.0</span></div>
             </div>
             <div class="user-avatar" id="userAvatar">U</div>
         </div>
@@ -181,193 +76,158 @@
             <nav class="menu">
                 <a id="navBoard" class="active"><i class="fas fa-columns"></i> Board de Estudos</a>
                 <a id="navLib"><i class="fas fa-file-pdf"></i> Biblioteca</a>
-                <a id="navDash"><i class="fas fa-chart-line"></i> Dashboard</a>
             </nav>
         </aside>
 
         <main class="main-content">
             <h1 class="page-title" id="pageTitle">Planner Semanal</h1>
-            
-            <div id="statusFeedback"></div>
+            <div id="uploadStatus" class="status-msg"></div>
 
-            <section class="quick-actions" id="actionArea">
-                <button class="btn-primary" id="btnSalvarAssunto"><i class="fas fa-plus"></i> Novo Assunto</button>
-                <input type="file" id="pdfFile" hidden accept="application/pdf">
-                <label for="pdfFile" class="upload-label" id="btnUploadLabel">
+            <section id="actionArea" class="quick-actions">
+                <button class="btn-primary" onclick="salvarTask()"><i class="fas fa-plus"></i> Novo Assunto</button>
+                <input type="file" id="pdfInput" hidden accept="application/pdf">
+                <label for="pdfInput" class="upload-label" id="btnUploadText">
                     <i class="fas fa-cloud-upload-alt"></i> Upload PDF
                 </label>
             </section>
 
             <section class="kanban-board" id="secBoard">
                 <div class="column">
-                    <div class="column-title">A Fazer <span id="count-todo">0</span></div>
+                    <div style="font-size: 0.875rem; font-weight: 600; margin-bottom:10px;">A Fazer <span id="count-todo">0</span></div>
                     <div class="task-container" id="col-todo"></div>
                 </div>
                 <div class="column">
-                    <div class="column-title" style="color: #ef4444;">Revisão <span id="count-review">0</span></div>
+                    <div style="font-size: 0.875rem; font-weight: 600; margin-bottom:10px; color:#ef4444;">Revisão</div>
                     <div class="task-container" id="col-review"></div>
                 </div>
-                <div class="column">
-                    <div class="column-title" style="color: #10b981;">Concluído <span id="count-done">0</span></div>
-                    <div class="task-container" id="col-done"></div>
-                </div>
             </section>
 
-            <section id="secLib" style="display:none;">
+            <section id="secLib" class="hidden">
                 <div id="listaBiblioteca"></div>
-            </section>
-
-            <section id="secDash" style="display:none;">
-                <div style="background:#f9fafb; padding:20px; border-radius:8px; border:1px solid #eee;">
-                    <p style="color:var(--text-secondary);">Gráficos de desempenho em desenvolvimento.</p>
-                </div>
             </section>
         </main>
     </div>
 
     <script type="module">
-        import { auth, db, storage } from './firebase.js'; 
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-        import { collection, addDoc, getDocs, doc, getDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
-        import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-storage.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-        let userUID = null;
-
-        // --- INICIALIZAÇÃO E PERFIL ---
-        onAuthStateChanged(auth, async (user) => {
-            if (!user) {
-                window.location.href = "login.html";
-            } else {
-                userUID = user.uid;
-                
-                // Buscar dados no Firestore
-                try {
-                    const snap = await getDoc(doc(db, "usuarios", user.email));
-                    const nome = (snap.exists() && snap.data().nome) ? snap.data().nome : "Estudante";
-                    document.getElementById('displayUser').textContent = nome;
-                    document.getElementById('userAvatar').textContent = nome.charAt(0).toUpperCase();
-                } catch(e) { console.log(e); }
-
-                // IP
-                fetch('https://api.ipify.org?format=json')
-                    .then(r => r.json()).then(d => document.getElementById('displayIp').textContent = d.ip);
-
-                carregarTasks();
-                carregarBiblioteca();
-            }
-        });
-
-        // --- FEEDBACK VISUAL ---
-        function showFeedback(msg, type = 'info') {
-            const el = document.getElementById("statusFeedback");
-            el.style.display = "block";
-            el.innerHTML = msg;
-            el.style.backgroundColor = type === 'error' ? '#fee2e2' : '#dcfce7';
-            el.style.color = type === 'error' ? '#991b1b' : '#166534';
-            if(type !== 'loading') setTimeout(() => el.style.display = "none", 4000);
-        }
-
-        // --- NAVEGAÇÃO ---
-        const pages = { board: 'secBoard', lib: 'secLib', dash: 'secDash' };
-        function showPage(pageId) {
-            Object.values(pages).forEach(id => document.getElementById(id).style.display = "none");
-            document.getElementById(pages[pageId]).style.display = pageId === 'board' ? "flex" : "block";
-            document.getElementById("actionArea").style.display = pageId === 'board' ? "flex" : "none";
-            
-            document.querySelectorAll(".menu a").forEach(a => a.classList.remove("active"));
-            document.getElementById(`nav${pageId.charAt(0).toUpperCase() + pageId.slice(1)}`).classList.add("active");
-            
-            const titles = { board: "Planner Semanal", lib: "Minha Biblioteca", dash: "Dashboard" };
-            document.getElementById("pageTitle").textContent = titles[pageId];
-        }
-
-        document.getElementById("navBoard").onclick = () => showPage('board');
-        document.getElementById("navLib").onclick = () => showPage('lib');
-        document.getElementById("navDash").onclick = () => showPage('dash');
-
-        // --- FUNÇÕES DE DADOS ---
-
-        // Novo Assunto
-        document.getElementById("btnSalvarAssunto").onclick = async () => {
-            const titulo = prompt("Digite o assunto de estudo:");
-            if (titulo && userUID) {
-                showFeedback("<i class='fas fa-spinner fa-spin'></i> Salvando assunto...");
-                await addDoc(collection(db, "planners", userUID, "tasks"), {
-                    title: titulo, column: "todo", createdAt: serverTimestamp()
-                });
-                showFeedback("<i class='fas fa-check'></i> Assunto adicionado!");
-                carregarTasks();
-            }
+        const firebaseConfig = {
+            apiKey: "AIzaSyDj-c4uArNjAr7cSg396yfQR6xuyumh5_M",
+            authDomain: "simuladosmedicina-6a01b.firebaseapp.com",
+            projectId: "simuladosmedicina-6a01b",
+            // Se continuar pendente, tente trocar para: "simuladosmedicina-6a01b.appspot.com"
+            storageBucket: "simuladosmedicina-6a01b.firebasestorage.app",
+            messagingSenderId: "577452734306",
+            appId: "1:577452734306:web:5926d087a27a216a97de3b"
         };
 
-        // Carregar Tasks
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        let currentUID = null;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) { window.location.href = "login.html"; return; }
+            currentUID = user.uid;
+            
+            // Perfil
+            try {
+                const snap = await getDoc(doc(db, "usuarios", user.email));
+                const nome = snap.exists() ? snap.data().nome : "Estudante";
+                document.getElementById('displayUser').textContent = nome;
+                document.getElementById('userAvatar').textContent = nome.charAt(0).toUpperCase();
+            } catch(e) {}
+            
+            fetch('https://api.ipify.org?format=json').then(r => r.json()).then(d => document.getElementById('displayIp').textContent = d.ip);
+            
+            carregarTasks();
+            carregarBiblioteca();
+        });
+
+        // --- NAVEGAÇÃO ---
+        window.showPage = (page) => {
+            document.getElementById("secBoard").classList.toggle("hidden", page !== 'board');
+            document.getElementById("secLib").classList.toggle("hidden", page !== 'lib');
+            document.getElementById("actionArea").style.display = page === 'board' ? 'flex' : 'none';
+            document.getElementById("navBoard").classList.toggle("active", page === 'board');
+            document.getElementById("navLib").classList.toggle("active", page !== 'board');
+            document.getElementById("pageTitle").textContent = page === 'board' ? "Planner Semanal" : "Minha Biblioteca";
+        };
+        document.getElementById("navBoard").onclick = () => showPage('board');
+        document.getElementById("navLib").onclick = () => showPage('lib');
+
+        // --- FUNÇÕES DE DADOS (GLOBAL SCOPE) ---
+        window.salvarTask = async () => {
+            const titulo = prompt("Novo assunto:");
+            if (!titulo || !currentUID) return;
+            await addDoc(collection(db, "planners", currentUID, "tasks"), { titulo, criadoEm: serverTimestamp(), column: "todo" });
+            carregarTasks();
+        };
+
+        window.uploadPDF = async (e) => {
+            const file = e.target.files[0];
+            const status = document.getElementById("uploadStatus");
+            if (!file || !currentUID) return;
+
+            try {
+                status.style.display = "block";
+                status.style.backgroundColor = "#dcfce7";
+                status.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Subindo <b>${file.name}</b>...`;
+
+                const storageRef = ref(storage, `planners/${currentUID}/${Date.now()}_${file.name}`);
+                await uploadBytes(storageRef, file);
+                const url = await getDownloadURL(storageRef);
+
+                // Firestore Biblioteca
+                await addDoc(collection(db, "planners", currentUID, "arquivos"), { nome: file.name, url, data: serverTimestamp() });
+                // Firestore Task
+                await addDoc(collection(db, "planners", currentUID, "tasks"), { titulo: `Revisar: ${file.name}`, pdfUrl: url, criadoEm: serverTimestamp(), column: "review" });
+
+                status.innerHTML = "✅ Upload concluído!";
+                setTimeout(() => status.style.display = "none", 3000);
+                carregarTasks();
+                carregarBiblioteca();
+            } catch (err) {
+                console.error(err);
+                status.style.backgroundColor = "#fee2e2";
+                status.innerHTML = "❌ Erro no upload. Verifique as regras do Storage.";
+            }
+        };
+        document.getElementById("pdfInput").onchange = window.uploadPDF;
+
         async function carregarTasks() {
-            if (!userUID) return;
-            const snap = await getDocs(collection(db, "planners", userUID, "tasks"));
-            const container = document.getElementById("col-todo");
-            container.innerHTML = "";
+            if (!currentUID) return;
+            const snap = await getDocs(query(collection(db, "planners", currentUID, "tasks"), orderBy("criadoEm", "desc")));
+            const todo = document.getElementById("col-todo");
+            const review = document.getElementById("col-review");
+            todo.innerHTML = ""; review.innerHTML = "";
             let count = 0;
             snap.forEach(d => {
-                count++;
-                const task = d.data();
-                container.innerHTML += `<div class="card"><strong>${task.title}</strong></div>`;
+                const t = d.data();
+                const html = `<div class="card"><strong>${t.titulo}</strong></div>`;
+                if(t.column === 'review') review.innerHTML += html;
+                else { todo.innerHTML += html; count++; }
             });
             document.getElementById("count-todo").textContent = count;
         }
 
-        // Upload PDF (Feedback Corrigido)
-        document.getElementById("pdfFile").onchange = async (e) => {
-            const file = e.target.files[0];
-            if (!file || !userUID) return;
-
-            try {
-                showFeedback(`<i class='fas fa-spinner fa-spin'></i> Subindo arquivo: <b>${file.name}</b>...`, 'loading');
-
-                // 1. Storage
-                const storageRef = ref(storage, `planners/${userUID}/arquivos/${Date.now()}_${file.name}`);
-                await uploadBytes(storageRef, file);
-                const url = await getDownloadURL(storageRef);
-
-                // 2. Registro na Biblioteca
-                await addDoc(collection(db, "planners", userUID, "arquivos"), {
-                    nome: file.name, url: url, data: serverTimestamp()
-                });
-
-                // 3. Task de Revisão
-                await addDoc(collection(db, "planners", userUID, "tasks"), {
-                    title: `Revisar: ${file.name}`, column: "review", createdAt: serverTimestamp()
-                });
-
-                showFeedback("<i class='fas fa-check-circle'></i> Upload concluído e agendado!");
-                document.getElementById("pdfFile").value = "";
-                carregarTasks();
-                carregarBiblioteca();
-
-            } catch (err) {
-                console.error(err);
-                showFeedback("Erro ao realizar upload.", "error");
-            }
-        };
-
-        // Carregar Biblioteca
         async function carregarBiblioteca() {
-            if (!userUID) return;
+            if (!currentUID) return;
             const container = document.getElementById("listaBiblioteca");
-            container.innerHTML = "Sincronizando arquivos...";
-            
-            const q = query(collection(db, "planners", userUID, "arquivos"), orderBy("data", "desc"));
-            const snap = await getDocs(q);
-            container.innerHTML = snap.empty ? "<p style='color:var(--text-secondary)'>Nenhum arquivo encontrado.</p>" : "";
-            
+            container.innerHTML = "Carregando...";
+            const snap = await getDocs(query(collection(db, "planners", currentUID, "arquivos"), orderBy("data", "desc")));
+            container.innerHTML = snap.empty ? "Nenhum arquivo." : "";
             snap.forEach(d => {
                 const pdf = d.data();
-                const div = document.createElement("div");
-                div.className = "lib-item";
-                div.innerHTML = `
-                    <span><i class="fas fa-file-pdf" style="color:#ef4444; margin-right:8px;"></i> ${pdf.nome}</span>
-                    <a href="${pdf.url}" target="_blank" class="btn-view">Abrir <i class="fas fa-external-link-alt"></i></a>
-                `;
-                container.appendChild(div);
+                container.innerHTML += `<div class="lib-item">
+                    <span><i class="fas fa-file-pdf" style="color:#ef4444"></i> ${pdf.nome}</span>
+                    <a href="${pdf.url}" target="_blank" style="color:var(--accent-color); font-weight:600; text-decoration:none;">Abrir</a>
+                </div>`;
             });
         }
     </script>
