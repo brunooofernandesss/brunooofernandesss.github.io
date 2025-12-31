@@ -23,7 +23,6 @@
 
         .navbar { background-color: var(--bg-white); border-bottom: 1px solid var(--border-color); padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between; z-index: 1000; flex-shrink: 0; }
         
-        /* BANNER E1 */
         #lateBanner { display: none; background: #FEF3C7; color: #92400E; padding: 10px 32px; font-size: 13px; border-bottom: 1px solid #FDE68A; flex-shrink: 0; font-weight: 500; }
 
         .app-container { display: flex; flex: 1; overflow: hidden; }
@@ -112,47 +111,41 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-        import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, setDoc, getDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "SUA_API_KEY",
-            authDomain: "simuladosmedicina-6a01b.firebaseapp.com",
-            projectId: "simuladosmedicina-6a01b",
-            storageBucket: "simuladosmedicina-6a01b.firebasestorage.app",
-            messagingSenderId: "SEU_ID",
-            appId: "SEU_APP_ID"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const storage = getStorage(app);
-        const db = getFirestore(app);
+        // Importando do seu arquivo centralizado
+        import { auth, db, storage } from './firebase.js'; 
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+        import { collection, addDoc, getDocs, updateDoc, doc, setDoc, getDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+        import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-storage.js";
 
         let tasks = [];
         let usuarioAtual = null;
         let chartInstance = null;
 
+        // Monitor de autenticação
         onAuthStateChanged(auth, async (user) => {
-            if (!user) window.location.href = "login.html";
-            else {
+            if (!user) {
+                window.location.href = "login.html";
+            } else {
                 usuarioAtual = user;
                 document.getElementById('displayUser').textContent = user.displayName || "Estudante";
+                
+                // Verifica plano/autorização no Firestore do Planner
                 const userDoc = await getDoc(doc(db, "planners", user.uid));
-                if (!userDoc.exists()) await setDoc(doc(db, "planners", user.uid), { plan: "free", hasLateReviews: false });
-                else document.getElementById("userPlan").textContent = `PLANO ${userDoc.data().plan.toUpperCase()}`;
+                if (!userDoc.exists()) {
+                    await setDoc(doc(db, "planners", user.uid), { plan: "free", hasLateReviews: false });
+                } else {
+                    document.getElementById("userPlan").textContent = `PLANO ${userDoc.data().plan.toUpperCase()}`;
+                }
                 
                 await carregarTasks();
-                verificarAtrasos(); // E1
+                verificarAtrasos();
             }
         });
 
-        // E1: DETECÇÃO E BANNER
+        // Funções de Negócio
         window.mostrarBanner = (qtd) => {
             const banner = document.getElementById("lateBanner");
-            banner.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Você tem <strong>${qtd}</strong> revisões atrasadas. Acesse agora para manter sua retenção cognitiva.`;
+            banner.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Você tem <strong>${qtd}</strong> revisões atrasadas. Priorize seu ciclo cognitivo.`;
             banner.style.display = "block";
         };
 
@@ -162,7 +155,6 @@
             
             if (atrasadas.length > 0) {
                 mostrarBanner(atrasadas.length);
-                // Persistência para Cloud Function (E1 camada 3)
                 await setDoc(doc(db, "planners", usuarioAtual.uid), {
                     hasLateReviews: true,
                     lateCount: atrasadas.length,
@@ -235,14 +227,13 @@
                 type: 'bar',
                 data: {
                     labels: diasNome,
-                    datasets: [{ label: 'Revisões Concluídas', data: contagem, backgroundColor: '#2563eb', borderRadius: 6 }]
+                    datasets: [{ label: 'Revisões', data: contagem, backgroundColor: '#2563eb', borderRadius: 6 }]
                 },
-                options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+                options: { responsive: true, plugins: { legend: { display: false } } }
             });
         };
-    </script>
 
-    <script>
+        // Renderização e Navegação
         window.renderBoard = () => {
             ['todo', 'review', 'done'].forEach(colId => {
                 const container = document.getElementById(`col-${colId}`);
@@ -302,6 +293,20 @@
             document.getElementById("metricLate").textContent = atrasadas.length;
             document.getElementById("metricStreak").textContent = [...new Set(feitas.map(t => t.completedAt.toDateString()))].length;
             window.gerarGrafico();
+        };
+
+        // Função global para adicionar tarefas manuais (sem PDF)
+        window.addNewTask = async (col) => {
+            const title = prompt("O que você vai estudar?");
+            if (title && usuarioAtual) {
+                await addDoc(collection(db, "planners", usuarioAtual.uid, "tasks"), {
+                    title: title,
+                    column: col,
+                    scheduledFor: new Date().toISOString(),
+                    completedAt: null
+                });
+                carregarTasks();
+            }
         };
     </script>
 </body>
