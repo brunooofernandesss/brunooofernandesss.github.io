@@ -3,275 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planner de Estudos | Medicina UNIP</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+    <title>Meu Planner de Medicina</title>
     <style>
-        :root {
-            --bg-body: #f3f4f6; --bg-white: #ffffff; --border-color: #e5e7eb;
-            --text-primary: #111827; --text-secondary: #6b7280;
-            --brand-color: #0f172a; --accent-color: #2563eb; --hover-bg: #f9fafb;
-            --bg-sidebar: #F7F7F5; --shadow-card: rgba(15, 15, 15, 0.1) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 2px 4px;
-            --tag-gray-bg: rgba(155,154,151,0.2); --tag-blue-bg: rgba(35,131,226,0.2);
-            --tag-green-bg: rgba(77,171,154,0.2); --tag-red-bg: rgba(235, 87, 87, 0.1);
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg-body); color: var(--text-primary); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-
-        .navbar { background-color: var(--bg-white); border-bottom: 1px solid var(--border-color); padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between; z-index: 1000; flex-shrink: 0; }
-        
-        #lateBanner { display: none; background: #FEF3C7; color: #92400E; padding: 10px 32px; font-size: 13px; border-bottom: 1px solid #FDE68A; flex-shrink: 0; font-weight: 500; }
-
-        .app-container { display: flex; flex: 1; overflow: hidden; }
-        .sidebar { width: 240px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); padding: 20px 12px; display: flex; flex-direction: column; flex-shrink: 0; }
-        .menu a { display: flex; align-items: center; gap: 10px; padding: 10px; color: var(--text-primary); text-decoration: none; border-radius: 4px; font-size: 14px; cursor: pointer; transition: 0.1s; }
-        .menu a.active { background: rgba(0,0,0,0.08); font-weight: 600; }
-
-        .main-content { flex: 1; overflow-y: auto; padding: 20px 60px; background-color: var(--bg-white); }
-        .page-title { font-size: 32px; font-weight: 700; margin-bottom: 20px; letter-spacing: -0.02em; }
-
-        .quick-actions { display: flex; gap: 12px; margin-bottom: 32px; }
-        .btn-primary, .upload-label { background: var(--accent-color); color: white; border: none; padding: 10px 16px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500; }
-        .upload-label { background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); }
-
-        .kanban-board { display: flex; gap: 16px; min-height: 400px; padding-bottom: 40px; }
-        .column { min-width: 260px; flex: 1; display: flex; flex-direction: column; }
-        .task-container { flex: 1; padding: 10px; background: #f9fafb; border-radius: 8px; min-height: 250px; border: 1px dashed #eee; }
-
-        .card { background: white; padding: 14px; border-radius: 6px; box-shadow: var(--shadow-card); margin-bottom: 12px; cursor: grab; transition: transform 0.1s; border: 1px solid transparent; }
-        .pill { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; margin-top: 10px; display: inline-flex; align-items: center; gap: 4px; }
-        .pill-red { background: rgba(235, 87, 87, 0.1); color: #EB5757; }
-        .pill-blue { background: rgba(35, 131, 226, 0.1); color: #2383E2; }
+        body { font-family: sans-serif; padding: 20px; background-color: #f4f4f9; }
+        .container { max-width: 500px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: auto; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .hidden { display: none; }
+        ul { list-style: none; padding: 0; }
+        li { background: #eee; margin: 5px 0; padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; }
     </style>
 </head>
 <body>
 
-    <nav class="navbar">
-        <div style="font-weight: 700; color: var(--brand-color); font-size: 1.1rem;"><i class="fas fa-graduation-cap"></i> Medicina UNIP</div>
-        <div id="userInfo" style="font-size: 13px; text-align: right;">
-            <div id="displayUser" style="font-weight: 600;">Carregando...</div>
-            <div id="userPlan" style="color: var(--accent-color); font-size: 10px; font-weight: 800; letter-spacing: 0.5px;">PLANO ATIVO</div>
+    <div class="container">
+        <div id="loginSection">
+            <h2>Login - Simulados Medicina</h2>
+            <input id="email" type="email" placeholder="Seu email">
+            <input id="senha" type="password" placeholder="Sua senha">
+            <button onclick="login()">Entrar</button>
         </div>
-    </nav>
 
-    <div id="lateBanner"></div>
+        <div id="plannerSection" class="hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 id="userName">Meu Planner</h2>
+                <button onclick="logout()" style="width: auto; background: #dc3545; padding: 5px 10px;">Sair</button>
+            </div>
+            
+            <input id="tituloTask" placeholder="Qual assunto vamos estudar hoje?">
+            <button onclick="salvarTask()" style="background: #28a745;">Salvar no Cronograma</button>
 
-    <div class="app-container">
-        <aside class="sidebar">
-            <nav class="menu">
-                <a id="menuBoard" class="active"><i class="fas fa-columns"></i> Board</a>
-                <a id="menuPdf"><i class="fas fa-file-pdf"></i> Biblioteca</a>
-                <a id="menuDashboard"><i class="fas fa-chart-line"></i> Dashboard</a>
-            </nav>
-        </aside>
-
-        <main class="main-content">
-            <h1 class="page-title" id="pageTitle">Planner Semanal</h1>
-
-            <section class="quick-actions" id="actionArea">
-                <button class="btn-primary" id="btnNovaTask"><i class="fas fa-plus"></i> Novo Assunto</button>
-                <input type="file" id="pdfInput" hidden onchange="window.uploadPDF()">
-                <label for="pdfInput" class="upload-label" id="pdfBtnLabel"><i class="fas fa-cloud-upload-alt"></i> Upload & Ciclo Cognitivo</label>
-            </section>
-
-            <section class="kanban-board" id="boardArea">
-                <div class="column" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)">
-                    <div style="margin-bottom:12px; font-weight:600; font-size:14px;">A Fazer <span id="count-todo" style="font-weight:400; margin-left:4px;">0</span></div>
-                    <div class="task-container" id="col-todo"></div>
-                </div>
-                <div class="column" id="review" ondrop="drop(event)" ondragover="allowDrop(event)">
-                    <div style="margin-bottom:12px; font-weight:600; font-size:14px; color:#EB5757;">Revisão <span id="count-review" style="font-weight:400; margin-left:4px;">0</span></div>
-                    <div class="task-container" id="col-review"></div>
-                </div>
-                <div class="column" id="done" ondrop="drop(event)" ondragover="allowDrop(event)">
-                    <div style="margin-bottom:12px; font-weight:600; font-size:14px; color:#27ae60;">Concluído <span id="count-done" style="font-weight:400; margin-left:4px;">0</span></div>
-                    <div class="task-container" id="col-done"></div>
-                </div>
-            </section>
-
-            <section id="pdfLibrary" style="display:none;"></section>
-
-            <section id="dashboardArea" style="display:none;">
-                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:30px;">
-                    <div class="stat-card"><strong id="metricAdherence">0%</strong><span>Aderência</span></div>
-                    <div class="stat-card"><strong id="metricLate" style="color:#EB5757">0</strong><span>Atrasadas</span></div>
-                    <div class="stat-card"><strong id="metricStreak">0</strong><span>Dias de Estudo</span></div>
-                </div>
-                <div style="background:#fff; padding:24px; border:1px solid #eee; border-radius:12px;">
-                    <canvas id="graficoSemanal"></canvas>
-                </div>
-            </section>
-        </main>
+            <h3>Minhas Tarefas (UID)</h3>
+            <ul id="listaTasks"></ul>
+        </div>
     </div>
 
     <script type="module">
-        import { auth, db, storage } from './firebase.js'; 
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-        import { collection, addDoc, getDocs, updateDoc, doc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
-        import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-storage.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        let tasks = [];
-        let usuarioAtual = null;
-        let userUID = null; // ✅ UID centralizado
-        let chartInstance = null;
+        // Sua configuração original
+        const firebaseConfig = {
+            apiKey: "AIzaSyDj-c4uArNjAr7cSg396yfQR6xuyumh5_M",
+            authDomain: "simuladosmedicina-6a01b.firebaseapp.com",
+            projectId: "simuladosmedicina-6a01b",
+            storageBucket: "simuladosmedicina-6a01b.appspot.com",
+            messagingSenderId: "577452734306",
+            appId: "1:577452734306:web:5926d087a27a216a97de3b"
+        };
 
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUID = null;
+
+        // --- GESTÃO DE ESTADO DO USUÁRIO ---
         onAuthStateChanged(auth, async (user) => {
-            if (!user) {
-                window.location.href = "login.html";
+            const loginSection = document.getElementById("loginSection");
+            const plannerSection = document.getElementById("plannerSection");
+
+            if (user) {
+                currentUID = user.uid; // Pega o UID do usuário para isolamento
+                loginSection.classList.add("hidden");
+                plannerSection.classList.remove("hidden");
+                document.getElementById("userName").textContent = `Olá, ${user.email}`;
+                console.log("Usuário logado com UID:", currentUID);
+                carregarTasks();
             } else {
-                usuarioAtual = user;
-                userUID = user.uid; // ✅ Define o UID para as regras
-                document.getElementById('displayUser').textContent = user.displayName || "Estudante";
-                await carregarTasks();
-                verificarAtrasos();
+                currentUID = null;
+                loginSection.classList.remove("hidden");
+                plannerSection.classList.add("hidden");
             }
         });
 
-        // 1. CARREGAR TAREFAS (POR UID)
-        async function carregarTasks() {
-            if (!userUID) return;
-            try {
-                const snap = await getDocs(collection(db, "planners", userUID, "tasks"));
-                tasks = [];
-                snap.forEach(d => {
-                    const data = d.data();
-                    tasks.push({
-                        id: d.id, ...data,
-                        scheduledFor: data.scheduledFor ? new Date(data.scheduledFor) : null,
-                        completedAt: data.completedAt ? new Date(data.completedAt) : null
-                    });
-                });
-                renderBoard();
-            } catch (e) { console.error("Erro no banco:", e); }
-        }
+        // --- FUNÇÕES DE LOGIN E LOGOUT ---
+        window.login = function() {
+            const email = document.getElementById("email").value;
+            const senha = document.getElementById("senha").value;
+            signInWithEmailAndPassword(auth, email, senha)
+                .then(() => console.log("Login realizado com sucesso"))
+                .catch(err => alert("Erro: " + err.message));
+        };
 
-        // 2. NOVO ASSUNTO (POR UID)
-        document.getElementById("btnNovaTask").onclick = async () => {
-            const title = prompt("Qual assunto você vai estudar?");
-            if (title && userUID) {
-                try {
-                    await addDoc(collection(db, "planners", userUID, "tasks"), {
-                        title: title,
-                        column: "todo",
-                        scheduledFor: new Date().toISOString(),
-                        completedAt: null
-                    });
-                    await carregarTasks();
-                } catch (e) { console.error(e); }
+        window.logout = function() {
+            signOut(auth);
+        };
+
+        // --- FUNÇÕES DO PLANNER (PASSO 3: UID) ---
+        window.salvarTask = async function() {
+            const input = document.getElementById("tituloTask");
+            const titulo = input.value;
+
+            if (!titulo) return alert("Digite um assunto");
+            if (!currentUID) return alert("Erro de autenticação");
+
+            try {
+                // Salva seguindo a regra: planners -> UID -> tasks
+                await addDoc(collection(db, "planners", currentUID, "tasks"), {
+                    titulo: titulo,
+                    criadoEm: serverTimestamp(),
+                    status: "pendente"
+                });
+                input.value = "";
+                carregarTasks();
+            } catch (error) {
+                console.error("Erro ao salvar:", error);
+                alert("Erro ao salvar no banco. Verifique suas regras de segurança.");
             }
         };
 
-        // 3. UPLOAD PDF & BIBLIOTECA (POR UID)
-        window.uploadPDF = async function() {
-            const file = document.getElementById("pdfInput").files[0];
-            const btnLabel = document.getElementById("pdfBtnLabel");
-            if (!file || !userUID) return;
+        async function carregarTasks() {
+            if (!currentUID) return;
+            const lista = document.getElementById("listaTasks");
+            lista.innerHTML = "<li>Carregando...</li>";
 
             try {
-                btnLabel.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Agendando...`;
-                const storageRef = ref(storage, `planners/${userUID}/arquivos/${Date.now()}_${file.name}`);
+                const q = query(
+                    collection(db, "planners", currentUID, "tasks"), 
+                    orderBy("criadoEm", "desc")
+                );
                 
-                await uploadBytes(storageRef, file);
-                const url = await getDownloadURL(storageRef);
-
-                // Registro na Biblioteca
-                await addDoc(collection(db, "planners", userUID, "arquivos"), {
-                    nome: file.name, url: url, criadoEm: serverTimestamp()
+                const snapshot = await getDocs(q);
+                lista.innerHTML = "";
+                
+                snapshot.forEach((doc) => {
+                    const task = doc.data();
+                    const li = document.createElement("li");
+                    li.innerHTML = `<span>${task.titulo}</span> <small>Pendente</small>`;
+                    lista.appendChild(li);
                 });
-
-                // Ciclos Cognitivos (D1 e D7)
-                const ciclos = [{ label: "D1", dias: 1, col: "review" }, { label: "D7", dias: 7, col: "todo" }];
-                for (const c of ciclos) {
-                    const data = new Date();
-                    data.setDate(data.getDate() + c.dias);
-                    await addDoc(collection(db, "planners", userUID, "tasks"), {
-                        title: `[${c.label}] ${file.name}`,
-                        column: c.col, pdf: url,
-                        scheduledFor: data.toISOString(),
-                        completedAt: null, type: c.label
-                    });
-                }
-                btnLabel.innerHTML = `<i class="fas fa-cloud-upload-alt"></i> Upload Concluído!`;
-                await carregarTasks();
-            } catch (e) { console.error(e); alert("Erro de permissão no Storage/Firestore."); }
-        };
-
-        // 4. MOVE TAREFA (POR UID)
-        window.handleTaskMove = async (taskId, newCol) => {
-            if (!userUID) return;
-            const taskDoc = doc(db, "planners", userUID, "tasks", taskId);
-            const updates = { column: newCol };
-            if (newCol === "done") updates.completedAt = new Date().toISOString();
-            await updateDoc(taskDoc, updates);
-            await carregarTasks();
-        };
-
-        // ... lógica de dashboard e renderização mantidas com os ajustes de UID ...
-        // (Abaixo segue o restante do script para funcionamento total)
-
-        document.getElementById("menuBoard").onclick = () => switchView('board');
-        document.getElementById("menuPdf").onclick = () => switchView('pdf');
-        document.getElementById("menuDashboard").onclick = () => switchView('dash');
-
-        async function switchView(view) {
-            document.getElementById("boardArea").style.display = view === 'board' ? "flex" : "none";
-            document.getElementById("actionArea").style.display = view === 'board' ? "flex" : "none";
-            document.getElementById("pdfLibrary").style.display = view === 'pdf' ? "block" : "none";
-            document.getElementById("dashboardArea").style.display = view === 'dash' ? "block" : "none";
-            if(view === 'pdf') await carregarBiblioteca();
-        }
-
-        async function carregarBiblioteca() {
-            const list = document.getElementById("pdfLibrary");
-            list.innerHTML = "Carregando biblioteca...";
-            const snap = await getDocs(collection(db, "planners", userUID, "arquivos"));
-            list.innerHTML = snap.empty ? "Sem arquivos." : "";
-            snap.forEach(d => {
-                const p = d.data();
-                const div = document.createElement("div");
-                div.style = "padding:15px; border:1px solid #eee; border-radius:8px; margin-bottom:10px; background:#fff; cursor:pointer;";
-                div.innerHTML = `<strong><i class="fas fa-file-pdf"></i> ${p.nome}</strong>`;
-                div.onclick = () => window.open(p.url, "_blank");
-                list.appendChild(div);
-            });
-        }
-
-        function renderBoard() {
-            ['todo', 'review', 'done'].forEach(colId => {
-                const container = document.getElementById(`col-${colId}`);
-                if (!container) return;
-                container.innerHTML = '';
-                const filtered = tasks.filter(t => t.column === colId);
-                filtered.forEach(t => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.draggable = true;
-                    card.id = t.id;
-                    card.innerHTML = `<div style="font-size:13.5px; font-weight:600;">${t.title}</div>`;
-                    card.addEventListener('dragstart', e => e.dataTransfer.setData("text", e.target.id));
-                    container.appendChild(card);
-                });
-                document.getElementById(`count-${colId}`).textContent = filtered.length;
-            });
-        }
-
-        window.allowDrop = e => e.preventDefault();
-        window.drop = async e => {
-            e.preventDefault();
-            const id = e.dataTransfer.getData("text");
-            const col = e.target.closest('.column');
-            if (id && col) await window.handleTaskMove(id, col.id);
-        };
-        
-        function verificarAtrasos() {
-            const atrasadas = tasks.filter(t => t.column === "review" && !t.completedAt && t.scheduledFor < new Date());
-            const banner = document.getElementById("lateBanner");
-            if (atrasadas.length > 0) {
-                banner.innerHTML = `⚠️ Você tem ${atrasadas.length} revisões pendentes!`;
-                banner.style.display = "block";
+            } catch (error) {
+                console.error("Erro ao carregar:", error);
+                lista.innerHTML = "<li>Erro ao carregar tarefas.</li>";
             }
         }
     </script>
