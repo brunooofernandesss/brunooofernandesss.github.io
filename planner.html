@@ -281,7 +281,7 @@
             }
         });
 
-        // UPLOAD PDF
+        // UPLOAD COM FEEDBACK E SEGURANÇA
         window.uploadPDF = async function () {
             const fileInput = document.getElementById("pdfInput");
             const btnLabel = document.getElementById("pdfBtnLabel");
@@ -311,14 +311,17 @@
                 btnLabel.style.pointerEvents = "auto";
                 fileInput.value = "";
                 alert("PDF enviado com sucesso! ✅");
+                
                 if(document.getElementById("pdfLibrary").style.display === "block") carregarBibliotecaPDF();
             } catch (e) {
                 console.error(e);
                 alert("Erro no upload.");
+                btnLabel.innerHTML = `<i class="fas fa-cloud-upload-alt"></i> Anexar PDF`;
+                btnLabel.style.pointerEvents = "auto";
             }
         };
 
-        // CARREGAR BIBLIOTECA
+        // LISTAGEM DA BIBLIOTECA
         async function carregarBibliotecaPDF() {
             if (!usuarioAtual) return;
             const lista = document.getElementById("pdfList");
@@ -337,7 +340,7 @@
                 snap.forEach(doc => {
                     const pdf = doc.data();
                     const item = document.createElement("div");
-                    item.style = "display:flex; justify-content:space-between; align-items:center; padding:12px; border:1px solid #e5e7eb; border-radius:6px; background:#fff; cursor:pointer;";
+                    item.style = "display:flex; justify-content:space-between; align-items:center; padding:12px; border:1px solid #e5e7eb; border-radius:6px; background:#fff; cursor:pointer; transition: 0.2s;";
                     item.innerHTML = `
                         <div>
                             <strong>${pdf.nome}</strong><br>
@@ -345,12 +348,14 @@
                         </div>
                         <i class="fas fa-external-link-alt" style="color:#2563eb"></i>
                     `;
+                    item.onmouseover = () => item.style.background = "#f9fafb";
+                    item.onmouseout = () => item.style.background = "#fff";
                     item.onclick = () => window.open(pdf.url, "_blank");
                     lista.appendChild(item);
                 });
             } catch (e) {
                 console.error(e);
-                lista.innerHTML = "Erro ao carregar PDFs.";
+                lista.innerHTML = "Erro ao carregar biblioteca.";
             }
         }
 
@@ -378,7 +383,7 @@
     </script>
 
     <script>
-        // KANBAN LOGIC
+        // KANBAN LOGIC (LOCAL)
         let tasks = [];
         window.addNewTask = (col) => {
             const title = prompt("Assunto do estudo:");
