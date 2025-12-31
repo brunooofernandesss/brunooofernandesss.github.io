@@ -3,38 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Planner de Medicina</title>
+    <title>Planner de Estudos | Medicina</title>
     <style>
         body { font-family: sans-serif; padding: 20px; background-color: #f4f4f9; }
-        .container { max-width: 500px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: auto; }
+        .container { max-width: 600px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: auto; }
         input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background: #0056b3; }
+        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 5px; }
         .hidden { display: none; }
-        ul { list-style: none; padding: 0; }
-        li { background: #eee; margin: 5px 0; padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; }
+        li { background: #eee; margin: 10px 0; padding: 12px; border-radius: 4px; display: flex; flex-direction: column; gap: 5px; }
+        .btn-upload { background: #6f42c1; }
+        .status-msg { font-size: 12px; color: #666; margin-top: 5px; }
     </style>
 </head>
 <body>
 
     <div class="container">
         <div id="loginSection">
-            <h2>Login - Simulados Medicina</h2>
-            <input id="email" type="email" placeholder="Seu email">
-            <input id="senha" type="password" placeholder="Sua senha">
+            <h2>Login - Medicina</h2>
+            <input id="email" type="email" placeholder="Email">
+            <input id="senha" type="password" placeholder="Senha">
             <button onclick="login()">Entrar</button>
         </div>
 
         <div id="plannerSection" class="hidden">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <h2 id="userName">Meu Planner</h2>
-                <button onclick="logout()" style="width: auto; background: #dc3545; padding: 5px 10px;">Sair</button>
+                <button onclick="logout()" style="width: auto; background: #dc3545;">Sair</button>
             </div>
             
-            <input id="tituloTask" placeholder="Qual assunto vamos estudar hoje?">
-            <button onclick="salvarTask()" style="background: #28a745;">Salvar no Cronograma</button>
+            <hr>
+            
+            <input id="tituloTask" placeholder="Novo assunto de estudo">
+            <button onclick="salvarTask()" style="background: #28a745;">Salvar Assunto</button>
 
-            <h3>Minhas Tarefas (UID)</h3>
+            <div style="margin-top: 20px; padding: 15px; border: 1px dashed #007bff; border-radius: 8px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Upload de Material (PDF)</label>
+                <input type="file" id="pdfInput" accept="application/pdf">
+                <button onclick="uploadPDF()" class="btn-upload" id="btnUploadText">Enviar PDF e Agendar</button>
+                <div id="uploadStatus" class="status-msg"></div>
+            </div>
+
+            <h3>Meu Cronograma</h3>
             <ul id="listaTasks"></ul>
         </div>
     </div>
@@ -43,13 +52,14 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-        // Sua configuração original
         const firebaseConfig = {
             apiKey: "AIzaSyDj-c4uArNjAr7cSg396yfQR6xuyumh5_M",
             authDomain: "simuladosmedicina-6a01b.firebaseapp.com",
             projectId: "simuladosmedicina-6a01b",
-            storageBucket: "simuladosmedicina-6a01b.appspot.com",
+            // Ajustado para o novo padrão que evita travamentos de conexão
+            storageBucket: "simuladosmedicina-6a01b.firebasestorage.app",
             messagingSenderId: "577452734306",
             appId: "1:577452734306:web:5926d087a27a216a97de3b"
         };
@@ -57,20 +67,18 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const storage = getStorage(app);
 
         let currentUID = null;
 
-        // --- GESTÃO DE ESTADO DO USUÁRIO ---
-        onAuthStateChanged(auth, async (user) => {
+        onAuthStateChanged(auth, (user) => {
             const loginSection = document.getElementById("loginSection");
             const plannerSection = document.getElementById("plannerSection");
-
             if (user) {
-                currentUID = user.uid; // Pega o UID do usuário para isolamento
+                currentUID = user.uid;
                 loginSection.classList.add("hidden");
                 plannerSection.classList.remove("hidden");
                 document.getElementById("userName").textContent = `Olá, ${user.email}`;
-                console.log("Usuário logado com UID:", currentUID);
                 carregarTasks();
             } else {
                 currentUID = null;
@@ -79,66 +87,81 @@
             }
         });
 
-        // --- FUNÇÕES DE LOGIN E LOGOUT ---
-        window.login = function() {
-            const email = document.getElementById("email").value;
-            const senha = document.getElementById("senha").value;
-            signInWithEmailAndPassword(auth, email, senha)
-                .then(() => console.log("Login realizado com sucesso"))
-                .catch(err => alert("Erro: " + err.message));
+        // --- LOGIN / LOGOUT ---
+        window.login = () => {
+            const e = document.getElementById("email").value;
+            const s = document.getElementById("senha").value;
+            signInWithEmailAndPassword(auth, e, s).catch(err => alert(err.message));
+        };
+        window.logout = () => signOut(auth);
+
+        // --- SALVAR TAREFA MANUAL ---
+        window.salvarTask = async () => {
+            const titulo = document.getElementById("tituloTask").value;
+            if (!titulo || !currentUID) return;
+            await addDoc(collection(db, "planners", currentUID, "tasks"), {
+                titulo, criadoEm: serverTimestamp(), tipo: "manual"
+            });
+            document.getElementById("tituloTask").value = "";
+            carregarTasks();
         };
 
-        window.logout = function() {
-            signOut(auth);
-        };
+        // --- UPLOAD PDF (O QUE ESTAVA TRAVANDO) ---
+        window.uploadPDF = async () => {
+            const file = document.getElementById("pdfInput").files[0];
+            const status = document.getElementById("uploadStatus");
+            const btn = document.getElementById("btnUploadText");
 
-        // --- FUNÇÕES DO PLANNER (PASSO 3: UID) ---
-        window.salvarTask = async function() {
-            const input = document.getElementById("tituloTask");
-            const titulo = input.value;
-
-            if (!titulo) return alert("Digite um assunto");
-            if (!currentUID) return alert("Erro de autenticação");
+            if (!file || !currentUID) return alert("Selecione um PDF");
 
             try {
-                // Salva seguindo a regra: planners -> UID -> tasks
+                btn.disabled = true;
+                status.textContent = "Iniciando upload... (Verificando cota)";
+                
+                // Caminho rigoroso conforme sua regra: /planners/{uid}/...
+                const storageRef = ref(storage, `planners/${currentUID}/${Date.now()}_${file.name}`);
+                
+                const snapshot = await uploadBytes(storageRef, file);
+                const url = await getDownloadURL(snapshot.ref);
+
+                status.textContent = "Arquivo no servidor! Criando card de revisão...";
+
+                // Criar card no Firestore vinculado ao PDF
                 await addDoc(collection(db, "planners", currentUID, "tasks"), {
-                    titulo: titulo,
+                    titulo: `Revisar: ${file.name}`,
+                    pdfUrl: url,
                     criadoEm: serverTimestamp(),
-                    status: "pendente"
+                    tipo: "pdf"
                 });
-                input.value = "";
+
+                alert("Upload e agendamento concluídos!");
+                status.textContent = "";
+                document.getElementById("pdfInput").value = "";
                 carregarTasks();
-            } catch (error) {
-                console.error("Erro ao salvar:", error);
-                alert("Erro ao salvar no banco. Verifique suas regras de segurança.");
+            } catch (err) {
+                console.error(err);
+                status.textContent = "Erro: " + err.code;
+                alert("Falha no upload. Verifique se as regras de Storage foram publicadas.");
+            } finally {
+                btn.disabled = false;
             }
         };
 
         async function carregarTasks() {
             if (!currentUID) return;
+            const q = query(collection(db, "planners", currentUID, "tasks"), orderBy("criadoEm", "desc"));
+            const snap = await getDocs(q);
             const lista = document.getElementById("listaTasks");
-            lista.innerHTML = "<li>Carregando...</li>";
-
-            try {
-                const q = query(
-                    collection(db, "planners", currentUID, "tasks"), 
-                    orderBy("criadoEm", "desc")
-                );
-                
-                const snapshot = await getDocs(q);
-                lista.innerHTML = "";
-                
-                snapshot.forEach((doc) => {
-                    const task = doc.data();
-                    const li = document.createElement("li");
-                    li.innerHTML = `<span>${task.titulo}</span> <small>Pendente</small>`;
-                    lista.appendChild(li);
-                });
-            } catch (error) {
-                console.error("Erro ao carregar:", error);
-                lista.innerHTML = "<li>Erro ao carregar tarefas.</li>";
-            }
+            lista.innerHTML = "";
+            snap.forEach(doc => {
+                const t = doc.data();
+                const li = document.createElement("li");
+                li.innerHTML = `
+                    <strong>${t.titulo}</strong>
+                    ${t.pdfUrl ? `<a href="${t.pdfUrl}" target="_blank" style="color: blue;">Abrir Material</a>` : ''}
+                `;
+                lista.appendChild(li);
+            });
         }
     </script>
 </body>
