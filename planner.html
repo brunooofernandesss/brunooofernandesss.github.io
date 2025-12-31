@@ -513,5 +513,65 @@
             });
         }
     </script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "SUA_API_KEY",
+    authDomain: "simuladosmedicina-6a01b.firebaseapp.com",
+    projectId: "simuladosmedicina-6a01b",
+    storageBucket: "simuladosmedicina-6a01b.firebasestorage.app",
+    messagingSenderId: "SEU_ID",
+    appId: "SEU_APP_ID"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const storage = getStorage(app);
+  const db = getFirestore(app);
+
+  let usuarioAtual = null;
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      alert("Faça login para acessar o planner");
+      window.location.href = "login.html";
+    } else {
+      usuarioAtual = user;
+    }
+  });
+
+  window.uploadPDF = async function () {
+    const fileInput = document.getElementById("pdfInput");
+    const file = fileInput.files[0];
+
+    if (!file || file.type !== "application/pdf") {
+      alert("Selecione um PDF");
+      return;
+    }
+
+    const caminho = `planners/${usuarioAtual.uid}/${file.name}`;
+    const storageRef = ref(storage, caminho);
+
+    await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(storageRef);
+
+    await addDoc(
+      collection(db, "planners", usuarioAtual.uid, "arquivos"),
+      {
+        nome: file.name,
+        url: url,
+        criadoEm: serverTimestamp()
+      }
+    );
+
+    alert("PDF enviado com sucesso ✅");
+  };
+</script>
+    
 </body>
 </html>
