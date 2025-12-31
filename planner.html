@@ -116,7 +116,6 @@
             cursor: pointer;
         }
         .menu a.active { background: rgba(0,0,0,0.08); font-weight: 600; }
-        .menu a:hover:not(.active) { background: rgba(0,0,0,0.04); }
 
         .main-content {
             flex: 1;
@@ -164,7 +163,12 @@
             margin-bottom: 10px; cursor: grab;
             border: 1px solid transparent;
         }
-        .card-title { font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+        .card-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+        .card-meta { font-size: 11px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; margin-top: 8px;}
+        
+        .pill { padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+        .pill-red { background: rgba(235, 87, 87, 0.1); color: #EB5757; }
+        .pill-blue { background: rgba(35, 131, 226, 0.1); color: #2383E2; }
 
         @media (max-width: 768px) {
             .sidebar { display: none; }
@@ -214,7 +218,7 @@
                 </button>
                 <input type="file" id="pdfInput" hidden onchange="window.uploadPDF()">
                 <label for="pdfInput" class="upload-label" id="pdfBtnLabel">
-                    <i class="fas fa-cloud-upload-alt"></i> Anexar PDF
+                    <i class="fas fa-cloud-upload-alt"></i> Anexar PDF & Revisão
                 </label>
             </section>
 
@@ -228,7 +232,7 @@
                     <div class="task-container" id="col-doing"></div>
                 </div>
                 <div class="column" id="review" ondrop="drop(event)" ondragover="allowDrop(event)">
-                    <div class="column-header"><span class="tag tag-red">Revisão</span><span class="count">0</span></div>
+                    <div class="column-header"><span class="tag tag-red">Revisão Pendente</span><span class="count">0</span></div>
                     <div class="task-container" id="col-review"></div>
                 </div>
                 <div class="column" id="done" ondrop="drop(event)" ondragover="allowDrop(event)">
@@ -281,18 +285,17 @@
             }
         });
 
-        // UPLOAD COM FEEDBACK E SEGURANÇA
+        // UPLOAD PDF COM AUTOMAÇÃO DE REVISÃO
         window.uploadPDF = async function () {
             const fileInput = document.getElementById("pdfInput");
             const btnLabel = document.getElementById("pdfBtnLabel");
             const file = fileInput.files[0];
             
             if (!file || file.type !== "application/pdf") return alert("Selecione um PDF");
-            if (file.size > 10 * 1024 * 1024) return alert("O PDF deve ter no máximo 10MB");
 
             try {
                 const originalText = btnLabel.innerHTML;
-                btnLabel.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Enviando...`;
+                btnLabel.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Agendando Ciclos...`;
                 btnLabel.style.pointerEvents = "none";
 
                 const fileName = `${Date.now()}_${file.name}`;
@@ -301,94 +304,92 @@
                 await uploadBytes(storageRef, file);
                 const url = await getDownloadURL(storageRef);
 
+                // 1. Salva na Biblioteca
                 await addDoc(collection(db, "planners", usuarioAtual.uid, "arquivos"), {
                     nome: file.name,
                     url: url,
                     criadoEm: serverTimestamp()
                 });
 
+                // 2. Lógica de Revisão Espaçada (Agendar Cards)
+                const ciclos = [
+                    { label: "Revisão 24h (D1)", dias: 1, col: "review" },
+                    { label: "Revisão 7 dias (D7)", dias: 7, col: "todo" },
+                    { label: "Revisão 30 dias (D30)", dias: 30, col: "todo" }
+                ];
+
+                ciclos.forEach(ciclo => {
+                    const dataAgendada = new Date();
+                    dataAgendada.setDate(dataAgendada.getDate() + ciclo.dias);
+                    
+                    const task = {
+                        id: 't' + Date.now() + ciclo.dias,
+                        title: `[${ciclo.label}] ${file.name}`,
+                        column: ciclo.col,
+                        date: dataAgendada.toLocaleDateString(),
+                        pdf: url
+                    };
+                    tasks.push(task);
+                });
+
+                renderBoard();
+
                 btnLabel.innerHTML = originalText;
                 btnLabel.style.pointerEvents = "auto";
                 fileInput.value = "";
-                alert("PDF enviado com sucesso! ✅");
+                alert("Material enviado! Ciclos de revisão D1, D7 e D30 agendados no seu Kanban. 🧠");
                 
-                if(document.getElementById("pdfLibrary").style.display === "block") carregarBibliotecaPDF();
             } catch (e) {
                 console.error(e);
                 alert("Erro no upload.");
-                btnLabel.innerHTML = `<i class="fas fa-cloud-upload-alt"></i> Anexar PDF`;
-                btnLabel.style.pointerEvents = "auto";
             }
         };
 
-        // LISTAGEM DA BIBLIOTECA
+        // BIBLIOTECA E NAVEGAÇÃO
         async function carregarBibliotecaPDF() {
             if (!usuarioAtual) return;
             const lista = document.getElementById("pdfList");
-            lista.innerHTML = "Carregando PDFs...";
+            lista.innerHTML = "Sincronizando biblioteca...";
 
             try {
                 const q = query(collection(db, "planners", usuarioAtual.uid, "arquivos"), orderBy("criadoEm", "desc"));
                 const snap = await getDocs(q);
-                
-                if (snap.empty) {
-                    lista.innerHTML = "<span style='color:#6b7280'>Nenhum PDF enviado ainda.</span>";
-                    return;
-                }
-
-                lista.innerHTML = "";
+                lista.innerHTML = snap.empty ? "Vazio." : "";
                 snap.forEach(doc => {
                     const pdf = doc.data();
                     const item = document.createElement("div");
-                    item.style = "display:flex; justify-content:space-between; align-items:center; padding:12px; border:1px solid #e5e7eb; border-radius:6px; background:#fff; cursor:pointer; transition: 0.2s;";
-                    item.innerHTML = `
-                        <div>
-                            <strong>${pdf.nome}</strong><br>
-                            <span style="font-size:11px;color:#6b7280">${pdf.criadoEm?.toDate().toLocaleDateString() || ""}</span>
-                        </div>
-                        <i class="fas fa-external-link-alt" style="color:#2563eb"></i>
-                    `;
-                    item.onmouseover = () => item.style.background = "#f9fafb";
-                    item.onmouseout = () => item.style.background = "#fff";
+                    item.style = "display:flex; justify-content:space-between; align-items:center; padding:12px; border:1px solid #e5e7eb; border-radius:6px; background:#fff; cursor:pointer;";
+                    item.innerHTML = `<div><strong>${pdf.nome}</strong></div><i class="fas fa-external-link-alt" style="color:#2563eb"></i>`;
                     item.onclick = () => window.open(pdf.url, "_blank");
                     lista.appendChild(item);
                 });
-            } catch (e) {
-                console.error(e);
-                lista.innerHTML = "Erro ao carregar biblioteca.";
-            }
+            } catch (e) { console.error(e); }
         }
 
-        // NAVEGAÇÃO SIDEBAR
-        document.getElementById("menuPdf").addEventListener("click", (e) => {
-            e.preventDefault();
-            document.getElementById("menuBoard").classList.remove("active");
-            document.getElementById("menuPdf").classList.add("active");
+        document.getElementById("menuPdf").addEventListener("click", () => {
             document.querySelector(".kanban-board").style.display = "none";
             document.querySelector(".quick-actions").style.display = "none";
-            document.getElementById("pageTitle").textContent = "Biblioteca de PDFs";
             document.getElementById("pdfLibrary").style.display = "block";
             carregarBibliotecaPDF();
         });
 
-        document.getElementById("menuBoard").addEventListener("click", (e) => {
-            e.preventDefault();
-            document.getElementById("menuPdf").classList.remove("active");
-            document.getElementById("menuBoard").classList.add("active");
+        document.getElementById("menuBoard").addEventListener("click", () => {
             document.querySelector(".kanban-board").style.display = "flex";
             document.querySelector(".quick-actions").style.display = "flex";
-            document.getElementById("pageTitle").textContent = "Planner Semanal";
             document.getElementById("pdfLibrary").style.display = "none";
         });
     </script>
 
     <script>
-        // KANBAN LOGIC (LOCAL)
-        let tasks = [];
+        // LÓGICA DO BOARD COM REVISÃO ESPAÇADA
+        let tasks = [
+            { id: 'start', title: 'Exemplo: Revisão de Anatomia', column: 'review', date: 'Amanhã', pdf: null }
+        ];
+
         window.addNewTask = (col) => {
-            const title = prompt("Assunto do estudo:");
+            const title = prompt("O que você vai estudar?");
             if(title) {
-                tasks.push({ id: 't'+Date.now(), title, column: col });
+                tasks.push({ id: 't'+Date.now(), title, column: col, date: 'Hoje', pdf: null });
                 renderBoard();
             }
         };
@@ -402,11 +403,21 @@
                 colTasks.forEach(t => {
                     const card = document.createElement('div');
                     card.className = 'card';
-                    card.innerHTML = `<div class="card-title">${t.title}</div>`;
+                    card.draggable = true;
+                    card.id = t.id;
+                    card.addEventListener('dragstart', (e) => e.dataTransfer.setData("text", e.target.id));
+                    
+                    let badges = `<div class="card-meta">`;
+                    if(t.pdf) badges += `<span class="pill pill-red"><i class="far fa-file-pdf"></i> Material</span>`;
+                    if(t.column === 'review') badges += `<span class="pill pill-blue"><i class="far fa-calendar"></i> ${t.date}</span>`;
+                    badges += `</div>`;
+
+                    card.innerHTML = `<div class="card-title">${t.title}</div>${badges}`;
+                    if(t.pdf) card.onclick = () => window.open(t.pdf, '_blank');
+                    
                     container.appendChild(card);
                 });
-                const countEl = document.querySelector(`#${col} .count`);
-                if(countEl) countEl.textContent = colTasks.length;
+                document.querySelector(`#${col} .count`).textContent = colTasks.length;
             });
         }
 
@@ -420,6 +431,8 @@
                 if(task) { task.column = col.id; renderBoard(); }
             }
         };
+
+        renderBoard();
     </script>
 </body>
 </html>
