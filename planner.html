@@ -329,7 +329,7 @@
                     <i class="fas fa-plus"></i> Novo Card
                 </button>
                 <div style="position: relative;">
-                    <input type="file" id="pdfInput" hidden onchange="alert('Simulação: PDF vinculado!')">
+                    <input type="file" id="pdfInput" hidden onchange="window.uploadPDF()">
                     <label for="pdfInput" class="upload-label">
                         <i class="fas fa-cloud-upload-alt"></i> Anexar PDF
                     </label>
@@ -383,34 +383,83 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script type="module">
-        import { auth } from './firebase.js'; 
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // CONFIGURAÇÃO UNIFICADA
+        const firebaseConfig = {
+            apiKey: "SUA_API_KEY",
+            authDomain: "simuladosmedicina-6a01b.firebaseapp.com",
+            projectId: "simuladosmedicina-6a01b",
+            storageBucket: "simuladosmedicina-6a01b.firebasestorage.app",
+            messagingSenderId: "SEU_ID",
+            appId: "SEU_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const storage = getStorage(app);
+        const db = getFirestore(app);
+
+        let usuarioAtual = null;
+
+        // CONTROLE DE ACESSO E UI
         onAuthStateChanged(auth, (user) => {
             if (!user) {
-                alert("Acesso restrito. Faça login para ver seu Planner.");
+                alert("Acesso restrito. Faça login.");
                 window.location.href = "login.html";
             } else {
+                usuarioAtual = user;
                 const name = user.displayName || "Estudante";
                 const email = user.email || "";
                 const initials = name.split(" ").map(n => n[0]).join("").substring(0,2).toUpperCase();
 
-                // 1. Atualiza Navbar Superior
+                // Atualiza UI
                 document.getElementById('displayUser').textContent = name;
                 document.getElementById('displayEmail').textContent = email;
                 document.getElementById('userAvatar').textContent = initials;
-
-                // 2. Atualiza Sidebar (Latera)
-                // Aqui substituímos o "Medicina UNIP" pelo nome do usuário
-                const sbUser = document.getElementById('sidebarUser');
-                const sbStatus = document.getElementById('sidebarStatus');
-                const sbAvatar = document.getElementById('sidebarAvatar');
-
-                if(sbUser) sbUser.textContent = name;
-                if(sbStatus) sbStatus.textContent = "Online"; // Ou email
-                if(sbAvatar) sbAvatar.textContent = initials;
+                document.getElementById('sidebarUser').textContent = name;
+                document.getElementById('sidebarAvatar').textContent = initials;
+                document.getElementById('sidebarStatus').textContent = "Online";
             }
         });
+
+        // FUNÇÃO DE UPLOAD GLOBAL
+        window.uploadPDF = async function () {
+            const fileInput = document.getElementById("pdfInput");
+            const file = fileInput.files[0];
+
+            if (!file || file.type !== "application/pdf") {
+                alert("Selecione um arquivo PDF válido.");
+                return;
+            }
+
+            try {
+                const caminho = `planners/${usuarioAtual.uid}/${file.name}`;
+                const storageRef = ref(storage, caminho);
+
+                console.log("Fazendo upload...");
+                await uploadBytes(storageRef, file);
+                
+                const url = await getDownloadURL(storageRef);
+
+                await addDoc(
+                    collection(db, "planners", usuarioAtual.uid, "arquivos"),
+                    {
+                        nome: file.name,
+                        url: url,
+                        criadoEm: serverTimestamp()
+                    }
+                );
+
+                alert("PDF enviado com sucesso e salvo no seu perfil! ✅");
+            } catch (error) {
+                console.error(error);
+                alert("Erro ao enviar: " + error.message);
+            }
+        };
     </script>
 
     <script>
@@ -429,6 +478,7 @@
         function renderBoard() {
             ['todo', 'doing', 'review', 'done'].forEach(col => {
                 const container = document.getElementById(`col-${col}`);
+                if(!container) return;
                 container.innerHTML = '';
                 const colTasks = tasks.filter(t => t.column === col);
                 colTasks.forEach(task => container.appendChild(createCard(task)));
@@ -483,7 +533,9 @@
         };
 
         function initChart() {
-            const ctx = document.getElementById('studyChart').getContext('2d');
+            const canvas = document.getElementById('studyChart');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
             let gradient = ctx.createLinearGradient(0, 0, 0, 400);
             gradient.addColorStop(0, 'rgba(37, 99, 235, 0.2)');
             gradient.addColorStop(1, 'rgba(37, 99, 235, 0)');
@@ -513,65 +565,5 @@
             });
         }
     </script>
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-  import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "SUA_API_KEY",
-    authDomain: "simuladosmedicina-6a01b.firebaseapp.com",
-    projectId: "simuladosmedicina-6a01b",
-    storageBucket: "simuladosmedicina-6a01b.firebasestorage.app",
-    messagingSenderId: "SEU_ID",
-    appId: "SEU_APP_ID"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const storage = getStorage(app);
-  const db = getFirestore(app);
-
-  let usuarioAtual = null;
-
-  onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      alert("Faça login para acessar o planner");
-      window.location.href = "login.html";
-    } else {
-      usuarioAtual = user;
-    }
-  });
-
-  window.uploadPDF = async function () {
-    const fileInput = document.getElementById("pdfInput");
-    const file = fileInput.files[0];
-
-    if (!file || file.type !== "application/pdf") {
-      alert("Selecione um PDF");
-      return;
-    }
-
-    const caminho = `planners/${usuarioAtual.uid}/${file.name}`;
-    const storageRef = ref(storage, caminho);
-
-    await uploadBytes(storageRef, file);
-    const url = await getDownloadURL(storageRef);
-
-    await addDoc(
-      collection(db, "planners", usuarioAtual.uid, "arquivos"),
-      {
-        nome: file.name,
-        url: url,
-        criadoEm: serverTimestamp()
-      }
-    );
-
-    alert("PDF enviado com sucesso ✅");
-  };
-</script>
-    
 </body>
 </html>
