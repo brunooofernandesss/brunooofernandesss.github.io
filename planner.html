@@ -6,135 +6,64 @@
     <title>Planner de Estudos | Medicina UNIP</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
         :root {
-            --bg-body: #f3f4f6;
-            --bg-white: #ffffff;
-            --border-color: #e5e7eb;
-            --text-primary: #111827;
-            --text-secondary: #6b7280;
-            --brand-color: #0f172a;
-            --accent-color: #2563eb;
-            --hover-bg: #f9fafb;
-            --bg-sidebar: #F7F7F5;
-            --shadow-card: rgba(15, 15, 15, 0.1) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 2px 4px;
-            --tag-gray-bg: rgba(155,154,151,0.2); --tag-gray-text: #5A5A55;
-            --tag-blue-bg: rgba(35,131,226,0.2); --tag-blue-text: #185EAC;
-            --tag-green-bg: rgba(77,171,154,0.2); --tag-green-text: #2B593F;
-            --tag-red-bg: rgba(235, 87, 87, 0.1); --tag-red-text: #D44C47;
+            --bg-body: #f3f4f6; --bg-white: #ffffff; --border-color: #e5e7eb;
+            --text-primary: #111827; --text-secondary: #6b7280;
+            --brand-color: #0f172a; --accent-color: #2563eb; --hover-bg: #f9fafb;
+            --bg-sidebar: #F7F7F5; --shadow-card: rgba(15, 15, 15, 0.1) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 2px 4px;
+            --tag-gray-bg: rgba(155,154,151,0.2); --tag-blue-bg: rgba(35,131,226,0.2);
+            --tag-green-bg: rgba(77,171,154,0.2); --tag-red-bg: rgba(235, 87, 87, 0.1);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-body); color: var(--text-primary); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-body);
-            color: var(--text-primary);
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        .navbar {
-            background-color: var(--bg-white);
-            border-bottom: 1px solid var(--border-color);
-            padding: 0 32px;
-            height: 64px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-shrink: 0;
-            z-index: 1000;
-        }
-
-        .navbar-brand {
-            font-weight: 700;
-            font-size: 1.125rem;
-            color: var(--brand-color);
-            display: flex; align-items: center; gap: 10px;
-            text-decoration: none;
-        }
-        .navbar-brand i { color: var(--accent-color); }
-
-        .app-container {
-            display: flex; flex: 1; overflow: hidden;
-        }
-
-        .sidebar {
-            width: 240px; background: var(--bg-sidebar);
-            border-right: 1px solid var(--border-color);
-            padding: 20px 12px; display: flex; flex-direction: column; flex-shrink: 0;
-        }
-
-        .menu a {
-            display: flex; align-items: center; gap: 10px;
-            padding: 8px 10px; color: var(--text-primary);
-            text-decoration: none; border-radius: 4px;
-            font-size: 14px; margin-bottom: 2px;
-            transition: background 0.2s; cursor: pointer;
-        }
+        .navbar { background-color: var(--bg-white); border-bottom: 1px solid var(--border-color); padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between; z-index: 1000; }
+        .app-container { display: flex; flex: 1; overflow: hidden; }
+        .sidebar { width: 240px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); padding: 20px 12px; display: flex; flex-direction: column; }
+        .menu a { display: flex; align-items: center; gap: 10px; padding: 10px; color: var(--text-primary); text-decoration: none; border-radius: 4px; font-size: 14px; cursor: pointer; }
         .menu a.active { background: rgba(0,0,0,0.08); font-weight: 600; }
-        .menu a:hover:not(.active) { background: rgba(0,0,0,0.04); }
 
-        .main-content {
-            flex: 1; overflow-y: auto; padding: 20px 60px 40px;
-            background-color: var(--bg-white);
-        }
-
-        .page-title { font-size: 40px; font-weight: 700; margin-bottom: 20px; letter-spacing: -0.02em; }
+        .main-content { flex: 1; overflow-y: auto; padding: 20px 60px; background-color: var(--bg-white); }
+        .page-title { font-size: 32px; font-weight: 700; margin-bottom: 20px; }
 
         .quick-actions { display: flex; gap: 12px; margin-bottom: 32px; }
-        .btn-primary, .upload-label {
-            background: var(--accent-color); color: white; border: none;
-            padding: 8px 16px; border-radius: 4px; font-size: 14px;
-            cursor: pointer; display: flex; align-items: center; gap: 6px;
-        }
+        .btn-primary, .upload-label { background: var(--accent-color); color: white; border: none; padding: 10px 16px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
         .upload-label { background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); }
 
-        .kanban-board { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 20px; min-height: 400px; }
-        .column { min-width: 260px; width: 260px; display: flex; flex-direction: column; }
-        .column-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .tag { padding: 2px 8px; border-radius: 3px; font-size: 12px; font-weight: 500; }
+        .kanban-board { display: flex; gap: 16px; min-height: 400px; }
+        .column { min-width: 250px; flex: 1; display: flex; flex-direction: column; }
+        .task-container { flex: 1; padding: 8px; background: #f9fafb; border-radius: 6px; min-height: 200px; }
 
-        .task-container { flex: 1; padding: 4px; min-height: 100px; }
-
-        .card {
-            background: white; padding: 12px 14px;
-            border-radius: 4px; box-shadow: var(--shadow-card);
-            margin-bottom: 10px; cursor: grab; border: 1px solid transparent;
-        }
-        .card-title { font-size: 14px; font-weight: 600; line-height: 1.4; }
-        .pill { padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; }
+        .card { background: white; padding: 12px; border-radius: 4px; box-shadow: var(--shadow-card); margin-bottom: 10px; cursor: grab; }
+        .pill { padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; margin-top: 8px; display: inline-block; }
         .pill-red { background: rgba(235, 87, 87, 0.1); color: #EB5757; }
-        .pill-blue { background: rgba(35, 131, 226, 0.1); color: #2383E2; }
 
         /* Dashboard Styles */
-        .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 20px; }
-        .stat-card { background: #fff; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: var(--shadow-card); text-align: center; }
-        .stat-card strong { font-size: 28px; color: var(--accent-color); display: block; margin-bottom: 4px; }
-        .stat-card span { font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+        .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 30px; }
+        .stat-card { padding: 20px; background: #fff; border: 1px solid #eee; border-radius: 8px; text-align: center; }
+        .stat-card strong { font-size: 24px; color: var(--accent-color); display: block; }
+        .chart-container { background: #fff; padding: 20px; border: 1px solid #eee; border-radius: 8px; margin-top: 20px; }
     </style>
 </head>
 <body>
 
     <nav class="navbar">
-        <a href="#" class="navbar-brand"><i class="fas fa-graduation-cap"></i> Medicina UNIP</a>
-        <div class="user-profile">
-            <div style="text-align: right; margin-right: 12px;">
-                <div id="displayUser" style="font-size: 14px; font-weight: 600;">Carregando...</div>
-                <div id="displayEmail" style="font-size: 11px; color: var(--text-secondary);">Firebase Auth</div>
-            </div>
-            <div class="user-avatar" id="userAvatar">?</div>
+        <div style="font-weight: 700; color: var(--brand-color);"><i class="fas fa-graduation-cap"></i> Medicina UNIP</div>
+        <div id="userInfo" style="font-size: 13px; text-align: right;">
+            <div id="displayUser" style="font-weight: 600;">Carregando...</div>
+            <div id="userPlan" style="color: var(--accent-color); font-size: 10px; font-weight: 700;">PLANO FREE</div>
         </div>
     </nav>
 
     <div class="app-container">
         <aside class="sidebar">
             <nav class="menu">
-                <a id="menuBoard" class="active"><i class="fas fa-columns"></i> Board de Estudos</a>
-                <a id="menuPdf"><i class="fas fa-file-pdf"></i> Biblioteca PDF</a>
+                <a id="menuBoard" class="active"><i class="fas fa-columns"></i> Board</a>
+                <a id="menuPdf"><i class="fas fa-file-pdf"></i> Biblioteca</a>
                 <a id="menuDashboard"><i class="fas fa-chart-line"></i> Dashboard</a>
             </nav>
         </aside>
@@ -143,40 +72,36 @@
             <h1 class="page-title" id="pageTitle">Planner Semanal</h1>
 
             <section class="quick-actions" id="actionArea">
-                <button class="btn-primary" onclick="addNewTask('todo')"><i class="fas fa-plus"></i> Novo Card</button>
+                <button class="btn-primary" onclick="addNewTask('todo')"><i class="fas fa-plus"></i> Novo</button>
                 <input type="file" id="pdfInput" hidden onchange="window.uploadPDF()">
-                <label for="pdfInput" class="upload-label" id="pdfBtnLabel"><i class="fas fa-cloud-upload-alt"></i> Anexar PDF & Revisão</label>
+                <label for="pdfInput" class="upload-label"><i class="fas fa-cloud-upload-alt"></i> Upload & Revisão</label>
             </section>
 
             <section class="kanban-board" id="boardArea">
                 <div class="column" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)">
-                    <div class="column-header"><span class="tag tag-gray">A Fazer</span><span class="count">0</span></div>
+                    <div style="margin-bottom:10px; font-weight:600;">A Fazer <span id="count-todo" style="font-weight:400; color:#888;">0</span></div>
                     <div class="task-container" id="col-todo"></div>
                 </div>
-                <div class="column" id="doing" ondrop="drop(event)" ondragover="allowDrop(event)">
-                    <div class="column-header"><span class="tag tag-blue">Estudando</span><span class="count">0</span></div>
-                    <div class="task-container" id="col-doing"></div>
-                </div>
                 <div class="column" id="review" ondrop="drop(event)" ondragover="allowDrop(event)">
-                    <div class="column-header"><span class="tag tag-red">Revisão Pendente</span><span class="count">0</span></div>
+                    <div style="margin-bottom:10px; font-weight:600; color:#EB5757;">Revisão <span id="count-review" style="font-weight:400; color:#888;">0</span></div>
                     <div class="task-container" id="col-review"></div>
                 </div>
                 <div class="column" id="done" ondrop="drop(event)" ondragover="allowDrop(event)">
-                    <div class="column-header"><span class="tag tag-green">Concluído</span><span class="count">0</span></div>
+                    <div style="margin-bottom:10px; font-weight:600; color:#27ae60;">Concluído <span id="count-done" style="font-weight:400; color:#888;">0</span></div>
                     <div class="task-container" id="col-done"></div>
                 </div>
             </section>
 
-            <section id="pdfLibrary" style="display:none;">
-                <div id="pdfList" style="display:flex; flex-direction:column; gap:10px;"></div>
-            </section>
+            <section id="pdfLibrary" style="display:none;"></section>
 
             <section id="dashboardArea" style="display:none;">
                 <div class="dash-grid">
-                    <div class="stat-card"><strong id="metricAdherence">0%</strong><span>Revisões no Prazo</span></div>
-                    <div class="stat-card"><strong id="metricLate" style="color:#EB5757">0</strong><span>Revisões Atrasadas</span></div>
-                    <div class="stat-card"><strong id="metricStreak">0</strong><span>Streak (Dias Seguidos)</span></div>
-                    <div class="stat-card"><strong id="metricD30">0</strong><span>Memória Longo Prazo (D30)</span></div>
+                    <div class="stat-card"><strong id="metricAdherence">0%</strong><span>Aderência</span></div>
+                    <div class="stat-card"><strong id="metricLate" style="color:#EB5757">0</strong><span>Atrasadas</span></div>
+                    <div class="stat-card"><strong id="metricStreak">0</strong><span>Dias de Estudo</span></div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="graficoSemanal"></canvas>
                 </div>
             </section>
         </main>
@@ -186,7 +111,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, serverTimestamp, query, where, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "SUA_API_KEY",
@@ -202,179 +127,180 @@
         const storage = getStorage(app);
         const db = getFirestore(app);
 
+        let tasks = [];
         let usuarioAtual = null;
+        let chartInstance = null;
 
-        onAuthStateChanged(auth, (user) => {
+        // 🅰️ PERSISTÊNCIA & AUTH
+        onAuthStateChanged(auth, async (user) => {
             if (!user) window.location.href = "login.html";
             else {
                 usuarioAtual = user;
                 document.getElementById('displayUser').textContent = user.displayName || "Estudante";
-                document.getElementById('displayEmail').textContent = user.email;
-                document.getElementById('userAvatar').textContent = (user.displayName || "E").substring(0,2).toUpperCase();
+                await verificarPlano(user);
+                await carregarTasks();
+                verificarAtrasos();
             }
         });
 
-        // UPLOAD COM CICLOS DE REVISÃO E METADADOS
-        window.uploadPDF = async function () {
-            const fileInput = document.getElementById("pdfInput");
-            const btnLabel = document.getElementById("pdfBtnLabel");
-            const file = fileInput.files[0];
-            if (!file || file.type !== "application/pdf") return alert("Selecione um PDF");
-
-            try {
-                const originalText = btnLabel.innerHTML;
-                btnLabel.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Sincronizando...`;
-                const fileName = `${Date.now()}_${file.name}`;
-                const storageRef = ref(storage, `planners/${usuarioAtual.uid}/${fileName}`);
-
-                await uploadBytes(storageRef, file);
-                const url = await getDownloadURL(storageRef);
-
-                await addDoc(collection(db, "planners", usuarioAtual.uid, "arquivos"), { nome: file.name, url, criadoEm: serverTimestamp() });
-
-                // AGENDAMENTO D1, D7, D30
-                const ciclos = [
-                    { label: "D1", dias: 1, col: "review" },
-                    { label: "D7", dias: 7, col: "todo" },
-                    { label: "D30", dias: 30, col: "todo" }
-                ];
-
-                ciclos.forEach(c => {
-                    const data = new Date();
-                    data.setDate(data.getDate() + c.dias);
-                    tasks.push({
-                        id: 't' + Date.now() + c.dias,
-                        title: `[${c.label}] ${file.name}`,
-                        column: c.col,
-                        pdf: url,
-                        reviewType: c.label,
-                        scheduledFor: data,
-                        completedAt: null
-                    });
-                });
-
-                renderBoard();
-                btnLabel.innerHTML = originalText;
-                fileInput.value = "";
-                alert("Ciclo Cognitivo Agendado! 🧠");
-            } catch (e) { console.error(e); alert("Erro no upload."); }
-        };
-
-        // CARREGAR BIBLIOTECA
-        async function carregarBiblioteca() {
-            const lista = document.getElementById("pdfList");
-            lista.innerHTML = "Carregando...";
-            const q = query(collection(db, "planners", usuarioAtual.uid, "arquivos"), orderBy("criadoEm", "desc"));
-            const snap = await getDocs(q);
-            lista.innerHTML = "";
-            snap.forEach(doc => {
-                const pdf = doc.data();
-                const item = document.createElement("div");
-                item.className = "card";
-                item.style.cursor = "pointer";
-                item.innerHTML = `<strong>${pdf.nome}</strong>`;
-                item.onclick = () => window.open(pdf.url, "_blank");
-                lista.appendChild(item);
-            });
+        async function verificarPlano(user) {
+            const userDoc = await getDoc(doc(db, "planners", user.uid));
+            if (!userDoc.exists()) {
+                await setDoc(doc(db, "planners", user.uid), { plan: "free" });
+            } else {
+                document.getElementById("userPlan").textContent = `PLANO ${userDoc.data().plan.toUpperCase()}`;
+            }
         }
 
-        // NAVEGAÇÃO
-        const hideAll = () => {
-            document.getElementById("boardArea").style.display = "none";
-            document.getElementById("pdfLibrary").style.display = "none";
-            document.getElementById("dashboardArea").style.display = "none";
-            document.getElementById("actionArea").style.display = "none";
-            document.querySelectorAll(".menu a").forEach(a => a.classList.remove("active"));
+        async function carregarTasks() {
+            const snap = await getDocs(collection(db, "planners", usuarioAtual.uid, "tasks"));
+            tasks = [];
+            snap.forEach(d => {
+                const data = d.data();
+                tasks.push({
+                    id: d.id,
+                    ...data,
+                    scheduledFor: data.scheduledFor ? new Date(data.scheduledFor) : null,
+                    completedAt: data.completedAt ? new Date(data.completedAt) : null
+                });
+            });
+            window.renderBoard();
+        }
+
+        // 🅳 ALERTAS
+        function verificarAtrasos() {
+            const hoje = new Date();
+            const atrasadas = tasks.filter(t => t.column === "review" && !t.completedAt && t.scheduledFor < hoje);
+            if (atrasadas.length > 0) {
+                alert(`⚠️ Atenção: Você tem ${atrasadas.length} revisões pendentes de dias anteriores.`);
+            }
+        }
+
+        // UPLOAD & REVISÃO AUTOMÁTICA
+        window.uploadPDF = async function() {
+            // 🅲 LIMITE PRO
+            if (tasks.length >= 20) {
+                const userDoc = await getDoc(doc(db, "planners", usuarioAtual.uid));
+                if (userDoc.data().plan === "free") return alert("Limite do plano Free atingido (20 cards). Faça upgrade!");
+            }
+
+            const file = document.getElementById("pdfInput").files[0];
+            if (!file) return;
+
+            const storageRef = ref(storage, `planners/${usuarioAtual.uid}/${Date.now()}_${file.name}`);
+            await uploadBytes(storageRef, file);
+            const url = await getDownloadURL(storageRef);
+
+            const ciclos = [
+                { label: "D1", dias: 1, col: "review" },
+                { label: "D7", dias: 7, col: "todo" }
+            ];
+
+            for (const c of ciclos) {
+                const data = new Date();
+                data.setDate(data.getDate() + c.dias);
+                const novaTask = {
+                    title: `[${c.label}] ${file.name}`,
+                    column: c.col,
+                    pdf: url,
+                    scheduledFor: data.toISOString(),
+                    completedAt: null,
+                    type: c.label
+                };
+                await addDoc(collection(db, "planners", usuarioAtual.uid, "tasks"), novaTask);
+            }
+            carregarTasks();
         };
 
-        document.getElementById("menuBoard").onclick = () => {
-            hideAll();
-            document.getElementById("boardArea").style.display = "flex";
-            document.getElementById("actionArea").style.display = "flex";
-            document.getElementById("menuBoard").classList.add("active");
-            document.getElementById("pageTitle").textContent = "Planner Semanal";
+        // DRAG & DROP PERSISTENTE
+        window.handleTaskMove = async (taskId, newCol) => {
+            const taskDoc = doc(db, "planners", usuarioAtual.uid, "tasks", taskId);
+            const updates = { column: newCol };
+            if (newCol === "done") updates.completedAt = new Date().toISOString();
+            await updateDoc(taskDoc, updates);
+            carregarTasks();
         };
 
-        document.getElementById("menuPdf").onclick = () => {
-            hideAll();
-            document.getElementById("pdfLibrary").style.display = "block";
-            document.getElementById("menuPdf").classList.add("active");
-            document.getElementById("pageTitle").textContent = "Biblioteca PDF";
-            carregarBiblioteca();
-        };
+        // 🅱️ GRÁFICO
+        window.gerarGrafico = () => {
+            if (chartInstance) chartInstance.destroy();
+            const diasNome = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+            const contagem = [0,0,0,0,0,0,0];
+            
+            tasks.forEach(t => {
+                if (t.completedAt) contagem[t.completedAt.getDay()]++;
+            });
 
-        document.getElementById("menuDashboard").onclick = () => {
-            hideAll();
-            document.getElementById("dashboardArea").style.display = "block";
-            document.getElementById("menuDashboard").classList.add("active");
-            document.getElementById("pageTitle").textContent = "Dashboard Cognitivo";
-            calcularDashboard();
+            const ctx = document.getElementById('graficoSemanal').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: diasNome,
+                    datasets: [{ label: 'Revisões Concluídas', data: contagem, backgroundColor: '#2563eb' }]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+            });
         };
     </script>
 
     <script>
-        // KANBAN & DASHBOARD LOGIC (LOCAL)
-        let tasks = [];
-
-        window.addNewTask = (col) => {
-            const title = prompt("Assunto:");
-            if(title) {
-                tasks.push({ id: 't'+Date.now(), title, column: col, scheduledFor: new Date(), completedAt: null });
-                renderBoard();
-            }
+        // LÓGICA DE INTERFACE
+        window.renderBoard = () => {
+            ['todo', 'review', 'done'].forEach(colId => {
+                const container = document.getElementById(`col-${colId}`);
+                if (!container) return;
+                container.innerHTML = '';
+                const filtered = tasks.filter(t => t.column === colId);
+                filtered.forEach(t => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.draggable = true;
+                    card.id = t.id;
+                    card.innerHTML = `
+                        <div style="font-size:13px; font-weight:600;">${t.title}</div>
+                        ${t.scheduledFor ? `<div style="font-size:10px; color:#888; margin-top:4px;"><i class="far fa-calendar"></i> ${t.scheduledFor.toLocaleDateString()}</div>` : ''}
+                        ${t.pdf ? `<span class="pill pill-red">PDF</span>` : ''}
+                    `;
+                    card.addEventListener('dragstart', e => e.dataTransfer.setData("text", e.target.id));
+                    container.appendChild(card);
+                });
+                document.getElementById(`count-${colId}`).textContent = filtered.length;
+            });
         };
 
-        function renderBoard() {
-            ['todo', 'doing', 'review', 'done'].forEach(colId => {
-                const container = document.getElementById(`col-${colId}`);
-                container.innerHTML = '';
-                const colTasks = tasks.filter(t => t.column === colId);
-                colTasks.forEach(t => {
-                    const el = document.createElement('div');
-                    el.className = 'card';
-                    el.draggable = true;
-                    el.id = t.id;
-                    el.addEventListener('dragstart', (e) => e.dataTransfer.setData("text", e.target.id));
-                    
-                    let badges = `<div style="margin-top:8px;">`;
-                    if(t.pdf) badges += `<span class="pill pill-red"><i class="far fa-file-pdf"></i> Material</span> `;
-                    if(t.reviewType) badges += `<span class="pill pill-blue"><i class="far fa-clock"></i> ${t.reviewType}</span>`;
-                    badges += `</div>`;
-
-                    el.innerHTML = `<div class="card-title">${t.title}</div>${badges}`;
-                    container.appendChild(el);
-                });
-                document.querySelector(`#${colId} .count`).textContent = colTasks.length;
-            });
-        }
-
-        function calcularDashboard() {
-            const hoje = new Date();
-            const revisoes = tasks.filter(t => t.reviewType);
-            const feitas = revisoes.filter(t => t.completedAt);
-            const noPrazo = feitas.filter(t => t.completedAt <= t.scheduledFor);
-            const atrasadas = revisoes.filter(t => !t.completedAt && t.scheduledFor < hoje);
-
-            document.getElementById("metricAdherence").textContent = revisoes.length ? Math.round((noPrazo.length / revisoes.length) * 100) + "%" : "0%";
-            document.getElementById("metricLate").textContent = atrasadas.length;
-            document.getElementById("metricD30").textContent = revisoes.filter(t => t.reviewType === "D30").length;
-            
-            const diasUnicos = [...new Set(feitas.map(t => t.completedAt.toDateString()))];
-            document.getElementById("metricStreak").textContent = diasUnicos.length;
-        }
-
-        window.allowDrop = (e) => e.preventDefault();
-        window.drop = (e) => {
+        window.allowDrop = e => e.preventDefault();
+        window.drop = async e => {
             e.preventDefault();
             const id = e.dataTransfer.getData("text");
             const col = e.target.closest('.column');
-            const task = tasks.find(t => t.id === id);
-            if(task && col) {
-                task.column = col.id;
-                if(col.id === "done" && !task.completedAt) task.completedAt = new Date();
-                renderBoard();
-                if(document.getElementById("dashboardArea").style.display === "block") calcularDashboard();
-            }
+            if (id && col) await window.handleTaskMove(id, col.id);
+        };
+
+        // NAVEGAÇÃO
+        document.getElementById("menuBoard").onclick = () => {
+            document.getElementById("dashboardArea").style.display = "none";
+            document.getElementById("boardArea").style.display = "flex";
+            document.getElementById("actionArea").style.display = "flex";
+            document.getElementById("pageTitle").textContent = "Planner Semanal";
+        };
+
+        document.getElementById("menuDashboard").onclick = () => {
+            document.getElementById("boardArea").style.display = "none";
+            document.getElementById("actionArea").style.display = "none";
+            document.getElementById("dashboardArea").style.display = "block";
+            document.getElementById("pageTitle").textContent = "Dashboard Cognitivo";
+            
+            // Cálculos Dashboard
+            const revisoes = tasks.filter(t => t.type);
+            const feitas = revisoes.filter(t => t.completedAt);
+            const noPrazo = feitas.filter(t => t.completedAt <= t.scheduledFor);
+            const atrasadas = revisoes.filter(t => !t.completedAt && t.scheduledFor < new Date());
+            
+            document.getElementById("metricAdherence").textContent = revisoes.length ? Math.round((noPrazo.length / revisoes.length)*100)+"%" : "0%";
+            document.getElementById("metricLate").textContent = atrasadas.length;
+            document.getElementById("metricStreak").textContent = [...new Set(feitas.map(t => t.completedAt.toDateString()))].length;
+            
+            window.gerarGrafico();
         };
     </script>
 </body>
