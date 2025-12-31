@@ -75,21 +75,23 @@
 
             <section class="quick-actions" id="actionArea">
                 <button class="btn-primary" id="btnNovaTask"><i class="fas fa-plus"></i> Novo Assunto</button>
-                <input type="file" id="pdfInput" hidden onchange="window.uploadPDF()">
-                <label for="pdfInput" class="upload-label" id="pdfBtnLabel"><i class="fas fa-cloud-upload-alt"></i> Upload & Ciclo Cognitivo</label>
+                <input type="file" id="pdfInput" hidden>
+                <label for="pdfInput" class="upload-label" id="pdfBtnLabel">
+                    <i class="fas fa-cloud-upload-alt"></i> Upload & Ciclo Cognitivo
+                </label>
             </section>
 
             <section class="kanban-board" id="boardArea">
                 <div class="column" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)">
-                    <div style="margin-bottom:12px; font-weight:600; font-size:14px; color:var(--text-secondary);">A Fazer <span id="count-todo" style="font-weight:400; margin-left:4px;">0</span></div>
+                    <div style="margin-bottom:12px; font-weight:600; font-size:14px; color:var(--text-secondary);">A Fazer <span id="count-todo">0</span></div>
                     <div class="task-container" id="col-todo"></div>
                 </div>
                 <div class="column" id="review" ondrop="drop(event)" ondragover="allowDrop(event)">
-                    <div style="margin-bottom:12px; font-weight:600; font-size:14px; color:#EB5757;">Revisão <span id="count-review" style="font-weight:400; margin-left:4px;">0</span></div>
+                    <div style="margin-bottom:12px; font-weight:600; font-size:14px; color:#EB5757;">Revisão <span id="count-review">0</span></div>
                     <div class="task-container" id="col-review"></div>
                 </div>
                 <div class="column" id="done" ondrop="drop(event)" ondragover="allowDrop(event)">
-                    <div style="margin-bottom:12px; font-weight:600; font-size:14px; color:#27ae60;">Concluído <span id="count-done" style="font-weight:400; margin-left:4px;">0</span></div>
+                    <div style="margin-bottom:12px; font-weight:600; font-size:14px; color:#27ae60;">Concluído <span id="count-done">0</span></div>
                     <div class="task-container" id="col-done"></div>
                 </div>
             </section>
@@ -127,75 +129,46 @@
                 const email = user.email.toLowerCase();
                 document.getElementById('displayUser').textContent = user.displayName || "Estudante";
                 
-                // ARQUITETURA: Usando Email como chave nas coleções do Planner
-                const userDocRef = doc(db, "planners", email);
-                const userDoc = await getDoc(userDocRef);
-
-                if (!userDoc.exists()) {
-                    await setDoc(userDocRef, { plan: "free", hasLateReviews: false });
-                } else {
-                    document.getElementById("userPlan").textContent = `PLANO ${userDoc.data().plan.toUpperCase()}`;
+                try {
+                    const userDocRef = doc(db, "planners", email);
+                    const userDoc = await getDoc(userDocRef);
+                    if (!userDoc.exists()) {
+                        await setDoc(userDocRef, { plan: "free", hasLateReviews: false });
+                    } else {
+                        document.getElementById("userPlan").textContent = `PLANO ${userDoc.data().plan.toUpperCase()}`;
+                    }
+                    await carregarTasks();
+                } catch (e) {
+                    console.error("Erro ao iniciar sessão:", e);
                 }
-                
-                await carregarTasks();
-                verificarAtrasos();
             }
         });
 
-        // CARREGAR TAREFAS (PERSISTENTE POR EMAIL)
-        async function carregarTasks() {
-            if (!usuarioAtual) return;
-            const email = usuarioAtual.email.toLowerCase();
-            const snap = await getDocs(collection(db, "planners", email, "tasks"));
-            tasks = [];
-            snap.forEach(d => {
-                const data = d.data();
-                tasks.push({
-                    id: d.id, ...data,
-                    scheduledFor: data.scheduledFor ? new Date(data.scheduledFor) : null,
-                    completedAt: data.completedAt ? new Date(data.completedAt) : null
-                });
-            });
-            window.renderBoard();
-        }
-
-        // NOVO ASSUNTO MANUAL
-        document.getElementById("btnNovaTask").onclick = async () => {
-            const title = prompt("O que você vai estudar?");
-            if (title && usuarioAtual) {
-                const email = usuarioAtual.email.toLowerCase();
-                await addDoc(collection(db, "planners", email, "tasks"), {
-                    title: title,
-                    column: "todo",
-                    scheduledFor: new Date().toISOString(),
-                    completedAt: null
-                });
-                carregarTasks();
-            }
-        };
-
-        // UPLOAD PDF & CICLOS COGNITIVOS
-        window.uploadPDF = async function() {
-            const fileInput = document.getElementById("pdfInput");
-            const file = fileInput.files[0];
+        // FUNÇÃO DE UPLOAD (ANEXADA AO ELEMENTO VIA JS PARA GARANTIA)
+        const pdfInput = document.getElementById("pdfInput");
+        pdfInput.addEventListener("change", async (event) => {
+            const file = event.target.files[0];
+            const btnLabel = document.getElementById("pdfBtnLabel");
             if (!file || !usuarioAtual) return;
 
             const email = usuarioAtual.email.toLowerCase();
 
             try {
-                // 1. Upload para Storage (Pasta por Email)
+                btnLabel.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Sincronizando...`;
+                console.log("Iniciando upload para:", email);
+
                 const storageRef = ref(storage, `planners/${email}/arquivos/${Date.now()}_${file.name}`);
                 await uploadBytes(storageRef, file);
                 const url = await getDownloadURL(storageRef);
 
-                // 2. Salva metadado na Biblioteca (Firestore)
+                // Salva registro na Biblioteca
                 await addDoc(collection(db, "planners", email, "arquivos"), {
                     nome: file.name,
                     url: url,
                     criadoEm: serverTimestamp()
                 });
 
-                // 3. Gera ciclos de revisão D1 e D7
+                // Gera revisões
                 const ciclos = [{ label: "D1", dias: 1, col: "review" }, { label: "D7", dias: 7, col: "todo" }];
                 for (const c of ciclos) {
                     const data = new Date();
@@ -209,20 +182,65 @@
                         type: c.label
                     });
                 }
-                carregarTasks();
-                fileInput.value = "";
-                alert("Material enviado e ciclos agendados! 🧠");
-            } catch (e) { console.error(e); }
+
+                alert("Material enviado com sucesso!");
+                btnLabel.innerHTML = `<i class="fas fa-cloud-upload-alt"></i> Upload & Ciclo Cognitivo`;
+                pdfInput.value = "";
+                await carregarTasks();
+            } catch (e) {
+                console.error("Erro no upload:", e);
+                alert("Falha no upload. Verifique as permissões do Firebase.");
+                btnLabel.innerHTML = `<i class="fas fa-cloud-upload-alt"></i> Upload & Ciclo Cognitivo`;
+            }
+        });
+
+        // BOTÃO NOVO ASSUNTO
+        document.getElementById("btnNovaTask").onclick = async () => {
+            const title = prompt("Qual assunto você vai estudar?");
+            if (title && usuarioAtual) {
+                const email = usuarioAtual.email.toLowerCase();
+                try {
+                    await addDoc(collection(db, "planners", email, "tasks"), {
+                        title: title,
+                        column: "todo",
+                        scheduledFor: new Date().toISOString(),
+                        completedAt: null
+                    });
+                    await carregarTasks();
+                } catch (e) {
+                    console.error("Erro ao criar tarefa:", e);
+                }
+            }
         };
 
-        // DRAG AND DROP PERSISTENTE
+        async function carregarTasks() {
+            if (!usuarioAtual) return;
+            const email = usuarioAtual.email.toLowerCase();
+            try {
+                const snap = await getDocs(collection(db, "planners", email, "tasks"));
+                tasks = [];
+                snap.forEach(d => {
+                    const data = d.data();
+                    tasks.push({
+                        id: d.id, ...data,
+                        scheduledFor: data.scheduledFor ? new Date(data.scheduledFor) : null,
+                        completedAt: data.completedAt ? new Date(data.completedAt) : null
+                    });
+                });
+                renderBoard();
+                verificarAtrasos();
+            } catch (e) {
+                console.error("Erro ao carregar banco:", e);
+            }
+        }
+
         window.handleTaskMove = async (taskId, newCol) => {
             const email = usuarioAtual.email.toLowerCase();
             const taskDoc = doc(db, "planners", email, "tasks", taskId);
             const updates = { column: newCol };
             if (newCol === "done") updates.completedAt = new Date().toISOString();
             await updateDoc(taskDoc, updates);
-            carregarTasks();
+            await carregarTasks();
         };
 
         // NAVEGAÇÃO
@@ -236,9 +254,20 @@
             document.getElementById("pdfLibrary").style.display = view === 'pdf' ? "block" : "none";
             document.getElementById("dashboardArea").style.display = view === 'dash' ? "block" : "none";
             
-            if(view === 'pdf') await carregarBiblioteca();
+            document.querySelectorAll(".menu a").forEach(a => a.classList.remove("active"));
+            if(view === 'board') {
+                document.getElementById("menuBoard").classList.add("active");
+                document.getElementById("pageTitle").textContent = "Planner Semanal";
+            }
+            if(view === 'pdf') {
+                document.getElementById("menuPdf").classList.add("active");
+                document.getElementById("pageTitle").textContent = "Biblioteca PDF";
+                await carregarBiblioteca();
+            }
             if(view === 'dash') {
-                calcularMetricas();
+                document.getElementById("menuDashboard").classList.add("active");
+                document.getElementById("pageTitle").textContent = "Dashboard Cognitivo";
+                atualizarMetricas();
                 gerarGrafico();
             }
         }
@@ -246,26 +275,51 @@
         async function carregarBiblioteca() {
             const email = usuarioAtual.email.toLowerCase();
             const list = document.getElementById("pdfLibrary");
-            list.innerHTML = "Carregando biblioteca...";
-            const q = query(collection(db, "planners", email, "arquivos"), orderBy("criadoEm", "desc"));
-            const snap = await getDocs(q);
-            list.innerHTML = snap.empty ? "Nenhum PDF encontrado." : "";
-            snap.forEach(d => {
-                const p = d.data();
-                const div = document.createElement("div");
-                div.style = "padding:15px; border:1px solid #eee; border-radius:8px; margin-bottom:10px; background:#fff; cursor:pointer;";
-                div.innerHTML = `<strong><i class="fas fa-file-pdf"></i> ${p.nome}</strong>`;
-                div.onclick = () => window.open(p.url, "_blank");
-                list.appendChild(div);
+            list.innerHTML = "Sincronizando biblioteca...";
+            try {
+                const q = query(collection(db, "planners", email, "arquivos"), orderBy("criadoEm", "desc"));
+                const snap = await getDocs(q);
+                list.innerHTML = snap.empty ? "Nenhum PDF encontrado." : "";
+                snap.forEach(d => {
+                    const p = d.data();
+                    const div = document.createElement("div");
+                    div.style = "padding:15px; border:1px solid #eee; border-radius:8px; margin-bottom:10px; background:#fff; cursor:pointer;";
+                    div.innerHTML = `<strong><i class="fas fa-file-pdf"></i> ${p.nome}</strong>`;
+                    div.onclick = () => window.open(p.url, "_blank");
+                    list.appendChild(div);
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        // BOARD RENDER
+        function renderBoard() {
+            ['todo', 'review', 'done'].forEach(colId => {
+                const container = document.getElementById(`col-${colId}`);
+                if (!container) return;
+                container.innerHTML = '';
+                const filtered = tasks.filter(t => t.column === colId);
+                filtered.forEach(t => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.draggable = true;
+                    card.id = t.id;
+                    card.innerHTML = `
+                        <div style="font-size:13.5px; font-weight:600;">${t.title}</div>
+                        ${t.type ? `<span class="pill pill-blue">${t.type}</span>` : ''}
+                        ${t.pdf ? `<span class="pill pill-red">PDF</span>` : ''}
+                    `;
+                    card.addEventListener('dragstart', e => e.dataTransfer.setData("text", e.target.id));
+                    container.appendChild(card);
+                });
+                document.getElementById(`count-${colId}`).textContent = filtered.length;
             });
         }
 
-        function calcularMetricas() {
+        function atualizarMetricas() {
             const revisoes = tasks.filter(t => t.type);
             const feitas = revisoes.filter(t => t.completedAt);
             const noPrazo = feitas.filter(t => t.completedAt <= t.scheduledFor);
             const atrasadas = revisoes.filter(t => !t.completedAt && t.scheduledFor < new Date());
-            
             document.getElementById("metricAdherence").textContent = revisoes.length ? Math.round((noPrazo.length / revisoes.length)*100)+"%" : "0%";
             document.getElementById("metricLate").textContent = atrasadas.length;
             document.getElementById("metricStreak").textContent = [...new Set(feitas.map(t => t.completedAt.toDateString()))].length;
@@ -288,33 +342,10 @@
             const atrasadas = tasks.filter(t => t.column === "review" && !t.completedAt && t.scheduledFor < new Date());
             const banner = document.getElementById("lateBanner");
             if (atrasadas.length > 0) {
-                banner.innerHTML = `⚠️ Você tem <strong>${atrasadas.length}</strong> revisões atrasadas no seu cronograma.`;
+                banner.innerHTML = `⚠️ Você tem <strong>${atrasadas.length}</strong> revisões atrasadas.`;
                 banner.style.display = "block";
             } else { banner.style.display = "none"; }
         }
-
-        window.renderBoard = () => {
-            ['todo', 'review', 'done'].forEach(colId => {
-                const container = document.getElementById(`col-${colId}`);
-                if (!container) return;
-                container.innerHTML = '';
-                const filtered = tasks.filter(t => t.column === colId);
-                filtered.forEach(t => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.draggable = true;
-                    card.id = t.id;
-                    card.innerHTML = `
-                        <div style="font-size:13.5px; font-weight:600;">${t.title}</div>
-                        ${t.type ? `<span class="pill pill-blue"><i class="fas fa-brain"></i> ${t.type}</span>` : ''}
-                        ${t.pdf ? `<span class="pill pill-red">PDF</span>` : ''}
-                    `;
-                    card.addEventListener('dragstart', e => e.dataTransfer.setData("text", e.target.id));
-                    container.appendChild(card);
-                });
-                document.getElementById(`count-${colId}`).textContent = filtered.length;
-            });
-        };
 
         window.allowDrop = e => e.preventDefault();
         window.drop = async e => {
