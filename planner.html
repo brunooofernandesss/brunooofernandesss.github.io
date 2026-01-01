@@ -5,116 +5,125 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planner Acadêmico | Medicina UNIP</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-
+    
     <style>
         :root {
-            --bg-body: #f3f4f6; --bg-white: #ffffff; --border-color: #e5e7eb;
-            --text-primary: #111827; --text-secondary: #6b7280;
-            --brand-color: #0f172a; --accent-color: #2563eb;
-            --success-color: #10b981; --error-color: #ef4444;
-            --bg-sidebar: #F7F7F5; --shadow-card: rgba(0,0,0,0.1) 0px 2px 4px;
+            --bg-notion: #ffffff; --bg-sidebar: #f7f7f5;
+            --border-notion: #e9e9e7; --text-main: #37352f;
+            --text-sub: #73726e; --accent: #2383e2;
+            --pill-bg: #e1f0ff; --pill-text: #0b5da7;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg-body); color: var(--text-primary); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-notion); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
-        /* NAVBAR */
-        .navbar { background-color: var(--bg-white); border-bottom: 1px solid var(--border-color); padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between; z-index: 1000; }
-        .navbar-brand { font-weight: 700; font-size: 1.125rem; color: var(--brand-color); display: flex; align-items: center; gap: 10px; text-decoration: none; }
-        .navbar-brand i { color: var(--accent-color); }
+        /* NAVBAR DISCRETA */
+        .navbar { height: 45px; padding: 0 20px; border-bottom: 1px solid var(--border-notion); display: flex; align-items: center; justify-content: space-between; font-size: 14px; }
+        .navbar-brand { font-weight: 500; text-decoration: none; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+        .navbar-brand i { color: var(--accent); font-size: 16px; }
 
-        /* LAYOUT */
         .app-container { display: flex; flex: 1; overflow: hidden; }
-        .sidebar { width: 240px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); padding: 20px 12px; flex-shrink: 0; }
-        .menu a { display: flex; align-items: center; gap: 10px; padding: 10px; color: var(--text-primary); text-decoration: none; border-radius: 6px; font-size: 14px; cursor: pointer; margin-bottom: 4px; }
-        .menu a.active { background: rgba(0,0,0,0.08); font-weight: 600; }
+        
+        /* SIDEBAR NOTION STYLE */
+        .sidebar { width: 240px; background: var(--bg-sidebar); border-right: 1px solid var(--border-notion); padding: 20px 12px; flex-shrink: 0; }
+        .menu-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; color: var(--text-main); text-decoration: none; border-radius: 4px; font-size: 14px; cursor: pointer; transition: background 0.2s; margin-bottom: 2px; }
+        .menu-item:hover { background: rgba(0,0,0,0.04); }
+        .menu-item.active { background: rgba(0,0,0,0.06); font-weight: 600; }
 
-        .main-content { flex: 1; overflow-y: auto; padding: 40px 60px; background-color: var(--bg-white); position: relative; }
+        /* MAIN CONTENT */
+        .main-content { flex: 1; overflow-y: auto; padding: 40px 60px; position: relative; }
+        .page-title { font-size: 28px; font-weight: 700; margin-bottom: 24px; letter-spacing: -0.5px; }
+
+        /* KANBAN NOTION */
+        .kanban { display: flex; gap: 32px; align-items: flex-start; }
+        .column { flex: 1; min-width: 260px; }
+        .column-header { font-size: 12px; font-weight: 600; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; padding: 0 4px; }
+        .task-list { display: flex; flex-direction: column; gap: 8px; min-height: 200px; }
+
+        /* CARDS / ETIQUETAS */
+        .card { background: white; border: 1px solid var(--border-notion); border-radius: 6px; padding: 12px; cursor: pointer; transition: box-shadow 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .card-title { font-size: 14px; font-weight: 500; line-height: 1.4; margin-bottom: 8px; }
+        
+        .pill { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; }
+        .tag-med { background: #f1f0f0; color: #37352f; }
+        .tag-pdf { background: #ffe2e2; color: #991b1b; margin-left: 4px; }
+
+        /* DASHBOARD */
+        .dash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .tag-summary { padding: 16px; border: 1px solid var(--border-notion); border-radius: 8px; }
+        .tag-summary strong { display: block; font-size: 20px; color: var(--accent); }
+        .tag-summary span { font-size: 12px; color: var(--text-sub); font-weight: 600; }
+
+        /* READER */
+        #readerView { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #f7f7f5; z-index: 1000; display: flex; flex-direction: column; }
+        .reader-bar { height: 45px; background: white; border-bottom: 1px solid var(--border-notion); padding: 0 20px; display: flex; align-items: center; justify-content: space-between; }
+        #canvasContainer { flex: 1; overflow-y: auto; padding: 40px 0; display: flex; flex-direction: column; align-items: center; gap: 24px; }
+        canvas { box-shadow: 0 0 20px rgba(0,0,0,0.1); background: white; }
+
         .hidden { display: none !important; }
-
-        /* KANBAN */
-        .kanban-board { display: flex; gap: 24px; }
-        .column { flex: 1; min-width: 250px; }
-        .task-container { min-height: 450px; background: #f9fafb; border-radius: 8px; padding: 12px; border: 1px dashed #eee; display: flex; flex-direction: column; gap: 12px; }
-        .card { background: white; padding: 14px; border-radius: 8px; box-shadow: var(--shadow-card); font-size: 0.875rem; border-left: 4px solid var(--accent-color); cursor: pointer; transition: 0.2s; }
-        .card:hover { transform: translateY(-2px); border-color: var(--accent-color); }
-
-        /* POMODORO */
-        .pomodoro-box { margin-top: 12px; padding-top: 10px; border-top: 1px solid #f3f4f6; display: flex; align-items: center; justify-content: space-between; }
-        .timer-display { font-family: monospace; font-weight: 700; font-size: 14px; }
-        .btn-timer { background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-secondary); }
-        .btn-timer.playing { color: var(--success-color); animation: pulse 1.5s infinite; }
-
-        /* LEITOR DE PDF INTERNO */
-        #pdfReaderSection { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #525659; z-index: 2000; display: flex; flex-direction: column; }
-        .reader-controls { padding: 10px 32px; background: var(--brand-color); color: white; display: flex; align-items: center; justify-content: space-between; }
-        #pdfCanvasContainer { flex: 1; overflow-y: auto; display: flex; flex-direction: column; align-items: center; padding: 20px; gap: 20px; }
-        canvas { box-shadow: 0 0 10px rgba(0,0,0,0.5); max-width: 100%; height: auto !important; }
-
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
     <nav class="navbar">
         <a href="index.html" class="navbar-brand"><i class="fas fa-graduation-cap"></i> Medicina UNIP</a>
-        <div id="displayUser" style="font-weight: 600; font-size: 14px;">Estudante</div>
+        <div id="userDisplay" style="color: var(--text-sub); font-size: 12px;">Carregando...</div>
     </nav>
 
     <div class="app-container">
         <aside class="sidebar">
-            <nav class="menu">
-                <a id="navBoard" class="active"><i class="fas fa-columns"></i> Board</a>
-                <a id="navLib"><i class="fas fa-file-pdf"></i> Biblioteca</a>
-                <a id="navDash"><i class="fas fa-chart-line"></i> Dashboard</a>
-            </nav>
+            <div class="menu-item active" id="btnBoard"><i class="fas fa-columns"></i> Board de Estudos</div>
+            <div class="menu-item" id="btnDash"><i class="fas fa-chart-pie"></i> Estatísticas</div>
+            <input type="file" id="pdfUpload" hidden accept="application/pdf">
+            <div class="menu-item" onclick="document.getElementById('pdfUpload').click()"><i class="fas fa-plus"></i> Novo Material PDF</div>
         </aside>
 
         <main class="main-content">
             
-            <section id="pdfReaderSection" class="hidden">
-                <div class="reader-controls">
-                    <button onclick="closeReader()" style="background:none; border:1px solid #ffffff44; color:white; padding:8px 16px; border-radius:4px; cursor:pointer;">
-                        <i class="fas fa-arrow-left"></i> Sair do Material
-                    </button>
-                    <div style="display:flex; align-items:center; gap:20px;">
-                        <span id="readerTitle" style="font-size:13px; opacity:0.8;">Arquivo</span>
-                        <div id="readerTimer" class="timer-display" style="background:#ffffff22; padding:4px 10px; border-radius:4px;">00:00:00</div>
-                        <button id="readerTimerBtn" class="btn-timer" style="color:white;"><i class="fas fa-play"></i></button>
+            <section id="secBoard">
+                <h1 class="page-title">Planner Semanal</h1>
+                <div class="kanban">
+                    <div class="column">
+                        <div class="column-header">A Fazer</div>
+                        <div class="task-list" id="col-todo" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                     </div>
-                </div>
-                <div id="pdfCanvasContainer">
-                    <div id="loaderMsg" style="color:white; margin-top:100px;">
-                        <i class="fas fa-spinner fa-spin"></i> Renderizando páginas...
+                    <div class="column">
+                        <div class="column-header" style="color: #d44c47;">Revisão</div>
+                        <div class="task-list" id="col-review" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    </div>
+                    <div class="column">
+                        <div class="column-header" style="color: #448361;">Concluído</div>
+                        <div class="task-list" id="col-done" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                     </div>
                 </div>
             </section>
 
             <section id="secDash" class="hidden">
-                <canvas id="prodChart" height="100"></canvas>
+                <h1 class="page-title">Distribuição por Etiquetas</h1>
+                <div class="dash-grid" id="dashGrid"></div>
             </section>
 
-            <section id="secBoard">
-                <div class="kanban-board">
-                    <div class="column"><div class="column-title">A Fazer <span id="count-todo">0</span></div><div class="task-container" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
-                    <div class="column"><div class="column-title" style="color:#ef4444;">Revisão <span id="count-review">0</span></div><div class="task-container" id="review" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
-                    <div class="column"><div class="column-title" style="color:#10b981;">Concluído <span id="count-done">0</span></div><div class="task-container" id="done" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
+            <section id="readerView" class="hidden">
+                <div class="reader-bar">
+                    <button onclick="closeReader()" style="border:none; background:none; cursor:pointer; font-size:13px; font-weight:500;"><i class="fas fa-times"></i> Fechar Material</button>
+                    <span id="readerTitle" style="font-weight:600; font-size:13px;"></span>
+                    <div style="width:100px;"></div>
                 </div>
+                <div id="canvasContainer"></div>
             </section>
+
         </main>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        // Configuração PDF.js
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDj-c4uArNjAr7cSg396yfQR6xuyumh5_M",
@@ -128,121 +137,135 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const storage = getStorage(app);
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
         let currentUID = null;
-        let activeTimers = {};
-        let currentPdfTaskId = null;
 
-        onAuthStateChanged(auth, async (user) => {
+        onAuthStateChanged(auth, (user) => {
             if (!user) { window.location.href = "login.html"; return; }
             currentUID = user.uid;
-            initRealtime();
+            document.getElementById('userDisplay').innerText = `Logado como: ${user.email}`;
+            initSync();
         });
 
-        // --- MOTOR DE LEITURA PDF (PDF.js) ---
-        window.openInternalReader = async (url, taskId, title) => {
-            currentPdfTaskId = taskId;
-            document.getElementById('readerTitle').innerText = title;
-            document.getElementById('pdfReaderSection').classList.remove('hidden');
-            const container = document.getElementById('pdfCanvasContainer');
-            container.innerHTML = '<div style="color:white;">Carregando material...</div>';
-
-            try {
-                const loadingTask = pdfjsLib.getDocument(url);
-                const pdf = await loadingTask.promise;
-                container.innerHTML = ''; // Limpa loader
-
-                // Renderiza todas as páginas para leitura contínua (estilo biblioteca)
-                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-                    const page = await pdf.getPage(pageNum);
-                    const viewport = page.getViewport({ scale: 1.5 });
-                    const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
-
-                    await page.render({ canvasContext: context, viewport: viewport }).promise;
-                    container.appendChild(canvas);
-                }
-
-                // Sincroniza Timer no Header do Leitor
-                const display = document.getElementById('readerTimer');
-                const cardTimer = document.getElementById(`time-${taskId}`);
-                display.innerText = cardTimer.innerText;
-                
-                document.getElementById('readerTimerBtn').onclick = () => window.toggleTimer(taskId);
-                updateReaderBtn(taskId);
-
-            } catch (e) {
-                container.innerHTML = '<div style="color:white;">Erro ao carregar o PDF interno.</div>';
-            }
-        };
-
-        window.closeReader = () => {
-            document.getElementById('pdfReaderSection').classList.add('hidden');
-            currentPdfTaskId = null;
-        };
-
-        // --- POMODORO CORE ---
-        window.toggleTimer = async (id) => {
-            const btn = document.getElementById(`btn-${id}`);
-            const display = document.getElementById(`time-${id}`);
-            const readerDisplay = document.getElementById('readerTimer');
-
-            if (activeTimers[id]) {
-                clearInterval(activeTimers[id]);
-                delete activeTimers[id];
-                btn.innerHTML = '<i class="fas fa-play"></i>'; btn.classList.remove('playing');
-                await updateDoc(doc(db, "planners", currentUID, "tasks", id), { tempoGasto: parseInt(display.dataset.s) });
-            } else {
-                btn.innerHTML = '<i class="fas fa-pause"></i>'; btn.classList.add('playing');
-                activeTimers[id] = setInterval(() => {
-                    display.dataset.s = parseInt(display.dataset.s) + 1;
-                    const timeStr = formatTime(display.dataset.s);
-                    display.innerText = timeStr;
-                    if(currentPdfTaskId === id) readerDisplay.innerText = timeStr;
-                }, 1000);
-            }
-            updateReaderBtn(id);
-        };
-
-        function updateReaderBtn(id) {
-            const readerBtn = document.getElementById('readerTimerBtn');
-            if(currentPdfTaskId === id) {
-                readerBtn.innerHTML = activeTimers[id] ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
-                readerBtn.classList.toggle('playing', !!activeTimers[id]);
-            }
-        }
-
-        const formatTime = (s) => `${Math.floor(s/3600).toString().padStart(2,'0')}:${Math.floor((s%3600)/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
-
-        // --- FIREBASE SYNC ---
-        function initRealtime() {
+        function initSync() {
             onSnapshot(query(collection(db, "planners", currentUID, "tasks"), orderBy("criadoEm", "desc")), (snap) => {
-                const cols = { todo: document.getElementById("todo"), review: document.getElementById("review"), done: document.getElementById("done") };
-                Object.values(cols).forEach(c => c.innerHTML = "");
-                
-                snap.forEach(d => {
-                    const t = d.data();
-                    const card = document.createElement("div");
-                    card.className = "card"; card.id = d.id; card.draggable = true;
-                    card.onclick = (e) => { if(!e.target.closest('button') && t.pdfUrl) window.openInternalReader(t.pdfUrl, d.id, t.titulo); };
-                    
-                    card.innerHTML = `
-                        <div style="font-weight:600;">${t.titulo}</div>
-                        <div class="pomodoro-box">
-                            <div class="timer-display" id="time-${d.id}" data-s="${t.tempoGasto || 0}">${formatTime(t.tempoGasto || 0)}</div>
-                            <button onclick="window.toggleTimer('${d.id}')" id="btn-${d.id}" class="btn-timer"><i class="fas fa-play"></i></button>
-                        </div>`;
-                    cols[t.column || "todo"].appendChild(card);
-                });
+                const tasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderTasks(tasks);
+                renderDash(tasks);
             });
         }
 
+        // --- UPLOAD COM PERGUNTAS ---
+        document.getElementById('pdfUpload').onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const nomeMaterial = prompt("Qual o nome deste material?", file.name);
+            const etiqueta = prompt("Qual a etiqueta/assunto? (Ex: Foliculogênese, FSH, LH)");
+
+            if (!nomeMaterial || !etiqueta) {
+                alert("Upload cancelado: Nome e etiqueta são obrigatórios.");
+                return;
+            }
+
+            const storageRef = ref(storage, `planners/${currentUID}/${Date.now()}_${file.name}`);
+            await uploadBytes(storageRef, file);
+            const url = await getDownloadURL(storageRef);
+
+            // Cria apenas o card no board
+            await addDoc(collection(db, "planners", currentUID, "tasks"), {
+                titulo: nomeMaterial,
+                etiqueta: etiqueta,
+                pdfUrl: url,
+                column: "todo",
+                criadoEm: serverTimestamp()
+            });
+            e.target.value = "";
+        };
+
+        // --- RENDERIZAR CARDS NOTION STYLE ---
+        function renderTasks(tasks) {
+            const lists = { todo: document.getElementById('col-todo'), review: document.getElementById('col-review'), done: document.getElementById('col-done') };
+            Object.values(lists).forEach(l => l.innerHTML = "");
+
+            tasks.forEach(t => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.draggable = true;
+                card.id = t.id;
+                card.ondragstart = (ev) => ev.dataTransfer.setData("text", t.id);
+                card.onclick = () => t.pdfUrl && openReader(t.pdfUrl, t.titulo);
+
+                card.innerHTML = `
+                    <div class="card-title">${t.titulo}</div>
+                    <div style="display:flex; align-items:center;">
+                        <span class="pill tag-med">${t.etiqueta}</span>
+                        ${t.pdfUrl ? '<span class="pill tag-pdf">PDF</span>' : ''}
+                    </div>`;
+                
+                const col = t.column || 'todo';
+                if(lists[col]) lists[col].appendChild(card);
+            });
+        }
+
+        // --- DASHBOARD DE TAGS ---
+        function renderDash(tasks) {
+            const stats = {};
+            tasks.forEach(t => {
+                if (t.etiqueta) stats[t.etiqueta] = (stats[t.etiqueta] || 0) + 1;
+            });
+
+            const grid = document.getElementById('dashGrid');
+            grid.innerHTML = "";
+            for (const [tag, count] of Object.entries(stats)) {
+                grid.innerHTML += `<div class="tag-summary"><span>${tag.toUpperCase()}</span><strong>${count}</strong> Materiais</div>`;
+            }
+        }
+
+        // --- LEITOR PDF.JS ---
+        window.openReader = async (url, title) => {
+            document.getElementById('readerTitle').innerText = title;
+            document.getElementById('readerView').classList.remove('hidden');
+            const container = document.getElementById('canvasContainer');
+            container.innerHTML = '<div style="color:var(--text-sub); margin-top:50px;">Carregando material...</div>';
+
+            const pdf = await pdfjsLib.getDocument(url).promise;
+            container.innerHTML = "";
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const viewport = page.getViewport({ scale: 1.5 });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height; canvas.width = viewport.width;
+                await page.render({ canvasContext: context, viewport: viewport }).promise;
+                container.appendChild(canvas);
+            }
+        };
+
+        window.closeReader = () => document.getElementById('readerView').classList.add('hidden');
+
+        // --- DRAG & DROP ---
         window.allowDrop = (e) => e.preventDefault();
         window.drop = async (e) => {
             const id = e.dataTransfer.getData("text");
-            await updateDoc(doc(db, "planners", currentUID, "tasks", id), { column: e.currentTarget.id });
+            const col = e.currentTarget.id.replace("col-", "");
+            await updateDoc(doc(db, "planners", currentUID, "tasks", id), { column: col });
+        };
+
+        // NAVEGAÇÃO
+        document.getElementById('btnBoard').onclick = () => {
+            document.getElementById('secBoard').classList.remove('hidden');
+            document.getElementById('secDash').classList.add('hidden');
+            document.getElementById('btnBoard').classList.add('active');
+            document.getElementById('btnDash').classList.remove('active');
+        };
+        document.getElementById('btnDash').onclick = () => {
+            document.getElementById('secBoard').classList.add('hidden');
+            document.getElementById('secDash').classList.remove('hidden');
+            document.getElementById('btnDash').classList.add('active');
+            document.getElementById('btnBoard').classList.remove('active');
         };
     </script>
 </body>
