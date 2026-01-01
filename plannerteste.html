@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medicina UNIP | Cronograma R1</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --nt-bg: #ffffff;
+            --nt-sidebar: #fbfbfa;
+            --nt-text: #37352f;
+            --nt-border: rgba(55, 53, 47, 0.1);
+            --nt-hover: rgba(55, 53, 47, 0.04);
+            --nt-blue: #2383e2;
+            --nt-red: #eb5757;
+            --nt-green: #0f7b6c;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--nt-bg); color: var(--nt-text); display: flex; height: 100vh; overflow: hidden; }
+
+        /* Sidebar Estilo Notion */
+        .sidebar { width: 240px; background: var(--nt-sidebar); border-right: 1px solid var(--nt-border); display: flex; flex-direction: column; padding: 12px 0; }
+        .sidebar-brand { padding: 0 16px 20px; font-weight: 700; font-size: 14px; color: var(--nt-text); display: flex; align-items: center; gap: 8px; }
+        .nav-item { padding: 6px 16px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
+        .nav-item:hover { background: var(--nt-hover); }
+        .nav-item.active { background: var(--nt-hover); font-weight: 600; }
+
+        /* Area Principal */
+        .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        
+        .header-bar { 
+            height: 48px; padding: 0 20px; border-bottom: 1px solid var(--nt-border); 
+            display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: rgba(55,53,47,0.6);
+        }
+
+        .content { flex: 1; overflow-x: auto; padding: 40px; }
+        .page-title { font-size: 32px; font-weight: 700; margin-bottom: 24px; letter-spacing: -0.5px; }
+
+        /* Grid do Cronograma (7 Colunas) */
+        .weekly-grid { display: grid; grid-template-columns: repeat(7, minmax(180px, 1fr)); gap: 12px; height: calc(100% - 100px); }
+        .day-column { display: flex; flex-direction: column; border-radius: 4px; }
+        .day-header { 
+            padding: 8px; font-size: 13px; font-weight: 600; color: var(--nt-text); 
+            border-bottom: 2px solid transparent; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .day-header.today { color: var(--nt-blue); border-bottom-color: var(--nt-blue); }
+        
+        .drop-zone { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+
+        /* Cards Estilo R1 */
+        .card {
+            background: #fff; border: 1px solid var(--nt-border); border-radius: 4px; padding: 10px;
+            box-shadow: 0 1px 2px rgba(15,15,15,0.05); cursor: grab; transition: 0.2s; position: relative;
+        }
+        .card:hover { border-color: #bbb; }
+        .card-title { font-size: 13px; font-weight: 500; margin-bottom: 6px; line-height: 1.4; }
+        
+        .tag { 
+            display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 10px; 
+            font-weight: 600; background: #f1f1ef; margin-right: 4px; 
+        }
+
+        /* Botões */
+        .btn-new {
+            background: none; border: 1px solid var(--nt-border); padding: 6px 12px; 
+            border-radius: 4px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 6px;
+        }
+        .btn-new:hover { background: var(--nt-hover); }
+
+        /* Biblioteca */
+        .lib-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .lib-table th { text-align: left; padding: 12px; border-bottom: 1px solid var(--nt-border); color: rgba(55,53,47,0.5); font-weight: 400; }
+        .lib-table td { padding: 12px; border-bottom: 1px solid var(--nt-border); }
+
+        #status { position: fixed; bottom: 20px; right: 20px; background: #37352f; color: #fff; padding: 10px 20px; border-radius: 6px; font-size: 13px; display: none; z-index: 9999; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sidebar-brand"><i class="fas fa-notes-medical"></i> Medicina UNIP</div>
+    <div class="nav-item active" id="btnViewBoard"><i class="fas fa-calendar-alt"></i> Cronograma R1</div>
+    <div class="nav-item" id="btnViewLib"><i class="fas fa-layer-group"></i> Biblioteca / Tags</div>
+</aside>
+
+<main class="main">
+    <div class="header-bar">
+        <div>Planner / <span id="view-name">Cronograma Semanal</span></div>
+        <div style="display:flex; gap: 12px; align-items: center;">
+            <span id="displayIp">0.0.0.0</span>
+            <div style="display:flex; align-items: center; gap: 6px;">
+                <b id="displayUser">Usuário</b>
+                <div id="userInit" style="width:24px; height:24px; background:#ddd; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold;">U</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <h1 class="page-title" id="page-title">Cronograma de Estudos</h1>
+        
+        <div style="display:flex; gap: 10px; margin-bottom: 30px;">
+            <button class="btn-new" id="manualAdd"><i class="fas fa-plus"></i> Novo Assunto</button>
+            <input type="file" id="pdfInput" hidden accept="application/pdf">
+            <label for="pdfInput" class="btn-new" style="cursor:pointer;"><i class="fas fa-cloud-upload-alt"></i> Upload Material (D1, D7, D21)</label>
+        </div>
+
+        <section id="secBoard" class="weekly-grid">
+            <div class="day-column"><div class="day-header" id="h-1">Segunda</div><div class="drop-zone" id="d-1"></div></div>
+            <div class="day-column"><div class="day-header" id="h-2">Terça</div><div class="drop-zone" id="d-2"></div></div>
+            <div class="day-column"><div class="day-header" id="h-3">Quarta</div><div class="drop-zone" id="d-3"></div></div>
+            <div class="day-column"><div class="day-header" id="h-4">Quinta</div><div class="drop-zone" id="d-4"></div></div>
+            <div class="day-column"><div class="day-header" id="h-5">Sexta</div><div class="drop-zone" id="d-5"></div></div>
+            <div class="day-column"><div class="day-header" id="h-6">Sábado</div><div class="drop-zone" id="d-6"></div></div>
+            <div class="day-column"><div class="day-header" id="h-0">Domingo</div><div class="drop-zone" id="d-0"></div></div>
+        </section>
+
+        <section id="secLib" class="hidden">
+            <table class="lib-table">
+                <thead><tr><th>Material</th><th>Tag / Disciplina</th><th>Data de Upload</th><th>Link</th></tr></thead>
+                <tbody id="libContent"></tbody>
+            </table>
+        </section>
+    </div>
+</main>
+
+<div id="status">Carregando...</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDj-c4uArNjAr7cSg396yfQR6xuyumh5_M",
+        authDomain: "simuladosmedicina-6a01b.firebaseapp.com",
+        projectId: "simuladosmedicina-6a01b",
+        storageBucket: "simuladosmedicina-6a01b.firebasestorage.app",
+        messagingSenderId: "577452734306",
+        appId: "1:577452734306:web:5926d087a27a216a97de3b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const storage = getStorage(app);
+
+    let currentUID = null;
+
+    // --- INTERFACE ---
+    const showStatus = (m, type="info") => {
+        const s = document.getElementById("status");
+        s.textContent = m; s.style.display = "block";
+        if(type !== "load") setTimeout(() => s.style.display = "none", 3000);
+    };
+
+    // Identificar dia atual
+    const today = new Date().getDay();
+    const dayHeader = document.getElementById(`h-${today}`);
+    if(dayHeader) dayHeader.classList.add('today');
+
+    onAuthStateChanged(auth, user => {
+        if(!user) { window.location.href = "login.html"; return; }
+        currentUID = user.uid;
+        document.getElementById("displayUser").textContent = user.email.split("@")[0];
+        document.getElementById("userInit").textContent = user.email[0].toUpperCase();
+        fetch('https://api.ipify.org?format=json').then(r => r.json()).then(d => document.getElementById('displayIp').textContent = d.ip);
+        carregarTudo();
+    });
+
+    // Navegação
+    document.getElementById("btnViewBoard").onclick = () => switchView('board');
+    document.getElementById("btnViewLib").onclick = () => switchView('lib');
+
+    function switchView(v) {
+        document.getElementById("secBoard").classList.toggle("hidden", v !== 'board');
+        document.getElementById("secLib").classList.toggle("hidden", v !== 'lib');
+        document.getElementById("view-name").textContent = v === 'board' ? "Cronograma Semanal" : "Biblioteca / Tags";
+        document.getElementById("btnViewBoard").classList.toggle("active", v === 'board');
+        document.getElementById("btnViewLib").classList.toggle("active", v === 'lib');
+    }
+
+    // --- LÓGICA DE UPLOAD E CICLOS ---
+    document.getElementById("pdfInput").onchange = async (e) => {
+        const file = e.target.files[0];
+        if(!file || !currentUID) return;
+        const tag = prompt("Qual a Tag/Disciplina? (Ex: Ginecologia, Pediatria)", "Geral") || "Geral";
+        showStatus("Sincronizando Ciclos D1, D7, D21...", "load");
+
+        try {
+            const path = `planners/${currentUID}/${Date.now()}_${file.name}`;
+            const sRef = ref(storage, path);
+            await uploadBytes(sRef, file);
+            const url = await getDownloadURL(sRef);
+
+            // 1. Salvar na biblioteca
+            await addDoc(collection(db, "planners", currentUID, "arquivos"), {
+                nome: file.name, url, tag: tag.toUpperCase(), data: Date.now()
+            });
+
+            // 2. Gerar revisões espaçadas
+            const diasParaRevisar = [
+                { label: "D+1", days: 1 },
+                { label: "D+7", days: 7 },
+                { label: "D+21", days: 21 }
+            ];
+
+            const baseDate = new Date();
+            for(const r of diasParaRevisar) {
+                const targetDate = new Date();
+                targetDate.setDate(baseDate.getDate() + r.days);
+                
+                await addDoc(collection(db, "planners", currentUID, "tasks"), {
+                    titulo: `[${r.label}] ${file.name}`,
+                    tag: tag.toUpperCase(),
+                    diaSemana: targetDate.getDay(), // 0-6
+                    concluido: false,
+                    criadoEm: serverTimestamp()
+                });
+            }
+
+            showStatus("✅ Ciclo de estudos agendado!");
+            carregarTudo();
+        } catch(err) { showStatus("Erro ao processar arquivo.", "error"); }
+    };
+
+    // --- CARREGAMENTO ---
+    async function carregarTudo() {
+        if(!currentUID) return;
+        
+        // Carregar Board
+        const tasksSnap = await getDocs(query(collection(db, "planners", currentUID, "tasks"), orderBy("criadoEm", "desc")));
+        for(let i=0; i<7; i++) document.getElementById(`d-${i}`).innerHTML = "";
+
+        tasksSnap.forEach(doc => {
+            const t = doc.data();
+            const col = document.getElementById(`d-${t.diaSemana}`);
+            if(col) {
+                const card = document.createElement("div");
+                card.className = "card";
+                card.innerHTML = `
+                    <div class="card-title">${t.titulo}</div>
+                    <span class="tag" style="background:#e7f3ef; color:#0d5e42;">${t.tag}</span>
+                `;
+                col.appendChild(card);
+            }
+        });
+
+        // Carregar Biblioteca
+        const libSnap = await getDocs(query(collection(db, "planners", currentUID, "arquivos"), orderBy("data", "desc")));
+        const libTable = document.getElementById("libContent");
+        libTable.innerHTML = "";
+        libSnap.forEach(doc => {
+            const l = doc.data();
+            const dt = new Date(l.data).toLocaleDateString();
+            libTable.innerHTML += `
+                <tr>
+                    <td><b>${l.nome}</b></td>
+                    <td><span class="tag">${l.tag}</span></td>
+                    <td style="color:gray">${dt}</td>
+                    <td><a href="${l.url}" target="_blank" class="btn-new" style="text-decoration:none; display:inline-flex;">Abrir</a></td>
+                </tr>
+            `;
+        });
+    }
+
+    document.getElementById("manualAdd").onclick = async () => {
+        const msg = prompt("Assunto de hoje:");
+        if(!msg) return;
+        await addDoc(collection(db, "planners", currentUID, "tasks"), {
+            titulo: msg, tag: "MANUAL", diaSemana: today, concluido: false, criadoEm: serverTimestamp()
+        });
+        carregarTudo();
+    };
+</script>
+</body>
+</html>
