@@ -20,13 +20,14 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif; 
+            font-family: 'Inter', sans-serif; 
             background-color: var(--notion-bg); 
             color: var(--notion-text);
             display: flex;
             height: 100vh;
         }
 
+        /* Sidebar */
         .sidebar {
             width: 240px;
             background: var(--notion-sidebar);
@@ -38,28 +39,29 @@
         }
 
         .sidebar-header {
-            padding: 0 16px 12px 16px;
+            padding: 0 16px 16px 16px;
             font-weight: 600;
             font-size: 14px;
             display: flex;
             align-items: center;
             gap: 8px;
+            border-bottom: 1px solid var(--notion-border);
+            margin-bottom: 12px;
         }
 
         .nav-item {
-            padding: 6px 16px;
+            padding: 8px 16px;
             font-size: 14px;
             display: flex;
             align-items: center;
             gap: 10px;
             cursor: pointer;
-            color: var(--notion-text);
-            transition: background 0.2s;
+            transition: 0.2s;
         }
-
         .nav-item:hover { background: var(--notion-hover); }
         .nav-item.active { background: var(--notion-hover); font-weight: 600; }
 
+        /* Estrutura Principal */
         .main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
         .top-bar {
@@ -74,37 +76,46 @@
         }
 
         .content { flex: 1; overflow-y: auto; padding: 40px 10%; }
-        .page-header { margin-bottom: 30px; }
-        .page-title { font-size: 40px; font-weight: 700; margin-bottom: 10px; }
+        .page-title { font-size: 40px; font-weight: 700; margin-bottom: 24px; letter-spacing: -1px; }
 
+        /* Tags */
         .tag {
             padding: 2px 8px;
             border-radius: 3px;
             font-size: 11px;
             font-weight: 500;
             background: var(--tag-bg);
-            color: var(--notion-text);
             display: inline-flex;
             align-items: center;
-            gap: 4px;
         }
 
-        .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-        .column-header { padding: 8px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; color: var(--notion-text-light); }
-        .drop-zone { min-height: 200px; padding: 8px; border-radius: 4px; }
+        /* Board Kanban */
+        .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .column-header { 
+            padding: 8px; 
+            font-size: 14px; 
+            font-weight: 500; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            color: var(--notion-text-light);
+            margin-bottom: 8px;
+        }
+        .drop-zone { min-height: 300px; padding: 4px; border-radius: 4px; }
 
         .card {
             background: white;
             border: 1px solid var(--notion-border);
             border-radius: 4px;
             padding: 12px;
-            margin-bottom: 8px;
-            box-shadow: rgba(15, 15, 15, 0.05) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 2px 4px;
+            margin-bottom: 10px;
+            box-shadow: rgba(15, 15, 15, 0.05) 0px 0px 0px 1px;
             cursor: grab;
-            position: relative;
+            transition: box-shadow 0.2s;
         }
+        .card:hover { box-shadow: rgba(15, 15, 15, 0.1) 0px 2px 4px; }
 
-        /* Checkbox Discreto Notion */
+        /* Checkbox Discreto */
         .notion-checkbox {
             appearance: none;
             width: 16px;
@@ -112,45 +123,25 @@
             border: 1px solid var(--notion-border);
             border-radius: 3px;
             cursor: pointer;
+            margin-right: 10px;
+            flex-shrink: 0;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            margin-right: 8px;
-            transition: 0.2s;
         }
+        .notion-checkbox:checked { background: var(--notion-blue); border-color: var(--notion-blue); }
+        .notion-checkbox:checked::after { content: '✓'; color: white; font-size: 10px; }
 
-        .notion-checkbox:checked {
-            background-color: var(--notion-blue);
-            border-color: var(--notion-blue);
-        }
-
-        .notion-checkbox:checked::after {
-            content: '✓';
-            color: white;
-            font-size: 10px;
-        }
-
+        /* Tabela Biblioteca */
         .notion-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        .notion-table th { text-align: left; padding: 10px; border-bottom: 1px solid var(--notion-border); color: var(--notion-text-light); font-weight: 400; }
-        .notion-table td { padding: 12px 10px; border-bottom: 1px solid var(--notion-border); vertical-align: middle; }
+        .notion-table th { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--notion-border); color: var(--notion-text-light); font-weight: 400; }
+        .notion-table td { padding: 14px 10px; border-bottom: 1px solid var(--notion-border); }
 
-        #statusFeedback {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 12px 20px;
-            border-radius: 6px;
-            background: #37352f;
-            color: white;
-            font-size: 13px;
-            display: none;
-            z-index: 2000;
-        }
-
+        /* Botões */
         .btn-notion {
             background: none;
             border: 1px solid var(--notion-border);
-            padding: 4px 12px;
+            padding: 6px 12px;
             border-radius: 4px;
             font-size: 14px;
             cursor: pointer;
@@ -159,6 +150,13 @@
             gap: 6px;
         }
         .btn-notion:hover { background: var(--notion-hover); }
+
+        #statusFeedback {
+            position: fixed; bottom: 20px; right: 20px; padding: 12px 20px;
+            border-radius: 6px; background: #37352f; color: white;
+            font-size: 13px; display: none; z-index: 2000;
+        }
+
         .hidden { display: none; }
     </style>
 </head>
@@ -176,7 +174,7 @@
 
     <main class="main-container">
         <div class="top-bar">
-            <div>Planner / <span id="currentViewName">Board</span></div>
+            <div>Medicina / <span id="currentViewName">Board</span></div>
             <div style="display:flex; gap: 15px; align-items:center;">
                 <span id="displayIp" style="opacity: 0.5">0.0.0.0</span>
                 <div style="display:flex; align-items:center; gap:8px;">
@@ -187,14 +185,13 @@
         </div>
 
         <div class="content">
-            <header class="page-header">
-                <h1 class="page-title" id="pageTitle">Board de Estudos</h1>
-                <div style="display:flex; gap: 10px;">
-                    <button class="btn-notion" id="btnNovoAssunto"><i class="fas fa-plus"></i> Novo Assunto</button>
-                    <input type="file" id="pdfInput" hidden accept="application/pdf">
-                    <label for="pdfInput" class="btn-notion" style="cursor:pointer;"><i class="fas fa-file-upload"></i> Subir PDF</label>
-                </div>
-            </header>
+            <h1 class="page-title" id="pageTitle">Board de Estudos</h1>
+            
+            <div style="display:flex; gap: 12px; margin-bottom: 32px;">
+                <button class="btn-notion" id="btnNovoAssunto"><i class="fas fa-plus"></i> Novo Assunto</button>
+                <input type="file" id="pdfInput" hidden accept="application/pdf">
+                <label for="pdfInput" class="btn-notion" style="cursor:pointer;"><i class="fas fa-file-upload"></i> Subir PDF</label>
+            </div>
 
             <section id="secBoard">
                 <div class="board">
@@ -217,9 +214,8 @@
                 <table class="notion-table">
                     <thead>
                         <tr>
-                            <th style="width: 40px;"></th>
                             <th>Nome do Arquivo</th>
-                            <th>Tag</th>
+                            <th>Tag / Disciplina</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
@@ -234,7 +230,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
     const firebaseConfig = {
@@ -255,9 +251,8 @@
 
     const showFeedback = (msg, type = "info") => {
         const el = document.getElementById("statusFeedback");
-        el.textContent = msg;
-        el.style.display = "block";
-        if (type !== "loading") setTimeout(() => el.style.display = "none", 2500);
+        el.textContent = msg; el.style.display = "block";
+        if (type !== "loading") setTimeout(() => el.style.display = "none", 3000);
     };
 
     onAuthStateChanged(auth, async (user) => {
@@ -270,13 +265,12 @@
         carregarBiblioteca();
     });
 
-    // Função global para marcar como revisado e sumir
-    window.archivarItem = async (id, colecao) => {
-        showFeedback("Arquivando...", "loading");
-        const docRef = doc(db, "planners", currentUID, colecao, id);
-        await updateDoc(docRef, { revisado: true });
+    // Função para mover para Concluído via Checkbox
+    window.concluirTask = async (id, jaConcluido) => {
+        const novaColuna = jaConcluido ? "todo" : "done";
+        const taskRef = doc(db, "planners", currentUID, "tasks", id);
+        await updateDoc(taskRef, { column: novaColuna });
         carregarTasks();
-        carregarBiblioteca();
     };
 
     window.allowDrop = (ev) => ev.preventDefault();
@@ -290,23 +284,25 @@
         carregarTasks();
     };
 
-    document.getElementById("navBoard").onclick = () => changeView('board');
-    document.getElementById("navLib").onclick = () => changeView('lib');
+    // Navegação
+    const navItems = { board: document.getElementById("navBoard"), lib: document.getElementById("navLib") };
+    Object.keys(navItems).forEach(key => {
+        navItems[key].onclick = () => {
+            document.getElementById("secBoard").classList.toggle("hidden", key !== 'board');
+            document.getElementById("secLib").classList.toggle("hidden", key !== 'lib');
+            navItems.board.classList.toggle("active", key === 'board');
+            navItems.lib.classList.toggle("active", key === 'lib');
+            document.getElementById("pageTitle").textContent = key === 'board' ? "Board de Estudos" : "Biblioteca";
+            document.getElementById("currentViewName").textContent = key === 'board' ? "Board" : "Biblioteca";
+        };
+    });
 
-    function changeView(view) {
-        document.getElementById("secBoard").classList.toggle("hidden", view !== 'board');
-        document.getElementById("secLib").classList.toggle("hidden", view !== 'lib');
-        document.getElementById("navBoard").classList.toggle("active", view === 'board');
-        document.getElementById("navLib").classList.toggle("active", view === 'lib');
-        document.getElementById("pageTitle").textContent = view === 'board' ? "Board de Estudos" : "Biblioteca";
-        document.getElementById("currentViewName").textContent = view === 'board' ? "Board" : "Biblioteca";
-    }
-
+    // Criar dados
     document.getElementById("pdfInput").onchange = async (e) => {
         const file = e.target.files[0];
         if (!file || !currentUID) return;
-        const tag = prompt("Tag do material:", "Geral") || "Geral";
-        showFeedback("Enviando PDF...", "loading");
+        const tag = prompt("Qual a disciplina/tag?", "Geral") || "Geral";
+        showFeedback("Enviando material...", "loading");
         
         try {
             const storageRef = ref(storage, `planners/${currentUID}/${Date.now()}_${file.name}`);
@@ -314,16 +310,15 @@
             const url = await getDownloadURL(storageRef);
 
             await addDoc(collection(db, "planners", currentUID, "arquivos"), {
-                nome: file.name, url, tag: tag.toUpperCase(), data: serverTimestamp(), revisado: false
+                nome: file.name, url, tag: tag.toUpperCase(), data: serverTimestamp()
             });
 
             await addDoc(collection(db, "planners", currentUID, "tasks"), {
-                titulo: `Revisar: ${file.name}`, column: "review", tag: tag.toUpperCase(), criadoEm: serverTimestamp(), revisado: false
+                titulo: `Revisar: ${file.name}`, column: "review", tag: tag.toUpperCase(), criadoEm: serverTimestamp()
             });
 
-            showFeedback("✅ PDF Adicionado!");
-            carregarTasks();
-            carregarBiblioteca();
+            showFeedback("✅ PDF adicionado!");
+            carregarTasks(); carregarBiblioteca();
         } catch (err) { showFeedback("Erro no upload.", "error"); }
     };
 
@@ -331,34 +326,35 @@
         const t = prompt("Assunto:");
         if (!t) return;
         await addDoc(collection(db, "planners", currentUID, "tasks"), {
-            titulo: t, column: "todo", criadoEm: serverTimestamp(), revisado: false
+            titulo: t, column: "todo", criadoEm: serverTimestamp()
         });
         carregarTasks();
     };
 
     async function carregarTasks() {
         if(!currentUID) return;
-        const q = query(collection(db, "planners", currentUID, "tasks"), orderBy("criadoEm", "desc"));
-        const snap = await getDocs(q);
+        const snap = await getDocs(query(collection(db, "planners", currentUID, "tasks"), orderBy("criadoEm", "desc")));
         const cols = { todo: document.getElementById("todo"), review: document.getElementById("review"), done: document.getElementById("done") };
         const counts = { todo: 0, review: 0, done: 0 };
         Object.values(cols).forEach(c => c.innerHTML = "");
 
         snap.forEach(d => {
             const t = d.data();
-            if (t.revisado) return; // FILTRO: Não mostra se já foi revisado
-
             counts[t.column]++;
             const card = document.createElement("div");
             card.className = "card";
             card.id = d.id;
             card.draggable = true;
             card.ondragstart = window.drag;
+            
+            const isDone = t.column === "done";
+
             card.innerHTML = `
                 <div style="display:flex; align-items:flex-start;">
-                    <input type="checkbox" class="notion-checkbox" onclick="archivarItem('${d.id}', 'tasks')">
-                    <div>
-                        <div style="font-size:13px; margin-bottom:6px;">${t.titulo}</div>
+                    <input type="checkbox" class="notion-checkbox" ${isDone ? 'checked' : ''} 
+                           onclick="concluirTask('${d.id}', ${isDone})">
+                    <div style="flex:1;">
+                        <div style="font-size:13px; margin-bottom:8px; ${isDone ? 'text-decoration:line-through; opacity:0.5' : ''}">${t.titulo}</div>
                         <span class="tag">${t.tag || 'NOTA'}</span>
                     </div>
                 </div>
@@ -375,14 +371,10 @@
         const container = document.getElementById("listaBiblioteca");
         const snap = await getDocs(query(collection(db, "planners", currentUID, "arquivos"), orderBy("data", "desc")));
         container.innerHTML = "";
-        
         snap.forEach(d => {
             const p = d.data();
-            if (p.revisado) return; // FILTRO: Não mostra se já foi revisado
-
             container.innerHTML += `
                 <tr>
-                    <td><input type="checkbox" class="notion-checkbox" onclick="archivarItem('${d.id}', 'arquivos')"></td>
                     <td style="font-weight:500;"><i class="far fa-file-pdf" style="color:#eb5757; margin-right:8px;"></i> ${p.nome}</td>
                     <td><span class="tag" style="background:#e7f3ef; color:#0d5e42;">${p.tag || 'GERAL'}</span></td>
                     <td><a href="${p.url}" target="_blank" class="btn-notion" style="text-decoration:none; display:inline-flex;">Abrir</a></td>
