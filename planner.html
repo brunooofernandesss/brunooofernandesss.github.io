@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medicina UNIP | Notion Planner</title>
+    <title>Medicina UNIP | Spaced Repetition</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -23,158 +23,88 @@
             font-family: 'Inter', sans-serif; 
             background-color: var(--notion-bg); 
             color: var(--notion-text);
-            display: flex;
-            height: 100vh;
+            display: flex; height: 100vh; overflow: hidden;
         }
 
         /* Sidebar */
         .sidebar {
-            width: 240px;
-            background: var(--notion-sidebar);
+            width: 220px; background: var(--notion-sidebar);
             border-right: 1px solid var(--notion-border);
-            display: flex;
-            flex-direction: column;
-            padding: 12px 0;
-            flex-shrink: 0;
+            display: flex; flex-direction: column; padding: 12px 0; flex-shrink: 0;
         }
-
-        .sidebar-header {
-            padding: 0 16px 16px 16px;
-            font-weight: 600;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border-bottom: 1px solid var(--notion-border);
-            margin-bottom: 12px;
-        }
-
-        .nav-item {
-            padding: 8px 16px;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
+        .sidebar-header { padding: 0 16px 16px; font-weight: 600; font-size: 14px; border-bottom: 1px solid var(--notion-border); margin-bottom: 12px; }
+        .nav-item { padding: 8px 16px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
         .nav-item:hover { background: var(--notion-hover); }
         .nav-item.active { background: var(--notion-hover); font-weight: 600; }
 
-        /* Estrutura Principal */
+        /* Main */
         .main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-
         .top-bar {
-            height: 45px;
-            padding: 0 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 12px;
-            color: var(--notion-text-light);
-            border-bottom: 1px solid var(--notion-border);
+            height: 45px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between;
+            font-size: 12px; color: var(--notion-text-light); border-bottom: 1px solid var(--notion-border);
         }
 
-        .content { flex: 1; overflow-y: auto; padding: 40px 10%; }
-        .page-title { font-size: 40px; font-weight: 700; margin-bottom: 24px; letter-spacing: -1px; }
+        .content { flex: 1; overflow-x: auto; overflow-y: hidden; padding: 40px 40px; display: flex; flex-direction: column; }
+        .page-header { margin-bottom: 24px; flex-shrink: 0; }
+        .page-title { font-size: 32px; font-weight: 700; margin-bottom: 16px; }
 
-        /* Tags */
-        .tag {
-            padding: 2px 8px;
-            border-radius: 3px;
-            font-size: 11px;
-            font-weight: 500;
-            background: var(--tag-bg);
-            display: inline-flex;
-            align-items: center;
-        }
-
-        /* Board Kanban */
-        .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        /* Board Expanded */
+        .board { display: flex; gap: 12px; flex: 1; min-width: 1200px; }
+        .column { flex: 1; min-width: 220px; display: flex; flex-direction: column; }
         .column-header { 
-            padding: 8px; 
-            font-size: 14px; 
-            font-weight: 500; 
-            display: flex; 
-            align-items: center; 
-            gap: 8px; 
-            color: var(--notion-text-light);
-            margin-bottom: 8px;
+            padding: 8px; font-size: 13px; font-weight: 500; color: var(--notion-text-light);
+            display: flex; align-items: center; gap: 6px; margin-bottom: 8px;
         }
-        .drop-zone { min-height: 300px; padding: 4px; border-radius: 4px; }
+        .drop-zone { flex: 1; overflow-y: auto; padding-right: 4px; }
 
+        /* Card */
         .card {
-            background: white;
-            border: 1px solid var(--notion-border);
-            border-radius: 4px;
-            padding: 12px;
-            margin-bottom: 10px;
-            box-shadow: rgba(15, 15, 15, 0.05) 0px 0px 0px 1px;
-            cursor: grab;
-            transition: box-shadow 0.2s;
+            background: white; border: 1px solid var(--notion-border); border-radius: 4px;
+            padding: 10px; margin-bottom: 8px; box-shadow: rgba(15, 15, 15, 0.05) 0px 1px 2px;
+            cursor: grab; font-size: 13px; transition: 0.2s;
         }
-        .card:hover { box-shadow: rgba(15, 15, 15, 0.1) 0px 2px 4px; }
+        .card:hover { border-color: #d3d3d3; }
+        
+        .tag {
+            padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600;
+            background: var(--tag-bg); color: var(--notion-text); margin-top: 6px; display: inline-block;
+        }
 
-        /* Checkbox Discreto */
         .notion-checkbox {
-            appearance: none;
-            width: 16px;
-            height: 16px;
-            border: 1px solid var(--notion-border);
-            border-radius: 3px;
-            cursor: pointer;
-            margin-right: 10px;
-            flex-shrink: 0;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
+            appearance: none; width: 15px; height: 15px; border: 1px solid var(--notion-border);
+            border-radius: 3px; cursor: pointer; margin-right: 8px; position: relative; top: 2px;
         }
         .notion-checkbox:checked { background: var(--notion-blue); border-color: var(--notion-blue); }
-        .notion-checkbox:checked::after { content: '✓'; color: white; font-size: 10px; }
+        .notion-checkbox:checked::after { content: '✓'; color: white; font-size: 9px; position: absolute; left: 3px; top: 0px; }
 
         /* Tabela Biblioteca */
         .notion-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        .notion-table th { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--notion-border); color: var(--notion-text-light); font-weight: 400; }
-        .notion-table td { padding: 14px 10px; border-bottom: 1px solid var(--notion-border); }
+        .notion-table th { text-align: left; padding: 12px; border-bottom: 1px solid var(--notion-border); color: var(--notion-text-light); }
+        .notion-table td { padding: 12px; border-bottom: 1px solid var(--notion-border); }
 
-        /* Botões */
         .btn-notion {
-            background: none;
-            border: 1px solid var(--notion-border);
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 14px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            background: none; border: 1px solid var(--notion-border); padding: 5px 12px;
+            border-radius: 4px; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
         }
-        .btn-notion:hover { background: var(--notion-hover); }
 
         #statusFeedback {
-            position: fixed; bottom: 20px; right: 20px; padding: 12px 20px;
-            border-radius: 6px; background: #37352f; color: white;
-            font-size: 13px; display: none; z-index: 2000;
+            position: fixed; bottom: 20px; right: 20px; padding: 10px 20px;
+            background: #37352f; color: white; border-radius: 6px; font-size: 12px; display: none; z-index: 1000;
         }
-
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
     <aside class="sidebar">
-        <div class="sidebar-header">
-            <i class="fas fa-graduation-cap"></i> Medicina UNIP
-        </div>
-        <nav>
-            <div class="nav-item active" id="navBoard"><i class="fas fa-columns"></i> Board de Estudos</div>
-            <div class="nav-item" id="navLib"><i class="fas fa-book"></i> Biblioteca</div>
-        </nav>
+        <div class="sidebar-header"><i class="fas fa-graduation-cap"></i> Medicina UNIP</div>
+        <div class="nav-item active" id="navBoard"><i class="fas fa-columns"></i> Board de Ciclos</div>
+        <div class="nav-item" id="navLib"><i class="fas fa-book"></i> Biblioteca</div>
     </aside>
 
     <main class="main-container">
         <div class="top-bar">
-            <div>Medicina / <span id="currentViewName">Board</span></div>
+            <div>Medicina / <span id="currentViewName">Ciclos de Estudo</span></div>
             <div style="display:flex; gap: 15px; align-items:center;">
                 <span id="displayIp" style="opacity: 0.5">0.0.0.0</span>
                 <div style="display:flex; align-items:center; gap:8px;">
@@ -185,26 +115,35 @@
         </div>
 
         <div class="content">
-            <h1 class="page-title" id="pageTitle">Board de Estudos</h1>
-            
-            <div style="display:flex; gap: 12px; margin-bottom: 32px;">
-                <button class="btn-notion" id="btnNovoAssunto"><i class="fas fa-plus"></i> Novo Assunto</button>
-                <input type="file" id="pdfInput" hidden accept="application/pdf">
-                <label for="pdfInput" class="btn-notion" style="cursor:pointer;"><i class="fas fa-file-upload"></i> Subir PDF</label>
-            </div>
+            <header class="page-header">
+                <h1 class="page-title" id="pageTitle">Ciclos de Estudo</h1>
+                <div style="display:flex; gap: 10px;">
+                    <button class="btn-notion" id="btnNovoAssunto"><i class="fas fa-plus"></i> Novo Assunto</button>
+                    <input type="file" id="pdfInput" hidden accept="application/pdf">
+                    <label for="pdfInput" class="btn-notion" style="cursor:pointer;"><i class="fas fa-file-upload"></i> Upload PDF</label>
+                </div>
+            </header>
 
             <section id="secBoard">
                 <div class="board">
                     <div class="column">
-                        <div class="column-header"><span>⚪ A Fazer</span> <span id="count-todo">0</span></div>
-                        <div class="drop-zone" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                        <div class="column-header">⚪ Arquivos Recentes</div>
+                        <div class="drop-zone" id="recent" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                     </div>
                     <div class="column">
-                        <div class="column-header"><span>🔵 Revisão</span> <span id="count-review">0</span></div>
-                        <div class="drop-zone" id="review" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                        <div class="column-header">🔵 Revisar D+1</div>
+                        <div class="drop-zone" id="d1" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                     </div>
                     <div class="column">
-                        <div class="column-header"><span>🟢 Concluído</span> <span id="count-done">0</span></div>
+                        <div class="column-header">🟡 Revisar D+7</div>
+                        <div class="drop-zone" id="d7" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    </div>
+                    <div class="column">
+                        <div class="column-header">🔴 Revisar D+21</div>
+                        <div class="drop-zone" id="d21" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    </div>
+                    <div class="column">
+                        <div class="column-header">🟢 Concluído</div>
                         <div class="drop-zone" id="done" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                     </div>
                 </div>
@@ -213,11 +152,7 @@
             <section id="secLib" class="hidden">
                 <table class="notion-table">
                     <thead>
-                        <tr>
-                            <th>Nome do Arquivo</th>
-                            <th>Tag / Disciplina</th>
-                            <th>Ações</th>
-                        </tr>
+                        <tr><th>Arquivo</th><th>Tag</th><th>Upload em</th><th>Ação</th></tr>
                     </thead>
                     <tbody id="listaBiblioteca"></tbody>
                 </table>
@@ -261,125 +196,132 @@
         document.getElementById("displayUser").textContent = user.email.split("@")[0];
         document.getElementById("userAvatar").textContent = user.email[0].toUpperCase();
         fetch('https://api.ipify.org?format=json').then(r => r.json()).then(d => document.getElementById('displayIp').textContent = d.ip);
-        carregarTasks();
+        carregarBoard();
         carregarBiblioteca();
     });
 
-    // Função para mover para Concluído via Checkbox
-    window.concluirTask = async (id, jaConcluido) => {
-        const novaColuna = jaConcluido ? "todo" : "done";
-        const taskRef = doc(db, "planners", currentUID, "tasks", id);
-        await updateDoc(taskRef, { column: novaColuna });
-        carregarTasks();
-    };
-
-    window.allowDrop = (ev) => ev.preventDefault();
-    window.drag = (ev) => ev.dataTransfer.setData("text", ev.target.id);
-    window.drop = async (ev) => {
-        ev.preventDefault();
-        const taskId = ev.dataTransfer.getData("text");
-        const newColumn = ev.currentTarget.id;
-        const taskRef = doc(db, "planners", currentUID, "tasks", taskId);
-        await updateDoc(taskRef, { column: newColumn });
-        carregarTasks();
-    };
-
     // Navegação
-    const navItems = { board: document.getElementById("navBoard"), lib: document.getElementById("navLib") };
-    Object.keys(navItems).forEach(key => {
-        navItems[key].onclick = () => {
-            document.getElementById("secBoard").classList.toggle("hidden", key !== 'board');
-            document.getElementById("secLib").classList.toggle("hidden", key !== 'lib');
-            navItems.board.classList.toggle("active", key === 'board');
-            navItems.lib.classList.toggle("active", key === 'lib');
-            document.getElementById("pageTitle").textContent = key === 'board' ? "Board de Estudos" : "Biblioteca";
-            document.getElementById("currentViewName").textContent = key === 'board' ? "Board" : "Biblioteca";
-        };
-    });
+    document.getElementById("navBoard").onclick = () => switchView('board');
+    document.getElementById("navLib").onclick = () => switchView('lib');
+    function switchView(v) {
+        document.getElementById("secBoard").classList.toggle("hidden", v !== 'board');
+        document.getElementById("secLib").classList.toggle("hidden", v !== 'lib');
+        document.getElementById("navBoard").classList.toggle("active", v === 'board');
+        document.getElementById("navLib").classList.toggle("active", v === 'lib');
+    }
 
-    // Criar dados
+    // Upload com Lógica D1, D7, D21
     document.getElementById("pdfInput").onchange = async (e) => {
         const file = e.target.files[0];
         if (!file || !currentUID) return;
-        const tag = prompt("Qual a disciplina/tag?", "Geral") || "Geral";
-        showFeedback("Enviando material...", "loading");
-        
+        const tag = prompt("Digite a etiqueta (Tag) para este arquivo:", "Ginecologia") || "Geral";
+        showFeedback("Processando ciclos de estudo...", "loading");
+
         try {
             const storageRef = ref(storage, `planners/${currentUID}/${Date.now()}_${file.name}`);
             await uploadBytes(storageRef, file);
             const url = await getDownloadURL(storageRef);
+            const now = Date.now();
 
+            // 1. Salvar na Biblioteca
             await addDoc(collection(db, "planners", currentUID, "arquivos"), {
-                nome: file.name, url, tag: tag.toUpperCase(), data: serverTimestamp()
+                nome: file.name, url, tag: tag.toUpperCase(), data: now
             });
 
-            await addDoc(collection(db, "planners", currentUID, "tasks"), {
-                titulo: `Revisar: ${file.name}`, column: "review", tag: tag.toUpperCase(), criadoEm: serverTimestamp()
-            });
+            // 2. Criar os 4 Ciclos Independentes
+            const ciclos = [
+                { nome: `[IMEDIATO] ${file.name}`, showAt: now, colDefault: 'recent' },
+                { nome: `[D+1] ${file.name}`, showAt: now + (1 * 24 * 60 * 60 * 1000), colDefault: 'd1' },
+                { nome: `[D+7] ${file.name}`, showAt: now + (7 * 24 * 60 * 60 * 1000), colDefault: 'd7' },
+                { nome: `[D+21] ${file.name}`, showAt: now + (21 * 24 * 60 * 60 * 1000), colDefault: 'd21' }
+            ];
 
-            showFeedback("✅ PDF adicionado!");
-            carregarTasks(); carregarBiblioteca();
-        } catch (err) { showFeedback("Erro no upload.", "error"); }
+            for (const c of ciclos) {
+                await addDoc(collection(db, "planners", currentUID, "tasks"), {
+                    titulo: c.nome,
+                    tag: tag.toUpperCase(),
+                    targetDate: c.showAt,
+                    column: c.colDefault,
+                    originalCol: c.colDefault,
+                    criadoEm: serverTimestamp()
+                });
+            }
+
+            showFeedback("✅ Ciclos criados com sucesso!");
+            carregarBoard(); carregarBiblioteca();
+        } catch (err) { showFeedback("Erro no processo.", "error"); }
     };
 
-    document.getElementById("btnNovoAssunto").onclick = async () => {
-        const t = prompt("Assunto:");
-        if (!t) return;
-        await addDoc(collection(db, "planners", currentUID, "tasks"), {
-            titulo: t, column: "todo", criadoEm: serverTimestamp()
-        });
-        carregarTasks();
+    // Função para mover para Concluído
+    window.toggleConcluido = async (id, currentColumn) => {
+        const novaColuna = currentColumn === 'done' ? 'recent' : 'done'; // Simplificado
+        await updateDoc(doc(db, "planners", currentUID, "tasks", id), { column: novaColuna });
+        carregarBoard();
     };
 
-    async function carregarTasks() {
-        if(!currentUID) return;
+    // Drag & Drop
+    window.allowDrop = (ev) => ev.preventDefault();
+    window.drag = (ev) => ev.dataTransfer.setData("text", ev.target.id);
+    window.drop = async (ev) => {
+        ev.preventDefault();
+        const id = ev.dataTransfer.getData("text");
+        const col = ev.currentTarget.id;
+        await updateDoc(doc(db, "planners", currentUID, "tasks", id), { column: col });
+        carregarBoard();
+    };
+
+    async function carregarBoard() {
+        if (!currentUID) return;
         const snap = await getDocs(query(collection(db, "planners", currentUID, "tasks"), orderBy("criadoEm", "desc")));
-        const cols = { todo: document.getElementById("todo"), review: document.getElementById("review"), done: document.getElementById("done") };
-        const counts = { todo: 0, review: 0, done: 0 };
+        const cols = { recent: document.getElementById("recent"), d1: document.getElementById("d1"), d7: document.getElementById("d7"), d21: document.getElementById("d21"), done: document.getElementById("done") };
         Object.values(cols).forEach(c => c.innerHTML = "");
+
+        const agora = Date.now();
 
         snap.forEach(d => {
             const t = d.data();
-            counts[t.column]++;
+            
+            // Lógica de Tempo: Só mostra nas colunas D+X se o tempo já tiver passado
+            // A coluna "Concluído" sempre mostra o que o usuário moveu para lá
+            if (t.column !== 'done' && agora < t.targetDate) return; 
+
             const card = document.createElement("div");
             card.className = "card";
             card.id = d.id;
             card.draggable = true;
             card.ondragstart = window.drag;
             
-            const isDone = t.column === "done";
-
             card.innerHTML = `
                 <div style="display:flex; align-items:flex-start;">
-                    <input type="checkbox" class="notion-checkbox" ${isDone ? 'checked' : ''} 
-                           onclick="concluirTask('${d.id}', ${isDone})">
-                    <div style="flex:1;">
-                        <div style="font-size:13px; margin-bottom:8px; ${isDone ? 'text-decoration:line-through; opacity:0.5' : ''}">${t.titulo}</div>
-                        <span class="tag">${t.tag || 'NOTA'}</span>
+                    <input type="checkbox" class="notion-checkbox" ${t.column === 'done' ? 'checked' : ''} 
+                           onclick="toggleConcluido('${d.id}', '${t.column}')">
+                    <div style="flex:1">
+                        <div style="${t.column === 'done' ? 'text-decoration:line-through; opacity:0.6' : ''}">${t.titulo}</div>
+                        <span class="tag">${t.tag}</span>
                     </div>
                 </div>
             `;
-            cols[t.column].appendChild(card);
+            
+            // Se estiver no "done", vai para a coluna done. Caso contrário, respeita a coluna atual (que pode ter sido movida por drag)
+            const targetCol = t.column;
+            if (cols[targetCol]) cols[targetCol].appendChild(card);
         });
-        document.getElementById("count-todo").textContent = counts.todo;
-        document.getElementById("count-review").textContent = counts.review;
-        document.getElementById("count-done").textContent = counts.done;
     }
 
     async function carregarBiblioteca() {
-        if(!currentUID) return;
-        const container = document.getElementById("listaBiblioteca");
+        if (!currentUID) return;
         const snap = await getDocs(query(collection(db, "planners", currentUID, "arquivos"), orderBy("data", "desc")));
+        const container = document.getElementById("listaBiblioteca");
         container.innerHTML = "";
         snap.forEach(d => {
             const p = d.data();
-            container.innerHTML += `
-                <tr>
-                    <td style="font-weight:500;"><i class="far fa-file-pdf" style="color:#eb5757; margin-right:8px;"></i> ${p.nome}</td>
-                    <td><span class="tag" style="background:#e7f3ef; color:#0d5e42;">${p.tag || 'GERAL'}</span></td>
-                    <td><a href="${p.url}" target="_blank" class="btn-notion" style="text-decoration:none; display:inline-flex;">Abrir</a></td>
-                </tr>
-            `;
+            const dt = new Date(p.data).toLocaleDateString();
+            container.innerHTML += `<tr>
+                <td><i class="far fa-file-pdf" style="color:#eb5757"></i> ${p.nome}</td>
+                <td><span class="tag">${p.tag}</span></td>
+                <td style="color:gray; font-size:12px">${dt}</td>
+                <td><a href="${p.url}" target="_blank" class="btn-notion">Abrir</a></td>
+            </tr>`;
         });
     }
 </script>
