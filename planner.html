@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planner Acadêmico | Medicina UNIP</title>
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+
     <style>
         :root {
             --bg-body: #f3f4f6; --bg-white: #ffffff; --border-color: #e5e7eb;
@@ -18,43 +20,40 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg-body); color: var(--text-primary); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-body); color: var(--text-primary); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
         /* NAVBAR */
-        .navbar { background-color: var(--bg-white); border-bottom: 1px solid var(--border-color); padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1000; }
+        .navbar { background-color: var(--bg-white); border-bottom: 1px solid var(--border-color); padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between; z-index: 1000; }
         .navbar-brand { font-weight: 700; font-size: 1.125rem; color: var(--brand-color); display: flex; align-items: center; gap: 10px; text-decoration: none; }
         .navbar-brand i { color: var(--accent-color); }
 
         /* LAYOUT */
         .app-container { display: flex; flex: 1; overflow: hidden; }
         .sidebar { width: 240px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); padding: 20px 12px; flex-shrink: 0; }
-        .menu a { display: flex; align-items: center; gap: 10px; padding: 10px; color: var(--text-primary); text-decoration: none; border-radius: 6px; font-size: 14px; cursor: pointer; margin-bottom: 4px; transition: 0.2s; }
+        .menu a { display: flex; align-items: center; gap: 10px; padding: 10px; color: var(--text-primary); text-decoration: none; border-radius: 6px; font-size: 14px; cursor: pointer; margin-bottom: 4px; }
         .menu a.active { background: rgba(0,0,0,0.08); font-weight: 600; }
 
         .main-content { flex: 1; overflow-y: auto; padding: 40px 60px; background-color: var(--bg-white); position: relative; }
         .hidden { display: none !important; }
 
-        /* KANBAN BOARD */
+        /* KANBAN */
         .kanban-board { display: flex; gap: 24px; }
         .column { flex: 1; min-width: 250px; }
         .task-container { min-height: 450px; background: #f9fafb; border-radius: 8px; padding: 12px; border: 1px dashed #eee; display: flex; flex-direction: column; gap: 12px; }
-        
-        /* CARD DESIGN */
-        .card { background: white; padding: 14px; border-radius: 8px; box-shadow: var(--shadow-card); font-size: 0.875rem; position: relative; border-left: 4px solid transparent; cursor: pointer; transition: 0.2s; }
+        .card { background: white; padding: 14px; border-radius: 8px; box-shadow: var(--shadow-card); font-size: 0.875rem; border-left: 4px solid var(--accent-color); cursor: pointer; transition: 0.2s; }
         .card:hover { transform: translateY(-2px); border-color: var(--accent-color); }
-        .btn-delete-task { position: absolute; top: 10px; right: 10px; color: #d1d5db; z-index: 10; }
-        .btn-delete-task:hover { color: var(--error-color); }
 
-        /* POMODORO UI */
+        /* POMODORO */
         .pomodoro-box { margin-top: 12px; padding-top: 10px; border-top: 1px solid #f3f4f6; display: flex; align-items: center; justify-content: space-between; }
         .timer-display { font-family: monospace; font-weight: 700; font-size: 14px; }
         .btn-timer { background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-secondary); }
         .btn-timer.playing { color: var(--success-color); animation: pulse 1.5s infinite; }
 
-        /* PDF VIEWER IMMERSIVE */
-        #secPdfViewer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 500; display: flex; flex-direction: column; }
-        .viewer-header { padding: 10px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; background: #f9fafb; }
-        .pdf-frame { flex: 1; width: 100%; border: none; }
+        /* LEITOR DE PDF INTERNO */
+        #pdfReaderSection { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #525659; z-index: 2000; display: flex; flex-direction: column; }
+        .reader-controls { padding: 10px 32px; background: var(--brand-color); color: white; display: flex; align-items: center; justify-content: space-between; }
+        #pdfCanvasContainer { flex: 1; overflow-y: auto; display: flex; flex-direction: column; align-items: center; padding: 20px; gap: 20px; }
+        canvas { box-shadow: 0 0 10px rgba(0,0,0,0.5); max-width: 100%; height: auto !important; }
 
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
@@ -63,15 +62,13 @@
 
     <nav class="navbar">
         <a href="index.html" class="navbar-brand"><i class="fas fa-graduation-cap"></i> Medicina UNIP</a>
-        <div class="user-profile">
-            <div class="user-info-text"><span id="displayUser" style="font-weight: 600;">Estudante</span></div>
-        </div>
+        <div id="displayUser" style="font-weight: 600; font-size: 14px;">Estudante</div>
     </nav>
 
     <div class="app-container">
         <aside class="sidebar">
             <nav class="menu">
-                <a id="navBoard" class="active"><i class="fas fa-columns"></i> Board de Estudos</a>
+                <a id="navBoard" class="active"><i class="fas fa-columns"></i> Board</a>
                 <a id="navLib"><i class="fas fa-file-pdf"></i> Biblioteca</a>
                 <a id="navDash"><i class="fas fa-chart-line"></i> Dashboard</a>
             </nav>
@@ -79,51 +76,45 @@
 
         <main class="main-content">
             
-            <section id="secPdfViewer" class="hidden">
-                <div class="viewer-header">
-                    <button onclick="changeView('board')" style="border:none; background:none; cursor:pointer; font-weight:600; color:var(--accent-color);">
-                        <i class="fas fa-chevron-left"></i> Voltar ao Board
+            <section id="pdfReaderSection" class="hidden">
+                <div class="reader-controls">
+                    <button onclick="closeReader()" style="background:none; border:1px solid #ffffff44; color:white; padding:8px 16px; border-radius:4px; cursor:pointer;">
+                        <i class="fas fa-arrow-left"></i> Sair do Material
                     </button>
-                    <div id="viewerTimerArea" style="display:flex; align-items:center; gap:15px;">
-                        <span id="viewerTaskTitle" style="font-weight:600; font-size:14px;">Título do PDF</span>
-                        <div class="timer-display" id="viewerTimer">00:00:00</div>
-                        <button id="viewerTimerBtn" class="btn-timer"><i class="fas fa-play"></i></button>
+                    <div style="display:flex; align-items:center; gap:20px;">
+                        <span id="readerTitle" style="font-size:13px; opacity:0.8;">Arquivo</span>
+                        <div id="readerTimer" class="timer-display" style="background:#ffffff22; padding:4px 10px; border-radius:4px;">00:00:00</div>
+                        <button id="readerTimerBtn" class="btn-timer" style="color:white;"><i class="fas fa-play"></i></button>
                     </div>
                 </div>
-                <iframe id="pdfFrame" class="pdf-frame"></iframe>
+                <div id="pdfCanvasContainer">
+                    <div id="loaderMsg" style="color:white; margin-top:100px;">
+                        <i class="fas fa-spinner fa-spin"></i> Renderizando páginas...
+                    </div>
+                </div>
             </section>
 
             <section id="secDash" class="hidden">
-                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:16px; margin-bottom:24px;">
-                    <div style="padding:20px; background:white; border-radius:12px; border:1px solid var(--border-color); text-align:center;">
-                        <strong id="dashTime" style="font-size:1.5rem; color:var(--accent-color);">0h</strong><br><span>Estudado</span>
-                    </div>
-                </div>
                 <canvas id="prodChart" height="100"></canvas>
             </section>
 
             <section id="secBoard">
-                <h1 class="page-title">Planner Semanal</h1>
-                <div class="quick-actions" style="margin-bottom:24px;">
-                    <button onclick="novoAssunto()" style="padding:10px 16px; background:var(--accent-color); color:white; border:none; border-radius:6px; cursor:pointer;">+ Novo Assunto</button>
-                    <input type="file" id="pdfInput" hidden accept="application/pdf">
-                    <label for="pdfInput" style="padding:10px 16px; border:1px solid var(--border-color); border-radius:6px; cursor:pointer; margin-left:10px;">Upload PDF</label>
-                </div>
                 <div class="kanban-board">
                     <div class="column"><div class="column-title">A Fazer <span id="count-todo">0</span></div><div class="task-container" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
                     <div class="column"><div class="column-title" style="color:#ef4444;">Revisão <span id="count-review">0</span></div><div class="task-container" id="review" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
                     <div class="column"><div class="column-title" style="color:#10b981;">Concluído <span id="count-done">0</span></div><div class="task-container" id="done" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
                 </div>
             </section>
-
         </main>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // Configuração PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyDj-c4uArNjAr7cSg396yfQR6xuyumh5_M",
@@ -137,149 +128,122 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const storage = getStorage(app);
 
         let currentUID = null;
         let activeTimers = {};
-        let myChart = null;
-        let currentViewerTaskId = null;
+        let currentPdfTaskId = null;
 
         onAuthStateChanged(auth, async (user) => {
             if (!user) { window.location.href = "login.html"; return; }
             currentUID = user.uid;
-            const snap = await getDoc(doc(db, "usuarios", user.email));
-            document.getElementById('displayUser').textContent = snap.exists() ? snap.data().nome : user.email.split("@")[0];
-            
             initRealtime();
         });
 
-        function initRealtime() {
-            onSnapshot(query(collection(db, "planners", currentUID, "tasks"), orderBy("criadoEm", "desc")), (snap) => {
-                const tasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                renderBoard(tasks);
-                updateDashboard(tasks);
-            });
-        }
+        // --- MOTOR DE LEITURA PDF (PDF.js) ---
+        window.openInternalReader = async (url, taskId, title) => {
+            currentPdfTaskId = taskId;
+            document.getElementById('readerTitle').innerText = title;
+            document.getElementById('pdfReaderSection').classList.remove('hidden');
+            const container = document.getElementById('pdfCanvasContainer');
+            container.innerHTML = '<div style="color:white;">Carregando material...</div>';
+
+            try {
+                const loadingTask = pdfjsLib.getDocument(url);
+                const pdf = await loadingTask.promise;
+                container.innerHTML = ''; // Limpa loader
+
+                // Renderiza todas as páginas para leitura contínua (estilo biblioteca)
+                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                    const page = await pdf.getPage(pageNum);
+                    const viewport = page.getViewport({ scale: 1.5 });
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+                    container.appendChild(canvas);
+                }
+
+                // Sincroniza Timer no Header do Leitor
+                const display = document.getElementById('readerTimer');
+                const cardTimer = document.getElementById(`time-${taskId}`);
+                display.innerText = cardTimer.innerText;
+                
+                document.getElementById('readerTimerBtn').onclick = () => window.toggleTimer(taskId);
+                updateReaderBtn(taskId);
+
+            } catch (e) {
+                container.innerHTML = '<div style="color:white;">Erro ao carregar o PDF interno.</div>';
+            }
+        };
+
+        window.closeReader = () => {
+            document.getElementById('pdfReaderSection').classList.add('hidden');
+            currentPdfTaskId = null;
+        };
 
         // --- POMODORO CORE ---
         window.toggleTimer = async (id) => {
             const btn = document.getElementById(`btn-${id}`);
             const display = document.getElementById(`time-${id}`);
-            const viewerBtn = document.getElementById(`viewerTimerBtn`);
-            
+            const readerDisplay = document.getElementById('readerTimer');
+
             if (activeTimers[id]) {
                 clearInterval(activeTimers[id]);
                 delete activeTimers[id];
                 btn.innerHTML = '<i class="fas fa-play"></i>'; btn.classList.remove('playing');
-                if(currentViewerTaskId === id) {
-                    viewerBtn.innerHTML = '<i class="fas fa-play"></i>'; viewerBtn.classList.remove('playing');
-                }
                 await updateDoc(doc(db, "planners", currentUID, "tasks", id), { tempoGasto: parseInt(display.dataset.s) });
             } else {
                 btn.innerHTML = '<i class="fas fa-pause"></i>'; btn.classList.add('playing');
-                if(currentViewerTaskId === id) {
-                    viewerBtn.innerHTML = '<i class="fas fa-pause"></i>'; viewerBtn.classList.add('playing');
-                }
                 activeTimers[id] = setInterval(() => {
                     display.dataset.s = parseInt(display.dataset.s) + 1;
                     const timeStr = formatTime(display.dataset.s);
                     display.innerText = timeStr;
-                    if(currentViewerTaskId === id) {
-                        document.getElementById('viewerTimer').innerText = timeStr;
-                    }
+                    if(currentPdfTaskId === id) readerDisplay.innerText = timeStr;
                 }, 1000);
             }
+            updateReaderBtn(id);
         };
+
+        function updateReaderBtn(id) {
+            const readerBtn = document.getElementById('readerTimerBtn');
+            if(currentPdfTaskId === id) {
+                readerBtn.innerHTML = activeTimers[id] ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+                readerBtn.classList.toggle('playing', !!activeTimers[id]);
+            }
+        }
 
         const formatTime = (s) => `${Math.floor(s/3600).toString().padStart(2,'0')}:${Math.floor((s%3600)/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
 
-        // --- PDF VIEWER LOGIC ---
-        window.openPdf = (url, taskId, title) => {
-            currentViewerTaskId = taskId;
-            document.getElementById('pdfFrame').src = url;
-            document.getElementById('viewerTaskTitle').innerText = title;
-            document.getElementById('secPdfViewer').classList.remove('hidden');
-            
-            // Sincroniza o timer do Viewer com o do Card
-            const cardDisplay = document.getElementById(`time-${taskId}`);
-            const viewerDisplay = document.getElementById('viewerTimer');
-            viewerDisplay.innerText = cardDisplay.innerText;
-            
-            const viewerBtn = document.getElementById('viewerTimerBtn');
-            viewerBtn.onclick = () => window.toggleTimer(taskId);
-            
-            if(activeTimers[taskId]) {
-                viewerBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                viewerBtn.classList.add('playing');
-            } else {
-                viewerBtn.innerHTML = '<i class="fas fa-play"></i>';
-                viewerBtn.classList.remove('playing');
-            }
-        };
-
-        window.changeView = (v) => {
-            document.getElementById('secBoard').classList.toggle('hidden', v !== 'board');
-            document.getElementById('secDash').classList.toggle('hidden', v !== 'dash');
-            document.getElementById('secPdfViewer').classList.add('hidden'); // Sempre fecha ao mudar via menu
-            currentViewerTaskId = null;
-        };
-
-        // --- RENDERING ---
-        function renderBoard(tasks) {
-            const cols = { todo: document.getElementById("todo"), review: document.getElementById("review"), done: document.getElementById("done") };
-            Object.values(cols).forEach(c => c.innerHTML = "");
-            
-            tasks.forEach(t => {
-                const card = document.createElement("div");
-                card.className = "card"; card.id = t.id; card.draggable = true;
-                card.style.borderLeftColor = t.pdfUrl ? "#ef4444" : "#10b981";
-                card.ondragstart = (e) => e.dataTransfer.setData("text", t.id);
+        // --- FIREBASE SYNC ---
+        function initRealtime() {
+            onSnapshot(query(collection(db, "planners", currentUID, "tasks"), orderBy("criadoEm", "desc")), (snap) => {
+                const cols = { todo: document.getElementById("todo"), review: document.getElementById("review"), done: document.getElementById("done") };
+                Object.values(cols).forEach(c => c.innerHTML = "");
                 
-                // Abre o PDF ao clicar no card (exceto nos botões)
-                card.onclick = (e) => {
-                    if(!e.target.closest('button') && t.pdfUrl) window.openPdf(t.pdfUrl, t.id, t.titulo);
-                };
-
-                card.innerHTML = `
-                    <i class="fas fa-times btn-delete-task" onclick="deleteDoc(doc(db,'planners','${currentUID}','tasks','${t.id}'))"></i>
-                    <div style="font-weight:600;">${t.titulo}</div>
-                    <div class="pomodoro-box">
-                        <div class="timer-display" id="time-${t.id}" data-s="${t.tempoGasto || 0}">${formatTime(t.tempoGasto || 0)}</div>
-                        <button onclick="window.toggleTimer('${t.id}')" id="btn-${t.id}" class="btn-timer"><i class="fas fa-play"></i></button>
-                    </div>`;
-                cols[t.column || "todo"].appendChild(card);
+                snap.forEach(d => {
+                    const t = d.data();
+                    const card = document.createElement("div");
+                    card.className = "card"; card.id = d.id; card.draggable = true;
+                    card.onclick = (e) => { if(!e.target.closest('button') && t.pdfUrl) window.openInternalReader(t.pdfUrl, d.id, t.titulo); };
+                    
+                    card.innerHTML = `
+                        <div style="font-weight:600;">${t.titulo}</div>
+                        <div class="pomodoro-box">
+                            <div class="timer-display" id="time-${d.id}" data-s="${t.tempoGasto || 0}">${formatTime(t.tempoGasto || 0)}</div>
+                            <button onclick="window.toggleTimer('${d.id}')" id="btn-${d.id}" class="btn-timer"><i class="fas fa-play"></i></button>
+                        </div>`;
+                    cols[t.column || "todo"].appendChild(card);
+                });
             });
         }
 
-        // --- DASHBOARD ---
-        function updateDashboard(tasks) {
-            let totalS = 0;
-            tasks.forEach(t => totalS += (t.tempoGasto || 0));
-            document.getElementById("dashTime").innerText = (totalS/3600).toFixed(1) + "h";
-        }
-
-        // --- ACTIONS ---
         window.allowDrop = (e) => e.preventDefault();
         window.drop = async (e) => {
             const id = e.dataTransfer.getData("text");
             await updateDoc(doc(db, "planners", currentUID, "tasks", id), { column: e.currentTarget.id });
         };
-
-        window.novoAssunto = async () => {
-            const t = prompt("Assunto:");
-            if (t) await addDoc(collection(db, "planners", currentUID, "tasks"), { titulo: t, column: "todo", criadoEm: serverTimestamp(), tempoGasto: 0 });
-        };
-
-        document.getElementById("pdfInput").onchange = async (e) => {
-            const file = e.target.files[0]; if (!file) return;
-            const path = `planners/${currentUID}/${Date.now()}_${file.name}`;
-            await uploadBytes(ref(storage, path), file);
-            const url = await getDownloadURL(ref(storage, path));
-            await addDoc(collection(db, "planners", currentUID, "tasks"), { titulo: file.name, pdfUrl: url, column: "review", criadoEm: serverTimestamp(), tempoGasto: 0 });
-        };
-
-        document.getElementById('navBoard').onclick = () => changeView('board');
-        document.getElementById('navDash').onclick = () => changeView('dash');
     </script>
 </body>
 </html>
