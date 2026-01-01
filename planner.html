@@ -1,64 +1,72 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planner de Estudos | Medicina UNIP</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --bg-body: #f3f4f6; --bg-white: #ffffff; --border-color: #e5e7eb;
-            --text-primary: #111827; --text-secondary: #6b7280;
-            --brand-color: #0f172a; --accent-color: #2563eb; --hover-bg: #f9fafb;
-            --bg-sidebar: #F7F7F5; --shadow-card: rgba(0,0,0,0.1) 0px 2px 4px;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planner de Estudos | Medicina UNIP</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+    --bg-body: #f3f4f6; --bg-white: #ffffff; --border-color: #e5e7eb;
+    --text-primary: #111827; --text-secondary: #6b7280;
+    --brand-color: #0f172a; --accent-color: #2563eb; --hover-bg: #f9fafb;
+    --bg-sidebar: #F7F7F5; --shadow-card: rgba(0,0,0,0.1) 0px 2px 4px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; background-color: var(--bg-body); color: var(--text-primary); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg-body); color: var(--text-primary); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+.navbar { background-color: var(--bg-white); border-bottom: 1px solid var(--border-color); padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1000; }
+.navbar-brand { font-weight: 700; font-size: 1.125rem; color: var(--brand-color); display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.navbar-brand i { color: var(--accent-color); }
 
-        .navbar { background-color: var(--bg-white); border-bottom: 1px solid var(--border-color); padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1000; }
-        .navbar-brand { font-weight: 700; font-size: 1.125rem; color: var(--brand-color); display: flex; align-items: center; gap: 10px; text-decoration: none; }
-        .navbar-brand i { color: var(--accent-color); }
+.user-profile { display: flex; align-items: center; gap: 12px; }
+.user-avatar { width: 32px; height: 32px; background-color: var(--brand-color); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; font-weight: 600; }
+.user-info-text { display: flex; flex-direction: column; line-height: 1.2; text-align: right; }
+.user-name { font-size: 0.875rem; font-weight: 600; }
+.user-meta { font-size: 0.75rem; color: var(--text-secondary); }
 
-        .user-profile { display: flex; align-items: center; gap: 12px; }
-        .user-avatar { width: 32px; height: 32px; background-color: var(--brand-color); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; font-weight: 600; }
-        .user-info-text { display: flex; flex-direction: column; line-height: 1.2; text-align: right; }
-        .user-name { font-size: 0.875rem; font-weight: 600; }
-        .user-meta { font-size: 0.75rem; color: var(--text-secondary); }
+.app-container { display: flex; flex: 1; overflow: hidden; }
+.sidebar { width: 240px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); padding: 20px 12px; flex-shrink: 0; }
+.menu a { display: flex; align-items: center; gap: 10px; padding: 10px; color: var(--text-primary); text-decoration: none; border-radius: 6px; font-size: 14px; cursor: pointer; margin-bottom: 4px; transition: 0.2s; }
+.menu a:hover { background: rgba(0,0,0,0.04); }
+.menu a.active { background: rgba(0,0,0,0.08); font-weight: 600; }
 
-        .app-container { display: flex; flex: 1; overflow: hidden; }
-        .sidebar { width: 240px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); padding: 20px 12px; flex-shrink: 0; }
-        .menu a { display: flex; align-items: center; gap: 10px; padding: 10px; color: var(--text-primary); text-decoration: none; border-radius: 6px; font-size: 14px; cursor: pointer; margin-bottom: 4px; transition: 0.2s; }
-        .menu a:hover { background: rgba(0,0,0,0.04); }
-        .menu a.active { background: rgba(0,0,0,0.08); font-weight: 600; }
+.main-content { flex: 1; overflow-y: auto; padding: 40px 60px; background-color: var(--bg-white); }
+.page-title { font-size: 1.875rem; font-weight: 700; margin-bottom: 8px; }
 
-        .main-content { flex: 1; overflow-y: auto; padding: 40px 60px; background-color: var(--bg-white); }
-        .page-title { font-size: 1.875rem; font-weight: 700; margin-bottom: 8px; }
+#statusFeedback { padding: 12px; border-radius: 6px; font-size: 13px; font-weight: 500; margin-bottom: 24px; display: none; border: 1px solid transparent; }
 
-        #statusFeedback { padding: 12px; border-radius: 6px; font-size: 13px; font-weight: 500; margin-bottom: 24px; display: none; border: 1px solid transparent; }
+.quick-actions { display: flex; gap: 12px; margin-bottom: 32px; }
+.btn-primary, .upload-label { background: var(--accent-color); color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; }
+.upload-label { background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); }
 
-        .quick-actions { display: flex; gap: 12px; margin-bottom: 32px; }
-        .btn-primary, .upload-label { background: var(--accent-color); color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; }
-        .upload-label { background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); }
+.kanban-board { display: flex; gap: 24px; overflow-x: auto; padding-bottom: 20px; }
+.column { flex: 1; min-width: 280px; }
+.column-title { font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
 
-        .kanban-board { display: flex; gap: 24px; overflow-x: auto; padding-bottom: 20px; }
-        .column { flex: 1; min-width: 280px; }
-        .column-title { font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
-        
-        .task-container { min-height: 450px; background: #f9fafb; border-radius: 8px; padding: 12px; border: 1px dashed #eee; display: flex; flex-direction: column; gap: 12px; transition: background 0.2s; }
-        .task-container.drag-over { background: #e0e7ff; border-color: var(--accent-color); }
+.task-container { min-height: 450px; background: #f9fafb; border-radius: 8px; padding: 12px; border: 1px dashed #eee; display: flex; flex-direction: column; gap: 12px; transition: background 0.2s; }
+.task-container.drag-over { background: #e0e7ff; border-color: var(--accent-color); }
 
-        .card { background: white; padding: 14px; border-radius: 8px; box-shadow: var(--shadow-card); font-size: 0.875rem; border: 1px solid transparent; cursor: grab; }
-        .card:active { cursor: grabbing; }
-        .card-tag { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-top: 8px; display: inline-flex; align-items: center; gap: 4px; }
-        .tag-pdf { background: #fee2e2; color: #991b1b; }
-        .tag-manual { background: #dcfce7; color: #166534; }
+.card { background: white; padding: 14px; border-radius: 8px; box-shadow: var(--shadow-card); font-size: 0.875rem; border: 1px solid transparent; cursor: grab; display: flex; flex-direction: column; gap:6px;}
+.card:active { cursor: grabbing; }
+.card-tags { display: flex; gap:4px; flex-wrap: wrap; }
+.card-tag { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; }
+.tag-pdf { background: #fee2e2; color: #991b1b; }
+.tag-manual { background: #dcfce7; color: #166534; }
+.tag-custom { background: #e0e7ff; color: #1e3a8a; }
 
-        .lib-item { padding: 16px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; background: white; transition: 0.2s; }
-        .lib-item:hover { border-color: var(--accent-color); background: var(--hover-bg); }
-        .hidden { display: none; }
-    </style>
+.card-review { display: flex; justify-content: space-between; align-items: center; }
+.review-checkbox { cursor:pointer; }
+
+.lib-item { padding: 16px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; background: white; transition: 0.2s; }
+.lib-item:hover { border-color: var(--accent-color); background: var(--hover-bg); }
+.hidden { display: none; }
+
+.filter-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.filter-tag { font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); cursor: pointer; user-select:none; }
+.filter-tag.selected { background-color: var(--accent-color); color:white; border-color: var(--accent-color); }
+</style>
 </head>
 <body>
 
@@ -107,190 +115,160 @@
         </section>
 
         <section id="secLib" class="hidden">
+            <div class="filter-tags" id="filterTags"></div>
             <div id="listaBiblioteca"></div>
         </section>
     </main>
 </div>
 
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyDj-c4uArNjAr7cSg396yfQR6xuyumh5_M",
-        authDomain: "simuladosmedicina-6a01b.firebaseapp.com",
-        projectId: "simuladosmedicina-6a01b",
-        storageBucket: "simuladosmedicina-6a01b.firebasestorage.app",
-        messagingSenderId: "577452734306",
-        appId: "1:577452734306:web:5926d087a27a216a97de3b"
-    };
+const firebaseConfig = {
+    apiKey: "AIzaSyDj-c4uArNjAr7cSg396yfQR6xuyumh5_M",
+    authDomain: "simuladosmedicina-6a01b.firebaseapp.com",
+    projectId: "simuladosmedicina-6a01b",
+    storageBucket: "simuladosmedicina-6a01b.appspot.com",
+    messagingSenderId: "577452734306",
+    appId: "1:577452734306:web:5926d087a27a216a97de3b"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+let currentUID = null;
+let selectedTags = new Set();
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const storage = getStorage(app);
+// Drag & Drop
+window.allowDrop = ev => { ev.preventDefault(); ev.currentTarget.classList.add('drag-over'); };
+window.drag = ev => ev.dataTransfer.setData("text", ev.target.id);
+window.drop = async ev => {
+    ev.preventDefault(); ev.currentTarget.classList.remove('drag-over');
+    const taskId = ev.dataTransfer.getData("text");
+    const newColumn = ev.currentTarget.id;
+    if (!currentUID) return;
+    await updateDoc(doc(db, "planners", currentUID, "tasks", taskId), { column: newColumn });
+    carregarTasks();
+};
 
-    let currentUID = null;
+// Auth
+onAuthStateChanged(auth, async user => {
+    if(!user){ window.location.href="login.html"; return; }
+    currentUID = user.uid;
+    document.getElementById("displayUser").textContent = user.email.split("@")[0];
+    document.getElementById("userAvatar").textContent = user.email[0].toUpperCase();
+    fetch('https://api.ipify.org?format=json').then(r=>r.json()).then(d=>document.getElementById('displayIp').textContent=d.ip);
+    carregarTasks();
+    carregarBiblioteca();
+});
 
-    // --- LOGICA DE DRAG & DROP ---
-    window.allowDrop = (ev) => {
-        ev.preventDefault();
-        ev.currentTarget.classList.add('drag-over');
-    };
+// Feedback
+const showFeedback = (msg,type="info")=>{
+    const el=document.getElementById("statusFeedback");
+    el.style.display="block"; el.innerHTML=msg;
+    el.style.backgroundColor=type==="error"?"#fee2e2":"#dcfce7";
+    el.style.color=type==="error"?"#991b1b":"#166534";
+    el.style.borderColor=type==="error"?"#fecaca":"#bbf7d0";
+    if(type!=="loading"){ setTimeout(()=>el.style.display="none",4000);}
+};
 
-    window.drag = (ev) => {
-        ev.dataTransfer.setData("text", ev.target.id);
-    };
+// Navigation
+window.changeView=view=>{
+    document.getElementById("secBoard").classList.toggle("hidden", view!=='board');
+    document.getElementById("secLib").classList.toggle("hidden", view!=='lib');
+    document.getElementById("actionArea").style.display=view==='board'?'flex':'none';
+    document.getElementById("navBoard").classList.toggle("active", view==='board');
+    document.getElementById("navLib").classList.toggle("active", view==='lib');
+    document.getElementById("pageTitle").textContent=view==='board'?"Planner Semanal":"Minha Biblioteca";
+};
+document.getElementById("navBoard").onclick=()=>changeView('board');
+document.getElementById("navLib").onclick=()=>changeView('lib');
 
-    window.drop = async (ev) => {
-        ev.preventDefault();
-        ev.currentTarget.classList.remove('drag-over');
-        const taskId = ev.dataTransfer.getData("text");
-        const newColumn = ev.currentTarget.id;
+// New Subject
+document.getElementById("btnNovoAssunto").onclick=async ()=>{
+    const t=prompt("Assunto de estudo (ex: Foliculogênese):");
+    if(!t||!currentUID) return;
+    showFeedback("Salvando assunto...","loading");
+    await addDoc(collection(db,"planners",currentUID,"tasks"),{titulo:t,column:"todo",criadoEm:serverTimestamp(),tipo:"manual"});
+    showFeedback("✅ Assunto adicionado!");
+    carregarTasks();
+};
 
-        try {
-            const taskRef = doc(db, "planners", currentUID, "tasks", taskId);
-            await updateDoc(taskRef, { column: newColumn });
-            carregarTasks();
-        } catch (e) {
-            console.error("Erro ao mover:", e);
+// PDF Upload with Tags
+document.getElementById("pdfInput").onchange=async e=>{
+    const file=e.target.files[0];
+    if(!file||!currentUID) return;
+    const tagsInput=prompt("Informe etiquetas separadas por vírgula (ex: Anatomia,Fisiologia):");
+    if(!tagsInput) return showFeedback("Upload cancelado.","error");
+    const etiquetas=tagsInput.split(",").map(t=>t.trim()).filter(Boolean);
+    showFeedback("Subindo PDF...","loading");
+    const storageRef=ref(storage, `planners/${currentUID}/${Date.now()}_${file.name}`);
+    await uploadBytes(storageRef,file);
+    const url=await getDownloadURL(storageRef);
+    await addDoc(collection(db,"planners",currentUID,"arquivos"),{nome:file.name,url,etiquetas,data:serverTimestamp()});
+    // Add tasks with cycles
+    for(const c of [{label:"D1",col:"review"},{label:"D7",col:"todo"},{label:"D21",col:"todo"}]){
+        await addDoc(collection(db,"planners",currentUID,"tasks"),{
+            titulo:`[${c.label}] ${file.name}`,
+            pdfUrl:url,
+            column:c.col,
+            criadoEm:serverTimestamp(),
+            tipo:"pdf",
+            etiquetas
+        });
+    }
+    showFeedback("✅ Upload e ciclos criados!");
+    e.target.value="";
+    carregarTasks();
+    carregarBiblioteca();
+};
+
+// Carregar Tasks
+async function carregarTasks(){
+    if(!currentUID) return;
+    const snap=await getDocs(query(collection(db,"planners",currentUID,"tasks"),orderBy("criadoEm","desc")));
+    const cols={todo:document.getElementById("todo"),review:document.getElementById("review"),done:document.getElementById("done")};
+    const counts={todo:0,review:0,done:0};
+    Object.values(cols).forEach(c=>c.innerHTML="");
+    snap.forEach(d=>{
+        const t=d.data(); const colId=t.column||"todo";
+        // Skip concluded in review
+        if(colId==="review"&&t.concluido) return;
+        counts[colId]++;
+        const card=document.createElement("div");
+        card.className="card";
+        card.id=d.id;
+        card.draggable=true;
+        card.ondragstart=window.drag;
+        let innerHTML=`<div style="font-weight:600;margin-bottom:4px;">${t.titulo}</div>`;
+        if(colId==="review"){
+            innerHTML+=`<div class="card-review"><span class="card-tags">${t.etiquetas? t.etiquetas.map(et=>`<span class="card-tag tag-custom">${et}</span>`).join(" ") : ""}</span>
+            <input type="checkbox" class="review-checkbox" ${t.concluido?"checked":""} data-id="${d.id}"> Concluído</div>`;
+        }else{
+            innerHTML+=`<div class="card-tags">${t.etiquetas? t.etiquetas.map(et=>`<span class="card-tag tag-custom">${et}</span>`).join(" ") : ""}</div>`;
         }
-    };
-
-    // --- FIREBASE AUTH ---
-    onAuthStateChanged(auth, async (user) => {
-        if (!user) { window.location.href = "login.html"; return; }
-        currentUID = user.uid;
-        document.getElementById("displayUser").textContent = user.email.split("@")[0];
-        document.getElementById("userAvatar").textContent = user.email[0].toUpperCase();
-        fetch('https://api.ipify.org?format=json').then(r => r.json()).then(d => document.getElementById('displayIp').textContent = d.ip);
-        
-        carregarTasks();
-        carregarBiblioteca();
+        card.innerHTML=innerHTML;
+        cols[colId].appendChild(card);
     });
+    document.getElementById("count-todo").textContent=counts.todo;
+    document.getElementById("count-review").textContent=counts.review;
+    document.getElementById("count-done").textContent=counts.done;
 
-    const showFeedback = (msg, type = "info") => {
-        const el = document.getElementById("statusFeedback");
-        el.style.display = "block";
-        el.innerHTML = msg;
-        el.style.backgroundColor = type === "error" ? "#fee2e2" : "#dcfce7";
-        el.style.color = type === "error" ? "#991b1b" : "#166534";
-        el.style.borderColor = type === "error" ? "#fecaca" : "#bbf7d0";
-        if (type !== "loading") { setTimeout(() => el.style.display = "none", 4000); }
-    };
-
-    // --- NAVEGAÇÃO ---
-    window.changeView = (view) => {
-        document.getElementById("secBoard").classList.toggle("hidden", view !== 'board');
-        document.getElementById("secLib").classList.toggle("hidden", view !== 'lib');
-        document.getElementById("actionArea").style.display = view === 'board' ? 'flex' : 'none';
-        document.getElementById("navBoard").classList.toggle("active", view === 'board');
-        document.getElementById("navLib").classList.toggle("active", view === 'lib');
-        document.getElementById("pageTitle").textContent = view === 'board' ? "Planner Semanal" : "Minha Biblioteca";
-    };
-
-    document.getElementById("navBoard").onclick = () => changeView('board');
-    document.getElementById("navLib").onclick = () => changeView('lib');
-
-    // --- CRIAÇÃO DE DADOS ---
-    document.getElementById("btnNovoAssunto").onclick = async () => {
-        const t = prompt("Assunto de estudo (ex: Foliculogênese):");
-        if (!t || !currentUID) return;
-        showFeedback("Salvando assunto...", "loading");
-        await addDoc(collection(db, "planners", currentUID, "tasks"), {
-            titulo: t, column: "todo", criadoEm: serverTimestamp(), tipo: "manual"
-        });
-        showFeedback("✅ Assunto adicionado!");
-        carregarTasks();
-    };
-
-    document.getElementById("pdfInput").onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file || !currentUID) return;
-        showFeedback("Subindo PDF e criando ciclos D1, D7, D21...", "loading");
-        
-        try {
-            const storageRef = ref(storage, `planners/${currentUID}/${Date.now()}_${file.name}`);
-            await uploadBytes(storageRef, file);
-            const url = await getDownloadURL(storageRef);
-
-            await addDoc(collection(db, "planners", currentUID, "arquivos"), { nome: file.name, url, data: serverTimestamp() });
-
-            const ciclos = [
-                { label: "D1", col: "review" },
-                { label: "D7", col: "todo" },
-                { label: "D21", col: "todo" }
-            ];
-
-            for (const c of ciclos) {
-                await addDoc(collection(db, "planners", currentUID, "tasks"), {
-                    titulo: `[${c.label}] ${file.name}`,
-                    pdfUrl: url,
-                    column: c.col,
-                    criadoEm: serverTimestamp(),
-                    tipo: "pdf"
-                });
-            }
-            showFeedback("✅ Upload e ciclos criados!");
-            e.target.value = "";
+    // Add checkbox event
+    document.querySelectorAll(".review-checkbox").forEach(cb=>{
+        cb.onchange=async e=>{
+            const taskId=e.target.dataset.id;
+            await updateDoc(doc(db,"planners",currentUID,"tasks",taskId),{concluido:e.target.checked});
             carregarTasks();
-            carregarBiblioteca();
-        } catch (err) {
-            showFeedback("Erro no upload. Verifique as regras do Storage.", "error");
-        }
-    };
+        };
+    });
+}
 
-    // --- RENDERIZAÇÃO ---
-    async function carregarTasks() {
-        if (!currentUID) return;
-        const q = query(collection(db, "planners", currentUID, "tasks"), orderBy("criadoEm", "desc"));
-        const snap = await getDocs(q);
-        
-        const cols = { todo: document.getElementById("todo"), review: document.getElementById("review"), done: document.getElementById("done") };
-        const counts = { todo: 0, review: 0, done: 0 };
-        
-        Object.values(cols).forEach(c => c.innerHTML = "");
-
-        snap.forEach(d => {
-            const t = d.data();
-            const colId = t.column || "todo";
-            counts[colId]++;
-            
-            const card = document.createElement("div");
-            card.className = "card";
-            card.id = d.id;
-            card.draggable = true;
-            card.ondragstart = window.drag;
-            card.innerHTML = `
-                <div style="font-weight:600;margin-bottom:4px;">${t.titulo}</div>
-                <div class="card-tag ${t.tipo === "pdf" ? "tag-pdf" : "tag-manual"}">
-                    <i class="fas ${t.tipo === "pdf" ? "fa-file-pdf" : "fa-pen-to-square"}"></i> ${t.tipo === "pdf" ? "REVISÃO PDF" : "MANUAL"}
-                </div>
-            `;
-            cols[colId].appendChild(card);
-        });
-
-        document.getElementById("count-todo").textContent = counts.todo;
-        document.getElementById("count-review").textContent = counts.review;
-        document.getElementById("count-done").textContent = counts.done;
-    }
-
-    async function carregarBiblioteca() {
-        if (!currentUID) return;
-        const container = document.getElementById("listaBiblioteca");
-        container.innerHTML = "Sincronizando biblioteca...";
-        const snap = await getDocs(query(collection(db, "planners", currentUID, "arquivos"), orderBy("data", "desc")));
-        container.innerHTML = snap.empty ? "<p style='color:var(--text-secondary)'>Nenhum arquivo encontrado.</p>" : "";
-        snap.forEach(d => {
-            const p = d.data();
-            container.innerHTML += `<div class="lib-item">
-                <span><i class="fas fa-file-pdf" style="color:#ef4444;margin-right:8px;"></i> ${p.nome}</span>
-                <a href="${p.url}" target="_blank" style="color:var(--accent-color);font-weight:600;text-decoration:none;">Abrir Material <i class="fas fa-external-link-alt"></i></a>
-            </div>`;
-        });
-    }
-</script>
-</body>
-</html>
+// Biblioteca com filtro multi-tags
+async function carregarBiblioteca(){
+    if(!currentUID) return;
+    const container=document.getElementById("listaBiblioteca");
+    const snap=await getDocs(query(collection(db,"planners",currentUID,"arquivos"),orderBy("data
