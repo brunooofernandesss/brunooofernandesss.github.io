@@ -1,274 +1,428 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Planner de Estudos | Medicina UNIP</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
-:root {
-    --bg-body: #f3f4f6; --bg-white: #ffffff; --border-color: #e5e7eb;
-    --text-primary: #111827; --text-secondary: #6b7280;
-    --brand-color: #0f172a; --accent-color: #2563eb; --hover-bg: #f9fafb;
-    --bg-sidebar: #F7F7F5; --shadow-card: rgba(0,0,0,0.1) 0px 2px 4px;
-}
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'Inter', sans-serif; background-color: var(--bg-body); color: var(--text-primary); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medicina UNIP | Notion Planner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --notion-bg: #ffffff;
+            --notion-sidebar: #fbfbfa;
+            --notion-text: #37352f;
+            --notion-text-light: rgba(55, 53, 47, 0.65);
+            --notion-border: rgba(55, 53, 47, 0.09);
+            --notion-hover: rgba(55, 53, 47, 0.04);
+            --notion-blue: #2383e2;
+            --tag-bg: rgba(227, 226, 224, 0.5);
+        }
 
-.navbar { background-color: var(--bg-white); border-bottom: 1px solid var(--border-color); padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1000; }
-.navbar-brand { font-weight: 700; font-size: 1.125rem; color: var(--brand-color); display: flex; align-items: center; gap: 10px; text-decoration: none; }
-.navbar-brand i { color: var(--accent-color); }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif; 
+            background-color: var(--notion-bg); 
+            color: var(--notion-text);
+            display: flex;
+            height: 100vh;
+        }
 
-.user-profile { display: flex; align-items: center; gap: 12px; }
-.user-avatar { width: 32px; height: 32px; background-color: var(--brand-color); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; font-weight: 600; }
-.user-info-text { display: flex; flex-direction: column; line-height: 1.2; text-align: right; }
-.user-name { font-size: 0.875rem; font-weight: 600; }
-.user-meta { font-size: 0.75rem; color: var(--text-secondary); }
+        /* Sidebar Estilo Notion */
+        .sidebar {
+            width: 240px;
+            background: var(--notion-sidebar);
+            border-right: 1px solid var(--notion-border);
+            display: flex;
+            flex-direction: column;
+            padding: 12px 0;
+            flex-shrink: 0;
+        }
 
-.app-container { display: flex; flex: 1; overflow: hidden; }
-.sidebar { width: 240px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); padding: 20px 12px; flex-shrink: 0; }
-.menu a { display: flex; align-items: center; gap: 10px; padding: 10px; color: var(--text-primary); text-decoration: none; border-radius: 6px; font-size: 14px; cursor: pointer; margin-bottom: 4px; transition: 0.2s; }
-.menu a:hover { background: rgba(0,0,0,0.04); }
-.menu a.active { background: rgba(0,0,0,0.08); font-weight: 600; }
+        .sidebar-header {
+            padding: 0 16px 12px 16px;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-.main-content { flex: 1; overflow-y: auto; padding: 40px 60px; background-color: var(--bg-white); }
-.page-title { font-size: 1.875rem; font-weight: 700; margin-bottom: 8px; }
+        .nav-item {
+            padding: 6px 16px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            color: var(--notion-text);
+            text-decoration: none;
+            transition: background 0.2s;
+        }
 
-#statusFeedback { padding: 12px; border-radius: 6px; font-size: 13px; font-weight: 500; margin-bottom: 24px; display: none; border: 1px solid transparent; }
+        .nav-item:hover { background: var(--notion-hover); }
+        .nav-item.active { background: var(--notion-hover); font-weight: 600; }
 
-.quick-actions { display: flex; gap: 12px; margin-bottom: 32px; }
-.btn-primary, .upload-label { background: var(--accent-color); color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; }
-.upload-label { background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); }
+        /* Main Content */
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
 
-.kanban-board { display: flex; gap: 24px; overflow-x: auto; padding-bottom: 20px; }
-.column { flex: 1; min-width: 280px; }
-.column-title { font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .top-bar {
+            height: 45px;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--notion-text-light);
+        }
 
-.task-container { min-height: 450px; background: #f9fafb; border-radius: 8px; padding: 12px; border: 1px dashed #eee; display: flex; flex-direction: column; gap: 12px; transition: background 0.2s; }
-.task-container.drag-over { background: #e0e7ff; border-color: var(--accent-color); }
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px 10%;
+        }
 
-.card { background: white; padding: 14px; border-radius: 8px; box-shadow: var(--shadow-card); font-size: 0.875rem; border: 1px solid transparent; cursor: grab; display: flex; flex-direction: column; gap:6px;}
-.card:active { cursor: grabbing; }
-.card-tags { display: flex; gap:4px; flex-wrap: wrap; }
-.card-tag { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; }
-.tag-pdf { background: #fee2e2; color: #991b1b; }
-.tag-manual { background: #dcfce7; color: #166534; }
-.tag-custom { background: #e0e7ff; color: #1e3a8a; }
+        .page-header { margin-bottom: 30px; }
+        .page-title { font-size: 40px; font-weight: 700; margin-bottom: 10px; }
 
-.card-review { display: flex; justify-content: space-between; align-items: center; }
-.review-checkbox { cursor:pointer; }
+        /* Tags Estilo Notion */
+        .tag {
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 500;
+            background: var(--tag-bg);
+            color: var(--notion-text);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
 
-.lib-item { padding: 16px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; background: white; transition: 0.2s; }
-.lib-item:hover { border-color: var(--accent-color); background: var(--hover-bg); }
-.hidden { display: none; }
+        /* Board Estilo Notion */
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 20px;
+        }
 
-.filter-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
-.filter-tag { font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); cursor: pointer; user-select:none; }
-.filter-tag.selected { background-color: var(--accent-color); color:white; border-color: var(--accent-color); }
-</style>
+        .column-header {
+            padding: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--notion-text-light);
+        }
+
+        .drop-zone {
+            min-height: 200px;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid var(--notion-border);
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 8px;
+            box-shadow: rgba(15, 15, 15, 0.05) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 2px 4px;
+            cursor: grab;
+            transition: background 0.2s;
+        }
+
+        .card:hover { background: var(--notion-sidebar); }
+
+        /* Biblioteca Estilo Table do Notion */
+        .notion-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .notion-table th {
+            text-align: left;
+            padding: 10px;
+            border-bottom: 1px solid var(--notion-border);
+            color: var(--notion-text-light);
+            font-weight: 400;
+        }
+
+        .notion-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid var(--notion-border);
+        }
+
+        /* Feedback/Status */
+        #statusFeedback {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 6px;
+            background: #2383e2;
+            color: white;
+            font-size: 13px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: none;
+            z-index: 2000;
+        }
+
+        .btn-notion {
+            background: none;
+            border: 1px solid var(--notion-border);
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-notion:hover { background: var(--notion-hover); }
+
+        .hidden { display: none; }
+    </style>
 </head>
 <body>
 
-<nav class="navbar">
-    <a href="index.html" class="navbar-brand"><i class="fas fa-graduation-cap"></i> Medicina UNIP</a>
-    <div class="user-profile">
-        <div class="user-info-text">
-            <span class="user-name" id="displayUser">Carregando...</span>
-            <div class="user-meta"><span id="displayIp">0.0.0.0</span></div>
-        </div>
-        <div class="user-avatar" id="userAvatar">U</div>
-    </div>
-</nav>
-
-<div class="app-container">
     <aside class="sidebar">
-        <nav class="menu">
-            <a id="navBoard" class="active"><i class="fas fa-columns"></i> Board de Estudos</a>
-            <a id="navLib"><i class="fas fa-file-pdf"></i> Biblioteca</a>
+        <div class="sidebar-header">
+            <i class="fas fa-graduation-cap"></i> Medicina UNIP
+        </div>
+        <nav>
+            <div class="nav-item active" id="navBoard"><i class="fas fa-columns"></i> Board de Estudos</div>
+            <div class="nav-item" id="navLib"><i class="fas fa-book"></i> Biblioteca</div>
         </nav>
     </aside>
 
-    <main class="main-content">
-        <h1 class="page-title" id="pageTitle">Planner Semanal</h1>
-        <div id="statusFeedback"></div>
-
-        <section id="actionArea" class="quick-actions">
-            <button class="btn-primary" id="btnNovoAssunto"><i class="fas fa-plus"></i> Novo Assunto</button>
-            <input type="file" id="pdfInput" hidden accept="application/pdf">
-            <label for="pdfInput" class="upload-label"><i class="fas fa-cloud-upload-alt"></i> Upload PDF</label>
-        </section>
-
-        <section class="kanban-board" id="secBoard">
-            <div class="column">
-                <div class="column-title">A Fazer <span id="count-todo">0</span></div>
-                <div class="task-container" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+    <main class="main-container">
+        <div class="top-bar">
+            <div id="breadcrumb">Planner / <span id="currentViewName">Board</span></div>
+            <div style="display:flex; gap: 15px; align-items:center;">
+                <span id="displayIp" style="opacity: 0.6">0.0.0.0</span>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <b id="displayUser">...</b>
+                    <div style="width:24px; height:24px; background:#ddd; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:10px;" id="userAvatar">?</div>
+                </div>
             </div>
-            <div class="column">
-                <div class="column-title" style="color: #ef4444;">Revisão <span id="count-review">0</span></div>
-                <div class="task-container" id="review" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-            </div>
-            <div class="column">
-                <div class="column-title" style="color: #10b981;">Concluído <span id="count-done">0</span></div>
-                <div class="task-container" id="done" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-            </div>
-        </section>
+        </div>
 
-        <section id="secLib" class="hidden">
-            <div class="filter-tags" id="filterTags"></div>
-            <div id="listaBiblioteca"></div>
-        </section>
+        <div class="content">
+            <header class="page-header">
+                <h1 class="page-title" id="pageTitle">Board de Estudos</h1>
+                <div style="display:flex; gap: 10px;">
+                    <button class="btn-notion" id="btnNovoAssunto"><i class="fas fa-plus"></i> Novo Assunto</button>
+                    <input type="file" id="pdfInput" hidden accept="application/pdf">
+                    <label for="pdfInput" class="btn-notion" style="cursor:pointer;"><i class="fas fa-file-upload"></i> Adicionar PDF</label>
+                </div>
+            </header>
+
+            <section id="secBoard">
+                <div class="board">
+                    <div class="column">
+                        <div class="column-header"><span>⚪ A Fazer</span> <span id="count-todo">0</span></div>
+                        <div class="drop-zone" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    </div>
+                    <div class="column">
+                        <div class="column-header"><span>🔵 Revisão</span> <span id="count-review">0</span></div>
+                        <div class="drop-zone" id="review" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    </div>
+                    <div class="column">
+                        <div class="column-header"><span>🟢 Concluído</span> <span id="count-done">0</span></div>
+                        <div class="drop-zone" id="done" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="secLib" class="hidden">
+                <table class="notion-table">
+                    <thead>
+                        <tr>
+                            <th>Nome do Arquivo</th>
+                            <th>Tag / Categoria</th>
+                            <th>Data</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaBiblioteca"></tbody>
+                </table>
+            </section>
+        </div>
     </main>
-</div>
+
+    <div id="statusFeedback">Processando...</div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-const firebaseConfig = {
-    apiKey: "AIzaSyDj-c4uArNjAr7cSg396yfQR6xuyumh5_M",
-    authDomain: "simuladosmedicina-6a01b.firebaseapp.com",
-    projectId: "simuladosmedicina-6a01b",
-    storageBucket: "simuladosmedicina-6a01b.appspot.com",
-    messagingSenderId: "577452734306",
-    appId: "1:577452734306:web:5926d087a27a216a97de3b"
-};
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
-let currentUID = null;
-let selectedTags = new Set();
+    const firebaseConfig = {
+        apiKey: "AIzaSyDj-c4uArNjAr7cSg396yfQR6xuyumh5_M",
+        authDomain: "simuladosmedicina-6a01b.firebaseapp.com",
+        projectId: "simuladosmedicina-6a01b",
+        storageBucket: "simuladosmedicina-6a01b.firebasestorage.app",
+        messagingSenderId: "577452734306",
+        appId: "1:577452734306:web:5926d087a27a216a97de3b"
+    };
 
-// Drag & Drop
-window.allowDrop = ev => { ev.preventDefault(); ev.currentTarget.classList.add('drag-over'); };
-window.drag = ev => ev.dataTransfer.setData("text", ev.target.id);
-window.drop = async ev => {
-    ev.preventDefault(); ev.currentTarget.classList.remove('drag-over');
-    const taskId = ev.dataTransfer.getData("text");
-    const newColumn = ev.currentTarget.id;
-    if (!currentUID) return;
-    await updateDoc(doc(db, "planners", currentUID, "tasks", taskId), { column: newColumn });
-    carregarTasks();
-};
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
 
-// Auth
-onAuthStateChanged(auth, async user => {
-    if(!user){ window.location.href="login.html"; return; }
-    currentUID = user.uid;
-    document.getElementById("displayUser").textContent = user.email.split("@")[0];
-    document.getElementById("userAvatar").textContent = user.email[0].toUpperCase();
-    fetch('https://api.ipify.org?format=json').then(r=>r.json()).then(d=>document.getElementById('displayIp').textContent=d.ip);
-    carregarTasks();
-    carregarBiblioteca();
-});
+    let currentUID = null;
 
-// Feedback
-const showFeedback = (msg,type="info")=>{
-    const el=document.getElementById("statusFeedback");
-    el.style.display="block"; el.innerHTML=msg;
-    el.style.backgroundColor=type==="error"?"#fee2e2":"#dcfce7";
-    el.style.color=type==="error"?"#991b1b":"#166534";
-    el.style.borderColor=type==="error"?"#fecaca":"#bbf7d0";
-    if(type!=="loading"){ setTimeout(()=>el.style.display="none",4000);}
-};
+    // Feedback visual do Notion
+    const showFeedback = (msg, type = "info") => {
+        const el = document.getElementById("statusFeedback");
+        el.textContent = msg;
+        el.style.display = "block";
+        el.style.background = type === "error" ? "#eb5757" : "#2383e2";
+        if (type !== "loading") setTimeout(() => el.style.display = "none", 3000);
+    };
 
-// Navigation
-window.changeView=view=>{
-    document.getElementById("secBoard").classList.toggle("hidden", view!=='board');
-    document.getElementById("secLib").classList.toggle("hidden", view!=='lib');
-    document.getElementById("actionArea").style.display=view==='board'?'flex':'none';
-    document.getElementById("navBoard").classList.toggle("active", view==='board');
-    document.getElementById("navLib").classList.toggle("active", view==='lib');
-    document.getElementById("pageTitle").textContent=view==='board'?"Planner Semanal":"Minha Biblioteca";
-};
-document.getElementById("navBoard").onclick=()=>changeView('board');
-document.getElementById("navLib").onclick=()=>changeView('lib');
+    // Auth
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) { window.location.href = "login.html"; return; }
+        currentUID = user.uid;
+        document.getElementById("displayUser").textContent = user.email.split("@")[0];
+        document.getElementById("userAvatar").textContent = user.email[0].toUpperCase();
+        fetch('https://api.ipify.org?format=json').then(r => r.json()).then(d => document.getElementById('displayIp').textContent = d.ip);
+        carregarTasks();
+        carregarBiblioteca();
+    });
 
-// New Subject
-document.getElementById("btnNovoAssunto").onclick=async ()=>{
-    const t=prompt("Assunto de estudo (ex: Foliculogênese):");
-    if(!t||!currentUID) return;
-    showFeedback("Salvando assunto...","loading");
-    await addDoc(collection(db,"planners",currentUID,"tasks"),{titulo:t,column:"todo",criadoEm:serverTimestamp(),tipo:"manual"});
-    showFeedback("✅ Assunto adicionado!");
-    carregarTasks();
-};
+    // Navegação
+    const changeView = (view) => {
+        document.getElementById("secBoard").classList.toggle("hidden", view !== 'board');
+        document.getElementById("secLib").classList.toggle("hidden", view !== 'lib');
+        document.getElementById("navBoard").classList.toggle("active", view === 'board');
+        document.getElementById("navLib").classList.toggle("active", view === 'lib');
+        document.getElementById("pageTitle").textContent = view === 'board' ? "Board de Estudos" : "Biblioteca de Materiais";
+        document.getElementById("currentViewName").textContent = view === 'board' ? "Board" : "Biblioteca";
+    };
 
-// PDF Upload with Tags
-document.getElementById("pdfInput").onchange=async e=>{
-    const file=e.target.files[0];
-    if(!file||!currentUID) return;
-    const tagsInput=prompt("Informe etiquetas separadas por vírgula (ex: Anatomia,Fisiologia):");
-    if(!tagsInput) return showFeedback("Upload cancelado.","error");
-    const etiquetas=tagsInput.split(",").map(t=>t.trim()).filter(Boolean);
-    showFeedback("Subindo PDF...","loading");
-    const storageRef=ref(storage, `planners/${currentUID}/${Date.now()}_${file.name}`);
-    await uploadBytes(storageRef,file);
-    const url=await getDownloadURL(storageRef);
-    await addDoc(collection(db,"planners",currentUID,"arquivos"),{nome:file.name,url,etiquetas,data:serverTimestamp()});
-    // Add tasks with cycles
-    for(const c of [{label:"D1",col:"review"},{label:"D7",col:"todo"},{label:"D21",col:"todo"}]){
-        await addDoc(collection(db,"planners",currentUID,"tasks"),{
-            titulo:`[${c.label}] ${file.name}`,
-            pdfUrl:url,
-            column:c.col,
-            criadoEm:serverTimestamp(),
-            tipo:"pdf",
-            etiquetas
+    document.getElementById("navBoard").onclick = () => changeView('board');
+    document.getElementById("navLib").onclick = () => changeView('lib');
+
+    // Drag and Drop
+    window.allowDrop = (ev) => ev.preventDefault();
+    window.drag = (ev) => ev.dataTransfer.setData("text", ev.target.id);
+    window.drop = async (ev) => {
+        ev.preventDefault();
+        const taskId = ev.dataTransfer.getData("text");
+        const newColumn = ev.currentTarget.id;
+        const taskRef = doc(db, "planners", currentUID, "tasks", taskId);
+        await updateDoc(taskRef, { column: newColumn });
+        carregarTasks();
+    };
+
+    // Upload com TAG
+    document.getElementById("pdfInput").onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file || !currentUID) return;
+
+        const tag = prompt("Defina uma tag para este arquivo (ex: Anatomia, Fisiologia, Ginecologia):", "Geral");
+        if (tag === null) return;
+
+        showFeedback("Fazendo upload para o Notion...", "loading");
+        
+        try {
+            const storageRef = ref(storage, `planners/${currentUID}/${Date.now()}_${file.name}`);
+            await uploadBytes(storageRef, file);
+            const url = await getDownloadURL(storageRef);
+
+            // Salva na biblioteca com Tag
+            await addDoc(collection(db, "planners", currentUID, "arquivos"), {
+                nome: file.name,
+                url: url,
+                tag: tag.toUpperCase(),
+                data: serverTimestamp()
+            });
+
+            // Cria ciclo de estudo
+            await addDoc(collection(db, "planners", currentUID, "tasks"), {
+                titulo: `Revisão: ${file.name}`,
+                column: "review",
+                tipo: "pdf",
+                tag: tag.toUpperCase(),
+                criadoEm: serverTimestamp()
+            });
+
+            showFeedback("✅ Arquivo adicionado com sucesso!");
+            carregarTasks();
+            carregarBiblioteca();
+        } catch (err) {
+            showFeedback("Erro ao subir arquivo.", "error");
+        }
+    };
+
+    // Adicionar Assunto Manual
+    document.getElementById("btnNovoAssunto").onclick = async () => {
+        const t = prompt("Nome do Assunto:");
+        if (!t) return;
+        await addDoc(collection(db, "planners", currentUID, "tasks"), {
+            titulo: t, column: "todo", tipo: "manual", criadoEm: serverTimestamp()
+        });
+        carregarTasks();
+    };
+
+    async function carregarTasks() {
+        const q = query(collection(db, "planners", currentUID, "tasks"), orderBy("criadoEm", "desc"));
+        const snap = await getDocs(q);
+        const cols = { todo: document.getElementById("todo"), review: document.getElementById("review"), done: document.getElementById("done") };
+        const counts = { todo: 0, review: 0, done: 0 };
+        
+        Object.values(cols).forEach(c => c.innerHTML = "");
+
+        snap.forEach(d => {
+            const t = d.data();
+            counts[t.column]++;
+            const card = document.createElement("div");
+            card.className = "card";
+            card.id = d.id;
+            card.draggable = true;
+            card.ondragstart = window.drag;
+            card.innerHTML = `
+                <div style="font-size:14px; margin-bottom:8px;">${t.titulo}</div>
+                <div class="tag">${t.tag || (t.tipo === 'pdf' ? 'PDF' : 'NOTAS')}</div>
+            `;
+            cols[t.column].appendChild(card);
+        });
+
+        document.getElementById("count-todo").textContent = counts.todo;
+        document.getElementById("count-review").textContent = counts.review;
+        document.getElementById("count-done").textContent = counts.done;
+    }
+
+    async function carregarBiblioteca() {
+        const container = document.getElementById("listaBiblioteca");
+        const snap = await getDocs(query(collection(db, "planners", currentUID, "arquivos"), orderBy("data", "desc")));
+        container.innerHTML = "";
+        
+        snap.forEach(d => {
+            const p = d.data();
+            const dataFormatada = p.data ? p.data.toDate().toLocaleDateString('pt-BR') : '...';
+            container.innerHTML += `
+                <tr>
+                    <td><i class="far fa-file-pdf" style="color:#eb5757; margin-right:8px;"></i> ${p.nome}</td>
+                    <td><span class="tag" style="background:#e7f3ef; color:#0d5e42;">${p.tag || 'GERAL'}</span></td>
+                    <td style="color:var(--notion-text-light); font-size:12px;">${dataFormatada}</td>
+                    <td><a href="${p.url}" target="_blank" class="btn-notion" style="text-decoration:none; display:inline-flex;">Abrir</a></td>
+                </tr>
+            `;
         });
     }
-    showFeedback("✅ Upload e ciclos criados!");
-    e.target.value="";
-    carregarTasks();
-    carregarBiblioteca();
-};
-
-// Carregar Tasks
-async function carregarTasks(){
-    if(!currentUID) return;
-    const snap=await getDocs(query(collection(db,"planners",currentUID,"tasks"),orderBy("criadoEm","desc")));
-    const cols={todo:document.getElementById("todo"),review:document.getElementById("review"),done:document.getElementById("done")};
-    const counts={todo:0,review:0,done:0};
-    Object.values(cols).forEach(c=>c.innerHTML="");
-    snap.forEach(d=>{
-        const t=d.data(); const colId=t.column||"todo";
-        // Skip concluded in review
-        if(colId==="review"&&t.concluido) return;
-        counts[colId]++;
-        const card=document.createElement("div");
-        card.className="card";
-        card.id=d.id;
-        card.draggable=true;
-        card.ondragstart=window.drag;
-        let innerHTML=`<div style="font-weight:600;margin-bottom:4px;">${t.titulo}</div>`;
-        if(colId==="review"){
-            innerHTML+=`<div class="card-review"><span class="card-tags">${t.etiquetas? t.etiquetas.map(et=>`<span class="card-tag tag-custom">${et}</span>`).join(" ") : ""}</span>
-            <input type="checkbox" class="review-checkbox" ${t.concluido?"checked":""} data-id="${d.id}"> Concluído</div>`;
-        }else{
-            innerHTML+=`<div class="card-tags">${t.etiquetas? t.etiquetas.map(et=>`<span class="card-tag tag-custom">${et}</span>`).join(" ") : ""}</div>`;
-        }
-        card.innerHTML=innerHTML;
-        cols[colId].appendChild(card);
-    });
-    document.getElementById("count-todo").textContent=counts.todo;
-    document.getElementById("count-review").textContent=counts.review;
-    document.getElementById("count-done").textContent=counts.done;
-
-    // Add checkbox event
-    document.querySelectorAll(".review-checkbox").forEach(cb=>{
-        cb.onchange=async e=>{
-            const taskId=e.target.dataset.id;
-            await updateDoc(doc(db,"planners",currentUID,"tasks",taskId),{concluido:e.target.checked});
-            carregarTasks();
-        };
-    });
-}
-
-// Biblioteca com filtro multi-tags
-async function carregarBiblioteca(){
-    if(!currentUID) return;
-    const container=document.getElementById("listaBiblioteca");
-    const snap=await getDocs(query(collection(db,"planners",currentUID,"arquivos"),orderBy("data
+</script>
+</body>
+</html>
