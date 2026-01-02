@@ -1,422 +1,350 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planner de Estudos Medicina - Editor Avançado</title>
+    <title>Medicina UNIP | Notion Planner Ultimate</title>
     
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <style>
         :root {
-            --primary: #2c3e50;
-            --secondary: #3498db;
-            --accent: #e74c3c;
-            --light: #ecf0f1;
-            --dark: #2c3e50;
+            --notion-bg: #ffffff;
+            --notion-sidebar: #fbfbfa;
+            --notion-text: #37352f;
+            --notion-text-light: rgba(55, 53, 47, 0.65);
+            --notion-border: rgba(55, 53, 47, 0.12);
+            --notion-hover: rgba(55, 53, 47, 0.05);
+            --notion-blue: #2383e2;
         }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
-            margin: 0;
-            padding: 20px;
-            color: #333;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--notion-bg); color: var(--notion-text); display: flex; height: 100vh; overflow: hidden; }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+        .sidebar { width: 240px; background: var(--notion-sidebar); border-right: 1px solid var(--notion-border); display: flex; flex-direction: column; padding: 12px 0; flex-shrink: 0; }
+        .sidebar-header { padding: 0 16px 16px; font-weight: 700; font-size: 14px; border-bottom: 1px solid var(--notion-border); margin-bottom: 12px; }
+        .nav-item { padding: 8px 16px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--notion-text-light); transition: 0.2s; }
+        .nav-item:hover { background: var(--notion-hover); color: var(--notion-text); }
+        .nav-item.active { background: var(--notion-hover); font-weight: 600; color: var(--notion-text); }
 
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
+        .main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .top-bar { height: 45px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; border-bottom: 1px solid var(--notion-border); color: var(--notion-text-light); }
 
-        h1 { margin: 0; color: var(--primary); }
+        .content { flex: 1; overflow-x: auto; padding: 30px; display: flex; flex-direction: column; }
+        .page-title { font-size: 30px; font-weight: 700; margin-bottom: 20px; letter-spacing: -0.5px; }
 
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-
-        .btn-primary { background-color: var(--secondary); color: white; }
-        .btn-primary:hover { background-color: #2980b9; }
-        .btn-danger { background-color: var(--accent); color: white; }
-
-        /* Grid de Cards */
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-        }
+        .board { display: flex; gap: 14px; flex: 1; min-width: 1300px; }
+        .column { flex: 1; min-width: 250px; display: flex; flex-direction: column; }
+        .column-header { padding: 8px; font-size: 13px; font-weight: 600; color: var(--notion-text-light); display: flex; align-items: center; gap: 6px; }
+        .drop-zone { flex: 1; overflow-y: auto; padding-right: 4px; border-radius: 4px; }
 
         .card {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            transition: transform 0.2s;
-            cursor: pointer;
-            position: relative;
-            border-left: 5px solid var(--secondary);
+            background: white; border: 1px solid var(--notion-border); border-radius: 6px;
+            padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+            cursor: pointer; transition: 0.2s;
         }
+        .card:hover { border-color: #aaa; transform: translateY(-1px); }
+        .tag { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; background: #e3e2e0; margin-top: 8px; display: inline-block; }
 
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .card h3 { margin-top: 0; color: var(--dark); }
+        /* Modal Expandido para Editor */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; }
+        .modal-content { background: white; width: 90%; max-width: 900px; height: 85vh; border-radius: 8px; padding: 25px; display: flex; flex-direction: column; gap: 15px; position: relative; }
         
-        .card-tags {
-            margin: 10px 0;
-            display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
-        }
+        .editor-wrapper { flex: 1; overflow-y: auto; border: 1px solid var(--notion-border); border-radius: 4px; }
+        #quill-editor { height: 100%; font-size: 15px; }
 
-        .tag {
-            background: var(--light);
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8em;
-            color: var(--dark);
-        }
+        .input-notion { border: 1px solid var(--notion-border); border-radius: 4px; width: 100%; padding: 10px; font-size: 14px; outline: none; }
+        .btn-blue { background: var(--notion-blue); color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: 600; cursor: pointer; }
+        .btn-notion { border: 1px solid var(--notion-border); background: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; }
 
-        /* Modal do Editor */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
+        /* Iframe para PDF */
+        #pdfViewer { width: 100%; height: 100%; border: none; border-radius: 4px; }
 
-        .modal-content {
-            background: white;
-            width: 90%;
-            max-width: 900px;
-            height: 85vh;
-            border-radius: 10px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        /* Estilos do Editor Quill */
-        #editor-container {
-            flex-grow: 1;
-            background: white;
-            font-size: 16px;
-            overflow-y: auto;
-        }
-        
-        .ql-toolbar {
-            border-top-left-radius: 5px;
-            border-top-right-radius: 5px;
-        }
-        
-        .ql-container {
-            border-bottom-left-radius: 5px;
-            border-bottom-right-radius: 5px;
-        }
-
-        /* Tabelas no Quill */
-        .ql-editor table {
-            border-collapse: collapse;
-            width: 100%;
-        }
-        .ql-editor td, .ql-editor th {
-            border: 1px solid #ccc;
-            padding: 5px;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: #aaa;
-        }
-        
-        .auth-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-        }
-        
-        .auth-box {
-            background: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-
-        #app-content { display: none; }
+        #statusFeedback { position: fixed; bottom: 20px; right: 20px; background: #37352f; color: white; padding: 12px 24px; border-radius: 6px; font-size: 13px; display: none; z-index: 3000; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
-    <div id="auth-screen" class="auth-container">
-        <div class="auth-box">
-            <h2>Simulados Medicina</h2>
-            <p>Faça login para acessar seus resumos</p>
-            <button class="btn btn-primary" onclick="googleLogin()">Entrar com Google</button>
-        </div>
-    </div>
-
-    <div id="app-content">
-        <div class="container">
-            <header>
-                <h1>Meus Resumos & PDFs</h1>
-                <div>
-                    <button class="btn btn-primary" onclick="createNewSubject()">+ Novo Assunto</button>
-                    <button class="btn btn-danger" onclick="logout()">Sair</button>
-                </div>
-            </header>
-
-            <div id="subjects-grid" class="grid">
-                <p style="grid-column: 1/-1; text-align: center;">Carregando...</p>
-            </div>
-        </div>
-    </div>
-
-    <div id="editor-modal" class="modal">
+    <div class="modal" id="modalEditor">
         <div class="modal-content">
-            <div class="modal-header">
-                <input type="text" id="modal-title" placeholder="Título do Assunto" 
-                       style="font-size: 1.5em; border: none; font-weight: bold; width: 70%; outline: none;">
-                <div>
-                    <button class="btn btn-primary" onclick="saveCurrentDoc()">Salvar Alterações</button>
-                    <button class="close-btn" onclick="closeEditor()">&times;</button>
-                </div>
-            </div>
+            <input type="text" id="subjectTitle" class="input-notion" placeholder="Título do Assunto...">
+            <input type="text" id="subjectTag" class="input-notion" placeholder="Tag (Ex: ANATOMIA)">
             
-            <input type="text" id="modal-tags" placeholder="Tags (separadas por vírgula)" 
-                   style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 5px;">
+            <div class="editor-wrapper">
+                <div id="quill-editor"></div>
+            </div>
 
-            <div id="quill-toolbar"></div>
-            <div id="editor-container"></div>
+            <div style="display:flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn-notion" onclick="fecharModal()">Cancelar</button>
+                <button class="btn-blue" id="btnSalvar">Salvar no Planner</button>
+            </div>
         </div>
     </div>
 
-    <script>
-        // --- 1. CONFIGURAÇÃO FIREBASE ---
-        // (Sua chave segura - Web SDK)
-        const firebaseConfig = { 
-            apiKey: "AIzaSyDj-c4uArNjAr7cSg396yfQR6xuyumh5_M", 
-            authDomain: "simuladosmedicina-6a01b.firebaseapp.com", 
-            projectId: "simuladosmedicina-6a01b", 
-            storageBucket: "simuladosmedicina-6a01b.firebasestorage.app", 
-            messagingSenderId: "577452734306", 
-            appId: "1:577452734306:web:5926d087a27a216a97de3b" 
-        };
+    <div class="modal" id="modalView">
+        <div class="modal-content">
+            <h2 id="viewTitle" style="margin-bottom:10px;"></h2>
+            <div id="viewContainer" style="flex:1; overflow:hidden;">
+                </div>
+            <div style="display:flex; justify-content: space-between; margin-top:15px;">
+                <button class="btn-notion" id="btnEditarNota"><i class="fas fa-edit"></i> Editar Texto</button>
+                <button class="btn-notion" onclick="fecharModalView()">Fechar</button>
+            </div>
+        </div>
+    </div>
 
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+    <aside class="sidebar">
+        <div class="sidebar-header"><i class="fas fa-graduation-cap"></i> Medicina UNIP</div>
+        <div class="nav-item active" id="navBoard"><i class="fas fa-columns"></i> Board de Ciclos</div>
+        <div class="nav-item" id="navLib"><i class="fas fa-book"></i> Biblioteca</div>
+    </aside>
 
-        // --- 2. CONFIGURAÇÃO DO EDITOR QUILL (Tipo Word) ---
-        var quill;
-        document.addEventListener('DOMContentLoaded', function() {
-            quill = new Quill('#editor-container', {
-                theme: 'snow',
-                modules: {
-                    toolbar: [
-                        [{ 'header': [1, 2, 3, false] }],
-                        ['bold', 'italic', 'underline', 'strike'], // Negrito, Itálico...
-                        [{ 'color': [] }, { 'background': [] }],   // Cores
-                        [{ 'list': 'ordered'}, { 'list': 'bullet' }], // Listas
-                        [{ 'align': [] }],
-                        ['link', 'image', 'video'],                // Mídia
-                        ['clean']                                  // Limpar formatação
-                    ]
-                },
-                placeholder: 'Cole aqui o conteúdo do Gemini (Tabelas, Textos, etc)...'
-            });
-        });
+    <main class="main-container">
+        <div class="top-bar">
+            <div>Medicina / Ciclos de Estudo</div>
+            <div style="display:flex; gap: 15px; align-items:center;">
+                <span id="displayIp" style="opacity: 0.5">0.0.0.0</span>
+                <b id="displayUser">...</b>
+                <div style="width:24px; height:24px; background:#efefef; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold;" id="userAvatar">?</div>
+            </div>
+        </div>
 
-        // Variáveis Globais
-        let currentUser = null;
-        let currentDocId = null;
-
-        // --- 3. AUTENTICAÇÃO ---
-        function googleLogin() {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider).catch(alert);
-        }
-
-        function logout() {
-            auth.signOut();
-            window.location.reload();
-        }
-
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                currentUser = user;
-                document.getElementById('auth-screen').style.display = 'none';
-                document.getElementById('app-content').style.display = 'block';
-                loadSubjects();
-            } else {
-                document.getElementById('auth-screen').style.display = 'flex';
-                document.getElementById('app-content').style.display = 'none';
-            }
-        });
-
-        // --- 4. FUNÇÕES DO BANCO DE DADOS (Firestore) ---
-
-        // Carregar todos os assuntos (Cards)
-        function loadSubjects() {
-            const grid = document.getElementById('subjects-grid');
-            grid.innerHTML = '<p>Buscando resumos...</p>';
-
-            db.collection('planners').doc(currentUser.uid).collection('subjects')
-              .orderBy('createdAt', 'desc')
-              .onSnapshot(snapshot => {
-                  grid.innerHTML = '';
-                  if (snapshot.empty) {
-                      grid.innerHTML = '<p>Nenhum resumo encontrado. Clique em "Novo Assunto".</p>';
-                      return;
-                  }
-
-                  snapshot.forEach(doc => {
-                      const data = doc.data();
-                      const div = document.createElement('div');
-                      div.className = 'card';
-                      // Ao clicar no card, abre o editor
-                      div.onclick = () => openEditor(doc.id, data);
-                      
-                      // Renderiza tags
-                      let tagsHtml = '';
-                      if (data.tags) {
-                          data.tags.forEach(tag => {
-                              tagsHtml += `<span class="tag">${tag}</span>`;
-                          });
-                      }
-
-                      // Pequena prévia do texto (sem HTML)
-                      const previewText = data.htmlContent ? 
-                          data.htmlContent.replace(/<[^>]*>?/gm, '').substring(0, 100) + '...' : 
-                          'Clique para adicionar conteúdo...';
-
-                      div.innerHTML = `
-                          <h3>${data.title || 'Sem Título'}</h3>
-                          <div class="card-tags">${tagsHtml}</div>
-                          <p style="font-size: 0.9em; color: #666;">${previewText}</p>
-                          <small style="color: #999">Atualizado em: ${data.updatedAt ? new Date(data.updatedAt.seconds * 1000).toLocaleDateString() : 'N/A'}</small>
-                      `;
-                      grid.appendChild(div);
-                  });
-              });
-        }
-
-        // Criar Novo Assunto
-        async function createNewSubject() {
-            const newDoc = await db.collection('planners').doc(currentUser.uid).collection('subjects').add({
-                title: 'Novo Assunto',
-                tags: ['Geral'],
-                htmlContent: '', // Conteúdo HTML vazio
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            // Abre o editor imediatamente
-            openEditor(newDoc.id, { title: 'Novo Assunto', tags: ['Geral'], htmlContent: '' });
-        }
-
-        // --- 5. LÓGICA DO EDITOR (Word-like) ---
-
-        // Abrir Editor
-        function openEditor(docId, data) {
-            currentDocId = docId;
-            const modal = document.getElementById('editor-modal');
+        <div class="content">
+            <h1 class="page-title">Planner de Estudos</h1>
             
-            // Preenche Título e Tags
-            document.getElementById('modal-title').value = data.title || '';
-            document.getElementById('modal-tags').value = data.tags ? data.tags.join(', ') : '';
+            <div style="display:flex; gap: 10px; margin-bottom: 25px;">
+                <button class="btn-notion" id="btnNovoAssunto"><i class="fas fa-plus"></i> + Novo Assunto</button>
+                <input type="file" id="pdfInput" hidden accept="application/pdf">
+                <label for="pdfInput" class="btn-notion" style="cursor:pointer;"><i class="fas fa-file-upload"></i> Subir PDF</label>
+            </div>
 
-            // Preenche o Editor Quill com o HTML salvo
-            // Se for um card antigo sem htmlContent, tenta usar o 'content' antigo ou vazio
-            const contentToLoad = data.htmlContent || data.content || '';
-            
-            // Limpa e insere o conteúdo HTML
-            quill.root.innerHTML = contentToLoad;
+            <section id="secBoard">
+                <div class="board">
+                    <div class="column"><div class="column-header">⚪ Recentes</div><div class="drop-zone" id="recent" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
+                    <div class="column"><div class="column-header">🔵 Revisar D+1</div><div class="drop-zone" id="d1" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
+                    <div class="column"><div class="column-header">🟡 Revisar D+7</div><div class="drop-zone" id="d7" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
+                    <div class="column"><div class="column-header">🔴 Revisar D+21</div><div class="drop-zone" id="d21" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
+                    <div class="column"><div class="column-header">🟢 Concluído</div><div class="drop-zone" id="done" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
+                </div>
+            </section>
 
-            modal.style.display = 'flex';
+            <section id="secLib" class="hidden">
+                <table id="tableLib" style="width:100%; border-collapse:collapse; font-size:14px;">
+                    <thead><tr style="border-bottom: 1px solid #ddd; text-align:left;"><th style="padding:10px;">Item</th><th style="padding:10px;">Tag</th><th style="padding:10px;">Ação</th></tr></thead>
+                    <tbody id="listaBiblioteca"></tbody>
+                </table>
+            </section>
+        </div>
+    </main>
+
+    <div id="statusFeedback">Processando...</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDj-c4uArNjAr7cSg396yfQR6xuyumh5_M",
+        authDomain: "simuladosmedicina-6a01b.firebaseapp.com",
+        projectId: "simuladosmedicina-6a01b",
+        storageBucket: "simuladosmedicina-6a01b.firebasestorage.app",
+        messagingSenderId: "577452734306",
+        appId: "1:577452734306:web:5926d087a27a216a97de3b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    let currentUID = null;
+    let editingDocId = null;
+
+    // Inicializar Editor Quill
+    const quill = new Quill('#quill-editor', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                [{ 'header': [1, 2, false] }],
+                ['bold', 'italic', 'underline'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                ['link', 'blockquote', 'code-block'],
+                [{ 'align': [] }],
+                ['clean']
+            ]
         }
+    });
 
-        // Salvar Documento
-        async function saveCurrentDoc() {
-            if (!currentDocId) return;
+    // Função para tratar o colar do Gemini (Converte Markdown se necessário)
+    quill.clipboard.addMatcher(Node.TEXT_NODE, (node, delta) => {
+        if (node.data.includes('***') || node.data.includes('* ')) {
+            const html = marked.parse(node.data);
+            const container = document.createElement('div');
+            container.innerHTML = html;
+            return quill.clipboard.convert(container.innerHTML);
+        }
+        return delta;
+    });
 
-            const title = document.getElementById('modal-title').value;
-            const tagsString = document.getElementById('modal-tags').value;
-            const tags = tagsString.split(',').map(t => t.trim()).filter(t => t);
-            
-            // Pega o HTML gerado pelo Quill (isso mantém negritos, tabelas, cores)
-            const htmlContent = quill.root.innerHTML;
-            // Pega o texto puro para busca/previa
-            const plainText = quill.getText(); 
+    // Modais
+    const modalEditor = document.getElementById('modalEditor');
+    const modalView = document.getElementById('modalView');
 
-            try {
-                await db.collection('planners').doc(currentUser.uid).collection('subjects').doc(currentDocId).update({
-                    title: title,
-                    tags: tags,
-                    htmlContent: htmlContent, // Salva como HTML rico
-                    textContent: plainText,   // Salva texto puro para facilitar
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    window.fecharModal = () => { modalEditor.style.display = 'none'; editingDocId = null; quill.setContents([]); };
+    window.fecharModalView = () => { modalView.style.display = 'none'; document.getElementById('viewContainer').innerHTML = ''; };
+
+    document.getElementById('btnNovoAssunto').onclick = () => {
+        document.getElementById('subjectTitle').value = "";
+        document.getElementById('subjectTag').value = "";
+        modalEditor.style.display = 'flex';
+    };
+
+    onAuthStateChanged(auth, (user) => {
+        if (!user) { window.location.href = "login.html"; return; }
+        currentUID = user.uid;
+        document.getElementById("displayUser").textContent = user.email.split("@")[0];
+        document.getElementById("userAvatar").textContent = user.email[0].toUpperCase();
+        fetch('https://api.ipify.org?format=json').then(r => r.json()).then(d => document.getElementById('displayIp').textContent = d.ip);
+        carregarBoard();
+    });
+
+    // SALVAR OU ATUALIZAR
+    document.getElementById('btnSalvar').onclick = async () => {
+        const title = document.getElementById('subjectTitle').value;
+        const tag = document.getElementById('subjectTag').value || "GERAL";
+        const content = quill.root.innerHTML;
+
+        if (!title) return alert("Título obrigatório!");
+
+        document.getElementById('statusFeedback').style.display = 'block';
+        
+        if (editingDocId) {
+            // Atualizar existente
+            await updateDoc(doc(db, "planners", currentUID, "tasks", editingDocId), { titulo: title, tag: tag.toUpperCase(), content: content });
+        } else {
+            // Criar novos ciclos
+            const now = Date.now();
+            const ciclos = [
+                { n: `[REC] ${title}`, t: now, col: 'recent' },
+                { n: `[D+1] ${title}`, t: now + 86400000, col: 'd1' },
+                { n: `[D+7] ${title}`, t: now + 604800000, col: 'd7' },
+                { n: `[D+21] ${title}`, t: now + 1814400000, col: 'd21' }
+            ];
+
+            for (const c of ciclos) {
+                await addDoc(collection(db, "planners", currentUID, "tasks"), {
+                    titulo: c.n, tag: tag.toUpperCase(), content: content, targetDate: c.t, column: c.col, criadoEm: serverTimestamp(), tipo: 'texto'
                 });
-                alert('Salvo com sucesso!');
-                closeEditor();
-            } catch (error) {
-                console.error("Erro ao salvar:", error);
-                alert("Erro ao salvar.");
             }
+            await addDoc(collection(db, "planners", currentUID, "arquivos"), { nome: title, content: content, tag: tag.toUpperCase(), data: now, tipo: 'texto' });
         }
 
-        function closeEditor() {
-            document.getElementById('editor-modal').style.display = 'none';
-            currentDocId = null;
-        }
+        fecharModal();
+        document.getElementById('statusFeedback').style.display = 'none';
+        carregarBoard();
+    };
 
-        // Fechar modal ao clicar fora
-        window.onclick = function(event) {
-            const modal = document.getElementById('editor-modal');
-            if (event.target == modal) {
-                closeEditor();
-            }
+    // VISUALIZAÇÃO
+    window.abrirItem = async (id) => {
+        const d = await getDoc(doc(db, "planners", currentUID, "tasks", id));
+        const data = d.data();
+        document.getElementById('viewTitle').textContent = data.titulo;
+        const container = document.getElementById('viewContainer');
+        const btnEdit = document.getElementById('btnEditarNota');
+
+        if (data.pdfUrl) {
+            container.innerHTML = `<iframe src="${data.pdfUrl}" id="pdfViewer"></iframe>`;
+            btnEdit.style.display = 'none';
+        } else {
+            container.innerHTML = `<div class="rich-text" style="padding:10px; height:100%; overflow-y:auto;">${data.content}</div>`;
+            btnEdit.style.display = 'block';
+            btnEdit.onclick = () => {
+                editingDocId = id;
+                document.getElementById('subjectTitle').value = data.titulo;
+                document.getElementById('subjectTag').value = data.tag;
+                quill.root.innerHTML = data.content;
+                fecharModalView();
+                modalEditor.style.display = 'flex';
+            };
         }
-    </script>
+        modalView.style.display = 'flex';
+    };
+
+    async function carregarBoard() {
+        if (!currentUID) return;
+        const snap = await getDocs(query(collection(db, "planners", currentUID, "tasks"), orderBy("criadoEm", "desc")));
+        const cols = { recent: document.getElementById("recent"), d1: document.getElementById("d1"), d7: document.getElementById("d7"), d21: document.getElementById("d21"), done: document.getElementById("done") };
+        Object.values(cols).forEach(c => c.innerHTML = "");
+        const agora = Date.now();
+
+        snap.forEach(d => {
+            const t = d.data();
+            if (t.column !== 'done' && agora < t.targetDate) return; 
+
+            const card = document.createElement("div");
+            card.className = "card";
+            card.id = d.id;
+            card.draggable = true;
+            card.onclick = () => abrirItem(d.id);
+            card.ondragstart = (e) => e.dataTransfer.setData("text", e.target.id);
+            card.innerHTML = `<div style="font-size:13px; font-weight:600;">${t.titulo}</div><span class="tag">${t.tag}</span>`;
+            if (cols[t.column]) cols[t.column].appendChild(card);
+        });
+    }
+
+    // Drag & Drop
+    window.allowDrop = (e) => e.preventDefault();
+    window.drop = async (e) => {
+        e.preventDefault();
+        const id = e.dataTransfer.getData("text");
+        const col = e.currentTarget.id;
+        if(col) {
+            await updateDoc(doc(db, "planners", currentUID, "tasks", id), { column: col });
+            carregarBoard();
+        }
+    };
+
+    // Navegação Simples
+    document.getElementById('navBoard').onclick = () => { document.getElementById('secBoard').classList.remove('hidden'); document.getElementById('secLib').classList.add('hidden'); };
+    document.getElementById('navLib').onclick = () => { document.getElementById('secBoard').classList.add('hidden'); document.getElementById('secLib').classList.remove('hidden'); carregarBiblioteca(); };
+
+    async function carregarBiblioteca() {
+        const snap = await getDocs(collection(db, "planners", currentUID, "arquivos"));
+        const body = document.getElementById("listaBiblioteca");
+        body.innerHTML = "";
+        snap.forEach(d => {
+            const p = d.data();
+            body.innerHTML += `<tr style="border-bottom:1px solid #eee;">
+                <td style="padding:10px;">${p.nome}</td>
+                <td><span class="tag">${p.tag}</span></td>
+                <td><button class="btn-notion" onclick="abrirItemDoArquivo('${d.id}')">Abrir</button></td>
+            </tr>`;
+        });
+    }
+
+    // Upload PDF
+    document.getElementById("pdfInput").onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const tag = prompt("Tag do PDF:", "GERAL") || "GERAL";
+        const refS = ref(storage, `planners/${currentUID}/${Date.now()}_${file.name}`);
+        await uploadBytes(refS, file);
+        const url = await getDownloadURL(refS);
+        const now = Date.now();
+        const ciclos = [{n:`[REC] ${file.name}`, t:now, col:'recent'}, {n:`[D+1] ${file.name}`, t:now+86400000, col:'d1'}, {n:`[D+7] ${file.name}`, t:now+604800000, col:'d7'}, {n:`[D+21] ${file.name}`, t:now+1814400000, col:'d21'}];
+        for(const c of ciclos) await addDoc(collection(db, "planners", currentUID, "tasks"), { titulo: c.n, tag: tag.toUpperCase(), pdfUrl: url, targetDate: c.t, column: c.col, criadoEm: serverTimestamp(), tipo: 'pdf' });
+        await addDoc(collection(db, "planners", currentUID, "arquivos"), { nome: file.name, url, tag: tag.toUpperCase(), data: now, tipo: 'pdf' });
+        carregarBoard();
+    };
+</script>
 </body>
 </html>
