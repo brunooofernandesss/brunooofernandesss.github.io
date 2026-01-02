@@ -33,7 +33,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
 
-        /* Sidebar com rolagem corrigida */
+        /* Sidebar com correção para Chrome Mobile */
 .sidebar { 
     width: 240px; 
     background: #fbfbfa; 
@@ -41,9 +41,16 @@
     display: flex; 
     flex-direction: column; 
     flex-shrink: 0; 
-    height: 100vh; 
-    overflow-y: auto; /* Garante a rolagem */
+    
+    /* CORREÇÃO AQUI: Usa 100dvh (altura dinâmica) para ignorar a barra do navegador */
+    height: 100vh;        /* Fallback para navegadores antigos */
+    height: 100dvh;       /* Funciona no Chrome Mobile moderno */
+    
+    overflow-y: auto;     /* Permite rolar se o conteúdo for grande */
     overflow-x: hidden;
+    
+    /* Aumentei o padding no final para garantir que as metas subam acima da barra do Android */
+    padding-bottom: 120px; 
 }
 
         
