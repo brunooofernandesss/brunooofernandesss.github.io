@@ -33,19 +33,60 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
 
-        /* Sidebar */
-        .sidebar { width: 240px; background: #fbfbfa; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 16px 0; flex-shrink: 0; }
+        /* Sidebar com correção para Chrome Mobile */
+.sidebar { 
+    width: 240px; 
+    background: #fbfbfa; 
+    border-right: 1px solid var(--border-color); 
+    display: flex; 
+    flex-direction: column; 
+    flex-shrink: 0; 
+    
+    /* CORREÇÃO AQUI: Usa 100dvh (altura dinâmica) para ignorar a barra do navegador */
+    height: 100vh;        /* Fallback para navegadores antigos */
+    height: 100dvh;       /* Funciona no Chrome Mobile moderno */
+    
+    overflow-y: auto;     /* Permite rolar se o conteúdo for grande */
+    overflow-x: hidden;
+    
+    /* Aumentei o padding no final para garantir que as metas subam acima da barra do Android */
+    padding-bottom: 120px; 
+}
+
         
+        /* Personalização da barra de rolagem da sidebar */
+        .sidebar::-webkit-scrollbar { width: 6px; }
+        .sidebar::-webkit-scrollbar-thumb { background-color: #e0e0e0; border-radius: 3px; }
+
         .sidebar-header { 
-            padding: 0 16px 16px; border-bottom: 1px solid var(--border-color); margin-bottom: 12px; 
-            display: flex; flex-direction: column; gap: 4px;
+            padding: 16px; 
+            border-bottom: 1px solid var(--border-color); 
+            margin-bottom: 12px; 
+            display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;
         }
         .user-id-text { font-weight: 600; font-size: 14px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .user-ip-text { font-size: 11px; color: var(--text-secondary); font-family: monospace; }
 
-        .nav-item { padding: 8px 16px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: var(--text-secondary); transition: 0.2s; border-radius: 4px; margin: 0 8px; }
+        .nav-item { padding: 8px 16px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: var(--text-secondary); transition: 0.2s; border-radius: 4px; margin: 0 8px; flex-shrink: 0; }
         .nav-item:hover { background: #efefef; color: var(--text-primary); }
         .nav-item.active { background: #efefef; font-weight: 600; color: var(--text-primary); }
+
+        /* --- METAS NA SIDEBAR CORRIGIDAS --- */
+.sidebar-goals { 
+    padding: 20px 16px; 
+    margin-top: 20px; /* <--- Mudei para fixo: fica logo abaixo do menu */
+    border-top: 1px solid var(--border-color); 
+    flex-shrink: 0; 
+    background: #fbfbfa;
+    padding-bottom: 80px; /* <--- Adicionei isso: espaço extra para não cortar no final */
+}
+
+        .goals-title { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+        .goal-item { margin-bottom: 12px; }
+        .goal-header { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; color: var(--text-primary); font-weight: 500; }
+        .goal-bar-bg { height: 6px; background: #e9e9e7; border-radius: 3px; overflow: hidden; }
+        .goal-bar-fill { height: 100%; background: var(--accent-color); width: 0%; transition: width 0.5s ease; border-radius: 3px; }
+        .goal-bar-fill.complete { background: var(--text-green); }
 
         /* Main Content */
         .main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
@@ -54,18 +95,6 @@
         .content { flex: 1; overflow: hidden; padding: 24px; display: flex; flex-direction: column; }
         .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-shrink: 0; }
         .page-title { font-size: 26px; font-weight: 700; color: var(--text-primary); }
-
-        /* SELETOR DE SEMANA */
-        .week-selector-wrapper {
-            display: flex; align-items: center; gap: 8px; position: relative;
-            cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: 0.2s;
-        }
-        .week-selector-wrapper:hover { background: #f0f0f0; }
-        .week-select-native {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            opacity: 0; cursor: pointer; z-index: 10;
-        }
-        .week-display { display: flex; align-items: center; gap: 6px; font-size: 13px; }
 
         /* Board */
         .week-board { 
@@ -90,7 +119,10 @@
         .day-header.today { background: #ffe2dd; color: #d44c47; }
 
         .drop-zone {
-            flex: 1; overflow-y: auto; padding-bottom: 40px; scrollbar-width: thin;
+            flex: 1; 
+            overflow-y: auto; 
+            padding-bottom: 100px; /* Padding extra para scroll dos cards */
+            scrollbar-width: thin;
         }
         .drop-zone::-webkit-scrollbar { width: 6px; }
         .drop-zone::-webkit-scrollbar-thumb { background-color: #ddd; border-radius: 4px; }
@@ -121,6 +153,15 @@
         }
         
         .card-meta { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 11px; color: var(--text-secondary); }
+
+        /* UI Elements */
+        .week-selector-wrapper {
+            display: flex; align-items: center; gap: 8px; position: relative;
+            cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: 0.2s;
+        }
+        .week-selector-wrapper:hover { background: #f0f0f0; }
+        .week-select-native { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10; }
+        .week-display { display: flex; align-items: center; gap: 6px; font-size: 13px; }
 
         .btn-action {
             background: white; border: 1px solid var(--border-color); padding: 8px 12px;
@@ -187,10 +228,43 @@
             <div id="headerUserIP" class="user-ip-text">...</div>
         </div>
         
-        <nav>
-            <div class="nav-item active" id="navBoard"><i class="far fa-calendar-alt"></i> Cronograma Semanal</div>
+        <nav style="flex: 1 0 auto;"> <div class="nav-item active" id="navBoard"><i class="far fa-calendar-alt"></i> Cronograma Semanal</div>
             <div class="nav-item" id="navLib"><i class="fas fa-folder-open"></i> Biblioteca de Aulas</div>
         </nav>
+
+        <div class="sidebar-goals">
+            <div class="goals-title"><i class="fas fa-bullseye"></i> Metas</div>
+            
+            <div class="goal-item">
+                <div class="goal-header">
+                    <span>Diária</span>
+                    <span id="goalDailyText">0/0</span>
+                </div>
+                <div class="goal-bar-bg">
+                    <div id="goalDailyBar" class="goal-bar-fill"></div>
+                </div>
+            </div>
+
+            <div class="goal-item">
+                <div class="goal-header">
+                    <span>Semanal</span>
+                    <span id="goalWeeklyText">0/0</span>
+                </div>
+                <div class="goal-bar-bg">
+                    <div id="goalWeeklyBar" class="goal-bar-fill"></div>
+                </div>
+            </div>
+
+            <div class="goal-item">
+                <div class="goal-header">
+                    <span>Mensal</span>
+                    <span id="goalMonthlyText">0/0</span>
+                </div>
+                <div class="goal-bar-bg">
+                    <div id="goalMonthlyBar" class="goal-bar-fill"></div>
+                </div>
+            </div>
+        </div>
     </aside>
 
     <main class="main-container">
@@ -269,7 +343,6 @@
     let currentBoardStart = new Date(); 
     let allTasksCache = []; 
 
-    // --- QUILL EDITOR ---
     const quill = new Quill('#quill-editor', {
         theme: 'snow',
         placeholder: 'Cole seu conteúdo aqui...',
@@ -299,22 +372,82 @@
 
     async function loadDataAndInit() {
         if (!currentUID) return;
-        
         const snap = await getDocs(query(collection(db, "planners", currentUID, "tasks")));
         allTasksCache = [];
         snap.forEach(d => allTasksCache.push({ id: d.id, ...d.data() }));
-
         setupWeekNavigator();
         renderWeeklyBoard();
+        updateGoals(); 
     }
 
-    // --- CORREÇÃO DA NAVEGAÇÃO (HISTÓRICO COMPLETO) ---
+    // --- LÓGICA DE METAS (X/TOTAL) ---
+    function updateGoals() {
+        if (!allTasksCache.length) return;
+
+        const now = new Date();
+        const todayStr = now.toLocaleDateString('pt-BR');
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+
+        const currentWeekStart = getStartOfWeek(now);
+        const currentWeekEnd = new Date(currentWeekStart);
+        currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
+
+        let stats = {
+            daily: { total: 0, done: 0 },
+            weekly: { total: 0, done: 0 },
+            monthly: { total: 0, done: 0 }
+        };
+
+        allTasksCache.forEach(t => {
+            const tDate = new Date(t.targetDate);
+            // Diária (Hoje)
+            if (tDate.toLocaleDateString('pt-BR') === todayStr) {
+                stats.daily.total++;
+                if (t.concluido) stats.daily.done++;
+            }
+            // Semanal (Real)
+            if (tDate >= currentWeekStart && tDate <= currentWeekEnd) {
+                stats.weekly.total++;
+                if (t.concluido) stats.weekly.done++;
+            }
+            // Mensal
+            if (tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear) {
+                stats.monthly.total++;
+                if (t.concluido) stats.monthly.done++;
+            }
+        });
+
+        updateProgressBar('Daily', stats.daily);
+        updateProgressBar('Weekly', stats.weekly);
+        updateProgressBar('Monthly', stats.monthly);
+    }
+
+    function updateProgressBar(type, data) {
+        const pct = data.total === 0 ? 0 : Math.round((data.done / data.total) * 100);
+        
+        const bar = document.getElementById(`goal${type}Bar`);
+        const text = document.getElementById(`goal${type}Text`);
+        
+        if (bar && text) {
+            bar.style.width = `${pct}%`;
+            // Exibição em FRAÇÃO conforme pedido (8/9)
+            text.textContent = `${data.done}/${data.total}`;
+            
+            if (pct === 100 && data.total > 0) {
+                bar.classList.add('complete');
+            } else {
+                bar.classList.remove('complete');
+            }
+        }
+    }
+
+    // --- NAVEGAÇÃO ---
     function setupWeekNavigator() {
         const select = document.getElementById('weekSelect');
         select.innerHTML = '';
 
-        // 1. Achar a data mínima (início do histórico) e máxima (última revisão futura)
-        let minDate = new Date().getTime(); // Começa com hoje como padrão
+        let minDate = new Date().getTime(); 
         let maxDate = new Date().getTime();
 
         if (allTasksCache.length > 0) {
@@ -324,17 +457,13 @@
             });
         }
 
-        // 2. Definir o loop: Da semana da tarefa mais antiga até a mais futura
-        const historyStart = getStartOfWeek(new Date(minDate)); // Início real do histórico
+        const historyStart = getStartOfWeek(new Date(minDate)); 
         const futureEnd = new Date(maxDate);
-        futureEnd.setDate(futureEnd.getDate() + 7); // Margem de segurança
+        futureEnd.setDate(futureEnd.getDate() + 7); 
 
         let loopDate = new Date(historyStart);
-        
-        // Data atual (para selecionar por padrão)
         const todayStart = getStartOfWeek(new Date()).getTime();
-        let optionSelected = false;
-
+        
         while (loopDate <= futureEnd) {
             const endOfWeek = new Date(loopDate);
             endOfWeek.setDate(loopDate.getDate() + 6);
@@ -346,26 +475,13 @@
             option.value = value;
             option.text = label;
             
-            // Se for a semana atual, seleciona ela
             if (value === todayStart) {
                 option.selected = true;
                 currentBoardStart = new Date(loopDate);
-                optionSelected = true;
             }
-            
             select.appendChild(option);
             loopDate.setDate(loopDate.getDate() + 7);
         }
-
-        // Se a semana atual não foi encontrada (ex: usuário só tem tarefas no passado), seleciona a primeira da lista
-        if (!optionSelected && select.options.length > 0) {
-            // Se as tarefas são todas futuras, seleciona a primeira. 
-            // Mas normalmente queremos focar no HOJE. 
-            // Se hoje não está na lista (raro), forçamos o início da lista.
-            // Para garantir UX, vamos manter currentBoardStart em "hoje" mesmo se vazio, 
-            // mas o dropdown vai mostrar a opção mais próxima.
-        }
-
         updateWeekLabel();
     }
 
@@ -382,7 +498,6 @@
             `${formatDateDisplay(currentBoardStart)} - ${formatDateDisplay(endOfWeek)}`;
     }
 
-    // --- HELPER DATES ---
     function getStartOfWeek(date) {
         const d = new Date(date);
         const day = d.getDay(); 
@@ -397,12 +512,9 @@
     }
 
     function isSameDay(d1, d2) {
-        return d1.getFullYear() === d2.getFullYear() &&
-               d1.getMonth() === d2.getMonth() &&
-               d1.getDate() === d2.getDate();
+        return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
     }
 
-    // --- RENDER BOARD ---
     function renderWeeklyBoard() {
         const board = document.getElementById('weeklyBoard');
         board.innerHTML = ''; 
@@ -415,7 +527,6 @@
         for (let i = 0; i < 7; i++) {
             const currentDay = new Date(currentBoardStart);
             currentDay.setDate(currentBoardStart.getDate() + i);
-            
             const isToday = isSameDay(today, currentDay);
             
             const colDiv = document.createElement('div');
@@ -468,6 +579,7 @@
                 columns[colIndex].element.appendChild(card);
             }
         });
+        updateGoals();
     }
 
     window.toggleConcluido = async (id, status) => {
@@ -653,5 +765,6 @@
     document.getElementById('navBoard').onclick = () => { document.getElementById('secBoard').classList.remove('hidden'); document.getElementById('secLib').classList.add('hidden'); document.getElementById('navBoard').classList.add('active'); document.getElementById('navLib').classList.remove('active'); };
     document.getElementById('navLib').onclick = () => { document.getElementById('secBoard').classList.add('hidden'); document.getElementById('secLib').classList.remove('hidden'); document.getElementById('navBoard').classList.remove('active'); document.getElementById('navLib').classList.add('active'); carregarBiblioteca(); };
 </script>
+    <script type="module" src="padrao_simulado.js"></script>
 </body>
 </html>
