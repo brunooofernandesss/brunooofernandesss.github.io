@@ -3,98 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medicina UNIP | Spaced Repetition</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>Medicina UNIP | Notion Planner Ultimate</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
     <style>
         :root {
             --notion-bg: #ffffff;
             --notion-sidebar: #fbfbfa;
             --notion-text: #37352f;
             --notion-text-light: rgba(55, 53, 47, 0.65);
-            --notion-border: rgba(55, 53, 47, 0.09);
-            --notion-hover: rgba(55, 53, 47, 0.04);
+            --notion-border: rgba(55, 53, 47, 0.12);
+            --notion-hover: rgba(55, 53, 47, 0.05);
             --notion-blue: #2383e2;
-            --tag-bg: rgba(227, 226, 224, 0.5);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: var(--notion-bg); 
-            color: var(--notion-text);
-            display: flex; height: 100vh; overflow: hidden;
-        }
+        body { font-family: 'Inter', sans-serif; background: var(--notion-bg); color: var(--notion-text); display: flex; height: 100vh; overflow: hidden; }
 
         /* Sidebar */
-        .sidebar {
-            width: 220px; background: var(--notion-sidebar);
-            border-right: 1px solid var(--notion-border);
-            display: flex; flex-direction: column; padding: 12px 0; flex-shrink: 0;
-        }
-        .sidebar-header { padding: 0 16px 16px; font-weight: 600; font-size: 14px; border-bottom: 1px solid var(--notion-border); margin-bottom: 12px; }
-        .nav-item { padding: 8px 16px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-        .nav-item:hover { background: var(--notion-hover); }
-        .nav-item.active { background: var(--notion-hover); font-weight: 600; }
+        .sidebar { width: 240px; background: var(--notion-sidebar); border-right: 1px solid var(--notion-border); display: flex; flex-direction: column; padding: 12px 0; flex-shrink: 0; }
+        .sidebar-header { padding: 0 16px 16px; font-weight: 700; font-size: 14px; border-bottom: 1px solid var(--notion-border); margin-bottom: 12px; }
+        .nav-item { padding: 8px 16px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--notion-text-light); transition: 0.2s; }
+        .nav-item:hover { background: var(--notion-hover); color: var(--notion-text); }
+        .nav-item.active { background: var(--notion-hover); font-weight: 600; color: var(--notion-text); }
 
-        /* Main */
+        /* Layout */
         .main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .top-bar {
-            height: 45px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between;
-            font-size: 12px; color: var(--notion-text-light); border-bottom: 1px solid var(--notion-border);
-        }
+        .top-bar { height: 45px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; border-bottom: 1px solid var(--notion-border); color: var(--notion-text-light); }
+        .content { flex: 1; overflow-x: auto; padding: 30px; display: flex; flex-direction: column; }
+        .page-title { font-size: 30px; font-weight: 700; margin-bottom: 20px; letter-spacing: -0.5px; }
 
-        .content { flex: 1; overflow-x: auto; overflow-y: hidden; padding: 40px 40px; display: flex; flex-direction: column; }
-        .page-header { margin-bottom: 24px; flex-shrink: 0; }
-        .page-title { font-size: 32px; font-weight: 700; margin-bottom: 16px; }
+        /* Board Kanban */
+        .board { display: flex; gap: 14px; flex: 1; min-width: 1300px; }
+        .column { flex: 1; min-width: 250px; display: flex; flex-direction: column; }
+        .column-header { padding: 8px; font-size: 13px; font-weight: 600; color: var(--notion-text-light); display: flex; align-items: center; gap: 6px; }
+        .drop-zone { flex: 1; overflow-y: auto; padding-right: 4px; border-radius: 4px; }
 
-        /* Board Expanded */
-        .board { display: flex; gap: 12px; flex: 1; min-width: 1200px; }
-        .column { flex: 1; min-width: 220px; display: flex; flex-direction: column; }
-        .column-header { 
-            padding: 8px; font-size: 13px; font-weight: 500; color: var(--notion-text-light);
-            display: flex; align-items: center; gap: 6px; margin-bottom: 8px;
-        }
-        .drop-zone { flex: 1; overflow-y: auto; padding-right: 4px; }
-
-        /* Card */
         .card {
-            background: white; border: 1px solid var(--notion-border); border-radius: 4px;
-            padding: 10px; margin-bottom: 8px; box-shadow: rgba(15, 15, 15, 0.05) 0px 1px 2px;
-            cursor: grab; font-size: 13px; transition: 0.2s;
+            background: white; border: 1px solid var(--notion-border); border-radius: 6px;
+            padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+            cursor: pointer; transition: 0.2s;
         }
-        .card:hover { border-color: #d3d3d3; }
+        .card:hover { border-color: #aaa; transform: translateY(-1px); }
+        .tag { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; background: #e3e2e0; margin-top: 8px; display: inline-block; }
+
+        /* Modais */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; }
+        .modal-content { background: white; width: 90%; max-width: 1000px; height: 90vh; border-radius: 8px; padding: 25px; display: flex; flex-direction: column; gap: 15px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
         
-        .tag {
-            padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600;
-            background: var(--tag-bg); color: var(--notion-text); margin-top: 6px; display: inline-block;
-        }
+        /* Editor Customizado */
+        .editor-wrapper { flex: 1; overflow-y: auto; border: 1px solid #ccc; border-radius: 4px; display: flex; flex-direction: column; }
+        #quill-editor { flex: 1; font-size: 16px; font-family: 'Inter', sans-serif; }
+        
+        /* Estilização de Tabelas e Markdown no Editor */
+        .ql-editor table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        .ql-editor th, .ql-editor td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        .ql-editor th { background-color: #f9f9f9; font-weight: 600; }
+        .ql-editor h1 { font-size: 2em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+        .ql-editor h2 { font-size: 1.5em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+        .ql-editor blockquote { border-left: 4px solid #ccc; padding-left: 10px; color: #666; }
 
-        .notion-checkbox {
-            appearance: none; width: 15px; height: 15px; border: 1px solid var(--notion-border);
-            border-radius: 3px; cursor: pointer; margin-right: 8px; position: relative; top: 2px;
-        }
-        .notion-checkbox:checked { background: var(--notion-blue); border-color: var(--notion-blue); }
-        .notion-checkbox:checked::after { content: '✓'; color: white; font-size: 9px; position: absolute; left: 3px; top: 0px; }
+        .input-notion { border: 1px solid var(--notion-border); border-radius: 4px; width: 100%; padding: 10px; font-size: 14px; outline: none; }
+        .btn-blue { background: var(--notion-blue); color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-notion { border: 1px solid var(--notion-border); background: white; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
+        .btn-notion:hover { background: var(--notion-hover); }
 
-        /* Tabela Biblioteca */
-        .notion-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        .notion-table th { text-align: left; padding: 12px; border-bottom: 1px solid var(--notion-border); color: var(--notion-text-light); }
-        .notion-table td { padding: 12px; border-bottom: 1px solid var(--notion-border); }
-
-        .btn-notion {
-            background: none; border: 1px solid var(--notion-border); padding: 5px 12px;
-            border-radius: 4px; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
-        }
-
-        #statusFeedback {
-            position: fixed; bottom: 20px; right: 20px; padding: 10px 20px;
-            background: #37352f; color: white; border-radius: 6px; font-size: 12px; display: none; z-index: 1000;
+        #pdfViewer { width: 100%; height: 100%; border: none; border-radius: 4px; }
+        #statusFeedback { 
+            position: fixed; bottom: 30px; right: 30px; 
+            background: #2eaadc; color: white; 
+            padding: 15px 25px; border-radius: 8px; 
+            font-size: 14px; font-weight: 600; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: none; z-index: 9999;
         }
         .hidden { display: none; }
     </style>
 </head>
 <body>
+
+    <div class="modal" id="modalEditor">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 5px;">Editor de Conteúdo</h3>
+            <div style="background:#eef6ff; padding:10px; border-radius:5px; font-size:12px; color:#2383e2; margin-bottom:10px;">
+                <i class="fas fa-info-circle"></i> Dica: Copie o texto do Gemini e cole aqui. A formatação (negrito, tabelas) será aplicada automaticamente.
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="subjectTitle" class="input-notion" placeholder="Título do Assunto (Obrigatório)...">
+                <input type="text" id="subjectTag" class="input-notion" style="width: 200px;" placeholder="Tag (Ex: GINECOLOGIA)">
+            </div>
+            
+            <div class="editor-wrapper">
+                <div id="quill-editor"></div>
+            </div>
+
+            <div style="display:flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn-notion" onclick="fecharModal()">Cancelar</button>
+                <button class="btn-blue" id="btnSalvar">Salvar no Planner</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="modalView">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2 id="viewTitle" style="font-size: 22px; font-weight:700;"></h2>
+                <span id="viewTagDisplay" class="tag"></span>
+            </div>
+            <div id="viewContainer" style="flex:1; overflow:hidden; border: 1px solid #eee; border-radius: 6px;"></div>
+            <div style="display:flex; justify-content: space-between; margin-top:10px;">
+                <button class="btn-notion" id="btnEditarNota"><i class="fas fa-edit"></i> Editar Texto</button>
+                <button class="btn-notion" onclick="fecharModalView()">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="statusFeedback">
+        <i class="fas fa-spinner fa-spin"></i> <span id="feedbackText">Processando...</span>
+    </div>
 
     <aside class="sidebar">
         <div class="sidebar-header"><i class="fas fa-graduation-cap"></i> Medicina UNIP</div>
@@ -104,68 +137,43 @@
 
     <main class="main-container">
         <div class="top-bar">
-            <div>Medicina / <span id="currentViewName">Ciclos de Estudo</span></div>
+            <div>Medicina / Ciclos de Estudo</div>
             <div style="display:flex; gap: 15px; align-items:center;">
                 <span id="displayIp" style="opacity: 0.5">0.0.0.0</span>
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <b id="displayUser">...</b>
-                    <div style="width:24px; height:24px; background:#efefef; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold;" id="userAvatar">?</div>
-                </div>
+                <b id="displayUser">...</b>
+                <div style="width:24px; height:24px; background:#efefef; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold;" id="userAvatar">?</div>
             </div>
         </div>
 
         <div class="content">
-            <header class="page-header">
-                <h1 class="page-title" id="pageTitle">Ciclos de Estudo</h1>
-                <div style="display:flex; gap: 10px;">
-                    <button class="btn-notion" id="btnNovoAssunto"><i class="fas fa-plus"></i> Novo Assunto</button>
-                    <input type="file" id="pdfInput" hidden accept="application/pdf">
-                    <label for="pdfInput" class="btn-notion" style="cursor:pointer;"><i class="fas fa-file-upload"></i> Upload PDF</label>
-                </div>
-            </header>
-
+            <h1 class="page-title">Planner de Estudos</h1>
+            <div style="display:flex; gap: 10px; margin-bottom: 25px;">
+                <button class="btn-notion" id="btnNovoAssunto"><i class="fas fa-plus"></i> + Novo Assunto</button>
+                <input type="file" id="pdfInput" hidden accept="application/pdf">
+                <label for="pdfInput" class="btn-notion" style="cursor:pointer;"><i class="fas fa-file-upload"></i> Subir PDF</label>
+            </div>
             <section id="secBoard">
                 <div class="board">
-                    <div class="column">
-                        <div class="column-header">⚪ Arquivos Recentes</div>
-                        <div class="drop-zone" id="recent" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-                    </div>
-                    <div class="column">
-                        <div class="column-header">🔵 Revisar D+1</div>
-                        <div class="drop-zone" id="d1" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-                    </div>
-                    <div class="column">
-                        <div class="column-header">🟡 Revisar D+7</div>
-                        <div class="drop-zone" id="d7" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-                    </div>
-                    <div class="column">
-                        <div class="column-header">🔴 Revisar D+21</div>
-                        <div class="drop-zone" id="d21" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-                    </div>
-                    <div class="column">
-                        <div class="column-header">🟢 Concluído</div>
-                        <div class="drop-zone" id="done" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-                    </div>
+                    <div class="column"><div class="column-header">⚪ Recentes</div><div class="drop-zone" id="recent" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
+                    <div class="column"><div class="column-header">🔵 Revisar D+1</div><div class="drop-zone" id="d1" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
+                    <div class="column"><div class="column-header">🟡 Revisar D+7</div><div class="drop-zone" id="d7" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
+                    <div class="column"><div class="column-header">🔴 Revisar D+21</div><div class="drop-zone" id="d21" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
+                    <div class="column"><div class="column-header">🟢 Concluído</div><div class="drop-zone" id="done" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
                 </div>
             </section>
-
             <section id="secLib" class="hidden">
-                <table class="notion-table">
-                    <thead>
-                        <tr><th>Arquivo</th><th>Tag</th><th>Upload em</th><th>Ação</th></tr>
-                    </thead>
+                <table style="width:100%; border-collapse:collapse; font-size:14px;">
+                    <thead><tr style="border-bottom: 1px solid #ddd; text-align:left;"><th style="padding:10px;">Item</th><th style="padding:10px;">Tag</th><th style="padding:10px;">Ação</th></tr></thead>
                     <tbody id="listaBiblioteca"></tbody>
                 </table>
             </section>
         </div>
     </main>
 
-    <div id="statusFeedback">Processando...</div>
-
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
     const firebaseConfig = {
@@ -183,91 +191,180 @@
     const storage = getStorage(app);
 
     let currentUID = null;
+    let editingDocId = null;
 
-    const showFeedback = (msg, type = "info") => {
+    // Configurar Quill com Toolbar
+    const quill = new Quill('#quill-editor', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                [{ 'header': [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                ['link', 'blockquote', 'code-block'],
+                [{ 'align': [] }],
+                ['clean']
+            ]
+        }
+    });
+
+    // -----------------------------------------------------
+    // SOLUÇÃO DEFINITIVA PARA COLAR DO GEMINI
+    // -----------------------------------------------------
+    quill.root.addEventListener('paste', (e) => {
+        const clipboardData = e.clipboardData || window.clipboardData;
+        const pastedData = clipboardData.getData('text');
+
+        // Se detectar caracteres típicos de Markdown do Gemini, intercepta
+        if (pastedData.includes('**') || pastedData.includes('##') || pastedData.includes('|') || pastedData.includes('* ')) {
+            e.preventDefault(); // Impede a colagem padrão "suja"
+            
+            // Converte o Markdown para HTML usando marked.js
+            const html = marked.parse(pastedData, { breaks: true, gfm: true });
+            
+            // Cola o HTML limpo na posição do cursor
+            const range = quill.getSelection();
+            if (range) {
+                quill.clipboard.dangerouslyPasteHTML(range.index, html);
+            } else {
+                quill.clipboard.dangerouslyPasteHTML(0, html);
+            }
+        }
+    });
+    // -----------------------------------------------------
+
+    window.showFeedback = (msg, isLoading = true) => {
         const el = document.getElementById("statusFeedback");
-        el.textContent = msg; el.style.display = "block";
-        if (type !== "loading") setTimeout(() => el.style.display = "none", 3000);
+        const txt = document.getElementById("feedbackText");
+        const icon = el.querySelector("i");
+        txt.textContent = msg; el.style.display = "block";
+        if (isLoading) {
+            icon.className = "fas fa-spinner fa-spin"; el.style.backgroundColor = "#2eaadc";
+        } else {
+            icon.className = "fas fa-check-circle"; el.style.backgroundColor = "#27ae60";
+            setTimeout(() => { el.style.display = "none"; }, 4000);
+        }
     };
 
-    onAuthStateChanged(auth, async (user) => {
+    // Modais e Navegação
+    const modalEditor = document.getElementById('modalEditor');
+    const modalView = document.getElementById('modalView');
+
+    window.fecharModal = () => { modalEditor.style.display = 'none'; editingDocId = null; quill.setContents([]); };
+    window.fecharModalView = () => { modalView.style.display = 'none'; document.getElementById('viewContainer').innerHTML = ''; };
+
+    document.getElementById('btnNovoAssunto').onclick = () => {
+        document.getElementById('subjectTitle').value = "";
+        document.getElementById('subjectTag').value = "";
+        modalEditor.style.display = 'flex';
+    };
+
+    onAuthStateChanged(auth, (user) => {
         if (!user) { window.location.href = "login.html"; return; }
         currentUID = user.uid;
         document.getElementById("displayUser").textContent = user.email.split("@")[0];
         document.getElementById("userAvatar").textContent = user.email[0].toUpperCase();
         fetch('https://api.ipify.org?format=json').then(r => r.json()).then(d => document.getElementById('displayIp').textContent = d.ip);
         carregarBoard();
-        carregarBiblioteca();
     });
 
-    // Navegação
-    document.getElementById("navBoard").onclick = () => switchView('board');
-    document.getElementById("navLib").onclick = () => switchView('lib');
-    function switchView(v) {
-        document.getElementById("secBoard").classList.toggle("hidden", v !== 'board');
-        document.getElementById("secLib").classList.toggle("hidden", v !== 'lib');
-        document.getElementById("navBoard").classList.toggle("active", v === 'board');
-        document.getElementById("navLib").classList.toggle("active", v === 'lib');
-    }
+    // Salvar no Firestore
+    document.getElementById('btnSalvar').onclick = async () => {
+        const title = document.getElementById('subjectTitle').value;
+        const tag = document.getElementById('subjectTag').value || "GERAL";
+        const content = quill.root.innerHTML; // HTML puro
 
-    // Upload com Lógica D1, D7, D21
-    document.getElementById("pdfInput").onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file || !currentUID) return;
-        const tag = prompt("Digite a etiqueta (Tag) para este arquivo:", "Ginecologia") || "Geral";
-        showFeedback("Processando ciclos de estudo...", "loading");
+        if (!title) return alert("Preencha o título!");
 
+        showFeedback("Salvando...", true);
+        
         try {
-            const storageRef = ref(storage, `planners/${currentUID}/${Date.now()}_${file.name}`);
-            await uploadBytes(storageRef, file);
-            const url = await getDownloadURL(storageRef);
-            const now = Date.now();
+            if (editingDocId) {
+                await updateDoc(doc(db, "planners", currentUID, "tasks", editingDocId), { titulo: title, tag: tag.toUpperCase(), content: content });
+            } else {
+                const now = Date.now();
+                const ciclos = [
+                    { n: `[REC] ${title}`, t: now, col: 'recent' },
+                    { n: `[D+1] ${title}`, t: now + 86400000, col: 'd1' },
+                    { n: `[D+7] ${title}`, t: now + 604800000, col: 'd7' },
+                    { n: `[D+21] ${title}`, t: now + 1814400000, col: 'd21' }
+                ];
 
-            // 1. Salvar na Biblioteca
-            await addDoc(collection(db, "planners", currentUID, "arquivos"), {
-                nome: file.name, url, tag: tag.toUpperCase(), data: now
-            });
-
-            // 2. Criar os 4 Ciclos Independentes
-            const ciclos = [
-                { nome: `[IMEDIATO] ${file.name}`, showAt: now, colDefault: 'recent' },
-                { nome: `[D+1] ${file.name}`, showAt: now + (1 * 24 * 60 * 60 * 1000), colDefault: 'd1' },
-                { nome: `[D+7] ${file.name}`, showAt: now + (7 * 24 * 60 * 60 * 1000), colDefault: 'd7' },
-                { nome: `[D+21] ${file.name}`, showAt: now + (21 * 24 * 60 * 60 * 1000), colDefault: 'd21' }
-            ];
-
-            for (const c of ciclos) {
-                await addDoc(collection(db, "planners", currentUID, "tasks"), {
-                    titulo: c.nome,
-                    tag: tag.toUpperCase(),
-                    targetDate: c.showAt,
-                    column: c.colDefault,
-                    originalCol: c.colDefault,
-                    criadoEm: serverTimestamp()
+                for (const c of ciclos) {
+                    await addDoc(collection(db, "planners", currentUID, "tasks"), {
+                        titulo: c.n, tag: tag.toUpperCase(), content: content, 
+                        targetDate: c.t, column: c.col, criadoEm: serverTimestamp(), tipo: 'texto'
+                    });
+                }
+                await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
+                    nome: title, content: content, tag: tag.toUpperCase(), data: now, tipo: 'texto' 
                 });
             }
-
-            showFeedback("✅ Ciclos criados com sucesso!");
-            carregarBoard(); carregarBiblioteca();
-        } catch (err) { showFeedback("Erro no processo.", "error"); }
+            showFeedback("Salvo com sucesso!", false);
+            fecharModal();
+            carregarBoard();
+        } catch (e) { console.error(e); showFeedback("Erro ao salvar.", false); }
     };
 
-    // Função para mover para Concluído
-    window.toggleConcluido = async (id, currentColumn) => {
-        const novaColuna = currentColumn === 'done' ? 'recent' : 'done'; // Simplificado
-        await updateDoc(doc(db, "planners", currentUID, "tasks", id), { column: novaColuna });
-        carregarBoard();
+    // Upload PDF
+    document.getElementById("pdfInput").onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const tag = prompt("Tag do PDF:", "GERAL") || "GERAL";
+        showFeedback("Enviando PDF...", true);
+
+        try {
+            const refS = ref(storage, `planners/${currentUID}/${Date.now()}_${file.name}`);
+            await uploadBytes(refS, file);
+            const url = await getDownloadURL(refS);
+            const now = Date.now();
+            
+            const ciclos = [
+                { n: `[REC] ${file.name}`, t: now, col: 'recent' }, 
+                { n: `[D+1] ${file.name}`, t: now + 86400000, col: 'd1' }, 
+                { n: `[D+7] ${file.name}`, t: now + 604800000, col: 'd7' }, 
+                { n: `[D+21] ${file.name}`, t: now + 1814400000, col: 'd21' }
+            ];
+            
+            for(const c of ciclos) {
+                await addDoc(collection(db, "planners", currentUID, "tasks"), { 
+                    titulo: c.n, tag: tag.toUpperCase(), pdfUrl: url, targetDate: c.t, 
+                    column: c.col, criadoEm: serverTimestamp(), tipo: 'pdf' 
+                });
+            }
+            await addDoc(collection(db, "planners", currentUID, "arquivos"), { nome: file.name, url, tag: tag.toUpperCase(), data: now, tipo: 'pdf' });
+            showFeedback("Sucesso!", false);
+            carregarBoard();
+        } catch (err) { showFeedback("Erro no upload.", false); }
     };
 
-    // Drag & Drop
-    window.allowDrop = (ev) => ev.preventDefault();
-    window.drag = (ev) => ev.dataTransfer.setData("text", ev.target.id);
-    window.drop = async (ev) => {
-        ev.preventDefault();
-        const id = ev.dataTransfer.getData("text");
-        const col = ev.currentTarget.id;
-        await updateDoc(doc(db, "planners", currentUID, "tasks", id), { column: col });
-        carregarBoard();
+    // Abrir/Editar
+    window.abrirItem = async (id) => {
+        const d = await getDoc(doc(db, "planners", currentUID, "tasks", id));
+        if(!d.exists()) return;
+        const data = d.data();
+        
+        document.getElementById('viewTitle').textContent = data.titulo;
+        document.getElementById('viewTagDisplay').textContent = data.tag || "GERAL";
+        const container = document.getElementById('viewContainer');
+        const btnEdit = document.getElementById('btnEditarNota');
+
+        if (data.pdfUrl) {
+            container.innerHTML = `<iframe src="${data.pdfUrl}" id="pdfViewer"></iframe>`;
+            btnEdit.style.display = 'none';
+        } else {
+            container.innerHTML = `<div class="ql-editor" style="padding:20px;">${data.content}</div>`;
+            btnEdit.style.display = 'block';
+            btnEdit.onclick = () => {
+                editingDocId = id;
+                document.getElementById('subjectTitle').value = data.titulo.replace(/\[.*?\] /, '');
+                document.getElementById('subjectTag').value = data.tag;
+                quill.root.innerHTML = data.content;
+                fecharModalView();
+                modalEditor.style.display = 'flex';
+            };
+        }
+        modalView.style.display = 'flex';
     };
 
     async function carregarBoard() {
@@ -275,52 +372,42 @@
         const snap = await getDocs(query(collection(db, "planners", currentUID, "tasks"), orderBy("criadoEm", "desc")));
         const cols = { recent: document.getElementById("recent"), d1: document.getElementById("d1"), d7: document.getElementById("d7"), d21: document.getElementById("d21"), done: document.getElementById("done") };
         Object.values(cols).forEach(c => c.innerHTML = "");
-
         const agora = Date.now();
 
         snap.forEach(d => {
             const t = d.data();
-            
-            // Lógica de Tempo: Só mostra nas colunas D+X se o tempo já tiver passado
-            // A coluna "Concluído" sempre mostra o que o usuário moveu para lá
-            if (t.column !== 'done' && agora < t.targetDate) return; 
-
+            if (t.column !== 'done' && agora < t.targetDate) return;
             const card = document.createElement("div");
-            card.className = "card";
-            card.id = d.id;
-            card.draggable = true;
-            card.ondragstart = window.drag;
-            
-            card.innerHTML = `
-                <div style="display:flex; align-items:flex-start;">
-                    <input type="checkbox" class="notion-checkbox" ${t.column === 'done' ? 'checked' : ''} 
-                           onclick="toggleConcluido('${d.id}', '${t.column}')">
-                    <div style="flex:1">
-                        <div style="${t.column === 'done' ? 'text-decoration:line-through; opacity:0.6' : ''}">${t.titulo}</div>
-                        <span class="tag">${t.tag}</span>
-                    </div>
-                </div>
-            `;
-            
-            // Se estiver no "done", vai para a coluna done. Caso contrário, respeita a coluna atual (que pode ter sido movida por drag)
-            const targetCol = t.column;
-            if (cols[targetCol]) cols[targetCol].appendChild(card);
+            card.className = "card"; card.draggable = true; card.id = d.id;
+            card.onclick = () => abrirItem(d.id);
+            card.ondragstart = (e) => e.dataTransfer.setData("text", e.target.id);
+            card.innerHTML = `<div style="font-weight:600; font-size:13px; margin-bottom:5px;">${t.titulo}</div><span class="tag">${t.tag}</span>`;
+            if (cols[t.column]) cols[t.column].appendChild(card);
         });
     }
 
+    // Drag & Drop
+    window.allowDrop = (e) => e.preventDefault();
+    window.drop = async (e) => {
+        e.preventDefault();
+        const id = e.dataTransfer.getData("text");
+        const col = e.currentTarget.id;
+        if(col) { await updateDoc(doc(db, "planners", currentUID, "tasks", id), { column: col }); carregarBoard(); }
+    };
+
+    document.getElementById('navBoard').onclick = () => { document.getElementById('secBoard').classList.remove('hidden'); document.getElementById('secLib').classList.add('hidden'); };
+    document.getElementById('navLib').onclick = () => { document.getElementById('secBoard').classList.add('hidden'); document.getElementById('secLib').classList.remove('hidden'); carregarBiblioteca(); };
+
     async function carregarBiblioteca() {
-        if (!currentUID) return;
         const snap = await getDocs(query(collection(db, "planners", currentUID, "arquivos"), orderBy("data", "desc")));
-        const container = document.getElementById("listaBiblioteca");
-        container.innerHTML = "";
+        const body = document.getElementById("listaBiblioteca");
+        body.innerHTML = "";
         snap.forEach(d => {
             const p = d.data();
-            const dt = new Date(p.data).toLocaleDateString();
-            container.innerHTML += `<tr>
-                <td><i class="far fa-file-pdf" style="color:#eb5757"></i> ${p.nome}</td>
+            body.innerHTML += `<tr style="border-bottom:1px solid #eee;">
+                <td style="padding:10px;">${p.nome}</td>
                 <td><span class="tag">${p.tag}</span></td>
-                <td style="color:gray; font-size:12px">${dt}</td>
-                <td><a href="${p.url}" target="_blank" class="btn-notion">Abrir</a></td>
+                <td><button class="btn-notion" onclick="alert('Visualize pelo Board')">Ver</button></td>
             </tr>`;
         });
     }
