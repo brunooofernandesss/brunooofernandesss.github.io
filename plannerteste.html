@@ -55,7 +55,7 @@
         .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-shrink: 0; }
         .page-title { font-size: 26px; font-weight: 700; color: var(--text-primary); }
 
-        /* ESTILO DO SELETOR DE SEMANA */
+        /* SELETOR DE SEMANA */
         .week-selector-wrapper {
             display: flex; align-items: center; gap: 8px; position: relative;
             cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: 0.2s;
@@ -266,8 +266,8 @@
 
     let currentUID = null;
     let editingDocId = null;
-    let currentBoardStart = new Date(); // Data base para o board
-    let allTasksCache = []; // Cache para evitar muitas leituras
+    let currentBoardStart = new Date(); 
+    let allTasksCache = []; 
 
     // --- QUILL EDITOR ---
     const quill = new Quill('#quill-editor', {
@@ -293,47 +293,49 @@
             .then(d => document.getElementById('headerUserIP').textContent = "IP: " + d.ip)
             .catch(() => document.getElementById('headerUserIP').textContent = "IP: Detectando...");
 
-        // Inicia carregando dados
         loadDataAndInit();
         carregarBiblioteca();
     });
 
-    // --- CARREGAMENTO DE DADOS ---
     async function loadDataAndInit() {
         if (!currentUID) return;
         
-        // Busca todas as tarefas uma vez
         const snap = await getDocs(query(collection(db, "planners", currentUID, "tasks")));
         allTasksCache = [];
         snap.forEach(d => allTasksCache.push({ id: d.id, ...d.data() }));
 
-        // Configura o seletor de semanas baseado na última data
         setupWeekNavigator();
-        
-        // Renderiza o board com a data atual (ou selecionada)
         renderWeeklyBoard();
     }
 
-    // --- NAVEGAÇÃO DE SEMANAS (Lógica Nova) ---
+    // --- CORREÇÃO DA NAVEGAÇÃO (HISTÓRICO COMPLETO) ---
     function setupWeekNavigator() {
         const select = document.getElementById('weekSelect');
         select.innerHTML = '';
 
-        // Encontra a data mais distante
+        // 1. Achar a data mínima (início do histórico) e máxima (última revisão futura)
+        let minDate = new Date().getTime(); // Começa com hoje como padrão
         let maxDate = new Date().getTime();
-        allTasksCache.forEach(t => {
-            if (t.targetDate > maxDate) maxDate = t.targetDate;
-        });
 
-        // Gera semanas do "Start da semana atual" até a "Max Date"
-        const currentWeekStart = getStartOfWeek(new Date());
-        let loopDate = new Date(currentWeekStart);
-        const finalDate = new Date(maxDate);
+        if (allTasksCache.length > 0) {
+            allTasksCache.forEach(t => {
+                if (t.targetDate < minDate) minDate = t.targetDate;
+                if (t.targetDate > maxDate) maxDate = t.targetDate;
+            });
+        }
+
+        // 2. Definir o loop: Da semana da tarefa mais antiga até a mais futura
+        const historyStart = getStartOfWeek(new Date(minDate)); // Início real do histórico
+        const futureEnd = new Date(maxDate);
+        futureEnd.setDate(futureEnd.getDate() + 7); // Margem de segurança
+
+        let loopDate = new Date(historyStart);
         
-        // Adiciona algumas semanas extras no futuro se quiser
-        finalDate.setDate(finalDate.getDate() + 7);
+        // Data atual (para selecionar por padrão)
+        const todayStart = getStartOfWeek(new Date()).getTime();
+        let optionSelected = false;
 
-        while (loopDate <= finalDate) {
+        while (loopDate <= futureEnd) {
             const endOfWeek = new Date(loopDate);
             endOfWeek.setDate(loopDate.getDate() + 6);
             
@@ -344,19 +346,26 @@
             option.value = value;
             option.text = label;
             
-            // Marca a semana atual
-            if (loopDate.getTime() === currentWeekStart.getTime()) {
+            // Se for a semana atual, seleciona ela
+            if (value === todayStart) {
                 option.selected = true;
-                currentBoardStart = new Date(loopDate); // Garante sync
+                currentBoardStart = new Date(loopDate);
+                optionSelected = true;
             }
             
             select.appendChild(option);
-            
-            // Avança 1 semana
             loopDate.setDate(loopDate.getDate() + 7);
         }
-        
-        // Atualiza label visual inicial
+
+        // Se a semana atual não foi encontrada (ex: usuário só tem tarefas no passado), seleciona a primeira da lista
+        if (!optionSelected && select.options.length > 0) {
+            // Se as tarefas são todas futuras, seleciona a primeira. 
+            // Mas normalmente queremos focar no HOJE. 
+            // Se hoje não está na lista (raro), forçamos o início da lista.
+            // Para garantir UX, vamos manter currentBoardStart em "hoje" mesmo se vazio, 
+            // mas o dropdown vai mostrar a opção mais próxima.
+        }
+
         updateWeekLabel();
     }
 
@@ -373,13 +382,13 @@
             `${formatDateDisplay(currentBoardStart)} - ${formatDateDisplay(endOfWeek)}`;
     }
 
-    // --- RENDERIZAÇÃO ---
+    // --- HELPER DATES ---
     function getStartOfWeek(date) {
         const d = new Date(date);
         const day = d.getDay(); 
         const diff = d.getDate() - day;
         const r = new Date(d.setDate(diff));
-        r.setHours(0,0,0,0); // Normaliza hora
+        r.setHours(0,0,0,0);
         return r;
     }
 
@@ -393,16 +402,16 @@
                d1.getDate() === d2.getDate();
     }
 
+    // --- RENDER BOARD ---
     function renderWeeklyBoard() {
         const board = document.getElementById('weeklyBoard');
         board.innerHTML = ''; 
         
         const daysOfWeek = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-        const today = new Date(); // Para destacar o dia atual "real"
+        const today = new Date(); 
 
         const columns = [];
         
-        // Cria colunas baseadas na currentBoardStart (selecionada no dropdown)
         for (let i = 0; i < 7; i++) {
             const currentDay = new Date(currentBoardStart);
             currentDay.setDate(currentBoardStart.getDate() + i);
@@ -422,7 +431,6 @@
             columns.push({ element: colDiv.querySelector('.drop-zone'), date: currentDay });
         }
 
-        // Filtra e renderiza tarefas do cache
         allTasksCache.forEach(t => {
             const taskDate = new Date(t.targetDate);
             const colIndex = columns.findIndex(col => isSameDay(col.date, taskDate));
@@ -462,11 +470,8 @@
         });
     }
 
-    // --- FUNÇÕES GLOBAIS ---
     window.toggleConcluido = async (id, status) => {
-        // Atualiza no banco
         await updateDoc(doc(db, "planners", currentUID, "tasks", id), { concluido: status });
-        // Atualiza no cache local para não precisar recarregar tudo
         const task = allTasksCache.find(t => t.id === id);
         if(task) task.concluido = status;
         renderWeeklyBoard();
@@ -504,7 +509,7 @@
                 });
             }
             showFeedback("Sucesso!", false);
-            loadDataAndInit(); // Recarrega para atualizar cache e menu
+            loadDataAndInit();
             carregarBiblioteca();
         } catch (err) { console.error(err); showFeedback("Erro.", false); }
     };
@@ -543,8 +548,6 @@
         carregarBiblioteca();
     };
 
-    // --- VISUALIZADORES E BIBLIOTECA ---
-    // (Mantido igual à versão anterior, apenas garantindo acesso ao cache se necessário)
     async function carregarBiblioteca() {
         if(!currentUID) return;
         const snap = await getDocs(query(collection(db, "planners", currentUID, "arquivos"), orderBy("data", "desc")));
@@ -589,14 +592,12 @@
     };
 
     window.abrirItem = async (id) => {
-        // Tenta pegar do cache primeiro
         let data = allTasksCache.find(t => t.id === id);
         if(!data) {
             const d = await getDoc(doc(db, "planners", currentUID, "tasks", id));
             if(!d.exists()) return;
             data = d.data();
         }
-        
         document.getElementById('viewTitle').textContent = data.titulo.replace(/\[.*?\]/, '');
         document.getElementById('viewTagDisplay').textContent = data.tag;
         const container = document.getElementById('viewContainer');
