@@ -33,20 +33,19 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
 
-        /* --- SIDEBAR CORRIGIDA --- */
-        .sidebar { 
-            width: 240px; 
-            background: #fbfbfa; 
-            border-right: 1px solid var(--border-color); 
-            display: flex; 
-            flex-direction: column; 
-            flex-shrink: 0; 
-            
-            /* CORREÇÃO AQUI: */
-            height: 100vh; /* Altura total da viewport */
-            overflow-y: auto; /* Habilita rolagem vertical */
-            padding-bottom: 60px; /* Garante espaço no final para não cortar as metas */
-        }
+        /* Sidebar com rolagem corrigida */
+.sidebar { 
+    width: 240px; 
+    background: #fbfbfa; 
+    border-right: 1px solid var(--border-color); 
+    display: flex; 
+    flex-direction: column; 
+    flex-shrink: 0; 
+    height: 100vh; 
+    overflow-y: auto; /* Garante a rolagem */
+    overflow-x: hidden;
+}
+
         
         /* Personalização da barra de rolagem da sidebar */
         .sidebar::-webkit-scrollbar { width: 6px; }
@@ -66,13 +65,15 @@
         .nav-item.active { background: #efefef; font-weight: 600; color: var(--text-primary); }
 
         /* --- METAS NA SIDEBAR CORRIGIDAS --- */
-        .sidebar-goals { 
-            padding: 20px 16px; 
-            margin-top: auto; /* Empurra para baixo se houver espaço */
-            border-top: 1px solid var(--border-color); 
-            flex-shrink: 0; /* Impede que seja esmagado */
-            background: #fbfbfa;
-        }
+.sidebar-goals { 
+    padding: 20px 16px; 
+    margin-top: 20px; /* <--- Mudei para fixo: fica logo abaixo do menu */
+    border-top: 1px solid var(--border-color); 
+    flex-shrink: 0; 
+    background: #fbfbfa;
+    padding-bottom: 80px; /* <--- Adicionei isso: espaço extra para não cortar no final */
+}
+
         .goals-title { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
         .goal-item { margin-bottom: 12px; }
         .goal-header { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; color: var(--text-primary); font-weight: 500; }
