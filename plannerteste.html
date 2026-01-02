@@ -3,169 +3,250 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medicina UNIP | Notion Planner Ultimate</title>
+    <title>Planner R1 | Medicina UNIP</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script>
-        // Configura o Worker do PDF.js globalmente
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    </script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 
     <style>
         :root {
-            --notion-bg: #ffffff;
-            --notion-sidebar: #fbfbfa;
-            --notion-text: #37352f;
-            --notion-text-light: rgba(55, 53, 47, 0.65);
-            --notion-border: rgba(55, 53, 47, 0.12);
-            --notion-hover: rgba(55, 53, 47, 0.05);
-            --notion-blue: #2383e2;
+            --bg-body: #f7f7f5; /* Fundo estilo Notion/Papel */
+            --text-primary: #37352f;
+            --text-secondary: #787774;
+            --card-bg: #ffffff;
+            --border-color: #e9e9e7;
+            --accent-color: #2383e2;
+            
+            /* Cores das Tags (Estilo Imagem) */
+            --tag-red: #ffe2dd; --text-red: #d44c47;
+            --tag-yellow: #fdecc8; --text-yellow: #cb912f;
+            --tag-green: #dbeddb; --text-green: #448361;
+            --tag-blue: #d3e5ef; --text-blue: #18507a;
+            --tag-purple: #e8deee; --text-purple: #9065b0;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background: var(--notion-bg); color: var(--notion-text); display: flex; height: 100vh; overflow: hidden; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
 
         /* Sidebar */
-        .sidebar { width: 240px; background: var(--notion-sidebar); border-right: 1px solid var(--notion-border); display: flex; flex-direction: column; padding: 12px 0; flex-shrink: 0; }
-        .sidebar-header { padding: 0 16px 16px; font-weight: 700; font-size: 14px; border-bottom: 1px solid var(--notion-border); margin-bottom: 12px; }
-        .nav-item { padding: 8px 16px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--notion-text-light); transition: 0.2s; }
-        .nav-item:hover { background: var(--notion-hover); color: var(--notion-text); }
-        .nav-item.active { background: var(--notion-hover); font-weight: 600; color: var(--notion-text); }
+        .sidebar { width: 240px; background: #fbfbfa; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 16px 0; flex-shrink: 0; }
+        .sidebar-header { padding: 0 16px 16px; font-weight: 700; font-size: 15px; border-bottom: 1px solid var(--border-color); margin-bottom: 12px; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+        .nav-item { padding: 8px 16px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: var(--text-secondary); transition: 0.2s; border-radius: 4px; margin: 0 8px; }
+        .nav-item:hover { background: #efefef; color: var(--text-primary); }
+        .nav-item.active { background: #efefef; font-weight: 600; color: var(--text-primary); }
 
-        /* Layout */
+        /* Main Content */
         .main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .top-bar { height: 45px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; border-bottom: 1px solid var(--notion-border); color: var(--notion-text-light); }
-        .content { flex: 1; overflow-x: auto; padding: 30px; display: flex; flex-direction: column; }
-        .page-title { font-size: 30px; font-weight: 700; margin-bottom: 20px; letter-spacing: -0.5px; }
+        .top-bar { height: 50px; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; border-bottom: 1px solid var(--border-color); background: white; }
+        
+        /* Área de Conteúdo */
+        .content { flex: 1; overflow-x: auto; overflow-y: hidden; padding: 24px; display: flex; flex-direction: column; }
+        .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .page-title { font-size: 28px; font-weight: 700; color: var(--text-primary); }
 
-        /* Board Kanban */
-        .board { display: flex; gap: 14px; flex: 1; min-width: 1300px; }
-        .column { flex: 1; min-width: 250px; display: flex; flex-direction: column; }
-        .column-header { padding: 8px; font-size: 13px; font-weight: 600; color: var(--notion-text-light); display: flex; align-items: center; gap: 6px; }
-        .drop-zone { flex: 1; overflow-y: auto; padding-right: 4px; border-radius: 4px; }
+        /* PLANNER SEMANAL (GRID) */
+        .week-board { 
+            display: grid; 
+            grid-template-columns: repeat(7, 1fr); /* 7 Dias */
+            gap: 12px; 
+            height: 100%; 
+            min-width: 1400px; /* Garante que não esmague */
+        }
 
+        .day-column {
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            border-right: 1px dashed var(--border-color);
+            padding-right: 8px;
+        }
+        .day-column:last-child { border-right: none; }
+
+        .day-header {
+            padding: 8px 4px;
+            margin-bottom: 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: capitalize;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        /* Cores dos Headers dos Dias (Estilo Imagem) */
+        .day-header.today { background: #ffe2dd; color: #d44c47; } /* Destaque para hoje */
+
+        .drop-zone {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 20px;
+        }
+        
+        /* ESTILO DO CARD (Baseado na imagem 37250.png) */
         .card {
-            background: white; border: 1px solid var(--notion-border); border-radius: 6px;
-            padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-            cursor: pointer; transition: 0.2s;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
         }
-        .card:hover { border-color: #aaa; transform: translateY(-1px); }
-        .tag { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; background: #e3e2e0; margin-top: 8px; display: inline-block; }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.08); border-color: #d0d0d0; }
+        
+        .card-top { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+        
+        /* Checkbox Customizado */
+        .custom-checkbox {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #d0d0d0;
+            border-radius: 4px;
+            cursor: pointer;
+            flex-shrink: 0;
+            margin-top: 2px;
+            position: relative;
+        }
+        .custom-checkbox:checked { background: var(--text-green); border-color: var(--text-green); }
+        .custom-checkbox:checked::after {
+            content: '✓'; color: white; position: absolute; top: -2px; left: 3px; font-size: 12px; font-weight: bold;
+        }
 
-        /* Modais */
+        .card-title { font-size: 14px; font-weight: 500; line-height: 1.4; color: var(--text-primary); }
+        .card.completed .card-title { text-decoration: line-through; color: #a0a0a0; }
+        .card.completed { background: #f9f9f9; opacity: 0.8; }
+
+        .card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+        .tag-pill {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            background: var(--tag-blue);
+            color: var(--text-blue);
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        /* Metadados (Estilo Imagem 37252.png) */
+        .card-meta {
+            display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 11px; color: var(--text-secondary);
+        }
+        .meta-item { display: flex; align-items: center; gap: 4px; }
+
+        /* Botões */
+        .btn-action {
+            background: white; border: 1px solid var(--border-color); padding: 8px 12px;
+            border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;
+            display: flex; align-items: center; gap: 6px; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .btn-action:hover { background: #f7f7f5; }
+        .btn-primary { background: var(--text-primary); color: white; border: none; }
+        .btn-primary:hover { background: #111; }
+
+        /* Modais & PDF */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; }
-        .modal-content { background: white; width: 90%; max-width: 1000px; height: 90vh; border-radius: 8px; padding: 25px; display: flex; flex-direction: column; gap: 15px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .modal-content { background: white; width: 95%; max-width: 1100px; height: 90vh; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.2); }
+        .editor-wrapper { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+        #quill-editor { flex: 1; font-size: 16px; border: none; }
+        #pdfContainer { flex: 1; background: #525659; display: flex; justify-content: center; overflow: auto; padding: 20px; }
         
-        /* Editor Customizado */
-        .editor-wrapper { flex: 1; overflow-y: auto; border: 1px solid #ccc; border-radius: 4px; display: flex; flex-direction: column; }
-        #quill-editor { flex: 1; font-size: 16px; font-family: 'Inter', sans-serif; }
-        
-        /* Estilos do PDF Viewer (Canvas) */
-        #pdfContainer { flex: 1; overflow: auto; background: #525659; display: flex; justify-content: center; padding: 20px; border-radius: 4px; }
-        #pdfCanvas { box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-        .pdf-toolbar { display: flex; gap: 15px; align-items: center; justify-content: center; padding: 10px; background: #fbfbfa; border-bottom: 1px solid var(--notion-border); }
-
-        .input-notion { border: 1px solid var(--notion-border); border-radius: 4px; width: 100%; padding: 10px; font-size: 14px; outline: none; }
-        .btn-blue { background: var(--notion-blue); color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-        .btn-notion { border: 1px solid var(--notion-border); background: white; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
-        .btn-notion:hover { background: var(--notion-hover); }
-
         #statusFeedback { 
-            position: fixed; bottom: 30px; right: 30px; 
-            background: #2eaadc; color: white; 
-            padding: 15px 25px; border-radius: 8px; 
-            font-size: 14px; font-weight: 600; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            display: none; z-index: 9999;
+            position: fixed; bottom: 30px; right: 30px; padding: 12px 20px; border-radius: 8px; 
+            font-size: 13px; font-weight: 600; color: white; display: none; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
+
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
     <div class="modal" id="modalEditor">
-        <div class="modal-content">
-            <h3 style="margin-bottom: 5px;">Editor de Conteúdo</h3>
-            <div style="background:#eef6ff; padding:10px; border-radius:5px; font-size:12px; color:#2383e2; margin-bottom:10px;">
-                <i class="fas fa-info-circle"></i> Otimizado para Gemini: Copie e cole diretamente. Formatações antigas serão corrigidas.
+        <div class="modal-content" style="max-width: 700px; height: auto; max-height: 90vh; padding: 20px;">
+            <h3 style="margin-bottom: 15px;">Novo Estudo</h3>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <input type="text" id="subjectTitle" style="flex:1; padding: 10px; border: 1px solid #ddd; border-radius: 6px;" placeholder="Título do Assunto...">
+                <input type="text" id="subjectTag" style="width: 150px; padding: 10px; border: 1px solid #ddd; border-radius: 6px;" placeholder="Matéria (Ex: Pediatria)">
             </div>
-            <div style="display: flex; gap: 10px;">
-                <input type="text" id="subjectTitle" class="input-notion" placeholder="Título do Assunto (Obrigatório)...">
-                <input type="text" id="subjectTag" class="input-notion" style="width: 200px;" placeholder="Tag (Ex: GINECOLOGIA)">
-            </div>
-            <div class="editor-wrapper">
+            <div style="height: 300px; border: 1px solid #ddd; border-radius: 6px; overflow: hidden;">
                 <div id="quill-editor"></div>
             </div>
-            <div style="display:flex; justify-content: flex-end; gap: 10px;">
-                <button class="btn-notion" onclick="fecharModal()">Cancelar</button>
-                <button class="btn-blue" id="btnSalvar">Salvar no Planner</button>
+            <div style="display:flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button class="btn-action" onclick="fecharModal()">Cancelar</button>
+                <button class="btn-action btn-primary" id="btnSalvar">Criar Cronograma</button>
             </div>
         </div>
     </div>
 
     <div class="modal" id="modalView">
-        <div class="modal-content" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+        <div class="modal-content">
             <div style="padding: 15px 25px; border-bottom: 1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
-                <h2 id="viewTitle" style="font-size: 20px; font-weight:700; margin:0;"></h2>
-                <span id="viewTagDisplay" class="tag"></span>
+                <div style="display:flex; align-items:center; gap: 10px;">
+                    <span id="viewTypeIcon"></span>
+                    <h2 id="viewTitle" style="font-size: 18px; font-weight:700; margin:0;"></h2>
+                    <span id="viewTagDisplay" class="tag-pill"></span>
+                </div>
+                <button class="btn-action" onclick="fecharModalView()"><i class="fas fa-times"></i></button>
             </div>
-            
             <div id="viewContainer" style="flex:1; overflow:hidden; display:flex; flex-direction:column;"></div>
-            
-            <div style="padding: 15px 25px; border-top: 1px solid #eee; display:flex; justify-content: space-between;">
-                <button class="btn-notion" id="btnEditarNota"><i class="fas fa-edit"></i> Editar Texto</button>
-                <button class="btn-notion" onclick="fecharModalView()">Fechar</button>
+            <div style="padding: 15px; border-top: 1px solid #eee; display:flex; justify-content: space-between;">
+                 <button class="btn-action" id="btnEditarNota">Editar Texto</button>
             </div>
         </div>
     </div>
 
-    <div id="statusFeedback">
-        <i class="fas fa-spinner fa-spin"></i> <span id="feedbackText">Processando...</span>
-    </div>
+    <div id="statusFeedback">Processando...</div>
 
     <aside class="sidebar">
-        <div class="sidebar-header"><i class="fas fa-graduation-cap"></i> Medicina UNIP</div>
-        <div class="nav-item active" id="navBoard"><i class="fas fa-columns"></i> Board de Ciclos</div>
-        <div class="nav-item" id="navLib"><i class="fas fa-book"></i> Biblioteca</div>
+        <div class="sidebar-header"><i class="fas fa-book-medical" style="color: #d44c47;"></i> PLATAFORMA R1</div>
+        <nav>
+            <div class="nav-item active" id="navBoard"><i class="far fa-calendar-alt"></i> Cronograma Semanal</div>
+            <div class="nav-item" id="navLib"><i class="fas fa-folder-open"></i> Biblioteca de Aulas</div>
+        </nav>
+        <div style="margin-top: auto; padding: 16px;">
+            <div style="background: #f0f0f0; padding: 10px; border-radius: 8px; display:flex; align-items:center; gap: 10px;">
+                <div id="userAvatar" style="width:30px; height:30px; background:#37352f; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px;">U</div>
+                <div style="font-size: 12px;">
+                    <div id="displayUser" style="font-weight:600;">Usuario</div>
+                    <div style="color: #999;">R1 - Intensivo</div>
+                </div>
+            </div>
+        </div>
     </aside>
 
     <main class="main-container">
         <div class="top-bar">
-            <div>Medicina / Ciclos de Estudo</div>
-            <div style="display:flex; gap: 15px; align-items:center;">
-                <span id="displayIp" style="opacity: 0.5">0.0.0.0</span>
-                <b id="displayUser">...</b>
-                <div style="width:24px; height:24px; background:#efefef; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold;" id="userAvatar">?</div>
+            <span><b>Semana:</b> <span id="weekRangeDisplay">Carregando...</span></span>
+            <div style="display:flex; gap: 10px;">
+                <button class="btn-action" id="btnNovoAssunto"><i class="fas fa-plus"></i> Novo Estudo</button>
+                <input type="file" id="pdfInput" hidden accept="application/pdf">
+                <label for="pdfInput" class="btn-action btn-primary"><i class="fas fa-cloud-upload-alt"></i> Upload PDF</label>
             </div>
         </div>
 
         <div class="content">
-            <h1 class="page-title">Planner de Estudos</h1>
-            <div style="display:flex; gap: 10px; margin-bottom: 25px;">
-                <button class="btn-notion" id="btnNovoAssunto"><i class="fas fa-plus"></i> + Novo Assunto</button>
-                <input type="file" id="pdfInput" hidden accept="application/pdf">
-                <label for="pdfInput" class="btn-notion" style="cursor:pointer;"><i class="fas fa-file-upload"></i> Subir PDF</label>
-            </div>
-            <section id="secBoard">
-                <div class="board">
-                    <div class="column"><div class="column-header">⚪ Recentes</div><div class="drop-zone" id="recent" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
-                    <div class="column"><div class="column-header">🔵 Revisar D+1</div><div class="drop-zone" id="d1" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
-                    <div class="column"><div class="column-header">🟡 Revisar D+7</div><div class="drop-zone" id="d7" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
-                    <div class="column"><div class="column-header">🔴 Revisar D+21</div><div class="drop-zone" id="d21" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
-                    <div class="column"><div class="column-header">🟢 Concluído</div><div class="drop-zone" id="done" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
+            <section id="secBoard" style="height: 100%; display: flex; flex-direction: column;">
+                <div class="header-actions">
+                    <h1 class="page-title">Cronograma de Revisões</h1>
                 </div>
+                
+                <div class="week-board" id="weeklyBoard">
+                    </div>
             </section>
+
             <section id="secLib" class="hidden">
-                <table style="width:100%; border-collapse:collapse; font-size:14px;">
-                    <thead><tr style="border-bottom: 1px solid #ddd; text-align:left;"><th style="padding:10px;">Item</th><th style="padding:10px;">Tag</th><th style="padding:10px;">Ação</th></tr></thead>
+                <h1 class="page-title" style="margin-bottom: 20px;">Biblioteca de Materiais</h1>
+                <table style="width:100%; border-collapse:collapse; font-size:14px; background: white; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color);">
+                    <thead style="background: #f9f9f9;"><tr style="text-align:left; color: #777;"><th style="padding:12px;">Arquivo</th><th style="padding:12px;">Matéria</th><th style="padding:12px;">Data Upload</th><th style="padding:12px;">Ação</th></tr></thead>
                     <tbody id="listaBiblioteca"></tbody>
                 </table>
             </section>
@@ -195,319 +276,345 @@
     let currentUID = null;
     let editingDocId = null;
 
-    // --- VARIÁVEIS DO PDF.JS ---
-    let pdfDoc = null;
-    let pageNum = 1;
-    let pageRendering = false;
-    let pageNumPending = null;
-    let pdfCanvas = null;
-    let pdfCtx = null;
-
-    // --- CONFIGURAÇÃO EDITOR QUILL ---
+    // --- CONFIGURAÇÃO QUILL ---
     const quill = new Quill('#quill-editor', {
         theme: 'snow',
+        placeholder: 'Cole seu resumo do Gemini aqui...',
         modules: {
             toolbar: [
-                [{ 'header': [1, 2, 3, false] }],
-                ['bold', 'italic', 'underline', 'strike'],
-                [{ 'color': [] }, { 'background': [] }],
+                [{ 'header': [1, 2, false] }],
+                ['bold', 'italic', 'underline'],
                 [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                [{ 'indent': '-1'}, { 'indent': '+1' }],
-                ['link', 'blockquote', 'code-block'],
-                [{ 'align': [] }],
+                ['blockquote', 'code-block'],
                 ['clean']
             ]
         }
     });
 
-    // --- FUNÇÕES DE PDF.JS (RENDERIZAÇÃO) ---
-    window.renderPDFPage = async (num) => {
-        pageRendering = true;
-        
-        // Pega a página
-        const page = await pdfDoc.getPage(num);
-        
-        // Ajusta escala (1.5 é um bom tamanho padrão, ou use window.innerWidth para responsivo)
-        const viewport = page.getViewport({ scale: 1.5 });
-        
-        pdfCanvas.height = viewport.height;
-        pdfCanvas.width = viewport.width;
+    // --- FUNÇÕES DE DATA (Lógica Semanal) ---
+    function getStartOfWeek(date) {
+        const d = new Date(date);
+        const day = d.getDay(); // 0 (Dom) a 6 (Sab)
+        const diff = d.getDate() - day;
+        return new Date(d.setDate(diff));
+    }
 
-        // Renderiza
-        const renderContext = {
-            canvasContext: pdfCtx,
-            viewport: viewport
-        };
-        
-        const renderTask = page.render(renderContext);
+    function formatDateDisplay(date) {
+        return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    }
 
-        // Espera terminar
-        await renderTask.promise;
-        pageRendering = false;
-        
-        // Atualiza contador
-        document.getElementById('page_num').textContent = num;
+    function isSameDay(d1, d2) {
+        return d1.getFullYear() === d2.getFullYear() &&
+               d1.getMonth() === d2.getMonth() &&
+               d1.getDate() === d2.getDate();
+    }
 
-        // Se tiver página pendente na fila (clique rápido)
-        if (pageNumPending !== null) {
-            window.renderPDFPage(pageNumPending);
-            pageNumPending = null;
+    // --- RENDERIZAÇÃO DO BOARD SEMANAL ---
+    async function renderWeeklyBoard() {
+        if (!currentUID) return;
+        
+        const board = document.getElementById('weeklyBoard');
+        board.innerHTML = ''; // Limpa
+        
+        const today = new Date();
+        const startOfWeek = getStartOfWeek(today);
+        const daysOfWeek = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        
+        // 1. Cria as colunas
+        const columns = [];
+        for (let i = 0; i < 7; i++) {
+            const currentDay = new Date(startOfWeek);
+            currentDay.setDate(startOfWeek.getDate() + i);
+            
+            const isToday = isSameDay(today, currentDay);
+            
+            const colDiv = document.createElement('div');
+            colDiv.className = 'day-column';
+            colDiv.innerHTML = `
+                <div class="day-header ${isToday ? 'today' : ''}">
+                    <span>${daysOfWeek[i]}</span>
+                    <span style="font-weight:400; opacity:0.7">${formatDateDisplay(currentDay)}</span>
+                </div>
+                <div class="drop-zone" id="day-${i}" data-date="${currentDay.getTime()}"></div>
+            `;
+            board.appendChild(colDiv);
+            columns.push({ element: colDiv.querySelector('.drop-zone'), date: currentDay });
         }
-    }
-
-    window.queueRenderPage = (num) => {
-        if (pageRendering) {
-            pageNumPending = num;
-        } else {
-            window.renderPDFPage(num);
-        }
-    }
-
-    window.onPrevPage = () => {
-        if (pageNum <= 1) return;
-        pageNum--;
-        window.queueRenderPage(pageNum);
-    }
-
-    window.onNextPage = () => {
-        if (pageNum >= pdfDoc.numPages) return;
-        pageNum++;
-        window.queueRenderPage(pageNum);
-    }
-
-    // --- FUNÇÕES DE NORMALIZAÇÃO DE TEXTO ---
-    function normalizeContent(content) {
-        if (!content) return '';
-        if (content.trim().startsWith('<')) return content;
         
-        return content
-            .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/## (.*?)\n/g, '<h2>$1</h2>')
-            .replace(/\n/g, '<br>');
-    }
+        document.getElementById('weekRangeDisplay').textContent = `${formatDateDisplay(startOfWeek)} - ${formatDateDisplay(columns[6].date)}`;
 
-    quill.root.addEventListener('paste', (e) => {
-        const clipboardData = e.clipboardData || window.clipboardData;
-        const pastedData = clipboardData.getData('text');
-        if (pastedData.includes('**') || pastedData.includes('##') || pastedData.includes('|')) {
-            e.preventDefault();
-            const html = marked.parse(pastedData, { breaks: true, gfm: true });
-            const range = quill.getSelection();
-            quill.clipboard.dangerouslyPasteHTML(range ? range.index : 0, html);
-        }
-    });
+        // 2. Busca Tarefas
+        const snap = await getDocs(query(collection(db, "planners", currentUID, "tasks")));
+        
+        snap.forEach(docSnap => {
+            const t = docSnap.data();
+            const taskDate = new Date(t.targetDate); // Data programada (D+1, D+7, etc)
+            
+            // Verifica em qual coluna da semana atual essa tarefa cai
+            const colIndex = columns.findIndex(col => isSameDay(col.date, taskDate));
+            
+            if (colIndex !== -1) {
+                // Cria o Card
+                const card = document.createElement('div');
+                card.className = `card ${t.concluido ? 'completed' : ''}`;
+                card.onclick = (e) => {
+                    // Se clicar no checkbox, não abre o modal
+                    if(e.target.classList.contains('custom-checkbox')) return;
+                    abrirItem(docSnap.id);
+                };
 
-    window.showFeedback = (msg, isLoading = true) => {
-        const el = document.getElementById("statusFeedback");
-        const txt = document.getElementById("feedbackText");
-        const icon = el.querySelector("i");
-        txt.textContent = msg; el.style.display = "block";
-        if (isLoading) {
-            icon.className = "fas fa-spinner fa-spin"; el.style.backgroundColor = "#2eaadc";
-        } else {
-            icon.className = "fas fa-check-circle"; el.style.backgroundColor = "#27ae60";
-            setTimeout(() => { el.style.display = "none"; }, 4000);
-        }
-    };
+                // Estilo da Tag baseado no nome (Lógica visual simples)
+                let tagColor = 'var(--tag-blue)';
+                let tagText = 'var(--text-blue)';
+                if(t.tag.toUpperCase().includes('GINE')) { tagColor = 'var(--tag-red)'; tagText = 'var(--text-red)'; }
+                if(t.tag.toUpperCase().includes('PED')) { tagColor = 'var(--tag-yellow)'; tagText = 'var(--text-yellow)'; }
+                if(t.tag.toUpperCase().includes('CIR')) { tagColor = 'var(--tag-green)'; tagText = 'var(--text-green)'; }
 
-    // --- MODAIS ---
-    const modalEditor = document.getElementById('modalEditor');
-    const modalView = document.getElementById('modalView');
+                // Tipo de Ícone
+                const icon = t.tipo === 'pdf' ? '<i class="far fa-file-pdf"></i>' : '<i class="far fa-file-alt"></i>';
+                const labelRevisao = t.titulo.includes('[REC]') ? 'Estudo' : 'Revisão';
 
-    window.fecharModal = () => { modalEditor.style.display = 'none'; editingDocId = null; quill.setContents([]); };
-    window.fecharModalView = () => { 
-        modalView.style.display = 'none'; 
-        document.getElementById('viewContainer').innerHTML = ''; 
-        pdfDoc = null; // Limpa memória
-    };
-
-    document.getElementById('btnNovoAssunto').onclick = () => {
-        document.getElementById('subjectTitle').value = "";
-        document.getElementById('subjectTag').value = "";
-        modalEditor.style.display = 'flex';
-    };
-
-    onAuthStateChanged(auth, (user) => {
-        if (!user) { window.location.href = "login.html"; return; }
-        currentUID = user.uid;
-        document.getElementById("displayUser").textContent = user.email.split("@")[0];
-        document.getElementById("userAvatar").textContent = user.email[0].toUpperCase();
-        fetch('https://api.ipify.org?format=json').then(r => r.json()).then(d => document.getElementById('displayIp').textContent = d.ip);
-        carregarBoard();
-    });
-
-    // Salvar Item
-    document.getElementById('btnSalvar').onclick = async () => {
-        const title = document.getElementById('subjectTitle').value;
-        const tag = document.getElementById('subjectTag').value || "GERAL";
-        const content = quill.root.innerHTML;
-
-        if (!title) return alert("Preencha o título!");
-
-        showFeedback("Salvando...", true);
-        const now = Date.now();
-
-        try {
-            if (editingDocId) {
-                await updateDoc(doc(db, "planners", currentUID, "tasks", editingDocId), { titulo: title, tag: tag.toUpperCase(), content: content });
-            } else {
-                const ciclos = [
-                    { n: `[REC] ${title}`, t: now, col: 'recent' },
-                    { n: `[D+1] ${title}`, t: now + 86400000, col: 'd1' },
-                    { n: `[D+7] ${title}`, t: now + 604800000, col: 'd7' },
-                    { n: `[D+21] ${title}`, t: now + 1814400000, col: 'd21' }
-                ];
-
-                for (const c of ciclos) {
-                    await addDoc(collection(db, "planners", currentUID, "tasks"), {
-                        titulo: c.n, tag: tag.toUpperCase(), content: content, 
-                        targetDate: c.t, column: c.col, criadoEm: serverTimestamp(), tipo: 'texto'
-                    });
-                }
-                await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
-                    nome: title, content: content, tag: tag.toUpperCase(), data: now, tipo: 'texto' 
-                });
+                card.innerHTML = `
+                    <div class="card-top">
+                        <input type="checkbox" class="custom-checkbox" ${t.concluido ? 'checked' : ''} 
+                               onchange="window.toggleConcluido('${docSnap.id}', this.checked)">
+                        <div>
+                            <div class="card-title">${t.titulo.replace(/\[.*?\]/, '').trim()}</div>
+                            <div class="card-tags">
+                                <span class="tag-pill" style="background:${tagColor}; color:${tagText}">${t.tag}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-meta">
+                        <span class="meta-item">${icon} ${labelRevisao}</span>
+                    </div>
+                `;
+                columns[colIndex].element.appendChild(card);
             }
-            showFeedback("Salvo!", false);
-            fecharModal();
-            carregarBoard();
-        } catch (e) { showFeedback("Erro.", false); }
+        });
+    }
+
+    // --- FUNÇÕES DE AÇÃO ---
+    window.toggleConcluido = async (id, status) => {
+        await updateDoc(doc(db, "planners", currentUID, "tasks", id), { concluido: status });
+        renderWeeklyBoard(); // Re-renderiza para atualizar estilo
     };
 
+    // Upload de PDF (Lógica de Criação de Datas)
     document.getElementById("pdfInput").onchange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        const tag = prompt("Tag do PDF:", "GERAL") || "GERAL";
-        showFeedback("Enviando PDF...", true);
+        
+        const tag = prompt("Qual a matéria? (Ex: Pediatria, Cirurgia)", "Geral") || "Geral";
+        showFeedback("Subindo PDF e agendando revisões...", true);
+
         try {
             const refS = ref(storage, `planners/${currentUID}/${Date.now()}_${file.name}`);
             await uploadBytes(refS, file);
             const url = await getDownloadURL(refS);
-            const now = Date.now();
+            
+            const now = new Date();
+            // Criação das datas de revisão (D0, D1, D7, D21)
+            const d0 = now.getTime();
+            const d1 = new Date(now).setDate(now.getDate() + 1);
+            const d7 = new Date(now).setDate(now.getDate() + 7);
+            const d21 = new Date(now).setDate(now.getDate() + 21);
+
             const ciclos = [
-                { n: `[REC] ${file.name}`, t: now, col: 'recent' }, 
-                { n: `[D+1] ${file.name}`, t: now + 86400000, col: 'd1' }, 
-                { n: `[D+7] ${file.name}`, t: now + 604800000, col: 'd7' }, 
-                { n: `[D+21] ${file.name}`, t: now + 1814400000, col: 'd21' }
+                { n: `[REC] ${file.name}`, t: d0 }, 
+                { n: `[D+1] ${file.name}`, t: d1 }, 
+                { n: `[D+7] ${file.name}`, t: d7 }, 
+                { n: `[D+21] ${file.name}`, t: d21 }
             ];
-            for(const c of ciclos) await addDoc(collection(db, "planners", currentUID, "tasks"), { 
-                titulo: c.n, tag: tag.toUpperCase(), pdfUrl: url, targetDate: c.t, column: c.col, criadoEm: serverTimestamp(), tipo: 'pdf' 
+            
+            // Salva na Biblioteca
+            await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
+                nome: file.name, url, tag: tag.toUpperCase(), data: d0, tipo: 'pdf' 
             });
-            await addDoc(collection(db, "planners", currentUID, "arquivos"), { nome: file.name, url, tag: tag.toUpperCase(), data: now, tipo: 'pdf' });
-            showFeedback("Sucesso!", false);
-            carregarBoard();
-        } catch (err) { showFeedback("Erro no upload.", false); }
+
+            // Salva no Cronograma
+            for(const c of ciclos) {
+                await addDoc(collection(db, "planners", currentUID, "tasks"), { 
+                    titulo: c.n, 
+                    tag: tag.toUpperCase(), 
+                    pdfUrl: url, 
+                    targetDate: c.t, 
+                    concluido: false,
+                    criadoEm: serverTimestamp(), 
+                    tipo: 'pdf' 
+                });
+            }
+
+            showFeedback("Cronograma criado com sucesso!", false);
+            renderWeeklyBoard();
+            carregarBiblioteca();
+        } catch (err) { console.error(err); showFeedback("Erro no upload.", false); }
     };
 
-    // --- VISUALIZAÇÃO UNIFICADA (AQUI ESTÁ A MÁGICA DO PDF) ---
+    // Novo Assunto (Texto)
+    document.getElementById('btnSalvar').onclick = async () => {
+        const title = document.getElementById('subjectTitle').value;
+        const tag = document.getElementById('subjectTag').value || "Geral";
+        const content = quill.root.innerHTML;
+
+        if (!title) return alert("Preencha o título!");
+        fecharModal();
+        showFeedback("Criando cronograma...", true);
+
+        const now = new Date();
+        const d0 = now.getTime();
+        const d1 = new Date(now).setDate(now.getDate() + 1);
+        const d7 = new Date(now).setDate(now.getDate() + 7);
+        const d21 = new Date(now).setDate(now.getDate() + 21);
+
+        const ciclos = [
+            { n: `[REC] ${title}`, t: d0 },
+            { n: `[D+1] ${title}`, t: d1 },
+            { n: `[D+7] ${title}`, t: d7 },
+            { n: `[D+21] ${title}`, t: d21 }
+        ];
+
+        // Biblioteca
+        await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
+            nome: title, content: content, tag: tag.toUpperCase(), data: d0, tipo: 'texto' 
+        });
+
+        // Cronograma
+        for (const c of ciclos) {
+            await addDoc(collection(db, "planners", currentUID, "tasks"), {
+                titulo: c.n, tag: tag.toUpperCase(), content: content, 
+                targetDate: c.t, concluido: false, criadoEm: serverTimestamp(), tipo: 'texto'
+            });
+        }
+        showFeedback("Salvo!", false);
+        renderWeeklyBoard();
+        carregarBiblioteca();
+    };
+
+    // --- VISUALIZAÇÃO (PDF & TEXTO) ---
+    // Variáveis PDF
+    let pdfDoc = null, pageNum = 1, pageRendering = false, pageNumPending = null;
+    let canvas, ctx;
+
     window.abrirItem = async (id) => {
         const d = await getDoc(doc(db, "planners", currentUID, "tasks", id));
         if(!d.exists()) return;
         const data = d.data();
         
-        document.getElementById('viewTitle').textContent = data.titulo;
-        document.getElementById('viewTagDisplay').textContent = data.tag || "GERAL";
+        document.getElementById('viewTitle').textContent = data.titulo.replace(/\[.*?\]/, '');
+        document.getElementById('viewTagDisplay').textContent = data.tag;
         const container = document.getElementById('viewContainer');
         const btnEdit = document.getElementById('btnEditarNota');
 
-        if (data.pdfUrl) {
-            // RENDERIZAÇÃO PDF.JS
-            container.innerHTML = `
-                <div class="pdf-toolbar">
-                    <button class="btn-notion" onclick="window.onPrevPage()">◀ Anterior</button>
-                    <span style="font-size:13px; font-weight:600;">Página <span id="page_num">1</span> de <span id="page_count">--</span></span>
-                    <button class="btn-notion" onclick="window.onNextPage()">Próximo ▶</button>
-                </div>
-                <div id="pdfContainer">
-                    <canvas id="pdfCanvas"></canvas>
-                </div>
-            `;
-            btnEdit.style.display = 'none';
+        document.getElementById('modalView').style.display = 'flex';
 
-            // Inicia PDF
-            pdfCanvas = document.getElementById('pdfCanvas');
-            pdfCtx = pdfCanvas.getContext('2d');
-            
-            showFeedback("Renderizando PDF...", true);
+        if (data.pdfUrl) {
+            // Render PDF
+            document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-pdf" style="color:#d44c47; font-size:20px;"></i>';
+            btnEdit.style.display = 'none';
+            container.innerHTML = `
+                <div style="background:#333; padding:10px; display:flex; justify-content:center; gap:20px; color:white;">
+                    <button class="btn-action" onclick="window.prevPage()">◀</button>
+                    <span>Página <span id="page_num">1</span> / <span id="page_count">--</span></span>
+                    <button class="btn-action" onclick="window.nextPage()">▶</button>
+                </div>
+                <div id="pdfContainer"><canvas id="the-canvas"></canvas></div>
+            `;
             
             try {
-                // Carrega Documento
-                pdfDoc = await pdfjsLib.getDocument(data.pdfUrl).promise;
+                const loadingTask = pdfjsLib.getDocument(data.pdfUrl);
+                pdfDoc = await loadingTask.promise;
                 document.getElementById('page_count').textContent = pdfDoc.numPages;
                 pageNum = 1;
-                window.renderPDFPage(pageNum);
-                showFeedback("PDF Aberto!", false);
-            } catch (err) {
-                console.error(err);
-                container.innerHTML = `<div style="padding:20px; color:red;">Erro ao renderizar PDF. CORS ou URL inválida. <br> <a href="${data.pdfUrl}" target="_blank">Clique para baixar</a></div>`;
-                showFeedback("Erro ao abrir PDF.", false);
-            }
+                renderPage(pageNum);
+            } catch (e) { container.innerHTML = '<p style="padding:20px; color:red">Erro ao carregar PDF. Verifique o CORS.</p>'; }
 
         } else {
-            // RENDERIZAÇÃO TEXTO
-            const rawContent = data.htmlContent || data.content || data.textContent || '';
-            const finalHtml = normalizeContent(rawContent);
-            
-            container.innerHTML = `<div class="ql-editor" style="padding:20px; overflow-y:auto;">${finalHtml}</div>`;
+            // Render Texto
+            document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-alt" style="color:#2383e2; font-size:20px;"></i>';
             btnEdit.style.display = 'block';
-            
-            btnEdit.onclick = () => {
-                editingDocId = id;
-                document.getElementById('subjectTitle').value = data.titulo.replace(/\[.*?\] /, '');
-                document.getElementById('subjectTag').value = data.tag;
-                quill.root.innerHTML = finalHtml;
-                fecharModalView();
-                modalEditor.style.display = 'flex';
-            };
+            container.innerHTML = `<div class="ql-editor" style="padding:40px; overflow-y:auto;">${data.content}</div>`;
         }
-        modalView.style.display = 'flex';
     };
 
-    async function carregarBoard() {
-        if (!currentUID) return;
-        const snap = await getDocs(query(collection(db, "planners", currentUID, "tasks"), orderBy("criadoEm", "desc")));
-        const cols = { recent: document.getElementById("recent"), d1: document.getElementById("d1"), d7: document.getElementById("d7"), d21: document.getElementById("d21"), done: document.getElementById("done") };
-        Object.values(cols).forEach(c => c.innerHTML = "");
-        const agora = Date.now();
-
-        snap.forEach(d => {
-            const t = d.data();
-            if (t.column !== 'done' && agora < t.targetDate) return;
-            const card = document.createElement("div");
-            card.className = "card"; card.draggable = true; card.id = d.id;
-            card.onclick = () => abrirItem(d.id);
-            card.ondragstart = (e) => e.dataTransfer.setData("text", e.target.id);
-            card.innerHTML = `<div style="font-weight:600; font-size:13px; margin-bottom:5px;">${t.titulo}</div><span class="tag">${t.tag}</span>`;
-            if (cols[t.column]) cols[t.column].appendChild(card);
+    // Funcões PDF Internas
+    function renderPage(num) {
+        pageRendering = true;
+        pdfDoc.getPage(num).then(function(page) {
+            canvas = document.getElementById('the-canvas');
+            ctx = canvas.getContext('2d');
+            var viewport = page.getViewport({scale: 1.5});
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            var renderContext = { canvasContext: ctx, viewport: viewport };
+            var renderTask = page.render(renderContext);
+            renderTask.promise.then(function() {
+                pageRendering = false;
+                if (pageNumPending !== null) { renderPage(pageNumPending); pageNumPending = null; }
+            });
         });
+        document.getElementById('page_num').textContent = num;
     }
+    window.queueRenderPage = (num) => { if (pageRendering) pageNumPending = num; else renderPage(num); };
+    window.prevPage = () => { if (pageNum <= 1) return; pageNum--; window.queueRenderPage(pageNum); };
+    window.nextPage = () => { if (pageNum >= pdfDoc.numPages) return; pageNum++; window.queueRenderPage(pageNum); };
 
-    window.allowDrop = (e) => e.preventDefault();
-    window.drop = async (e) => {
-        e.preventDefault();
-        const id = e.dataTransfer.getData("text");
-        const col = e.currentTarget.id;
-        if(col) { await updateDoc(doc(db, "planners", currentUID, "tasks", id), { column: col }); carregarBoard(); }
+    // --- FEEDBACK E MODAIS ---
+    window.showFeedback = (msg, loading) => {
+        const el = document.getElementById('statusFeedback');
+        el.textContent = msg; el.style.display = 'block';
+        el.style.background = loading ? '#2383e2' : '#448361';
+        if(!loading) setTimeout(() => el.style.display = 'none', 3000);
     };
+    window.fecharModal = () => document.getElementById('modalEditor').style.display = 'none';
+    window.fecharModalView = () => document.getElementById('modalView').style.display = 'none';
+    document.getElementById('btnNovoAssunto').onclick = () => document.getElementById('modalEditor').style.display = 'flex';
 
-    document.getElementById('navBoard').onclick = () => { document.getElementById('secBoard').classList.remove('hidden'); document.getElementById('secLib').classList.add('hidden'); };
-    document.getElementById('navLib').onclick = () => { document.getElementById('secBoard').classList.add('hidden'); document.getElementById('secLib').classList.remove('hidden'); carregarBiblioteca(); };
+    // --- AUTH & INIT ---
+    onAuthStateChanged(auth, (user) => {
+        if (!user) { window.location.href = "login.html"; return; }
+        currentUID = user.uid;
+        document.getElementById("displayUser").textContent = user.email.split("@")[0];
+        document.getElementById("userAvatar").textContent = user.email[0].toUpperCase();
+        renderWeeklyBoard();
+        carregarBiblioteca();
+    });
 
     async function carregarBiblioteca() {
+        if(!currentUID) return;
         const snap = await getDocs(query(collection(db, "planners", currentUID, "arquivos"), orderBy("data", "desc")));
-        const body = document.getElementById("listaBiblioteca");
-        body.innerHTML = "";
+        const tbody = document.getElementById('listaBiblioteca');
+        tbody.innerHTML = '';
         snap.forEach(d => {
-            const p = d.data();
-            body.innerHTML += `<tr style="border-bottom:1px solid #eee;">
-                <td style="padding:10px;">${p.nome}</td>
-                <td><span class="tag">${p.tag}</span></td>
-                <td><button class="btn-notion" onclick="alert('Visualize pelo Board')">Ver</button></td>
-            </tr>`;
+            const f = d.data();
+            const date = new Date(f.data).toLocaleDateString('pt-BR');
+            const icon = f.tipo === 'pdf' ? '<i class="far fa-file-pdf" style="color:#d44c47"></i>' : '<i class="far fa-file-alt" style="color:#2383e2"></i>';
+            tbody.innerHTML += `
+                <tr style="border-bottom:1px solid #f0f0f0;">
+                    <td style="padding:12px;">${icon} ${f.nome}</td>
+                    <td style="padding:12px;"><span class="tag-pill" style="background:#f0f0f0; color:#555">${f.tag}</span></td>
+                    <td style="padding:12px; color:#999;">${date}</td>
+                    <td style="padding:12px;"><button class="btn-action" style="padding:4px 8px;">Ver</button></td>
+                </tr>
+            `;
         });
     }
+
+    // Navegação Abas
+    document.getElementById('navBoard').onclick = () => {
+        document.getElementById('secBoard').classList.remove('hidden');
+        document.getElementById('secLib').classList.add('hidden');
+        document.getElementById('navBoard').classList.add('active');
+        document.getElementById('navLib').classList.remove('active');
+    };
+    document.getElementById('navLib').onclick = () => {
+        document.getElementById('secBoard').classList.add('hidden');
+        document.getElementById('secLib').classList.remove('hidden');
+        document.getElementById('navBoard').classList.remove('active');
+        document.getElementById('navLib').classList.add('active');
+        carregarBiblioteca();
+    };
+
 </script>
 </body>
 </html>
