@@ -36,7 +36,6 @@
         /* Sidebar */
         .sidebar { width: 240px; background: #fbfbfa; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 16px 0; flex-shrink: 0; }
         
-        /* Ajuste do Header para mostrar User + IP */
         .sidebar-header { 
             padding: 0 16px 16px; border-bottom: 1px solid var(--border-color); margin-bottom: 12px; 
             display: flex; flex-direction: column; gap: 4px;
@@ -56,24 +55,31 @@
         .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-shrink: 0; }
         .page-title { font-size: 26px; font-weight: 700; color: var(--text-primary); }
 
-        /* CORREÇÃO DA ROLAGEM: Semana ocupa altura total, mas colunas rolam individualmente */
+        /* ESTILO DO SELETOR DE SEMANA */
+        .week-selector-wrapper {
+            display: flex; align-items: center; gap: 8px; position: relative;
+            cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: 0.2s;
+        }
+        .week-selector-wrapper:hover { background: #f0f0f0; }
+        .week-select-native {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0; cursor: pointer; z-index: 10;
+        }
+        .week-display { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+
+        /* Board */
         .week-board { 
             display: grid; 
             grid-template-columns: repeat(7, 1fr); 
             gap: 12px; 
-            flex: 1; /* Ocupa o resto da tela */
-            min-width: 1400px; /* Garante largura mínima */
-            overflow: hidden; /* O scroll será interno nas colunas */
+            flex: 1; 
+            min-width: 1400px; 
+            overflow: hidden; 
         }
 
         .day-column {
-            background: transparent;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            border-right: 1px dashed var(--border-color);
-            padding-right: 8px;
-            min-height: 0; /* Importante para o flexbox */
+            background: transparent; display: flex; flex-direction: column; height: 100%;
+            border-right: 1px dashed var(--border-color); padding-right: 8px; min-height: 0;
         }
         .day-column:last-child { border-right: none; }
 
@@ -83,12 +89,8 @@
         }
         .day-header.today { background: #ffe2dd; color: #d44c47; }
 
-        /* ÁREA DE SCROLL DOS CARDS */
         .drop-zone {
-            flex: 1;
-            overflow-y: auto; /* AQUI ESTÁ A CORREÇÃO DA ROLAGEM */
-            padding-bottom: 40px; /* Espaço extra no final */
-            scrollbar-width: thin; /* Firefox */
+            flex: 1; overflow-y: auto; padding-bottom: 40px; scrollbar-width: thin;
         }
         .drop-zone::-webkit-scrollbar { width: 6px; }
         .drop-zone::-webkit-scrollbar-thumb { background-color: #ddd; border-radius: 4px; }
@@ -120,7 +122,6 @@
         
         .card-meta { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 11px; color: var(--text-secondary); }
 
-        /* Botões */
         .btn-action {
             background: white; border: 1px solid var(--border-color); padding: 8px 12px;
             border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s;
@@ -138,11 +139,7 @@
         
         #statusFeedback { position: fixed; bottom: 30px; right: 30px; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; color: white; display: none; z-index: 9999; }
         .hidden { display: none !important; }
-
-        /* Scroll horizontal para telas menores */
         #secBoard { overflow-x: auto; overflow-y: hidden; }
-        
-        /* Ajuste Biblioteca para ocupar tela toda */
         #secLib { height: 100%; overflow-y: auto; }
     </style>
 </head>
@@ -198,7 +195,18 @@
 
     <main class="main-container">
         <div class="top-bar">
-            <span><b>Semana:</b> <span id="weekRangeDisplay">Carregando...</span></span>
+            <div style="display:flex; align-items:center;">
+                <span style="margin-right: 8px;"><b>Semana:</b></span>
+                <div class="week-selector-wrapper">
+                    <div class="week-display">
+                        <span id="weekRangeDisplay">Carregando...</span>
+                        <i class="fas fa-chevron-down" style="font-size: 12px; color: var(--text-secondary);"></i>
+                    </div>
+                    <select id="weekSelect" class="week-select-native" onchange="window.changeWeek(this.value)">
+                        </select>
+                </div>
+            </div>
+
             <div style="display:flex; gap: 10px;">
                 <button class="btn-action" id="btnNovoAssunto"><i class="fas fa-plus"></i> Novo Estudo</button>
                 <input type="file" id="pdfInput" hidden accept="application/pdf">
@@ -229,7 +237,7 @@
                             </tr>
                         </thead>
                         <tbody id="listaBiblioteca">
-                            </tbody>
+                        </tbody>
                     </table>
                 </div>
             </section>
@@ -258,6 +266,8 @@
 
     let currentUID = null;
     let editingDocId = null;
+    let currentBoardStart = new Date(); // Data base para o board
+    let allTasksCache = []; // Cache para evitar muitas leituras
 
     // --- QUILL EDITOR ---
     const quill = new Quill('#quill-editor', {
@@ -274,30 +284,103 @@
         }
     });
 
-    // --- AUTH & HEADER INFO ---
     onAuthStateChanged(auth, (user) => {
         if (!user) { window.location.href = "login.html"; return; }
         currentUID = user.uid;
-        
-        // Atualiza Cabeçalho da Sidebar
-        document.getElementById("headerUserName").textContent = user.email; // Mostra o email ou nome
-        
-        // Pega o IP
+        document.getElementById("headerUserName").textContent = user.email;
         fetch('https://api.ipify.org?format=json')
             .then(r => r.json())
             .then(d => document.getElementById('headerUserIP').textContent = "IP: " + d.ip)
             .catch(() => document.getElementById('headerUserIP').textContent = "IP: Detectando...");
 
-        renderWeeklyBoard();
-        carregarBiblioteca(); // Carrega a biblioteca ao iniciar
+        // Inicia carregando dados
+        loadDataAndInit();
+        carregarBiblioteca();
     });
 
-    // --- RENDERIZAÇÃO SEMANAL ---
+    // --- CARREGAMENTO DE DADOS ---
+    async function loadDataAndInit() {
+        if (!currentUID) return;
+        
+        // Busca todas as tarefas uma vez
+        const snap = await getDocs(query(collection(db, "planners", currentUID, "tasks")));
+        allTasksCache = [];
+        snap.forEach(d => allTasksCache.push({ id: d.id, ...d.data() }));
+
+        // Configura o seletor de semanas baseado na última data
+        setupWeekNavigator();
+        
+        // Renderiza o board com a data atual (ou selecionada)
+        renderWeeklyBoard();
+    }
+
+    // --- NAVEGAÇÃO DE SEMANAS (Lógica Nova) ---
+    function setupWeekNavigator() {
+        const select = document.getElementById('weekSelect');
+        select.innerHTML = '';
+
+        // Encontra a data mais distante
+        let maxDate = new Date().getTime();
+        allTasksCache.forEach(t => {
+            if (t.targetDate > maxDate) maxDate = t.targetDate;
+        });
+
+        // Gera semanas do "Start da semana atual" até a "Max Date"
+        const currentWeekStart = getStartOfWeek(new Date());
+        let loopDate = new Date(currentWeekStart);
+        const finalDate = new Date(maxDate);
+        
+        // Adiciona algumas semanas extras no futuro se quiser
+        finalDate.setDate(finalDate.getDate() + 7);
+
+        while (loopDate <= finalDate) {
+            const endOfWeek = new Date(loopDate);
+            endOfWeek.setDate(loopDate.getDate() + 6);
+            
+            const label = `${formatDateDisplay(loopDate)} - ${formatDateDisplay(endOfWeek)}`;
+            const value = loopDate.getTime();
+
+            const option = document.createElement('option');
+            option.value = value;
+            option.text = label;
+            
+            // Marca a semana atual
+            if (loopDate.getTime() === currentWeekStart.getTime()) {
+                option.selected = true;
+                currentBoardStart = new Date(loopDate); // Garante sync
+            }
+            
+            select.appendChild(option);
+            
+            // Avança 1 semana
+            loopDate.setDate(loopDate.getDate() + 7);
+        }
+        
+        // Atualiza label visual inicial
+        updateWeekLabel();
+    }
+
+    window.changeWeek = (timestamp) => {
+        currentBoardStart = new Date(parseInt(timestamp));
+        updateWeekLabel();
+        renderWeeklyBoard();
+    };
+
+    function updateWeekLabel() {
+        const endOfWeek = new Date(currentBoardStart);
+        endOfWeek.setDate(currentBoardStart.getDate() + 6);
+        document.getElementById('weekRangeDisplay').textContent = 
+            `${formatDateDisplay(currentBoardStart)} - ${formatDateDisplay(endOfWeek)}`;
+    }
+
+    // --- RENDERIZAÇÃO ---
     function getStartOfWeek(date) {
         const d = new Date(date);
         const day = d.getDay(); 
         const diff = d.getDate() - day;
-        return new Date(d.setDate(diff));
+        const r = new Date(d.setDate(diff));
+        r.setHours(0,0,0,0); // Normaliza hora
+        return r;
     }
 
     function formatDateDisplay(date) {
@@ -310,20 +393,20 @@
                d1.getDate() === d2.getDate();
     }
 
-    async function renderWeeklyBoard() {
-        if (!currentUID) return;
-        
+    function renderWeeklyBoard() {
         const board = document.getElementById('weeklyBoard');
         board.innerHTML = ''; 
         
-        const today = new Date();
-        const startOfWeek = getStartOfWeek(today);
         const daysOfWeek = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-        
+        const today = new Date(); // Para destacar o dia atual "real"
+
         const columns = [];
+        
+        // Cria colunas baseadas na currentBoardStart (selecionada no dropdown)
         for (let i = 0; i < 7; i++) {
-            const currentDay = new Date(startOfWeek);
-            currentDay.setDate(startOfWeek.getDate() + i);
+            const currentDay = new Date(currentBoardStart);
+            currentDay.setDate(currentBoardStart.getDate() + i);
+            
             const isToday = isSameDay(today, currentDay);
             
             const colDiv = document.createElement('div');
@@ -338,24 +421,18 @@
             board.appendChild(colDiv);
             columns.push({ element: colDiv.querySelector('.drop-zone'), date: currentDay });
         }
-        
-        document.getElementById('weekRangeDisplay').textContent = `${formatDateDisplay(startOfWeek)} - ${formatDateDisplay(columns[6].date)}`;
 
-        const snap = await getDocs(query(collection(db, "planners", currentUID, "tasks")));
-        
-        snap.forEach(docSnap => {
-            const t = docSnap.data();
+        // Filtra e renderiza tarefas do cache
+        allTasksCache.forEach(t => {
             const taskDate = new Date(t.targetDate);
             const colIndex = columns.findIndex(col => isSameDay(col.date, taskDate));
             
             if (colIndex !== -1) {
                 const card = document.createElement('div');
                 card.className = `card ${t.concluido ? 'completed' : ''}`;
-                
-                // Configura clique no card (exceto checkbox)
                 card.onclick = (e) => {
                     if(e.target.classList.contains('custom-checkbox')) return;
-                    abrirItem(docSnap.id, true); // true = via board (tanto faz, a função trata)
+                    abrirItem(t.id);
                 };
 
                 let tagColor = 'var(--tag-blue)'; let tagText = 'var(--text-blue)';
@@ -370,7 +447,7 @@
                 card.innerHTML = `
                     <div class="card-top">
                         <input type="checkbox" class="custom-checkbox" ${t.concluido ? 'checked' : ''} 
-                               onchange="window.toggleConcluido('${docSnap.id}', this.checked)">
+                               onchange="window.toggleConcluido('${t.id}', this.checked)">
                         <div>
                             <div class="card-title">${t.titulo.replace(/\[.*?\]/, '').trim()}</div>
                             <div class="card-tags">
@@ -385,80 +462,13 @@
         });
     }
 
-    // --- BIBLIOTECA (Ordenação e Visualização) ---
-    async function carregarBiblioteca() {
-        if(!currentUID) return;
-        
-        // Consulta ordenada por Data (decrescente)
-        const q = query(collection(db, "planners", currentUID, "arquivos"), orderBy("data", "desc"));
-        const snap = await getDocs(q);
-        
-        const tbody = document.getElementById('listaBiblioteca');
-        tbody.innerHTML = '';
-        
-        if (snap.empty) {
-            tbody.innerHTML = '<tr><td colspan="4" style="padding:20px; text-align:center; color:#999;">Nenhum arquivo encontrado.</td></tr>';
-            return;
-        }
-
-        snap.forEach(d => {
-            const f = d.data();
-            const date = new Date(f.data).toLocaleDateString('pt-BR') + ' ' + new Date(f.data).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-            const icon = f.tipo === 'pdf' ? '<i class="far fa-file-pdf" style="color:#d44c47"></i>' : '<i class="far fa-file-alt" style="color:#2383e2"></i>';
-            
-            // Cria a linha
-            const tr = document.createElement('tr');
-            tr.style.borderBottom = '1px solid #f0f0f0';
-            tr.innerHTML = `
-                <td style="padding:12px;">${icon} ${f.nome}</td>
-                <td style="padding:12px;"><span class="tag-pill" style="background:#f0f0f0; color:#555">${f.tag}</span></td>
-                <td style="padding:12px; color:#999;">${date}</td>
-                <td style="padding:12px;">
-                    <button class="btn-action" style="padding:4px 10px;" id="btn-view-${d.id}">Visualizar</button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-
-            // Adiciona evento ao botão visualizar
-            document.getElementById(`btn-view-${d.id}`).onclick = () => {
-                // Para abrir da biblioteca, precisamos simular um objeto de tarefa ou buscar direto do arquivo
-                // A função abrirItem foi feita para Tasks, mas podemos adaptar ou criar uma abrirArquivo
-                abrirArquivoBiblioteca(f, d.id); 
-            };
-        });
-    }
-
-    // Função especial para abrir direto da biblioteca (já que não é uma Task agendada)
-    window.abrirArquivoBiblioteca = (fileData, docId) => {
-        const container = document.getElementById('viewContainer');
-        const btnEdit = document.getElementById('btnEditarNota');
-        
-        document.getElementById('viewTitle').textContent = fileData.nome;
-        document.getElementById('viewTagDisplay').textContent = fileData.tag;
-        document.getElementById('modalView').style.display = 'flex';
-
-        if (fileData.tipo === 'pdf') {
-            document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-pdf" style="color:#d44c47; font-size:20px;"></i>';
-            btnEdit.style.display = 'none';
-            container.innerHTML = `
-                <div style="background:#333; padding:10px; display:flex; justify-content:center; gap:20px; color:white;">
-                    <button class="btn-action" onclick="window.prevPage()">◀</button>
-                    <span>Página <span id="page_num">1</span> / <span id="page_count">--</span></span>
-                    <button class="btn-action" onclick="window.nextPage()">▶</button>
-                </div>
-                <div id="pdfContainer"><canvas id="the-canvas"></canvas></div>
-            `;
-            initPDF(fileData.url);
-        } else {
-            document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-alt" style="color:#2383e2; font-size:20px;"></i>';
-            btnEdit.style.display = 'none'; // Não edita na biblioteca, só no board por enquanto para simplificar
-            container.innerHTML = `<div class="ql-editor" style="padding:40px; overflow-y:auto;">${fileData.content}</div>`;
-        }
-    };
-
-    // --- ACTIONS ---
+    // --- FUNÇÕES GLOBAIS ---
     window.toggleConcluido = async (id, status) => {
+        // Atualiza no banco
         await updateDoc(doc(db, "planners", currentUID, "tasks", id), { concluido: status });
+        // Atualiza no cache local para não precisar recarregar tudo
+        const task = allTasksCache.find(t => t.id === id);
+        if(task) task.concluido = status;
         renderWeeklyBoard();
     };
 
@@ -472,9 +482,7 @@
             const refS = ref(storage, `planners/${currentUID}/${Date.now()}_${file.name}`);
             await uploadBytes(refS, file);
             const url = await getDownloadURL(refS);
-            
             const now = new Date();
-            // Lógica D1, D7, D21
             const d0 = now.getTime();
             const d1 = new Date(now).setDate(now.getDate() + 1);
             const d7 = new Date(now).setDate(now.getDate() + 7);
@@ -495,10 +503,9 @@
                     concluido: false, criadoEm: serverTimestamp(), tipo: 'pdf' 
                 });
             }
-
             showFeedback("Sucesso!", false);
-            renderWeeklyBoard();
-            carregarBiblioteca(); // Atualiza lista
+            loadDataAndInit(); // Recarrega para atualizar cache e menu
+            carregarBiblioteca();
         } catch (err) { console.error(err); showFeedback("Erro.", false); }
     };
 
@@ -506,7 +513,6 @@
         const title = document.getElementById('subjectTitle').value;
         const tag = document.getElementById('subjectTag').value || "Geral";
         const content = quill.root.innerHTML;
-
         if (!title) return alert("Título obrigatório");
         fecharModal();
         showFeedback("Salvando...", true);
@@ -533,15 +539,63 @@
             });
         }
         showFeedback("Salvo!", false);
-        renderWeeklyBoard();
+        loadDataAndInit();
         carregarBiblioteca();
     };
 
-    // --- VISUALIZAR ITEM (DO BOARD) ---
+    // --- VISUALIZADORES E BIBLIOTECA ---
+    // (Mantido igual à versão anterior, apenas garantindo acesso ao cache se necessário)
+    async function carregarBiblioteca() {
+        if(!currentUID) return;
+        const snap = await getDocs(query(collection(db, "planners", currentUID, "arquivos"), orderBy("data", "desc")));
+        const tbody = document.getElementById('listaBiblioteca');
+        tbody.innerHTML = '';
+        if (snap.empty) { tbody.innerHTML = '<tr><td colspan="4" style="padding:20px; text-align:center; color:#999;">Vazio.</td></tr>'; return; }
+        
+        snap.forEach(d => {
+            const f = d.data();
+            const date = new Date(f.data).toLocaleDateString('pt-BR') + ' ' + new Date(f.data).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+            const icon = f.tipo === 'pdf' ? '<i class="far fa-file-pdf" style="color:#d44c47"></i>' : '<i class="far fa-file-alt" style="color:#2383e2"></i>';
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid #f0f0f0';
+            tr.innerHTML = `
+                <td style="padding:12px;">${icon} ${f.nome}</td>
+                <td style="padding:12px;"><span class="tag-pill" style="background:#f0f0f0; color:#555">${f.tag}</span></td>
+                <td style="padding:12px; color:#999;">${date}</td>
+                <td style="padding:12px;"><button class="btn-action" style="padding:4px 10px;" id="btn-view-${d.id}">Visualizar</button></td>
+            `;
+            tbody.appendChild(tr);
+            document.getElementById(`btn-view-${d.id}`).onclick = () => abrirArquivoBiblioteca(f);
+        });
+    }
+
+    window.abrirArquivoBiblioteca = (fileData) => {
+        const container = document.getElementById('viewContainer');
+        const btnEdit = document.getElementById('btnEditarNota');
+        document.getElementById('viewTitle').textContent = fileData.nome;
+        document.getElementById('viewTagDisplay').textContent = fileData.tag;
+        document.getElementById('modalView').style.display = 'flex';
+
+        if (fileData.tipo === 'pdf') {
+            document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-pdf" style="color:#d44c47; font-size:20px;"></i>';
+            btnEdit.style.display = 'none';
+            container.innerHTML = `<div style="background:#333; padding:10px; display:flex; justify-content:center; gap:20px; color:white;"><button class="btn-action" onclick="window.prevPage()">◀</button><span>Pg <span id="page_num">1</span> / <span id="page_count">--</span></span><button class="btn-action" onclick="window.nextPage()">▶</button></div><div id="pdfContainer"><canvas id="the-canvas"></canvas></div>`;
+            initPDF(fileData.url);
+        } else {
+            document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-alt" style="color:#2383e2; font-size:20px;"></i>';
+            btnEdit.style.display = 'none';
+            container.innerHTML = `<div class="ql-editor" style="padding:40px; overflow-y:auto;">${fileData.content}</div>`;
+        }
+    };
+
     window.abrirItem = async (id) => {
-        const d = await getDoc(doc(db, "planners", currentUID, "tasks", id));
-        if(!d.exists()) return;
-        const data = d.data();
+        // Tenta pegar do cache primeiro
+        let data = allTasksCache.find(t => t.id === id);
+        if(!data) {
+            const d = await getDoc(doc(db, "planners", currentUID, "tasks", id));
+            if(!d.exists()) return;
+            data = d.data();
+        }
         
         document.getElementById('viewTitle').textContent = data.titulo.replace(/\[.*?\]/, '');
         document.getElementById('viewTagDisplay').textContent = data.tag;
@@ -552,14 +606,7 @@
         if (data.pdfUrl) {
             document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-pdf" style="color:#d44c47; font-size:20px;"></i>';
             btnEdit.style.display = 'none';
-            container.innerHTML = `
-                <div style="background:#333; padding:10px; display:flex; justify-content:center; gap:20px; color:white;">
-                    <button class="btn-action" onclick="window.prevPage()">◀</button>
-                    <span>Página <span id="page_num">1</span> / <span id="page_count">--</span></span>
-                    <button class="btn-action" onclick="window.nextPage()">▶</button>
-                </div>
-                <div id="pdfContainer"><canvas id="the-canvas"></canvas></div>
-            `;
+            container.innerHTML = `<div style="background:#333; padding:10px; display:flex; justify-content:center; gap:20px; color:white;"><button class="btn-action" onclick="window.prevPage()">◀</button><span>Pg <span id="page_num">1</span> / <span id="page_count">--</span></span><button class="btn-action" onclick="window.nextPage()">▶</button></div><div id="pdfContainer"><canvas id="the-canvas"></canvas></div>`;
             initPDF(data.pdfUrl);
         } else {
             document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-alt" style="color:#2383e2; font-size:20px;"></i>';
@@ -568,34 +615,24 @@
         }
     };
 
-    // --- PDF ENGINE ---
-    let pdfDoc = null, pageNum = 1, pageRendering = false, pageNumPending = null;
-    let canvas, ctx;
-
+    let pdfDoc = null, pageNum = 1, pageRendering = false, pageNumPending = null, canvas, ctx;
     async function initPDF(url) {
         try {
             const loadingTask = pdfjsLib.getDocument(url);
             pdfDoc = await loadingTask.promise;
             document.getElementById('page_count').textContent = pdfDoc.numPages;
-            pageNum = 1;
-            renderPage(pageNum);
+            pageNum = 1; renderPage(pageNum);
         } catch(e) { console.error(e); }
     }
-
     function renderPage(num) {
         pageRendering = true;
         pdfDoc.getPage(num).then(function(page) {
-            canvas = document.getElementById('the-canvas');
-            ctx = canvas.getContext('2d');
+            canvas = document.getElementById('the-canvas'); ctx = canvas.getContext('2d');
             var viewport = page.getViewport({scale: 1.5});
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
+            canvas.height = viewport.height; canvas.width = viewport.width;
             var renderContext = { canvasContext: ctx, viewport: viewport };
             var renderTask = page.render(renderContext);
-            renderTask.promise.then(function() {
-                pageRendering = false;
-                if (pageNumPending !== null) { renderPage(pageNumPending); pageNumPending = null; }
-            });
+            renderTask.promise.then(function() { pageRendering = false; if (pageNumPending !== null) { renderPage(pageNumPending); pageNumPending = null; } });
         });
         document.getElementById('page_num').textContent = num;
     }
@@ -603,7 +640,6 @@
     window.prevPage = () => { if (pageNum <= 1) return; pageNum--; window.queueRenderPage(pageNum); };
     window.nextPage = () => { if (pageNum >= pdfDoc.numPages) return; pageNum++; window.queueRenderPage(pageNum); };
 
-    // --- UX ---
     window.showFeedback = (msg, loading) => {
         const el = document.getElementById('statusFeedback');
         el.textContent = msg; el.style.display = 'block';
@@ -613,22 +649,8 @@
     window.fecharModal = () => document.getElementById('modalEditor').style.display = 'none';
     window.fecharModalView = () => document.getElementById('modalView').style.display = 'none';
     document.getElementById('btnNovoAssunto').onclick = () => document.getElementById('modalEditor').style.display = 'flex';
-
-    // Tabs
-    document.getElementById('navBoard').onclick = () => {
-        document.getElementById('secBoard').classList.remove('hidden');
-        document.getElementById('secLib').classList.add('hidden');
-        document.getElementById('navBoard').classList.add('active');
-        document.getElementById('navLib').classList.remove('active');
-    };
-    document.getElementById('navLib').onclick = () => {
-        document.getElementById('secBoard').classList.add('hidden');
-        document.getElementById('secLib').classList.remove('hidden');
-        document.getElementById('navBoard').classList.remove('active');
-        document.getElementById('navLib').classList.add('active');
-        carregarBiblioteca();
-    };
-
+    document.getElementById('navBoard').onclick = () => { document.getElementById('secBoard').classList.remove('hidden'); document.getElementById('secLib').classList.add('hidden'); document.getElementById('navBoard').classList.add('active'); document.getElementById('navLib').classList.remove('active'); };
+    document.getElementById('navLib').onclick = () => { document.getElementById('secBoard').classList.add('hidden'); document.getElementById('secLib').classList.remove('hidden'); document.getElementById('navBoard').classList.remove('active'); document.getElementById('navLib').classList.add('active'); carregarBiblioteca(); };
 </script>
 </body>
 </html>
