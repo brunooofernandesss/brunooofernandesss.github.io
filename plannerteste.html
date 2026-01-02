@@ -33,20 +33,29 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
 
-        /* Sidebar CORRIGIDA: Permite rolagem se a tela for pequena */
+        /* --- SIDEBAR CORRIGIDA --- */
         .sidebar { 
             width: 240px; 
             background: #fbfbfa; 
             border-right: 1px solid var(--border-color); 
             display: flex; 
             flex-direction: column; 
-            padding: 16px 0; 
             flex-shrink: 0; 
-            overflow-y: auto; /* Correção da rolagem lateral */
+            
+            /* CORREÇÃO AQUI: */
+            height: 100vh; /* Altura total da viewport */
+            overflow-y: auto; /* Habilita rolagem vertical */
+            padding-bottom: 60px; /* Garante espaço no final para não cortar as metas */
         }
         
+        /* Personalização da barra de rolagem da sidebar */
+        .sidebar::-webkit-scrollbar { width: 6px; }
+        .sidebar::-webkit-scrollbar-thumb { background-color: #e0e0e0; border-radius: 3px; }
+
         .sidebar-header { 
-            padding: 0 16px 16px; border-bottom: 1px solid var(--border-color); margin-bottom: 12px; 
+            padding: 16px; 
+            border-bottom: 1px solid var(--border-color); 
+            margin-bottom: 12px; 
             display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;
         }
         .user-id-text { font-weight: 600; font-size: 14px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -56,8 +65,14 @@
         .nav-item:hover { background: #efefef; color: var(--text-primary); }
         .nav-item.active { background: #efefef; font-weight: 600; color: var(--text-primary); }
 
-        /* Metas */
-        .sidebar-goals { padding: 20px 16px; margin-top: auto; border-top: 1px solid var(--border-color); flex-shrink: 0; }
+        /* --- METAS NA SIDEBAR CORRIGIDAS --- */
+        .sidebar-goals { 
+            padding: 20px 16px; 
+            margin-top: auto; /* Empurra para baixo se houver espaço */
+            border-top: 1px solid var(--border-color); 
+            flex-shrink: 0; /* Impede que seja esmagado */
+            background: #fbfbfa;
+        }
         .goals-title { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
         .goal-item { margin-bottom: 12px; }
         .goal-header { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; color: var(--text-primary); font-weight: 500; }
@@ -95,11 +110,10 @@
         }
         .day-header.today { background: #ffe2dd; color: #d44c47; }
 
-        /* DROP ZONE CORRIGIDA: Padding maior no final para não cortar cards */
         .drop-zone {
             flex: 1; 
             overflow-y: auto; 
-            padding-bottom: 100px; /* Aumentado para garantir visibilidade */
+            padding-bottom: 100px; /* Padding extra para scroll dos cards */
             scrollbar-width: thin;
         }
         .drop-zone::-webkit-scrollbar { width: 6px; }
@@ -206,8 +220,7 @@
             <div id="headerUserIP" class="user-ip-text">...</div>
         </div>
         
-        <nav style="flex: 1;">
-            <div class="nav-item active" id="navBoard"><i class="far fa-calendar-alt"></i> Cronograma Semanal</div>
+        <nav style="flex: 1 0 auto;"> <div class="nav-item active" id="navBoard"><i class="far fa-calendar-alt"></i> Cronograma Semanal</div>
             <div class="nav-item" id="navLib"><i class="fas fa-folder-open"></i> Biblioteca de Aulas</div>
         </nav>
 
@@ -359,7 +372,7 @@
         updateGoals(); 
     }
 
-    // --- LÓGICA DE METAS E PROGRESSO (CORRIGIDO PARA FRAÇÃO) ---
+    // --- LÓGICA DE METAS (X/TOTAL) ---
     function updateGoals() {
         if (!allTasksCache.length) return;
 
@@ -380,14 +393,17 @@
 
         allTasksCache.forEach(t => {
             const tDate = new Date(t.targetDate);
+            // Diária (Hoje)
             if (tDate.toLocaleDateString('pt-BR') === todayStr) {
                 stats.daily.total++;
                 if (t.concluido) stats.daily.done++;
             }
+            // Semanal (Real)
             if (tDate >= currentWeekStart && tDate <= currentWeekEnd) {
                 stats.weekly.total++;
                 if (t.concluido) stats.weekly.done++;
             }
+            // Mensal
             if (tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear) {
                 stats.monthly.total++;
                 if (t.concluido) stats.monthly.done++;
@@ -400,7 +416,6 @@
     }
 
     function updateProgressBar(type, data) {
-        // Cálculo da porcentagem para a largura da barra
         const pct = data.total === 0 ? 0 : Math.round((data.done / data.total) * 100);
         
         const bar = document.getElementById(`goal${type}Bar`);
@@ -408,7 +423,7 @@
         
         if (bar && text) {
             bar.style.width = `${pct}%`;
-            // Alterado para mostrar Fração (X/Total) em vez de porcentagem
+            // Exibição em FRAÇÃO conforme pedido (8/9)
             text.textContent = `${data.done}/${data.total}`;
             
             if (pct === 100 && data.total > 0) {
@@ -475,7 +490,6 @@
             `${formatDateDisplay(currentBoardStart)} - ${formatDateDisplay(endOfWeek)}`;
     }
 
-    // --- HELPERS ---
     function getStartOfWeek(date) {
         const d = new Date(date);
         const day = d.getDay(); 
