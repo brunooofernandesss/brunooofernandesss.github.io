@@ -47,6 +47,16 @@
         .nav-item:hover { background: #efefef; color: var(--text-primary); }
         .nav-item.active { background: #efefef; font-weight: 600; color: var(--text-primary); }
 
+        /* --- ESTILOS DAS METAS NA SIDEBAR --- */
+        .sidebar-goals { padding: 20px 16px; margin-top: auto; border-top: 1px solid var(--border-color); }
+        .goals-title { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+        .goal-item { margin-bottom: 12px; }
+        .goal-header { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; color: var(--text-primary); }
+        .goal-bar-bg { height: 6px; background: #e9e9e7; border-radius: 3px; overflow: hidden; }
+        .goal-bar-fill { height: 100%; background: var(--accent-color); width: 0%; transition: width 0.5s ease; border-radius: 3px; }
+        /* Cor verde quando completa */
+        .goal-bar-fill.complete { background: var(--text-green); }
+
         /* Main Content */
         .main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         .top-bar { height: 50px; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; border-bottom: 1px solid var(--border-color); background: white; flex-shrink: 0; }
@@ -187,10 +197,44 @@
             <div id="headerUserIP" class="user-ip-text">...</div>
         </div>
         
-        <nav>
+        <nav style="flex: 1;">
             <div class="nav-item active" id="navBoard"><i class="far fa-calendar-alt"></i> Cronograma Semanal</div>
             <div class="nav-item" id="navLib"><i class="fas fa-folder-open"></i> Biblioteca de Aulas</div>
         </nav>
+
+        <div class="sidebar-goals">
+            <div class="goals-title"><i class="fas fa-bullseye"></i> Metas</div>
+            
+            <div class="goal-item">
+                <div class="goal-header">
+                    <span>Diária</span>
+                    <span id="goalDailyText">0%</span>
+                </div>
+                <div class="goal-bar-bg">
+                    <div id="goalDailyBar" class="goal-bar-fill"></div>
+                </div>
+            </div>
+
+            <div class="goal-item">
+                <div class="goal-header">
+                    <span>Semanal</span>
+                    <span id="goalWeeklyText">0%</span>
+                </div>
+                <div class="goal-bar-bg">
+                    <div id="goalWeeklyBar" class="goal-bar-fill"></div>
+                </div>
+            </div>
+
+            <div class="goal-item">
+                <div class="goal-header">
+                    <span>Mensal</span>
+                    <span id="goalMonthlyText">0%</span>
+                </div>
+                <div class="goal-bar-bg">
+                    <div id="goalMonthlyBar" class="goal-bar-fill"></div>
+                </div>
+            </div>
+        </div>
     </aside>
 
     <main class="main-container">
@@ -306,15 +350,81 @@
 
         setupWeekNavigator();
         renderWeeklyBoard();
+        updateGoals(); // Atualiza as barras de progresso
     }
 
-    // --- CORREÇÃO DA NAVEGAÇÃO (HISTÓRICO COMPLETO) ---
+    // --- LÓGICA DE METAS E PROGRESSO ---
+    function updateGoals() {
+        if (!allTasksCache.length) return;
+
+        const now = new Date();
+        const todayStr = now.toLocaleDateString('pt-BR');
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+
+        // Semana Atual Real (para a meta semanal)
+        const currentWeekStart = getStartOfWeek(now);
+        const currentWeekEnd = new Date(currentWeekStart);
+        currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
+
+        let stats = {
+            daily: { total: 0, done: 0 },
+            weekly: { total: 0, done: 0 },
+            monthly: { total: 0, done: 0 }
+        };
+
+        allTasksCache.forEach(t => {
+            const tDate = new Date(t.targetDate);
+            
+            // Diária (Hoje)
+            if (tDate.toLocaleDateString('pt-BR') === todayStr) {
+                stats.daily.total++;
+                if (t.concluido) stats.daily.done++;
+            }
+
+            // Semanal (Semana Corrente Real)
+            if (tDate >= currentWeekStart && tDate <= currentWeekEnd) {
+                stats.weekly.total++;
+                if (t.concluido) stats.weekly.done++;
+            }
+
+            // Mensal (Mês Corrente)
+            if (tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear) {
+                stats.monthly.total++;
+                if (t.concluido) stats.monthly.done++;
+            }
+        });
+
+        // Atualiza UI
+        updateProgressBar('Daily', stats.daily);
+        updateProgressBar('Weekly', stats.weekly);
+        updateProgressBar('Monthly', stats.monthly);
+    }
+
+    function updateProgressBar(type, data) {
+        const pct = data.total === 0 ? 0 : Math.round((data.done / data.total) * 100);
+        const bar = document.getElementById(`goal${type}Bar`);
+        const text = document.getElementById(`goal${type}Text`);
+        
+        if (bar && text) {
+            bar.style.width = `${pct}%`;
+            text.textContent = `${pct}%`;
+            
+            // Muda cor se completar
+            if (pct === 100 && data.total > 0) {
+                bar.classList.add('complete');
+            } else {
+                bar.classList.remove('complete');
+            }
+        }
+    }
+
+    // --- CORREÇÃO DA NAVEGAÇÃO ---
     function setupWeekNavigator() {
         const select = document.getElementById('weekSelect');
         select.innerHTML = '';
 
-        // 1. Achar a data mínima (início do histórico) e máxima (última revisão futura)
-        let minDate = new Date().getTime(); // Começa com hoje como padrão
+        let minDate = new Date().getTime(); 
         let maxDate = new Date().getTime();
 
         if (allTasksCache.length > 0) {
@@ -324,14 +434,11 @@
             });
         }
 
-        // 2. Definir o loop: Da semana da tarefa mais antiga até a mais futura
-        const historyStart = getStartOfWeek(new Date(minDate)); // Início real do histórico
+        const historyStart = getStartOfWeek(new Date(minDate)); 
         const futureEnd = new Date(maxDate);
-        futureEnd.setDate(futureEnd.getDate() + 7); // Margem de segurança
+        futureEnd.setDate(futureEnd.getDate() + 7); 
 
         let loopDate = new Date(historyStart);
-        
-        // Data atual (para selecionar por padrão)
         const todayStart = getStartOfWeek(new Date()).getTime();
         let optionSelected = false;
 
@@ -346,7 +453,6 @@
             option.value = value;
             option.text = label;
             
-            // Se for a semana atual, seleciona ela
             if (value === todayStart) {
                 option.selected = true;
                 currentBoardStart = new Date(loopDate);
@@ -356,16 +462,6 @@
             select.appendChild(option);
             loopDate.setDate(loopDate.getDate() + 7);
         }
-
-        // Se a semana atual não foi encontrada (ex: usuário só tem tarefas no passado), seleciona a primeira da lista
-        if (!optionSelected && select.options.length > 0) {
-            // Se as tarefas são todas futuras, seleciona a primeira. 
-            // Mas normalmente queremos focar no HOJE. 
-            // Se hoje não está na lista (raro), forçamos o início da lista.
-            // Para garantir UX, vamos manter currentBoardStart em "hoje" mesmo se vazio, 
-            // mas o dropdown vai mostrar a opção mais próxima.
-        }
-
         updateWeekLabel();
     }
 
@@ -468,13 +564,16 @@
                 columns[colIndex].element.appendChild(card);
             }
         });
+        
+        // Sempre que renderiza o board, recalcula as metas
+        updateGoals();
     }
 
     window.toggleConcluido = async (id, status) => {
         await updateDoc(doc(db, "planners", currentUID, "tasks", id), { concluido: status });
         const task = allTasksCache.find(t => t.id === id);
         if(task) task.concluido = status;
-        renderWeeklyBoard();
+        renderWeeklyBoard(); // Isso já chama updateGoals()
     };
 
     document.getElementById("pdfInput").onchange = async (e) => {
