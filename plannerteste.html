@@ -33,28 +33,36 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
 
-        /* Sidebar */
-        .sidebar { width: 240px; background: #fbfbfa; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 16px 0; flex-shrink: 0; }
+        /* Sidebar CORRIGIDA: Permite rolagem se a tela for pequena */
+        .sidebar { 
+            width: 240px; 
+            background: #fbfbfa; 
+            border-right: 1px solid var(--border-color); 
+            display: flex; 
+            flex-direction: column; 
+            padding: 16px 0; 
+            flex-shrink: 0; 
+            overflow-y: auto; /* Correção da rolagem lateral */
+        }
         
         .sidebar-header { 
             padding: 0 16px 16px; border-bottom: 1px solid var(--border-color); margin-bottom: 12px; 
-            display: flex; flex-direction: column; gap: 4px;
+            display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;
         }
         .user-id-text { font-weight: 600; font-size: 14px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .user-ip-text { font-size: 11px; color: var(--text-secondary); font-family: monospace; }
 
-        .nav-item { padding: 8px 16px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: var(--text-secondary); transition: 0.2s; border-radius: 4px; margin: 0 8px; }
+        .nav-item { padding: 8px 16px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: var(--text-secondary); transition: 0.2s; border-radius: 4px; margin: 0 8px; flex-shrink: 0; }
         .nav-item:hover { background: #efefef; color: var(--text-primary); }
         .nav-item.active { background: #efefef; font-weight: 600; color: var(--text-primary); }
 
-        /* --- ESTILOS DAS METAS NA SIDEBAR --- */
-        .sidebar-goals { padding: 20px 16px; margin-top: auto; border-top: 1px solid var(--border-color); }
+        /* Metas */
+        .sidebar-goals { padding: 20px 16px; margin-top: auto; border-top: 1px solid var(--border-color); flex-shrink: 0; }
         .goals-title { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
         .goal-item { margin-bottom: 12px; }
-        .goal-header { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; color: var(--text-primary); }
+        .goal-header { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; color: var(--text-primary); font-weight: 500; }
         .goal-bar-bg { height: 6px; background: #e9e9e7; border-radius: 3px; overflow: hidden; }
         .goal-bar-fill { height: 100%; background: var(--accent-color); width: 0%; transition: width 0.5s ease; border-radius: 3px; }
-        /* Cor verde quando completa */
         .goal-bar-fill.complete { background: var(--text-green); }
 
         /* Main Content */
@@ -64,18 +72,6 @@
         .content { flex: 1; overflow: hidden; padding: 24px; display: flex; flex-direction: column; }
         .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-shrink: 0; }
         .page-title { font-size: 26px; font-weight: 700; color: var(--text-primary); }
-
-        /* SELETOR DE SEMANA */
-        .week-selector-wrapper {
-            display: flex; align-items: center; gap: 8px; position: relative;
-            cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: 0.2s;
-        }
-        .week-selector-wrapper:hover { background: #f0f0f0; }
-        .week-select-native {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            opacity: 0; cursor: pointer; z-index: 10;
-        }
-        .week-display { display: flex; align-items: center; gap: 6px; font-size: 13px; }
 
         /* Board */
         .week-board { 
@@ -99,8 +95,12 @@
         }
         .day-header.today { background: #ffe2dd; color: #d44c47; }
 
+        /* DROP ZONE CORRIGIDA: Padding maior no final para não cortar cards */
         .drop-zone {
-            flex: 1; overflow-y: auto; padding-bottom: 40px; scrollbar-width: thin;
+            flex: 1; 
+            overflow-y: auto; 
+            padding-bottom: 100px; /* Aumentado para garantir visibilidade */
+            scrollbar-width: thin;
         }
         .drop-zone::-webkit-scrollbar { width: 6px; }
         .drop-zone::-webkit-scrollbar-thumb { background-color: #ddd; border-radius: 4px; }
@@ -131,6 +131,15 @@
         }
         
         .card-meta { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 11px; color: var(--text-secondary); }
+
+        /* UI Elements */
+        .week-selector-wrapper {
+            display: flex; align-items: center; gap: 8px; position: relative;
+            cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: 0.2s;
+        }
+        .week-selector-wrapper:hover { background: #f0f0f0; }
+        .week-select-native { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10; }
+        .week-display { display: flex; align-items: center; gap: 6px; font-size: 13px; }
 
         .btn-action {
             background: white; border: 1px solid var(--border-color); padding: 8px 12px;
@@ -208,7 +217,7 @@
             <div class="goal-item">
                 <div class="goal-header">
                     <span>Diária</span>
-                    <span id="goalDailyText">0%</span>
+                    <span id="goalDailyText">0/0</span>
                 </div>
                 <div class="goal-bar-bg">
                     <div id="goalDailyBar" class="goal-bar-fill"></div>
@@ -218,7 +227,7 @@
             <div class="goal-item">
                 <div class="goal-header">
                     <span>Semanal</span>
-                    <span id="goalWeeklyText">0%</span>
+                    <span id="goalWeeklyText">0/0</span>
                 </div>
                 <div class="goal-bar-bg">
                     <div id="goalWeeklyBar" class="goal-bar-fill"></div>
@@ -228,7 +237,7 @@
             <div class="goal-item">
                 <div class="goal-header">
                     <span>Mensal</span>
-                    <span id="goalMonthlyText">0%</span>
+                    <span id="goalMonthlyText">0/0</span>
                 </div>
                 <div class="goal-bar-bg">
                     <div id="goalMonthlyBar" class="goal-bar-fill"></div>
@@ -313,7 +322,6 @@
     let currentBoardStart = new Date(); 
     let allTasksCache = []; 
 
-    // --- QUILL EDITOR ---
     const quill = new Quill('#quill-editor', {
         theme: 'snow',
         placeholder: 'Cole seu conteúdo aqui...',
@@ -343,17 +351,15 @@
 
     async function loadDataAndInit() {
         if (!currentUID) return;
-        
         const snap = await getDocs(query(collection(db, "planners", currentUID, "tasks")));
         allTasksCache = [];
         snap.forEach(d => allTasksCache.push({ id: d.id, ...d.data() }));
-
         setupWeekNavigator();
         renderWeeklyBoard();
-        updateGoals(); // Atualiza as barras de progresso
+        updateGoals(); 
     }
 
-    // --- LÓGICA DE METAS E PROGRESSO ---
+    // --- LÓGICA DE METAS E PROGRESSO (CORRIGIDO PARA FRAÇÃO) ---
     function updateGoals() {
         if (!allTasksCache.length) return;
 
@@ -362,7 +368,6 @@
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
 
-        // Semana Atual Real (para a meta semanal)
         const currentWeekStart = getStartOfWeek(now);
         const currentWeekEnd = new Date(currentWeekStart);
         currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
@@ -375,42 +380,37 @@
 
         allTasksCache.forEach(t => {
             const tDate = new Date(t.targetDate);
-            
-            // Diária (Hoje)
             if (tDate.toLocaleDateString('pt-BR') === todayStr) {
                 stats.daily.total++;
                 if (t.concluido) stats.daily.done++;
             }
-
-            // Semanal (Semana Corrente Real)
             if (tDate >= currentWeekStart && tDate <= currentWeekEnd) {
                 stats.weekly.total++;
                 if (t.concluido) stats.weekly.done++;
             }
-
-            // Mensal (Mês Corrente)
             if (tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear) {
                 stats.monthly.total++;
                 if (t.concluido) stats.monthly.done++;
             }
         });
 
-        // Atualiza UI
         updateProgressBar('Daily', stats.daily);
         updateProgressBar('Weekly', stats.weekly);
         updateProgressBar('Monthly', stats.monthly);
     }
 
     function updateProgressBar(type, data) {
+        // Cálculo da porcentagem para a largura da barra
         const pct = data.total === 0 ? 0 : Math.round((data.done / data.total) * 100);
+        
         const bar = document.getElementById(`goal${type}Bar`);
         const text = document.getElementById(`goal${type}Text`);
         
         if (bar && text) {
             bar.style.width = `${pct}%`;
-            text.textContent = `${pct}%`;
+            // Alterado para mostrar Fração (X/Total) em vez de porcentagem
+            text.textContent = `${data.done}/${data.total}`;
             
-            // Muda cor se completar
             if (pct === 100 && data.total > 0) {
                 bar.classList.add('complete');
             } else {
@@ -419,7 +419,7 @@
         }
     }
 
-    // --- CORREÇÃO DA NAVEGAÇÃO ---
+    // --- NAVEGAÇÃO ---
     function setupWeekNavigator() {
         const select = document.getElementById('weekSelect');
         select.innerHTML = '';
@@ -440,8 +440,7 @@
 
         let loopDate = new Date(historyStart);
         const todayStart = getStartOfWeek(new Date()).getTime();
-        let optionSelected = false;
-
+        
         while (loopDate <= futureEnd) {
             const endOfWeek = new Date(loopDate);
             endOfWeek.setDate(loopDate.getDate() + 6);
@@ -456,9 +455,7 @@
             if (value === todayStart) {
                 option.selected = true;
                 currentBoardStart = new Date(loopDate);
-                optionSelected = true;
             }
-            
             select.appendChild(option);
             loopDate.setDate(loopDate.getDate() + 7);
         }
@@ -478,7 +475,7 @@
             `${formatDateDisplay(currentBoardStart)} - ${formatDateDisplay(endOfWeek)}`;
     }
 
-    // --- HELPER DATES ---
+    // --- HELPERS ---
     function getStartOfWeek(date) {
         const d = new Date(date);
         const day = d.getDay(); 
@@ -493,12 +490,9 @@
     }
 
     function isSameDay(d1, d2) {
-        return d1.getFullYear() === d2.getFullYear() &&
-               d1.getMonth() === d2.getMonth() &&
-               d1.getDate() === d2.getDate();
+        return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
     }
 
-    // --- RENDER BOARD ---
     function renderWeeklyBoard() {
         const board = document.getElementById('weeklyBoard');
         board.innerHTML = ''; 
@@ -511,7 +505,6 @@
         for (let i = 0; i < 7; i++) {
             const currentDay = new Date(currentBoardStart);
             currentDay.setDate(currentBoardStart.getDate() + i);
-            
             const isToday = isSameDay(today, currentDay);
             
             const colDiv = document.createElement('div');
@@ -564,8 +557,6 @@
                 columns[colIndex].element.appendChild(card);
             }
         });
-        
-        // Sempre que renderiza o board, recalcula as metas
         updateGoals();
     }
 
@@ -573,7 +564,7 @@
         await updateDoc(doc(db, "planners", currentUID, "tasks", id), { concluido: status });
         const task = allTasksCache.find(t => t.id === id);
         if(task) task.concluido = status;
-        renderWeeklyBoard(); // Isso já chama updateGoals()
+        renderWeeklyBoard();
     };
 
     document.getElementById("pdfInput").onchange = async (e) => {
