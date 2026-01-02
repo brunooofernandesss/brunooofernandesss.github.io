@@ -11,8 +11,6 @@
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
     
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
     <style>
         :root {
             --notion-bg: #ffffff;
@@ -27,23 +25,27 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: var(--notion-bg); color: var(--notion-text); display: flex; height: 100vh; overflow: hidden; }
 
+        /* Sidebar */
         .sidebar { width: 240px; background: var(--notion-sidebar); border-right: 1px solid var(--notion-border); display: flex; flex-direction: column; padding: 12px 0; flex-shrink: 0; }
         .sidebar-header { padding: 0 16px 16px; font-weight: 700; font-size: 14px; border-bottom: 1px solid var(--notion-border); margin-bottom: 12px; }
         .nav-item { padding: 8px 16px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--notion-text-light); transition: 0.2s; }
         .nav-item:hover { background: var(--notion-hover); color: var(--notion-text); }
         .nav-item.active { background: var(--notion-hover); font-weight: 600; color: var(--notion-text); }
 
+        /* Conteúdo Principal */
         .main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         .top-bar { height: 45px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; border-bottom: 1px solid var(--notion-border); color: var(--notion-text-light); }
 
         .content { flex: 1; overflow-x: auto; padding: 30px; display: flex; flex-direction: column; }
         .page-title { font-size: 30px; font-weight: 700; margin-bottom: 20px; letter-spacing: -0.5px; }
 
+        /* Board Kanban */
         .board { display: flex; gap: 14px; flex: 1; min-width: 1300px; }
         .column { flex: 1; min-width: 250px; display: flex; flex-direction: column; }
         .column-header { padding: 8px; font-size: 13px; font-weight: 600; color: var(--notion-text-light); display: flex; align-items: center; gap: 6px; }
         .drop-zone { flex: 1; overflow-y: auto; padding-right: 4px; border-radius: 4px; }
 
+        /* Cards */
         .card {
             background: white; border: 1px solid var(--notion-border); border-radius: 6px;
             padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);
@@ -52,21 +54,37 @@
         .card:hover { border-color: #aaa; transform: translateY(-1px); }
         .tag { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; background: #e3e2e0; margin-top: 8px; display: inline-block; }
 
-        /* Modal Expandido para Editor */
+        /* Modais */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; }
-        .modal-content { background: white; width: 90%; max-width: 900px; height: 85vh; border-radius: 8px; padding: 25px; display: flex; flex-direction: column; gap: 15px; position: relative; }
+        .modal-content { background: white; width: 90%; max-width: 1000px; height: 90vh; border-radius: 8px; padding: 25px; display: flex; flex-direction: column; gap: 15px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
         
-        .editor-wrapper { flex: 1; overflow-y: auto; border: 1px solid var(--notion-border); border-radius: 4px; }
-        #quill-editor { height: 100%; font-size: 15px; }
-
+        /* Editor Customizado */
+        .editor-wrapper { flex: 1; overflow-y: auto; border: 1px solid #ccc; border-radius: 4px; display: flex; flex-direction: column; }
+        #quill-editor { flex: 1; font-size: 16px; font-family: 'Inter', sans-serif; }
+        
+        /* Inputs */
         .input-notion { border: 1px solid var(--notion-border); border-radius: 4px; width: 100%; padding: 10px; font-size: 14px; outline: none; }
-        .btn-blue { background: var(--notion-blue); color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: 600; cursor: pointer; }
-        .btn-notion { border: 1px solid var(--notion-border); background: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+        
+        /* Botões */
+        .btn-blue { background: var(--notion-blue); color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-blue:hover { opacity: 0.9; }
+        .btn-notion { border: 1px solid var(--notion-border); background: white; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
+        .btn-notion:hover { background: var(--notion-hover); }
 
-        /* Iframe para PDF */
+        /* Visualizador */
         #pdfViewer { width: 100%; height: 100%; border: none; border-radius: 4px; }
+        .ql-editor table { width: 100%; border-collapse: collapse; }
+        .ql-editor th, .ql-editor td { border: 1px solid #ccc; padding: 5px; }
 
-        #statusFeedback { position: fixed; bottom: 20px; right: 20px; background: #37352f; color: white; padding: 12px 24px; border-radius: 6px; font-size: 13px; display: none; z-index: 3000; }
+        /* Feedback Toast (Correção Z-Index) */
+        #statusFeedback { 
+            position: fixed; bottom: 30px; right: 30px; 
+            background: #2eaadc; color: white; 
+            padding: 15px 25px; border-radius: 8px; 
+            font-size: 14px; font-weight: 600; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: none; z-index: 9999; /* Z-Index altíssimo para garantir visibilidade */
+        }
         .hidden { display: none; }
     </style>
 </head>
@@ -74,8 +92,11 @@
 
     <div class="modal" id="modalEditor">
         <div class="modal-content">
-            <input type="text" id="subjectTitle" class="input-notion" placeholder="Título do Assunto...">
-            <input type="text" id="subjectTag" class="input-notion" placeholder="Tag (Ex: ANATOMIA)">
+            <h3 style="margin-bottom: 5px;">Editor de Conteúdo</h3>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="subjectTitle" class="input-notion" placeholder="Título do Assunto (Obrigatório)...">
+                <input type="text" id="subjectTag" class="input-notion" style="width: 200px;" placeholder="Tag (Ex: GINECOLOGIA)">
+            </div>
             
             <div class="editor-wrapper">
                 <div id="quill-editor"></div>
@@ -90,14 +111,23 @@
 
     <div class="modal" id="modalView">
         <div class="modal-content">
-            <h2 id="viewTitle" style="margin-bottom:10px;"></h2>
-            <div id="viewContainer" style="flex:1; overflow:hidden;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2 id="viewTitle" style="font-size: 22px; font-weight:700;"></h2>
+                <span id="viewTagDisplay" class="tag"></span>
+            </div>
+            
+            <div id="viewContainer" style="flex:1; overflow:hidden; border: 1px solid #eee; border-radius: 6px;">
                 </div>
-            <div style="display:flex; justify-content: space-between; margin-top:15px;">
+            
+            <div style="display:flex; justify-content: space-between; margin-top:10px;">
                 <button class="btn-notion" id="btnEditarNota"><i class="fas fa-edit"></i> Editar Texto</button>
                 <button class="btn-notion" onclick="fecharModalView()">Fechar</button>
             </div>
         </div>
+    </div>
+
+    <div id="statusFeedback">
+        <i class="fas fa-spinner fa-spin"></i> <span id="feedbackText">Processando...</span>
     </div>
 
     <aside class="sidebar">
@@ -136,15 +166,13 @@
             </section>
 
             <section id="secLib" class="hidden">
-                <table id="tableLib" style="width:100%; border-collapse:collapse; font-size:14px;">
+                <table style="width:100%; border-collapse:collapse; font-size:14px;">
                     <thead><tr style="border-bottom: 1px solid #ddd; text-align:left;"><th style="padding:10px;">Item</th><th style="padding:10px;">Tag</th><th style="padding:10px;">Ação</th></tr></thead>
                     <tbody id="listaBiblioteca"></tbody>
                 </table>
             </section>
         </div>
     </main>
-
-    <div id="statusFeedback">Processando...</div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -169,13 +197,14 @@
     let currentUID = null;
     let editingDocId = null;
 
-    // Inicializar Editor Quill
+    // Configuração do Quill (Permite colar HTML rico)
     const quill = new Quill('#quill-editor', {
         theme: 'snow',
         modules: {
             toolbar: [
-                [{ 'header': [1, 2, false] }],
-                ['bold', 'italic', 'underline'],
+                [{ 'header': [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ 'color': [] }, { 'background': [] }],
                 [{ 'list': 'ordered'}, { 'list': 'bullet' }],
                 ['link', 'blockquote', 'code-block'],
                 [{ 'align': [] }],
@@ -184,16 +213,28 @@
         }
     });
 
-    // Função para tratar o colar do Gemini (Converte Markdown se necessário)
-    quill.clipboard.addMatcher(Node.TEXT_NODE, (node, delta) => {
-        if (node.data.includes('***') || node.data.includes('* ')) {
-            const html = marked.parse(node.data);
-            const container = document.createElement('div');
-            container.innerHTML = html;
-            return quill.clipboard.convert(container.innerHTML);
+    // Função de Feedback Visual Corrigida
+    window.showFeedback = (msg, isLoading = true) => {
+        const el = document.getElementById("statusFeedback");
+        const txt = document.getElementById("feedbackText");
+        const icon = el.querySelector("i");
+        
+        txt.textContent = msg;
+        el.style.display = "block";
+        
+        if (isLoading) {
+            icon.className = "fas fa-spinner fa-spin";
+            el.style.backgroundColor = "#2eaadc"; // Azul
+        } else {
+            icon.className = "fas fa-check-circle";
+            el.style.backgroundColor = "#27ae60"; // Verde
+            setTimeout(() => { el.style.display = "none"; }, 4000);
         }
-        return delta;
-    });
+    };
+
+    window.hideFeedback = () => {
+        document.getElementById("statusFeedback").style.display = "none";
+    };
 
     // Modais
     const modalEditor = document.getElementById('modalEditor');
@@ -217,59 +258,113 @@
         carregarBoard();
     });
 
-    // SALVAR OU ATUALIZAR
+    // Salvar Texto/Novo Assunto
     document.getElementById('btnSalvar').onclick = async () => {
         const title = document.getElementById('subjectTitle').value;
         const tag = document.getElementById('subjectTag').value || "GERAL";
-        const content = quill.root.innerHTML;
+        const content = quill.root.innerHTML; // Pega o HTML puro do Quill (preserva formatação colada)
 
-        if (!title) return alert("Título obrigatório!");
+        if (!title) return alert("Por favor, dê um título ao assunto.");
 
-        document.getElementById('statusFeedback').style.display = 'block';
+        showFeedback("Salvando conteúdo...", true);
         
-        if (editingDocId) {
-            // Atualizar existente
-            await updateDoc(doc(db, "planners", currentUID, "tasks", editingDocId), { titulo: title, tag: tag.toUpperCase(), content: content });
-        } else {
-            // Criar novos ciclos
-            const now = Date.now();
-            const ciclos = [
-                { n: `[REC] ${title}`, t: now, col: 'recent' },
-                { n: `[D+1] ${title}`, t: now + 86400000, col: 'd1' },
-                { n: `[D+7] ${title}`, t: now + 604800000, col: 'd7' },
-                { n: `[D+21] ${title}`, t: now + 1814400000, col: 'd21' }
-            ];
+        try {
+            if (editingDocId) {
+                // Atualizar existente
+                await updateDoc(doc(db, "planners", currentUID, "tasks", editingDocId), { 
+                    titulo: title, tag: tag.toUpperCase(), content: content 
+                });
+            } else {
+                // Criar novo com ciclos
+                const now = Date.now();
+                const ciclos = [
+                    { n: `[REC] ${title}`, t: now, col: 'recent' },
+                    { n: `[D+1] ${title}`, t: now + 86400000, col: 'd1' },
+                    { n: `[D+7] ${title}`, t: now + 604800000, col: 'd7' },
+                    { n: `[D+21] ${title}`, t: now + 1814400000, col: 'd21' }
+                ];
 
-            for (const c of ciclos) {
-                await addDoc(collection(db, "planners", currentUID, "tasks"), {
-                    titulo: c.n, tag: tag.toUpperCase(), content: content, targetDate: c.t, column: c.col, criadoEm: serverTimestamp(), tipo: 'texto'
+                for (const c of ciclos) {
+                    await addDoc(collection(db, "planners", currentUID, "tasks"), {
+                        titulo: c.n, tag: tag.toUpperCase(), content: content, 
+                        targetDate: c.t, column: c.col, criadoEm: serverTimestamp(), tipo: 'texto'
+                    });
+                }
+                await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
+                    nome: title, content: content, tag: tag.toUpperCase(), data: now, tipo: 'texto' 
                 });
             }
-            await addDoc(collection(db, "planners", currentUID, "arquivos"), { nome: title, content: content, tag: tag.toUpperCase(), data: now, tipo: 'texto' });
-        }
 
-        fecharModal();
-        document.getElementById('statusFeedback').style.display = 'none';
-        carregarBoard();
+            showFeedback("Salvo com sucesso!", false);
+            fecharModal();
+            carregarBoard();
+        } catch (e) {
+            console.error(e);
+            showFeedback("Erro ao salvar.", false);
+        }
+    };
+
+    // Upload PDF
+    document.getElementById("pdfInput").onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const tag = prompt("Tag do PDF (Ex: Cardiologia):", "GERAL") || "GERAL";
+        showFeedback("Carregando PDF (não feche)...", true);
+
+        try {
+            const refS = ref(storage, `planners/${currentUID}/${Date.now()}_${file.name}`);
+            await uploadBytes(refS, file);
+            const url = await getDownloadURL(refS);
+            
+            const now = Date.now();
+            const ciclos = [
+                { n: `[REC] ${file.name}`, t: now, col: 'recent' }, 
+                { n: `[D+1] ${file.name}`, t: now + 86400000, col: 'd1' }, 
+                { n: `[D+7] ${file.name}`, t: now + 604800000, col: 'd7' }, 
+                { n: `[D+21] ${file.name}`, t: now + 1814400000, col: 'd21' }
+            ];
+            
+            for(const c of ciclos) {
+                await addDoc(collection(db, "planners", currentUID, "tasks"), { 
+                    titulo: c.n, tag: tag.toUpperCase(), pdfUrl: url, targetDate: c.t, 
+                    column: c.col, criadoEm: serverTimestamp(), tipo: 'pdf' 
+                });
+            }
+            await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
+                nome: file.name, url, tag: tag.toUpperCase(), data: now, tipo: 'pdf' 
+            });
+
+            showFeedback("PDF enviado com sucesso!", false);
+            carregarBoard();
+        } catch (error) {
+            console.error(error);
+            showFeedback("Erro no upload do PDF.", false);
+        }
     };
 
     // VISUALIZAÇÃO
     window.abrirItem = async (id) => {
         const d = await getDoc(doc(db, "planners", currentUID, "tasks", id));
+        if(!d.exists()) return;
+        
         const data = d.data();
         document.getElementById('viewTitle').textContent = data.titulo;
+        document.getElementById('viewTagDisplay').textContent = data.tag || "GERAL";
         const container = document.getElementById('viewContainer');
         const btnEdit = document.getElementById('btnEditarNota');
 
         if (data.pdfUrl) {
+            // PDF: Usa iframe
             container.innerHTML = `<iframe src="${data.pdfUrl}" id="pdfViewer"></iframe>`;
             btnEdit.style.display = 'none';
         } else {
-            container.innerHTML = `<div class="rich-text" style="padding:10px; height:100%; overflow-y:auto;">${data.content}</div>`;
+            // Texto: Renderiza HTML do Quill
+            container.innerHTML = `<div class="ql-editor" style="padding:20px;">${data.content}</div>`;
             btnEdit.style.display = 'block';
             btnEdit.onclick = () => {
                 editingDocId = id;
-                document.getElementById('subjectTitle').value = data.titulo;
+                document.getElementById('subjectTitle').value = data.titulo.replace(/\[.*?\] /, ''); // Remove prefixo [D+1] ao editar
                 document.getElementById('subjectTag').value = data.tag;
                 quill.root.innerHTML = data.content;
                 fecharModalView();
@@ -288,6 +383,7 @@
 
         snap.forEach(d => {
             const t = d.data();
+            // Lógica de tempo: Se não estiver concluído E o tempo ainda não chegou, esconde.
             if (t.column !== 'done' && agora < t.targetDate) return; 
 
             const card = document.createElement("div");
@@ -296,12 +392,14 @@
             card.draggable = true;
             card.onclick = () => abrirItem(d.id);
             card.ondragstart = (e) => e.dataTransfer.setData("text", e.target.id);
-            card.innerHTML = `<div style="font-size:13px; font-weight:600;">${t.titulo}</div><span class="tag">${t.tag}</span>`;
+            card.innerHTML = `
+                <div style="font-size:13px; font-weight:600; margin-bottom:6px;">${t.titulo}</div>
+                <span class="tag">${t.tag || 'GERAL'}</span>
+            `;
             if (cols[t.column]) cols[t.column].appendChild(card);
         });
     }
 
-    // Drag & Drop
     window.allowDrop = (e) => e.preventDefault();
     window.drop = async (e) => {
         e.preventDefault();
@@ -313,12 +411,11 @@
         }
     };
 
-    // Navegação Simples
     document.getElementById('navBoard').onclick = () => { document.getElementById('secBoard').classList.remove('hidden'); document.getElementById('secLib').classList.add('hidden'); };
     document.getElementById('navLib').onclick = () => { document.getElementById('secBoard').classList.add('hidden'); document.getElementById('secLib').classList.remove('hidden'); carregarBiblioteca(); };
 
     async function carregarBiblioteca() {
-        const snap = await getDocs(collection(db, "planners", currentUID, "arquivos"));
+        const snap = await getDocs(query(collection(db, "planners", currentUID, "arquivos"), orderBy("data", "desc")));
         const body = document.getElementById("listaBiblioteca");
         body.innerHTML = "";
         snap.forEach(d => {
@@ -326,25 +423,10 @@
             body.innerHTML += `<tr style="border-bottom:1px solid #eee;">
                 <td style="padding:10px;">${p.nome}</td>
                 <td><span class="tag">${p.tag}</span></td>
-                <td><button class="btn-notion" onclick="abrirItemDoArquivo('${d.id}')">Abrir</button></td>
+                <td><button class="btn-notion" onclick="alert('Vá ao Board para abrir este item.')">Ver no Board</button></td>
             </tr>`;
         });
     }
-
-    // Upload PDF
-    document.getElementById("pdfInput").onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const tag = prompt("Tag do PDF:", "GERAL") || "GERAL";
-        const refS = ref(storage, `planners/${currentUID}/${Date.now()}_${file.name}`);
-        await uploadBytes(refS, file);
-        const url = await getDownloadURL(refS);
-        const now = Date.now();
-        const ciclos = [{n:`[REC] ${file.name}`, t:now, col:'recent'}, {n:`[D+1] ${file.name}`, t:now+86400000, col:'d1'}, {n:`[D+7] ${file.name}`, t:now+604800000, col:'d7'}, {n:`[D+21] ${file.name}`, t:now+1814400000, col:'d21'}];
-        for(const c of ciclos) await addDoc(collection(db, "planners", currentUID, "tasks"), { titulo: c.n, tag: tag.toUpperCase(), pdfUrl: url, targetDate: c.t, column: c.col, criadoEm: serverTimestamp(), tipo: 'pdf' });
-        await addDoc(collection(db, "planners", currentUID, "arquivos"), { nome: file.name, url, tag: tag.toUpperCase(), data: now, tipo: 'pdf' });
-        carregarBoard();
-    };
 </script>
 </body>
 </html>
