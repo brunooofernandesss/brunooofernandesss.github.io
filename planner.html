@@ -13,6 +13,12 @@
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        // Configura o Worker do PDF.js globalmente
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+
     <style>
         :root {
             --notion-bg: #ffffff;
@@ -62,20 +68,16 @@
         .editor-wrapper { flex: 1; overflow-y: auto; border: 1px solid #ccc; border-radius: 4px; display: flex; flex-direction: column; }
         #quill-editor { flex: 1; font-size: 16px; font-family: 'Inter', sans-serif; }
         
-        /* Estilização de Tabelas e Markdown no Editor */
-        .ql-editor table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-        .ql-editor th, .ql-editor td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        .ql-editor th { background-color: #f9f9f9; font-weight: 600; }
-        .ql-editor h1 { font-size: 2em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
-        .ql-editor h2 { font-size: 1.5em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
-        .ql-editor blockquote { border-left: 4px solid #ccc; padding-left: 10px; color: #666; }
+        /* Estilos do PDF Viewer (Canvas) */
+        #pdfContainer { flex: 1; overflow: auto; background: #525659; display: flex; justify-content: center; padding: 20px; border-radius: 4px; }
+        #pdfCanvas { box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .pdf-toolbar { display: flex; gap: 15px; align-items: center; justify-content: center; padding: 10px; background: #fbfbfa; border-bottom: 1px solid var(--notion-border); }
 
         .input-notion { border: 1px solid var(--notion-border); border-radius: 4px; width: 100%; padding: 10px; font-size: 14px; outline: none; }
         .btn-blue { background: var(--notion-blue); color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: 600; cursor: pointer; transition: 0.2s; }
         .btn-notion { border: 1px solid var(--notion-border); background: white; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
         .btn-notion:hover { background: var(--notion-hover); }
 
-        #pdfViewer { width: 100%; height: 100%; border: none; border-radius: 4px; }
         #statusFeedback { 
             position: fixed; bottom: 30px; right: 30px; 
             background: #2eaadc; color: white; 
@@ -93,17 +95,15 @@
         <div class="modal-content">
             <h3 style="margin-bottom: 5px;">Editor de Conteúdo</h3>
             <div style="background:#eef6ff; padding:10px; border-radius:5px; font-size:12px; color:#2383e2; margin-bottom:10px;">
-                <i class="fas fa-info-circle"></i> Dica: Copie o texto do Gemini e cole aqui. A formatação (negrito, tabelas) será aplicada automaticamente.
+                <i class="fas fa-info-circle"></i> Otimizado para Gemini: Copie e cole diretamente. Formatações antigas serão corrigidas.
             </div>
             <div style="display: flex; gap: 10px;">
                 <input type="text" id="subjectTitle" class="input-notion" placeholder="Título do Assunto (Obrigatório)...">
                 <input type="text" id="subjectTag" class="input-notion" style="width: 200px;" placeholder="Tag (Ex: GINECOLOGIA)">
             </div>
-            
             <div class="editor-wrapper">
                 <div id="quill-editor"></div>
             </div>
-
             <div style="display:flex; justify-content: flex-end; gap: 10px;">
                 <button class="btn-notion" onclick="fecharModal()">Cancelar</button>
                 <button class="btn-blue" id="btnSalvar">Salvar no Planner</button>
@@ -112,13 +112,15 @@
     </div>
 
     <div class="modal" id="modalView">
-        <div class="modal-content">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h2 id="viewTitle" style="font-size: 22px; font-weight:700;"></h2>
+        <div class="modal-content" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+            <div style="padding: 15px 25px; border-bottom: 1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+                <h2 id="viewTitle" style="font-size: 20px; font-weight:700; margin:0;"></h2>
                 <span id="viewTagDisplay" class="tag"></span>
             </div>
-            <div id="viewContainer" style="flex:1; overflow:hidden; border: 1px solid #eee; border-radius: 6px;"></div>
-            <div style="display:flex; justify-content: space-between; margin-top:10px;">
+            
+            <div id="viewContainer" style="flex:1; overflow:hidden; display:flex; flex-direction:column;"></div>
+            
+            <div style="padding: 15px 25px; border-top: 1px solid #eee; display:flex; justify-content: space-between;">
                 <button class="btn-notion" id="btnEditarNota"><i class="fas fa-edit"></i> Editar Texto</button>
                 <button class="btn-notion" onclick="fecharModalView()">Fechar</button>
             </div>
@@ -193,14 +195,24 @@
     let currentUID = null;
     let editingDocId = null;
 
-    // Configurar Quill com Toolbar
+    // --- VARIÁVEIS DO PDF.JS ---
+    let pdfDoc = null;
+    let pageNum = 1;
+    let pageRendering = false;
+    let pageNumPending = null;
+    let pdfCanvas = null;
+    let pdfCtx = null;
+
+    // --- CONFIGURAÇÃO EDITOR QUILL ---
     const quill = new Quill('#quill-editor', {
         theme: 'snow',
         modules: {
             toolbar: [
                 [{ 'header': [1, 2, 3, false] }],
                 ['bold', 'italic', 'underline', 'strike'],
+                [{ 'color': [] }, { 'background': [] }],
                 [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'indent': '-1'}, { 'indent': '+1' }],
                 ['link', 'blockquote', 'code-block'],
                 [{ 'align': [] }],
                 ['clean']
@@ -208,30 +220,84 @@
         }
     });
 
-    // -----------------------------------------------------
-    // SOLUÇÃO DEFINITIVA PARA COLAR DO GEMINI
-    // -----------------------------------------------------
+    // --- FUNÇÕES DE PDF.JS (RENDERIZAÇÃO) ---
+    window.renderPDFPage = async (num) => {
+        pageRendering = true;
+        
+        // Pega a página
+        const page = await pdfDoc.getPage(num);
+        
+        // Ajusta escala (1.5 é um bom tamanho padrão, ou use window.innerWidth para responsivo)
+        const viewport = page.getViewport({ scale: 1.5 });
+        
+        pdfCanvas.height = viewport.height;
+        pdfCanvas.width = viewport.width;
+
+        // Renderiza
+        const renderContext = {
+            canvasContext: pdfCtx,
+            viewport: viewport
+        };
+        
+        const renderTask = page.render(renderContext);
+
+        // Espera terminar
+        await renderTask.promise;
+        pageRendering = false;
+        
+        // Atualiza contador
+        document.getElementById('page_num').textContent = num;
+
+        // Se tiver página pendente na fila (clique rápido)
+        if (pageNumPending !== null) {
+            window.renderPDFPage(pageNumPending);
+            pageNumPending = null;
+        }
+    }
+
+    window.queueRenderPage = (num) => {
+        if (pageRendering) {
+            pageNumPending = num;
+        } else {
+            window.renderPDFPage(num);
+        }
+    }
+
+    window.onPrevPage = () => {
+        if (pageNum <= 1) return;
+        pageNum--;
+        window.queueRenderPage(pageNum);
+    }
+
+    window.onNextPage = () => {
+        if (pageNum >= pdfDoc.numPages) return;
+        pageNum++;
+        window.queueRenderPage(pageNum);
+    }
+
+    // --- FUNÇÕES DE NORMALIZAÇÃO DE TEXTO ---
+    function normalizeContent(content) {
+        if (!content) return '';
+        if (content.trim().startsWith('<')) return content;
+        
+        return content
+            .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/## (.*?)\n/g, '<h2>$1</h2>')
+            .replace(/\n/g, '<br>');
+    }
+
     quill.root.addEventListener('paste', (e) => {
         const clipboardData = e.clipboardData || window.clipboardData;
         const pastedData = clipboardData.getData('text');
-
-        // Se detectar caracteres típicos de Markdown do Gemini, intercepta
-        if (pastedData.includes('**') || pastedData.includes('##') || pastedData.includes('|') || pastedData.includes('* ')) {
-            e.preventDefault(); // Impede a colagem padrão "suja"
-            
-            // Converte o Markdown para HTML usando marked.js
+        if (pastedData.includes('**') || pastedData.includes('##') || pastedData.includes('|')) {
+            e.preventDefault();
             const html = marked.parse(pastedData, { breaks: true, gfm: true });
-            
-            // Cola o HTML limpo na posição do cursor
             const range = quill.getSelection();
-            if (range) {
-                quill.clipboard.dangerouslyPasteHTML(range.index, html);
-            } else {
-                quill.clipboard.dangerouslyPasteHTML(0, html);
-            }
+            quill.clipboard.dangerouslyPasteHTML(range ? range.index : 0, html);
         }
     });
-    // -----------------------------------------------------
 
     window.showFeedback = (msg, isLoading = true) => {
         const el = document.getElementById("statusFeedback");
@@ -246,12 +312,16 @@
         }
     };
 
-    // Modais e Navegação
+    // --- MODAIS ---
     const modalEditor = document.getElementById('modalEditor');
     const modalView = document.getElementById('modalView');
 
     window.fecharModal = () => { modalEditor.style.display = 'none'; editingDocId = null; quill.setContents([]); };
-    window.fecharModalView = () => { modalView.style.display = 'none'; document.getElementById('viewContainer').innerHTML = ''; };
+    window.fecharModalView = () => { 
+        modalView.style.display = 'none'; 
+        document.getElementById('viewContainer').innerHTML = ''; 
+        pdfDoc = null; // Limpa memória
+    };
 
     document.getElementById('btnNovoAssunto').onclick = () => {
         document.getElementById('subjectTitle').value = "";
@@ -268,21 +338,21 @@
         carregarBoard();
     });
 
-    // Salvar no Firestore
+    // Salvar Item
     document.getElementById('btnSalvar').onclick = async () => {
         const title = document.getElementById('subjectTitle').value;
         const tag = document.getElementById('subjectTag').value || "GERAL";
-        const content = quill.root.innerHTML; // HTML puro
+        const content = quill.root.innerHTML;
 
         if (!title) return alert("Preencha o título!");
 
         showFeedback("Salvando...", true);
-        
+        const now = Date.now();
+
         try {
             if (editingDocId) {
                 await updateDoc(doc(db, "planners", currentUID, "tasks", editingDocId), { titulo: title, tag: tag.toUpperCase(), content: content });
             } else {
-                const now = Date.now();
                 const ciclos = [
                     { n: `[REC] ${title}`, t: now, col: 'recent' },
                     { n: `[D+1] ${title}`, t: now + 86400000, col: 'd1' },
@@ -300,45 +370,38 @@
                     nome: title, content: content, tag: tag.toUpperCase(), data: now, tipo: 'texto' 
                 });
             }
-            showFeedback("Salvo com sucesso!", false);
+            showFeedback("Salvo!", false);
             fecharModal();
             carregarBoard();
-        } catch (e) { console.error(e); showFeedback("Erro ao salvar.", false); }
+        } catch (e) { showFeedback("Erro.", false); }
     };
 
-    // Upload PDF
     document.getElementById("pdfInput").onchange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
         const tag = prompt("Tag do PDF:", "GERAL") || "GERAL";
         showFeedback("Enviando PDF...", true);
-
         try {
             const refS = ref(storage, `planners/${currentUID}/${Date.now()}_${file.name}`);
             await uploadBytes(refS, file);
             const url = await getDownloadURL(refS);
             const now = Date.now();
-            
             const ciclos = [
                 { n: `[REC] ${file.name}`, t: now, col: 'recent' }, 
                 { n: `[D+1] ${file.name}`, t: now + 86400000, col: 'd1' }, 
                 { n: `[D+7] ${file.name}`, t: now + 604800000, col: 'd7' }, 
                 { n: `[D+21] ${file.name}`, t: now + 1814400000, col: 'd21' }
             ];
-            
-            for(const c of ciclos) {
-                await addDoc(collection(db, "planners", currentUID, "tasks"), { 
-                    titulo: c.n, tag: tag.toUpperCase(), pdfUrl: url, targetDate: c.t, 
-                    column: c.col, criadoEm: serverTimestamp(), tipo: 'pdf' 
-                });
-            }
+            for(const c of ciclos) await addDoc(collection(db, "planners", currentUID, "tasks"), { 
+                titulo: c.n, tag: tag.toUpperCase(), pdfUrl: url, targetDate: c.t, column: c.col, criadoEm: serverTimestamp(), tipo: 'pdf' 
+            });
             await addDoc(collection(db, "planners", currentUID, "arquivos"), { nome: file.name, url, tag: tag.toUpperCase(), data: now, tipo: 'pdf' });
             showFeedback("Sucesso!", false);
             carregarBoard();
         } catch (err) { showFeedback("Erro no upload.", false); }
     };
 
-    // Abrir/Editar
+    // --- VISUALIZAÇÃO UNIFICADA (AQUI ESTÁ A MÁGICA DO PDF) ---
     window.abrirItem = async (id) => {
         const d = await getDoc(doc(db, "planners", currentUID, "tasks", id));
         if(!d.exists()) return;
@@ -350,16 +413,51 @@
         const btnEdit = document.getElementById('btnEditarNota');
 
         if (data.pdfUrl) {
-            container.innerHTML = `<iframe src="${data.pdfUrl}" id="pdfViewer"></iframe>`;
+            // RENDERIZAÇÃO PDF.JS
+            container.innerHTML = `
+                <div class="pdf-toolbar">
+                    <button class="btn-notion" onclick="window.onPrevPage()">◀ Anterior</button>
+                    <span style="font-size:13px; font-weight:600;">Página <span id="page_num">1</span> de <span id="page_count">--</span></span>
+                    <button class="btn-notion" onclick="window.onNextPage()">Próximo ▶</button>
+                </div>
+                <div id="pdfContainer">
+                    <canvas id="pdfCanvas"></canvas>
+                </div>
+            `;
             btnEdit.style.display = 'none';
+
+            // Inicia PDF
+            pdfCanvas = document.getElementById('pdfCanvas');
+            pdfCtx = pdfCanvas.getContext('2d');
+            
+            showFeedback("Renderizando PDF...", true);
+            
+            try {
+                // Carrega Documento
+                pdfDoc = await pdfjsLib.getDocument(data.pdfUrl).promise;
+                document.getElementById('page_count').textContent = pdfDoc.numPages;
+                pageNum = 1;
+                window.renderPDFPage(pageNum);
+                showFeedback("PDF Aberto!", false);
+            } catch (err) {
+                console.error(err);
+                container.innerHTML = `<div style="padding:20px; color:red;">Erro ao renderizar PDF. CORS ou URL inválida. <br> <a href="${data.pdfUrl}" target="_blank">Clique para baixar</a></div>`;
+                showFeedback("Erro ao abrir PDF.", false);
+            }
+
         } else {
-            container.innerHTML = `<div class="ql-editor" style="padding:20px;">${data.content}</div>`;
+            // RENDERIZAÇÃO TEXTO
+            const rawContent = data.htmlContent || data.content || data.textContent || '';
+            const finalHtml = normalizeContent(rawContent);
+            
+            container.innerHTML = `<div class="ql-editor" style="padding:20px; overflow-y:auto;">${finalHtml}</div>`;
             btnEdit.style.display = 'block';
+            
             btnEdit.onclick = () => {
                 editingDocId = id;
                 document.getElementById('subjectTitle').value = data.titulo.replace(/\[.*?\] /, '');
                 document.getElementById('subjectTag').value = data.tag;
-                quill.root.innerHTML = data.content;
+                quill.root.innerHTML = finalHtml;
                 fecharModalView();
                 modalEditor.style.display = 'flex';
             };
@@ -386,7 +484,6 @@
         });
     }
 
-    // Drag & Drop
     window.allowDrop = (e) => e.preventDefault();
     window.drop = async (e) => {
         e.preventDefault();
