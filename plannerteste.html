@@ -11,6 +11,8 @@
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
     
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
     <style>
         :root {
             --notion-bg: #ffffff;
@@ -32,10 +34,9 @@
         .nav-item:hover { background: var(--notion-hover); color: var(--notion-text); }
         .nav-item.active { background: var(--notion-hover); font-weight: 600; color: var(--notion-text); }
 
-        /* Conteúdo Principal */
+        /* Layout */
         .main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         .top-bar { height: 45px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; border-bottom: 1px solid var(--notion-border); color: var(--notion-text-light); }
-
         .content { flex: 1; overflow-x: auto; padding: 30px; display: flex; flex-direction: column; }
         .page-title { font-size: 30px; font-weight: 700; margin-bottom: 20px; letter-spacing: -0.5px; }
 
@@ -45,7 +46,6 @@
         .column-header { padding: 8px; font-size: 13px; font-weight: 600; color: var(--notion-text-light); display: flex; align-items: center; gap: 6px; }
         .drop-zone { flex: 1; overflow-y: auto; padding-right: 4px; border-radius: 4px; }
 
-        /* Cards */
         .card {
             background: white; border: 1px solid var(--notion-border); border-radius: 6px;
             padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);
@@ -62,28 +62,25 @@
         .editor-wrapper { flex: 1; overflow-y: auto; border: 1px solid #ccc; border-radius: 4px; display: flex; flex-direction: column; }
         #quill-editor { flex: 1; font-size: 16px; font-family: 'Inter', sans-serif; }
         
-        /* Inputs */
+        /* Estilização de Tabelas e Markdown no Editor */
+        .ql-editor table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        .ql-editor th, .ql-editor td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        .ql-editor th { background-color: #f9f9f9; font-weight: 600; }
+        .ql-editor blockquote { border-left: 4px solid #ccc; padding-left: 10px; color: #666; font-style: italic; background: #f9f9f9; padding: 10px; }
+
         .input-notion { border: 1px solid var(--notion-border); border-radius: 4px; width: 100%; padding: 10px; font-size: 14px; outline: none; }
-        
-        /* Botões */
         .btn-blue { background: var(--notion-blue); color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-        .btn-blue:hover { opacity: 0.9; }
         .btn-notion { border: 1px solid var(--notion-border); background: white; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
         .btn-notion:hover { background: var(--notion-hover); }
 
-        /* Visualizador */
         #pdfViewer { width: 100%; height: 100%; border: none; border-radius: 4px; }
-        .ql-editor table { width: 100%; border-collapse: collapse; }
-        .ql-editor th, .ql-editor td { border: 1px solid #ccc; padding: 5px; }
-
-        /* Feedback Toast (Correção Z-Index) */
         #statusFeedback { 
             position: fixed; bottom: 30px; right: 30px; 
             background: #2eaadc; color: white; 
             padding: 15px 25px; border-radius: 8px; 
             font-size: 14px; font-weight: 600; 
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            display: none; z-index: 9999; /* Z-Index altíssimo para garantir visibilidade */
+            display: none; z-index: 9999;
         }
         .hidden { display: none; }
     </style>
@@ -93,6 +90,9 @@
     <div class="modal" id="modalEditor">
         <div class="modal-content">
             <h3 style="margin-bottom: 5px;">Editor de Conteúdo</h3>
+            <div style="background:#eef6ff; padding:10px; border-radius:5px; font-size:12px; color:#2383e2; margin-bottom:10px;">
+                <i class="fas fa-info-circle"></i> Otimizado para Gemini: Copie e cole diretamente. Formatações antigas serão corrigidas automaticamente.
+            </div>
             <div style="display: flex; gap: 10px;">
                 <input type="text" id="subjectTitle" class="input-notion" placeholder="Título do Assunto (Obrigatório)...">
                 <input type="text" id="subjectTag" class="input-notion" style="width: 200px;" placeholder="Tag (Ex: GINECOLOGIA)">
@@ -115,10 +115,7 @@
                 <h2 id="viewTitle" style="font-size: 22px; font-weight:700;"></h2>
                 <span id="viewTagDisplay" class="tag"></span>
             </div>
-            
-            <div id="viewContainer" style="flex:1; overflow:hidden; border: 1px solid #eee; border-radius: 6px;">
-                </div>
-            
+            <div id="viewContainer" style="flex:1; overflow:hidden; border: 1px solid #eee; border-radius: 6px;"></div>
             <div style="display:flex; justify-content: space-between; margin-top:10px;">
                 <button class="btn-notion" id="btnEditarNota"><i class="fas fa-edit"></i> Editar Texto</button>
                 <button class="btn-notion" onclick="fecharModalView()">Fechar</button>
@@ -148,13 +145,11 @@
 
         <div class="content">
             <h1 class="page-title">Planner de Estudos</h1>
-            
             <div style="display:flex; gap: 10px; margin-bottom: 25px;">
                 <button class="btn-notion" id="btnNovoAssunto"><i class="fas fa-plus"></i> + Novo Assunto</button>
                 <input type="file" id="pdfInput" hidden accept="application/pdf">
                 <label for="pdfInput" class="btn-notion" style="cursor:pointer;"><i class="fas fa-file-upload"></i> Subir PDF</label>
             </div>
-
             <section id="secBoard">
                 <div class="board">
                     <div class="column"><div class="column-header">⚪ Recentes</div><div class="drop-zone" id="recent" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
@@ -164,7 +159,6 @@
                     <div class="column"><div class="column-header">🟢 Concluído</div><div class="drop-zone" id="done" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
                 </div>
             </section>
-
             <section id="secLib" class="hidden">
                 <table style="width:100%; border-collapse:collapse; font-size:14px;">
                     <thead><tr style="border-bottom: 1px solid #ddd; text-align:left;"><th style="padding:10px;">Item</th><th style="padding:10px;">Tag</th><th style="padding:10px;">Ação</th></tr></thead>
@@ -197,7 +191,9 @@
     let currentUID = null;
     let editingDocId = null;
 
-    // Configuração do Quill (Permite colar HTML rico)
+    // -----------------------------------------------------
+    // 1. CONFIGURAÇÃO "WORD COMPLETO" (Com Indentação e Blockquote)
+    // -----------------------------------------------------
     const quill = new Quill('#quill-editor', {
         theme: 'snow',
         modules: {
@@ -206,37 +202,65 @@
                 ['bold', 'italic', 'underline', 'strike'],
                 [{ 'color': [] }, { 'background': [] }],
                 [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                ['link', 'blockquote', 'code-block'],
+                [{ 'indent': '-1'}, { 'indent': '+1' }], // Adicionado: Indentação
+                ['link', 'blockquote', 'code-block'],    // Adicionado: Blockquote
                 [{ 'align': [] }],
                 ['clean']
             ]
         }
     });
 
-    // Função de Feedback Visual Corrigida
+    // -----------------------------------------------------
+    // 2. FUNÇÃO DE NORMALIZAÇÃO (CORREÇÃO DE LEGADO)
+    // -----------------------------------------------------
+    function normalizeContent(content) {
+        if (!content) return '';
+        // Se já for HTML válido (começa com tag), retorna direto
+        if (content.trim().startsWith('<')) {
+            return content;
+        }
+        // Converte Markdown básico para HTML (Legado)
+        let html = content
+            .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/## (.*?)\n/g, '<h2>$1</h2>') // Títulos básicos
+            .replace(/\n/g, '<br>');
+        return html;
+    }
+
+    // Interceptador de Colagem (Para novos colares do Gemini)
+    quill.root.addEventListener('paste', (e) => {
+        const clipboardData = e.clipboardData || window.clipboardData;
+        const pastedData = clipboardData.getData('text');
+
+        // Se detectar Markdown forte, converte
+        if (pastedData.includes('**') || pastedData.includes('##') || pastedData.includes('|') || pastedData.includes('* ')) {
+            e.preventDefault();
+            const html = marked.parse(pastedData, { breaks: true, gfm: true });
+            const range = quill.getSelection();
+            if (range) {
+                quill.clipboard.dangerouslyPasteHTML(range.index, html);
+            } else {
+                quill.clipboard.dangerouslyPasteHTML(0, html);
+            }
+        }
+    });
+
     window.showFeedback = (msg, isLoading = true) => {
         const el = document.getElementById("statusFeedback");
         const txt = document.getElementById("feedbackText");
         const icon = el.querySelector("i");
-        
-        txt.textContent = msg;
-        el.style.display = "block";
-        
+        txt.textContent = msg; el.style.display = "block";
         if (isLoading) {
-            icon.className = "fas fa-spinner fa-spin";
-            el.style.backgroundColor = "#2eaadc"; // Azul
+            icon.className = "fas fa-spinner fa-spin"; el.style.backgroundColor = "#2eaadc";
         } else {
-            icon.className = "fas fa-check-circle";
-            el.style.backgroundColor = "#27ae60"; // Verde
+            icon.className = "fas fa-check-circle"; el.style.backgroundColor = "#27ae60";
             setTimeout(() => { el.style.display = "none"; }, 4000);
         }
     };
 
-    window.hideFeedback = () => {
-        document.getElementById("statusFeedback").style.display = "none";
-    };
-
-    // Modais
+    // Modais e Navegação
     const modalEditor = document.getElementById('modalEditor');
     const modalView = document.getElementById('modalView');
 
@@ -258,24 +282,20 @@
         carregarBoard();
     });
 
-    // Salvar Texto/Novo Assunto
+    // Salvar no Firestore
     document.getElementById('btnSalvar').onclick = async () => {
         const title = document.getElementById('subjectTitle').value;
         const tag = document.getElementById('subjectTag').value || "GERAL";
-        const content = quill.root.innerHTML; // Pega o HTML puro do Quill (preserva formatação colada)
+        const content = quill.root.innerHTML;
 
-        if (!title) return alert("Por favor, dê um título ao assunto.");
+        if (!title) return alert("Preencha o título!");
 
-        showFeedback("Salvando conteúdo...", true);
+        showFeedback("Salvando...", true);
         
         try {
             if (editingDocId) {
-                // Atualizar existente
-                await updateDoc(doc(db, "planners", currentUID, "tasks", editingDocId), { 
-                    titulo: title, tag: tag.toUpperCase(), content: content 
-                });
+                await updateDoc(doc(db, "planners", currentUID, "tasks", editingDocId), { titulo: title, tag: tag.toUpperCase(), content: content });
             } else {
-                // Criar novo com ciclos
                 const now = Date.now();
                 const ciclos = [
                     { n: `[REC] ${title}`, t: now, col: 'recent' },
@@ -294,30 +314,25 @@
                     nome: title, content: content, tag: tag.toUpperCase(), data: now, tipo: 'texto' 
                 });
             }
-
             showFeedback("Salvo com sucesso!", false);
             fecharModal();
             carregarBoard();
-        } catch (e) {
-            console.error(e);
-            showFeedback("Erro ao salvar.", false);
-        }
+        } catch (e) { console.error(e); showFeedback("Erro ao salvar.", false); }
     };
 
     // Upload PDF
     document.getElementById("pdfInput").onchange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        
-        const tag = prompt("Tag do PDF (Ex: Cardiologia):", "GERAL") || "GERAL";
-        showFeedback("Carregando PDF (não feche)...", true);
+        const tag = prompt("Tag do PDF:", "GERAL") || "GERAL";
+        showFeedback("Enviando PDF...", true);
 
         try {
             const refS = ref(storage, `planners/${currentUID}/${Date.now()}_${file.name}`);
             await uploadBytes(refS, file);
             const url = await getDownloadURL(refS);
-            
             const now = Date.now();
+            
             const ciclos = [
                 { n: `[REC] ${file.name}`, t: now, col: 'recent' }, 
                 { n: `[D+1] ${file.name}`, t: now + 86400000, col: 'd1' }, 
@@ -331,42 +346,47 @@
                     column: c.col, criadoEm: serverTimestamp(), tipo: 'pdf' 
                 });
             }
-            await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
-                nome: file.name, url, tag: tag.toUpperCase(), data: now, tipo: 'pdf' 
-            });
-
-            showFeedback("PDF enviado com sucesso!", false);
+            await addDoc(collection(db, "planners", currentUID, "arquivos"), { nome: file.name, url, tag: tag.toUpperCase(), data: now, tipo: 'pdf' });
+            showFeedback("Sucesso!", false);
             carregarBoard();
-        } catch (error) {
-            console.error(error);
-            showFeedback("Erro no upload do PDF.", false);
-        }
+        } catch (err) { showFeedback("Erro no upload.", false); }
     };
 
-    // VISUALIZAÇÃO
+    // -----------------------------------------------------
+    // 3. ABRIR ITEM (COM FALLBACK E NORMALIZAÇÃO)
+    // -----------------------------------------------------
     window.abrirItem = async (id) => {
         const d = await getDoc(doc(db, "planners", currentUID, "tasks", id));
         if(!d.exists()) return;
-        
         const data = d.data();
+        
         document.getElementById('viewTitle').textContent = data.titulo;
         document.getElementById('viewTagDisplay').textContent = data.tag || "GERAL";
         const container = document.getElementById('viewContainer');
         const btnEdit = document.getElementById('btnEditarNota');
 
         if (data.pdfUrl) {
-            // PDF: Usa iframe
             container.innerHTML = `<iframe src="${data.pdfUrl}" id="pdfViewer"></iframe>`;
             btnEdit.style.display = 'none';
         } else {
-            // Texto: Renderiza HTML do Quill
-            container.innerHTML = `<div class="ql-editor" style="padding:20px;">${data.content}</div>`;
+            // AQUI ESTÁ A CORREÇÃO PRINCIPAL:
+            // 1. Busca qualquer campo possível (htmlContent, content, textContent)
+            const rawContent = data.htmlContent || data.content || data.textContent || '';
+            
+            // 2. Normaliza (Markdown -> HTML) se necessário
+            const finalHtml = normalizeContent(rawContent);
+            
+            container.innerHTML = `<div class="ql-editor" style="padding:20px;">${finalHtml}</div>`;
             btnEdit.style.display = 'block';
+            
             btnEdit.onclick = () => {
                 editingDocId = id;
-                document.getElementById('subjectTitle').value = data.titulo.replace(/\[.*?\] /, ''); // Remove prefixo [D+1] ao editar
+                document.getElementById('subjectTitle').value = data.titulo.replace(/\[.*?\] /, '');
                 document.getElementById('subjectTag').value = data.tag;
-                quill.root.innerHTML = data.content;
+                
+                // Carrega no editor também normalizado
+                quill.root.innerHTML = finalHtml;
+                
                 fecharModalView();
                 modalEditor.style.display = 'flex';
             };
@@ -383,32 +403,23 @@
 
         snap.forEach(d => {
             const t = d.data();
-            // Lógica de tempo: Se não estiver concluído E o tempo ainda não chegou, esconde.
-            if (t.column !== 'done' && agora < t.targetDate) return; 
-
+            if (t.column !== 'done' && agora < t.targetDate) return;
             const card = document.createElement("div");
-            card.className = "card";
-            card.id = d.id;
-            card.draggable = true;
+            card.className = "card"; card.draggable = true; card.id = d.id;
             card.onclick = () => abrirItem(d.id);
             card.ondragstart = (e) => e.dataTransfer.setData("text", e.target.id);
-            card.innerHTML = `
-                <div style="font-size:13px; font-weight:600; margin-bottom:6px;">${t.titulo}</div>
-                <span class="tag">${t.tag || 'GERAL'}</span>
-            `;
+            card.innerHTML = `<div style="font-weight:600; font-size:13px; margin-bottom:5px;">${t.titulo}</div><span class="tag">${t.tag}</span>`;
             if (cols[t.column]) cols[t.column].appendChild(card);
         });
     }
 
+    // Drag & Drop
     window.allowDrop = (e) => e.preventDefault();
     window.drop = async (e) => {
         e.preventDefault();
         const id = e.dataTransfer.getData("text");
         const col = e.currentTarget.id;
-        if(col) {
-            await updateDoc(doc(db, "planners", currentUID, "tasks", id), { column: col });
-            carregarBoard();
-        }
+        if(col) { await updateDoc(doc(db, "planners", currentUID, "tasks", id), { column: col }); carregarBoard(); }
     };
 
     document.getElementById('navBoard').onclick = () => { document.getElementById('secBoard').classList.remove('hidden'); document.getElementById('secLib').classList.add('hidden'); };
@@ -423,7 +434,7 @@
             body.innerHTML += `<tr style="border-bottom:1px solid #eee;">
                 <td style="padding:10px;">${p.nome}</td>
                 <td><span class="tag">${p.tag}</span></td>
-                <td><button class="btn-notion" onclick="alert('Vá ao Board para abrir este item.')">Ver no Board</button></td>
+                <td><button class="btn-notion" onclick="alert('Visualize pelo Board')">Ver</button></td>
             </tr>`;
         });
     }
