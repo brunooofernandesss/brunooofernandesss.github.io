@@ -34,26 +34,25 @@
         body { font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
 
         /* Sidebar com correção para Chrome Mobile */
-.sidebar { 
-    width: 240px; 
-    background: #fbfbfa; 
-    border-right: 1px solid var(--border-color); 
-    display: flex; 
-    flex-direction: column; 
-    flex-shrink: 0; 
-    
-    /* CORREÇÃO AQUI: Usa 100dvh (altura dinâmica) para ignorar a barra do navegador */
-    height: 100vh;        /* Fallback para navegadores antigos */
-    height: 100dvh;       /* Funciona no Chrome Mobile moderno */
-    
-    overflow-y: auto;     /* Permite rolar se o conteúdo for grande */
-    overflow-x: hidden;
-    
-    /* Aumentei o padding no final para garantir que as metas subam acima da barra do Android */
-    padding-bottom: 120px; 
-}
+        .sidebar { 
+            width: 240px; 
+            background: #fbfbfa; 
+            border-right: 1px solid var(--border-color); 
+            display: flex; 
+            flex-direction: column; 
+            flex-shrink: 0; 
+            
+            /* CORREÇÃO AQUI: Usa 100dvh (altura dinâmica) para ignorar a barra do navegador */
+            height: 100vh;        /* Fallback para navegadores antigos */
+            height: 100dvh;       /* Funciona no Chrome Mobile moderno */
+            
+            overflow-y: auto;     /* Permite rolar se o conteúdo for grande */
+            overflow-x: hidden;
+            
+            /* Aumentei o padding no final para garantir que as metas subam acima da barra do Android */
+            padding-bottom: 120px; 
+        }
 
-        
         /* Personalização da barra de rolagem da sidebar */
         .sidebar::-webkit-scrollbar { width: 6px; }
         .sidebar::-webkit-scrollbar-thumb { background-color: #e0e0e0; border-radius: 3px; }
@@ -72,14 +71,14 @@
         .nav-item.active { background: #efefef; font-weight: 600; color: var(--text-primary); }
 
         /* --- METAS NA SIDEBAR CORRIGIDAS --- */
-.sidebar-goals { 
-    padding: 20px 16px; 
-    margin-top: 20px; /* <--- Mudei para fixo: fica logo abaixo do menu */
-    border-top: 1px solid var(--border-color); 
-    flex-shrink: 0; 
-    background: #fbfbfa;
-    padding-bottom: 80px; /* <--- Adicionei isso: espaço extra para não cortar no final */
-}
+        .sidebar-goals { 
+            padding: 20px 16px; 
+            margin-top: 20px; /* <--- Mudei para fixo: fica logo abaixo do menu */
+            border-top: 1px solid var(--border-color); 
+            flex-shrink: 0; 
+            background: #fbfbfa;
+            padding-bottom: 80px; /* <--- Adicionei isso: espaço extra para não cortar no final */
+        }
 
         .goals-title { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
         .goal-item { margin-bottom: 12px; }
@@ -365,9 +364,9 @@
         }
     });
 
-    // Função de upload segura (Anti-loop Mobile)
+    // Função de upload SIMPLIFICADA E SEGURA
     function imageHandler() {
-        if (isUploadingImage) return; // 🔒 trava anti-loop
+        if (isUploadingImage) return; // 🔒 trava anti-duplicação
         isUploadingImage = true;
 
         const input = document.createElement('input');
@@ -387,24 +386,22 @@
                 return;
             }
 
+            // Pega seleção atual ou fim do documento
             const range = quill.getSelection(true) || { index: quill.getLength() };
-            
-            // Placeholder visual
-            quill.insertText(range.index, '\n[Enviando imagem...]\n', { italic: true, color: '#999' });
 
+            // NÃO INSERE TEXTO PLACEHOLDER (Isso causava o bug)
+            // Apenas bloqueia novos uploads e processa
+            
             try {
                 const imgRef = ref(storage, `planners/${currentUID}/editor_images/${Date.now()}_${file.name}`);
                 await uploadBytes(imgRef, file);
                 const url = await getDownloadURL(imgRef);
 
-                // Remove placeholder e ajusta
-                quill.deleteText(range.index, '[Enviando imagem...]'.length + 2);
-                
-                // Insere imagem
+                // Insere direto a imagem no ponto do cursor
                 quill.insertEmbed(range.index, 'image', url);
                 
-                // 🔑 MOVE O CURSOR (Evita loop de foco)
-                quill.setSelection(range.index + 1);
+                // Move o cursor para DEPOIS da imagem
+                quill.setSelection(range.index + 1, 0);
 
             } catch (err) {
                 console.error(err);
