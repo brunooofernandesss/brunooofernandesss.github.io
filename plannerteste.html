@@ -368,6 +368,19 @@
         }
     });
 
+    // ⛔ CORREÇÃO CRÍTICA 1: BLOQUEAR BASE64 (COLAR IMAGEM) NA ENTRADA
+    // Isso impede que o usuário cole imagens direto do print screen, forçando o uso do botão.
+    quill.clipboard.addMatcher('IMG', function(node, delta) {
+        // Verifica se a imagem é Base64 (data:image)
+        const src = node.getAttribute('src');
+        if (src && src.startsWith('data:')) {
+            alert("⚠️ Por favor, use o botão de imagem na barra de ferramentas para enviar fotos.\n\nColar imagens diretamente não é permitido (gera arquivos muito pesados).");
+            // Retorna um delta vazio para remover a imagem colada
+            return { ops: [] };
+        }
+        return delta;
+    });
+
     // Função de upload segura e com feedback
     async function imageHandler() {
         if (isUploadingImage) return; 
@@ -683,8 +696,13 @@
         
         if (!title) return alert("Título obrigatório");
 
-        // ✅ SALVAMOS APENAS HTML (MAIS SEGURO)
-        const contentHTML = quill.root.innerHTML;
+        // ⛔ CORREÇÃO CRÍTICA 2: SANITIZAÇÃO DE SEGURANÇA NA SAÍDA
+        // Garante que, se alguma imagem base64 passou, ela seja removida antes de ir pro Firestore.
+        let contentHTML = quill.root.innerHTML;
+        if (contentHTML.includes('src="data:image')) {
+             alert("Algumas imagens foram coladas indevidamente e serão removidas para garantir o salvamento.");
+             contentHTML = contentHTML.replace(/<img[^>]+src="data:image[^">]+"[^>]*>/gi, '');
+        }
         
         try {
             showFeedback("Salvando...", true); 
@@ -730,7 +748,7 @@
         } catch (e) {
             console.error(e);
             showFeedback("Erro ao salvar", false);
-            alert("Erro ao salvar o conteúdo.");
+            alert("Erro ao salvar o conteúdo. Verifique o tamanho das imagens.");
         }
     };
 
