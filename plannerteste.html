@@ -142,20 +142,56 @@
         #viewer-container { border: none !important; }
         #viewer-container .ql-container.ql-snow { border: none !important; }
 
-        /* Estilo para imagens dentro do editor */
-        .ql-editor img { display: block; margin: 10px auto; max-width: 100%; height: auto; border-radius: 6px; }
+        /* --- CSS FINAL PARA IMAGENS, VÍDEOS E ALINHAMENTO --- */
+        .ql-editor img { 
+            display: block; 
+            margin: 14px auto; 
+            max-width: 85%; /* Leitura confortável */
+            height: auto; 
+            border-radius: 8px; 
+            cursor: zoom-in; 
+            transition: transform 0.2s ease;
+        }
+        .ql-editor img:hover { transform: scale(1.02); }
+        
+        .ql-editor iframe {
+            display: block;
+            margin: 16px auto;
+            max-width: 90%;
+            aspect-ratio: 16 / 9; /* Proporção correta YouTube */
+            border-radius: 8px;
+        }
+
+        /* Alinhamentos */
+        .ql-align-center { text-align: center; }
+        .ql-align-right { text-align: right; }
+        .ql-align-justify { text-align: justify; }
     </style>
 </head>
 <body>
+
+    <div id="imageModal" class="modal" style="z-index:3000; background: rgba(0,0,0,0.85);">
+        <div style="position:relative; max-width:95vw; max-height:95vh;">
+            <img id="imageModalImg" style="max-width:100%; max-height:90vh; border-radius:4px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <button onclick="closeImageModal()" class="btn-action" style="position:absolute; top:-40px; right:0; background:white; border:none;">
+                <i class="fas fa-times"></i> Fechar
+            </button>
+        </div>
+    </div>
 
     <div class="modal" id="modalEditor">
         <div class="modal-content" style="max-width: 800px; height: auto; max-height: 90vh; padding: 20px;">
             
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                 <h3 style="margin:0;">Novo Estudo</h3>
-                <button id="btnToggleEditor" class="btn-action" title="Expandir/Minimizar">
-                    <i class="fas fa-expand"></i>
-                </button>
+                <div>
+                    <button id="btnToggleEditor" class="btn-action" title="Expandir Tela">
+                        <i class="fas fa-expand"></i> Expandir
+                    </button>
+                    <button id="btnCloseEditor" class="btn-action" title="Minimizar" style="display:none;">
+                        <i class="fas fa-compress"></i> Minimizar
+                    </button>
+                </div>
             </div>
 
             <div style="display: flex; gap: 10px; margin-bottom: 15px;">
@@ -328,14 +364,39 @@
                     [{ 'list': 'ordered'}, { 'list': 'bullet' }], 
                     [{ 'align': [] }], 
                     ['blockquote', 'code-block'],
-                    ['image'], 
+                    ['image', 'video'], // Adicionado vídeo
                     ['clean']
                 ],
                 handlers: {
                     'image': imageHandler
+                    // Video usa o handler padrão aprimorado abaixo
                 }
             }
         }
+    });
+
+    // --- HANDLER DE VÍDEO INTELIGENTE (YOUTUBE) ---
+    quill.getModule('toolbar').addHandler('video', () => {
+        const url = prompt("Cole o link do YouTube:");
+        if (!url) return;
+        
+        let embedUrl = url;
+        // Converte links normais para embed
+        if (url.includes('youtube.com/watch')) {
+            const id = new URL(url).searchParams.get('v');
+            embedUrl = `https://www.youtube.com/embed/${id}`;
+        } else if (url.includes('youtu.be/')) {
+            const id = url.split('/').pop();
+            embedUrl = `https://www.youtube.com/embed/${id}`;
+        }
+
+        const range = quill.getSelection(true) || { index: quill.getLength() };
+        
+        // Inserção com quebra de linha (igual imagem)
+        quill.insertText(range.index, '\n', 'user');
+        quill.insertEmbed(range.index + 1, 'video', embedUrl, 'user');
+        quill.insertText(range.index + 2, '\n\n', 'user');
+        quill.setSelection(range.index + 3, 0);
     });
 
     // ⛔ BLOQUEAR BASE64 (COLAR IMAGEM)
@@ -352,30 +413,43 @@
     quill.on('editor-change', (eventName) => {
         if (eventName === 'text-change') {
             const range = quill.getSelection();
-            // Se perdeu o range, tenta recuperar silenciosamente
             if (!range && document.activeElement === quill.root) {
-                // Mantém o estado visual ativo
+                // Mantém toolbar ativa
             }
         }
     });
 
-    // --- LÓGICA DE MAXIMIZAR/MINIMIZAR ---
-    let editorMax = false;
-    document.getElementById('btnToggleEditor').onclick = () => {
-        const modal = document.querySelector('#modalEditor .modal-content');
-        const icon = document.querySelector('#btnToggleEditor i');
-        editorMax = !editorMax;
-        if (editorMax) {
-            modal.classList.add('editor-max');
-            icon.classList.remove('fa-expand');
-            icon.classList.add('fa-compress');
-        } else {
-            modal.classList.remove('editor-max');
-            icon.classList.remove('fa-compress');
-            icon.classList.add('fa-expand');
-        }
-        // Re-focar para garantir que o Quill redimensione
+    // --- LÓGICA DE MAXIMIZAR/MINIMIZAR (CORRIGIDA) ---
+    const modalEditorContent = document.querySelector('#modalEditor .modal-content');
+    const btnExpand = document.getElementById('btnToggleEditor');
+    const btnCompress = document.getElementById('btnCloseEditor');
+
+    btnExpand.onclick = () => {
+        modalEditorContent.classList.add('editor-max');
+        btnExpand.style.display = 'none';
+        btnCompress.style.display = 'inline-flex';
         setTimeout(() => quill.focus(), 100);
+    };
+
+    btnCompress.onclick = () => {
+        modalEditorContent.classList.remove('editor-max');
+        btnCompress.style.display = 'none';
+        btnExpand.style.display = 'inline-flex';
+        setTimeout(() => quill.focus(), 100);
+    };
+
+    // --- LIGHTBOX DE IMAGEM ---
+    document.addEventListener('click', (e) => {
+        // Verifica se clicou numa imagem DENTRO do editor
+        if (e.target.tagName === 'IMG' && e.target.closest('.ql-editor')) {
+            const modal = document.getElementById('imageModal');
+            const img = document.getElementById('imageModalImg');
+            img.src = e.target.src;
+            modal.style.display = 'flex';
+        }
+    });
+    window.closeImageModal = () => {
+        document.getElementById('imageModal').style.display = 'none';
     };
 
     // Função de upload segura (BLINDADA)
@@ -739,6 +813,11 @@
             }
 
             showFeedback("Salvo!", false);
+            // REINICIA OS BOTÕES DE MAXIMIZAR
+            modalEditorContent.classList.remove('editor-max');
+            btnCompress.style.display = 'none';
+            btnExpand.style.display = 'inline-flex';
+            
             fecharModal(); 
             loadDataAndInit();
             carregarBiblioteca();
