@@ -343,19 +343,64 @@
     let currentBoardStart = new Date(); 
     let allTasksCache = []; 
 
+    // --- CONFIGURAÇÃO QUILL COM SUPORTE A IMAGENS ---
     const quill = new Quill('#quill-editor', {
         theme: 'snow',
         placeholder: 'Cole seu conteúdo aqui...',
         modules: {
-            toolbar: [
-                [{ 'header': [1, 2, false] }],
-                ['bold', 'italic', 'underline'],
-                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                ['blockquote', 'code-block'],
-                ['clean']
-            ]
+            toolbar: {
+                container: [
+                    [{ 'header': [1, 2, false] }],
+                    ['bold', 'italic', 'underline'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['blockquote', 'code-block'],
+                    ['image'], // Botão de imagem adicionado
+                    ['clean']
+                ],
+                handlers: {
+                    'image': imageHandler
+                }
+            }
         }
     });
+
+    // Função para fazer upload de imagem e inserir URL no editor
+    function imageHandler() {
+        const input = document.createElement('input');
+        input.setAttribute('type', 'file');
+        input.setAttribute('accept', 'image/*');
+        input.click();
+
+        input.onchange = async () => {
+            const file = input.files[0];
+            if (!file) return;
+            if (!currentUID) {
+                alert("Erro: Usuário não identificado. Faça login novamente.");
+                return;
+            }
+
+            const range = quill.getSelection(true);
+            
+            // Texto temporário de loading
+            quill.insertText(range.index, 'Carregando imagem...', { 'color': '#999', 'italic': true });
+
+            try {
+                // Upload para o Firebase Storage
+                const refImg = ref(storage, `planners/${currentUID}/editor_images/${Date.now()}_${file.name}`);
+                await uploadBytes(refImg, file);
+                const url = await getDownloadURL(refImg);
+
+                // Remove o texto e insere a imagem
+                quill.deleteText(range.index, 'Carregando imagem...'.length);
+                quill.insertEmbed(range.index, 'image', url);
+            } catch (error) {
+                console.error("Erro upload imagem:", error);
+                quill.deleteText(range.index, 'Carregando imagem...'.length);
+                alert("Falha ao enviar a imagem.");
+            }
+        };
+    }
+    // ------------------------------------------------
 
     onAuthStateChanged(auth, (user) => {
         if (!user) { window.location.href = "login.html"; return; }
