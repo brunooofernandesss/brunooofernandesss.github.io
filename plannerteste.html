@@ -185,6 +185,15 @@
         /* Ajuste para o viewer */
         #viewer-container { border: none !important; }
         #viewer-container .ql-container.ql-snow { border: none !important; }
+
+        /* --- MELHORIA: ESTILO PARA IMAGENS DENTRO DO EDITOR --- */
+        .ql-editor img {
+            display: block;
+            margin: 10px auto;
+            max-width: 100%;
+            height: auto;
+            border-radius: 6px;
+        }
     </style>
 </head>
 <body>
@@ -347,19 +356,21 @@
     let allTasksCache = []; 
     let isUploadingImage = false; 
 
-    // --- CONFIGURAÇÃO QUILL COM SUPORTE A IMAGENS ---
+    // --- MELHORIA: TOOLBAR COMPLETA COM CORES ---
     const quill = new Quill('#quill-editor', {
         theme: 'snow',
         placeholder: 'Cole seu conteúdo aqui...',
         modules: {
             toolbar: {
                 container: [
-                    [{ 'header': [1, 2, false] }],
-                    ['bold', 'italic', 'underline'],
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    [{ 'header': [1, 2, 3, false] }], // Títulos H1, H2, H3
+                    ['bold', 'italic', 'underline', 'strike'], // Formatação básica + tachado
+                    [{ 'color': [] }, { 'background': [] }], // CORES DE TEXTO E FUNDO
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }], // Listas
+                    [{ 'align': [] }], // Alinhamento
                     ['blockquote', 'code-block'],
-                    ['image'], // Botão de imagem adicionado
-                    ['clean']
+                    ['image'],
+                    ['clean'] // Limpar formatação
                 ],
                 handlers: {
                     'image': imageHandler
@@ -368,20 +379,17 @@
         }
     });
 
-    // ⛔ CORREÇÃO CRÍTICA 1: BLOQUEAR BASE64 (COLAR IMAGEM) NA ENTRADA
-    // Isso impede que o usuário cole imagens direto do print screen, forçando o uso do botão.
+    // ⛔ CORREÇÃO CRÍTICA: BLOQUEAR BASE64 (COLAR IMAGEM) NA ENTRADA
     quill.clipboard.addMatcher('IMG', function(node, delta) {
-        // Verifica se a imagem é Base64 (data:image)
         const src = node.getAttribute('src');
         if (src && src.startsWith('data:')) {
-            alert("⚠️ Por favor, use o botão de imagem na barra de ferramentas para enviar fotos.\n\nColar imagens diretamente não é permitido (gera arquivos muito pesados).");
-            // Retorna um delta vazio para remover a imagem colada
+            alert("⚠️ Por favor, use o botão de imagem na barra de ferramentas para enviar fotos.\n\nColar imagens diretamente não é permitido.");
             return { ops: [] };
         }
         return delta;
     });
 
-    // Função de upload segura e com feedback
+    // --- MELHORIA: UPLOAD SEGURO COM ESPAÇAMENTO INTELIGENTE ---
     async function imageHandler() {
         if (isUploadingImage) return; 
         if (!currentUID) { alert("Usuário não autenticado"); return; }
@@ -404,10 +412,13 @@
                 await uploadBytes(imgRef, file);
                 const url = await getDownloadURL(imgRef);
 
-                // Insere direto a imagem
-                quill.insertEmbed(range.index, 'image', url);
-                quill.setSelection(range.index + 1);
-                
+                // --- INSERÇÃO INTELIGENTE (EVITA CURSOR PRESO) ---
+                quill.insertText(range.index, '\n'); // Linha antes
+                quill.insertEmbed(range.index + 1, 'image', url); // Imagem
+                quill.insertText(range.index + 2, '\n'); // Linha depois
+                quill.setSelection(range.index + 3); // Joga cursor para baixo
+                // ------------------------------------------------
+
                 showFeedback("Imagem inserida", false);
 
             } catch (e) {
@@ -697,7 +708,6 @@
         if (!title) return alert("Título obrigatório");
 
         // ⛔ CORREÇÃO CRÍTICA 2: SANITIZAÇÃO DE SEGURANÇA NA SAÍDA
-        // Garante que, se alguma imagem base64 passou, ela seja removida antes de ir pro Firestore.
         let contentHTML = quill.root.innerHTML;
         if (contentHTML.includes('src="data:image')) {
              alert("Algumas imagens foram coladas indevidamente e serão removidas para garantir o salvamento.");
@@ -872,7 +882,13 @@
     };
     window.fecharModal = () => document.getElementById('modalEditor').style.display = 'none';
     window.fecharModalView = () => document.getElementById('modalView').style.display = 'none';
-    document.getElementById('btnNovoAssunto').onclick = () => document.getElementById('modalEditor').style.display = 'flex';
+    
+    // --- MELHORIA DE UX: FOCAR NO EDITOR AO ABRIR ---
+    document.getElementById('btnNovoAssunto').onclick = () => { 
+        document.getElementById('modalEditor').style.display = 'flex';
+        setTimeout(() => quill.focus(), 100); 
+    };
+    
     document.getElementById('navBoard').onclick = () => { document.getElementById('secBoard').classList.remove('hidden'); document.getElementById('secLib').classList.add('hidden'); document.getElementById('navBoard').classList.add('active'); document.getElementById('navLib').classList.remove('active'); };
     document.getElementById('navLib').onclick = () => { document.getElementById('secBoard').classList.add('hidden'); document.getElementById('secLib').classList.remove('hidden'); document.getElementById('navBoard').classList.remove('active'); document.getElementById('navLib').classList.add('active'); carregarBiblioteca(); };
 </script>
