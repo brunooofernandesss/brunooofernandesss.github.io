@@ -34,27 +34,20 @@
         body { font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
 
         /* Sidebar com correção para Chrome Mobile */
-.sidebar { 
-    width: 240px; 
-    background: #fbfbfa; 
-    border-right: 1px solid var(--border-color); 
-    display: flex; 
-    flex-direction: column; 
-    flex-shrink: 0; 
-    
-    /* CORREÇÃO AQUI: Usa 100dvh (altura dinâmica) para ignorar a barra do navegador */
-    height: 100vh;        /* Fallback para navegadores antigos */
-    height: 100dvh;       /* Funciona no Chrome Mobile moderno */
-    
-    overflow-y: auto;     /* Permite rolar se o conteúdo for grande */
-    overflow-x: hidden;
-    
-    /* Aumentei o padding no final para garantir que as metas subam acima da barra do Android */
-    padding-bottom: 120px; 
-}
+        .sidebar { 
+            width: 240px; 
+            background: #fbfbfa; 
+            border-right: 1px solid var(--border-color); 
+            display: flex; 
+            flex-direction: column; 
+            flex-shrink: 0; 
+            height: 100vh;        
+            height: 100dvh;       
+            overflow-y: auto;     
+            overflow-x: hidden;
+            padding-bottom: 120px; 
+        }
 
-        
-        /* Personalização da barra de rolagem da sidebar */
         .sidebar::-webkit-scrollbar { width: 6px; }
         .sidebar::-webkit-scrollbar-thumb { background-color: #e0e0e0; border-radius: 3px; }
 
@@ -71,15 +64,14 @@
         .nav-item:hover { background: #efefef; color: var(--text-primary); }
         .nav-item.active { background: #efefef; font-weight: 600; color: var(--text-primary); }
 
-        /* --- METAS NA SIDEBAR CORRIGIDAS --- */
-.sidebar-goals { 
-    padding: 20px 16px; 
-    margin-top: 20px; /* <--- Mudei para fixo: fica logo abaixo do menu */
-    border-top: 1px solid var(--border-color); 
-    flex-shrink: 0; 
-    background: #fbfbfa;
-    padding-bottom: 80px; /* <--- Adicionei isso: espaço extra para não cortar no final */
-}
+        .sidebar-goals { 
+            padding: 20px 16px; 
+            margin-top: 20px; 
+            border-top: 1px solid var(--border-color); 
+            flex-shrink: 0; 
+            background: #fbfbfa;
+            padding-bottom: 80px; 
+        }
 
         .goals-title { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
         .goal-item { margin-bottom: 12px; }
@@ -97,109 +89,166 @@
         .page-title { font-size: 26px; font-weight: 700; color: var(--text-primary); }
 
         /* Board */
-        .week-board { 
-            display: grid; 
-            grid-template-columns: repeat(7, 1fr); 
-            gap: 12px; 
-            flex: 1; 
-            min-width: 1400px; 
-            overflow: hidden; 
-        }
-
-        .day-column {
-            background: transparent; display: flex; flex-direction: column; height: 100%;
-            border-right: 1px dashed var(--border-color); padding-right: 8px; min-height: 0;
-        }
+        .week-board { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; flex: 1; min-width: 1400px; overflow: hidden; }
+        .day-column { background: transparent; display: flex; flex-direction: column; height: 100%; border-right: 1px dashed var(--border-color); padding-right: 8px; min-height: 0; }
         .day-column:last-child { border-right: none; }
-
-        .day-header {
-            padding: 8px 4px; margin-bottom: 12px; border-radius: 4px; font-size: 14px; font-weight: 600;
-            display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
-        }
+        .day-header { padding: 8px 4px; margin-bottom: 12px; border-radius: 4px; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
         .day-header.today { background: #ffe2dd; color: #d44c47; }
-
-        .drop-zone {
-            flex: 1; 
-            overflow-y: auto; 
-            padding-bottom: 100px; /* Padding extra para scroll dos cards */
-            scrollbar-width: thin;
-        }
+        .drop-zone { flex: 1; overflow-y: auto; padding-bottom: 100px; scrollbar-width: thin; }
         .drop-zone::-webkit-scrollbar { width: 6px; }
         .drop-zone::-webkit-scrollbar-thumb { background-color: #ddd; border-radius: 4px; }
         
         /* CARD */
-        .card {
-            background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px;
-            padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-            cursor: pointer; transition: all 0.2s ease; position: relative;
-        }
+        .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); cursor: pointer; transition: all 0.2s ease; position: relative; }
         .card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.08); border-color: #d0d0d0; }
         .card-top { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
         
-        .custom-checkbox {
-            appearance: none; width: 18px; height: 18px; border: 2px solid #d0d0d0; border-radius: 4px;
-            cursor: pointer; flex-shrink: 0; margin-top: 2px; position: relative;
-        }
+        .custom-checkbox { appearance: none; width: 18px; height: 18px; border: 2px solid #d0d0d0; border-radius: 4px; cursor: pointer; flex-shrink: 0; margin-top: 2px; position: relative; }
         .custom-checkbox:checked { background: var(--text-green); border-color: var(--text-green); }
         .custom-checkbox:checked::after { content: '✓'; color: white; position: absolute; top: -2px; left: 3px; font-size: 12px; font-weight: bold; }
 
         .card-title { font-size: 14px; font-weight: 500; line-height: 1.4; color: var(--text-primary); }
         .card.completed .card-title { text-decoration: line-through; color: #a0a0a0; }
         .card.completed { background: #f9f9f9; opacity: 0.8; }
-
-        .tag-pill {
-            padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;
-            background: var(--tag-blue); color: var(--text-blue); display: inline-flex; align-items: center;
-        }
-        
+        .tag-pill { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: var(--tag-blue); color: var(--text-blue); display: inline-flex; align-items: center; }
         .card-meta { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 11px; color: var(--text-secondary); }
 
         /* UI Elements */
-        .week-selector-wrapper {
-            display: flex; align-items: center; gap: 8px; position: relative;
-            cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: 0.2s;
-        }
+        .week-selector-wrapper { display: flex; align-items: center; gap: 8px; position: relative; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: 0.2s; }
         .week-selector-wrapper:hover { background: #f0f0f0; }
         .week-select-native { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10; }
         .week-display { display: flex; align-items: center; gap: 6px; font-size: 13px; }
 
-        .btn-action {
-            background: white; border: 1px solid var(--border-color); padding: 8px 12px;
-            border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s;
-        }
+        .btn-action { background: white; border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
         .btn-action:hover { background: #f7f7f5; }
         .btn-primary { background: var(--text-primary); color: white; border: none; }
         .btn-primary:hover { background: #111; }
 
-        /* Modais */
+        /* --- MODAL EDITOR (100dvh + FLEX) --- */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; }
-        .modal-content { background: white; width: 95%; max-width: 1100px; height: 90vh; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.2); }
-        .editor-wrapper { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
-        #quill-editor { flex: 1; font-size: 16px; border: none; }
-        #pdfContainer { flex: 1; background: #525659; display: flex; justify-content: center; overflow: auto; padding: 20px; }
         
+        .modal-content { 
+            background: white; width: 95%; max-width: 800px; height: 90vh; border-radius: 12px; 
+            display: flex; flex-direction: column; overflow: hidden; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2); transition: all 0.3s ease; 
+        }
+        
+        .modal-content.editor-max { 
+            width: 100vw !important; height: 100dvh !important; max-width: none !important; max-height: none !important; 
+            border-radius: 0 !important; display: flex; flex-direction: column;
+        }
+
+        .editor-header {
+            flex-shrink: 0; padding: 20px 25px 15px; background: white; border-bottom: 1px solid #eee;
+            display: flex; justify-content: space-between; align-items: center; z-index: 10;
+        }
+
+        .editor-body {
+            flex: 1; overflow-y: auto; padding: 20px 25px; display: flex; flex-direction: column; min-height: 0;
+        }
+
+        .editor-footer {
+            flex-shrink: 0; padding: 15px 25px; background: white; border-top: 1px solid #eee;
+            display: flex; justify-content: flex-end; gap: 10px; z-index: 10;
+        }
+
+        #quill-editor-container {
+            flex: 1; display: flex; flex-direction: column; border: 1px solid #ddd;
+            border-radius: 6px; overflow: hidden; min-height: 300px;
+        }
+        #quill-editor { flex: 1; font-size: 16px; border: none; }
+
+        /* --- LIGHTBOX & VISUALIZAÇÃO DE IMAGENS --- */
+        
+        /* Container do Modal de Imagem */
+        .image-modal-content {
+            width: 100vw; height: 100dvh; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            position: relative;
+        }
+
+        /* Botão Fechar FIXO na tela (solução mobile) */
+        .image-close-btn {
+            position: fixed; top: 15px; right: 15px; 
+            z-index: 4000; background: white; border: none; 
+            border-radius: 20px; padding: 8px 16px; 
+            font-size: 13px; font-weight: 600; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        #imageModalImg {
+            max-width: 95vw; max-height: 90dvh; 
+            object-fit: contain; border-radius: 4px;
+        }
+
+        /* Estilo para imagens dentro do Texto (Leitura Confortável) */
+        .ql-editor img { 
+            display: block; margin: 16px auto; 
+            max-width: 700px; /* Limite de leitura confortável */
+            width: 100%; /* Responsivo no mobile */
+            height: auto; 
+            border-radius: 8px; cursor: zoom-in; 
+            transition: transform 0.2s ease;
+        }
+        .ql-editor img:hover { transform: scale(1.01); }
+        
+        /* Estilo para vídeos */
+        .ql-editor iframe { display: block; margin: 16px auto; max-width: 90%; aspect-ratio: 16 / 9; border-radius: 8px; }
+        
+        .ql-align-center { text-align: center; }
+        .ql-align-right { text-align: right; }
+        .ql-align-justify { text-align: justify; }
+
         #statusFeedback { position: fixed; bottom: 30px; right: 30px; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; color: white; display: none; z-index: 9999; }
         .hidden { display: none !important; }
         #secBoard { overflow-x: auto; overflow-y: hidden; }
         #secLib { height: 100%; overflow-y: auto; }
+        #viewer-container { border: none !important; }
+        #viewer-container .ql-container.ql-snow { border: none !important; }
     </style>
 </head>
 <body>
 
+    <div id="imageModal" class="modal" style="z-index:3000; background: rgba(0,0,0,0.9);">
+        <div class="image-modal-content">
+            <button onclick="closeImageModal()" class="image-close-btn">
+                <i class="fas fa-times"></i> Fechar
+            </button>
+            <img id="imageModalImg">
+        </div>
+    </div>
+
     <div class="modal" id="modalEditor">
-        <div class="modal-content" style="max-width: 700px; height: auto; max-height: 90vh; padding: 20px;">
-            <h3 style="margin-bottom: 15px;">Novo Estudo</h3>
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <input type="text" id="subjectTitle" style="flex:1; padding: 10px; border: 1px solid #ddd; border-radius: 6px;" placeholder="Título do Assunto...">
-                <input type="text" id="subjectTag" style="width: 150px; padding: 10px; border: 1px solid #ddd; border-radius: 6px;" placeholder="Matéria (Ex: Pediatria)">
+        <div class="modal-content">
+            
+            <div class="editor-header">
+                <h3 style="margin:0;">Novo Estudo</h3>
+                <div>
+                    <button id="btnToggleEditor" class="btn-action" title="Expandir Tela">
+                        <i class="fas fa-expand"></i> Expandir
+                    </button>
+                    <button id="btnCloseEditor" class="btn-action" title="Minimizar" style="display:none;">
+                        <i class="fas fa-compress"></i> Minimizar
+                    </button>
+                </div>
             </div>
-            <div style="height: 300px; border: 1px solid #ddd; border-radius: 6px; overflow: hidden;">
-                <div id="quill-editor"></div>
+
+            <div class="editor-body">
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <input type="text" id="subjectTitle" style="flex:1; padding: 10px; border: 1px solid #ddd; border-radius: 6px;" placeholder="Título do Assunto...">
+                    <input type="text" id="subjectTag" style="width: 150px; padding: 10px; border: 1px solid #ddd; border-radius: 6px;" placeholder="Matéria (Ex: Pediatria)">
+                </div>
+                
+                <div id="quill-editor-container">
+                    <div id="quill-editor"></div>
+                </div>
             </div>
-            <div style="display:flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+
+            <div class="editor-footer">
                 <button class="btn-action" onclick="fecharModal()">Cancelar</button>
                 <button class="btn-action btn-primary" id="btnSalvar">Criar Cronograma</button>
             </div>
+
         </div>
     </div>
 
@@ -342,20 +391,141 @@
     let editingDocId = null;
     let currentBoardStart = new Date(); 
     let allTasksCache = []; 
+    let isUploadingImage = false; 
 
+    // --- CONFIGURAÇÃO QUILL ---
     const quill = new Quill('#quill-editor', {
         theme: 'snow',
         placeholder: 'Cole seu conteúdo aqui...',
         modules: {
-            toolbar: [
-                [{ 'header': [1, 2, false] }],
-                ['bold', 'italic', 'underline'],
-                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                ['blockquote', 'code-block'],
-                ['clean']
-            ]
+            toolbar: {
+                container: [
+                    [{ 'header': [1, 2, 3, false] }], 
+                    ['bold', 'italic', 'underline', 'strike'], 
+                    [{ 'color': [] }, { 'background': [] }], 
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }], 
+                    [{ 'align': [] }], 
+                    ['blockquote', 'code-block'],
+                    ['image', 'video'], 
+                    ['clean']
+                ],
+                handlers: {
+                    'image': imageHandler
+                }
+            }
         }
     });
+
+    // Handler de vídeo
+    quill.getModule('toolbar').addHandler('video', () => {
+        const url = prompt("Cole o link do YouTube:");
+        if (!url) return;
+        let embedUrl = url;
+        if (url.includes('youtube.com/watch')) {
+            const id = new URL(url).searchParams.get('v');
+            embedUrl = `https://www.youtube.com/embed/${id}`;
+        } else if (url.includes('youtu.be/')) {
+            const id = url.split('/').pop();
+            embedUrl = `https://www.youtube.com/embed/${id}`;
+        }
+        const range = quill.getSelection(true) || { index: quill.getLength() };
+        quill.insertText(range.index, '\n', 'user');
+        quill.insertEmbed(range.index + 1, 'video', embedUrl, 'user');
+        quill.insertText(range.index + 2, '\n\n', 'user');
+        quill.setSelection(range.index + 3, 0);
+    });
+
+    // ⛔ BLOQUEAR BASE64
+    quill.clipboard.addMatcher('IMG', function(node, delta) {
+        const src = node.getAttribute('src');
+        if (src && src.startsWith('data:')) {
+            alert("⚠️ Por favor, use o botão de imagem para enviar fotos.");
+            return { ops: [] };
+        }
+        return delta;
+    });
+
+    // 🔒 CORREÇÃO TOOLBAR
+    quill.on('editor-change', (eventName) => {
+        if (eventName === 'text-change') {
+            const range = quill.getSelection();
+            if (!range && document.activeElement === quill.root) {
+            }
+        }
+    });
+
+    // --- LÓGICA DE MAXIMIZAR/MINIMIZAR ---
+    const modalEditorContent = document.querySelector('#modalEditor .modal-content');
+    const btnExpand = document.getElementById('btnToggleEditor');
+    const btnCompress = document.getElementById('btnCloseEditor');
+
+    btnExpand.onclick = () => {
+        modalEditorContent.classList.add('editor-max');
+        btnExpand.style.display = 'none';
+        btnCompress.style.display = 'inline-flex';
+        setTimeout(() => quill.focus(), 100);
+    };
+
+    btnCompress.onclick = () => {
+        modalEditorContent.classList.remove('editor-max');
+        btnCompress.style.display = 'none';
+        btnExpand.style.display = 'inline-flex';
+        setTimeout(() => quill.focus(), 100);
+    };
+
+    // --- LIGHTBOX ---
+    document.addEventListener('click', (e) => {
+        if (e.target.tagName === 'IMG' && e.target.closest('.ql-editor')) {
+            const modal = document.getElementById('imageModal');
+            const img = document.getElementById('imageModalImg');
+            img.src = e.target.src;
+            modal.style.display = 'flex';
+        }
+    });
+    window.closeImageModal = () => {
+        document.getElementById('imageModal').style.display = 'none';
+    };
+
+    // Função de upload segura
+    async function imageHandler() {
+        if (isUploadingImage) return; 
+        if (!currentUID) { alert("Usuário não autenticado"); return; }
+        
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.click();
+
+        input.onchange = async () => {
+            const file = input.files[0];
+            if (!file) return;
+            
+            isUploadingImage = true;
+            showFeedback("Enviando imagem...", true);
+
+            try {
+                const range = quill.getSelection(true) || { index: quill.getLength() };
+                const imgRef = ref(storage, `planners/${currentUID}/editor_images/${Date.now()}_${file.name}`);
+                await uploadBytes(imgRef, file);
+                const url = await getDownloadURL(imgRef);
+
+                quill.insertText(range.index, '\n', 'user'); 
+                quill.insertEmbed(range.index + 1, 'image', url, 'user'); 
+                quill.insertText(range.index + 2, '\n\n', 'user');
+                quill.setSelection(range.index + 3, 0, 'silent'); 
+                
+                showFeedback("Imagem inserida", false);
+
+            } catch (e) {
+                console.error(e);
+                alert("Erro ao inserir imagem");
+                showFeedback("Erro no upload", false);
+            } finally {
+                isUploadingImage = false; 
+            }
+        };
+    }
+    // ------------------------------------------------
 
     onAuthStateChanged(auth, (user) => {
         if (!user) { window.location.href = "login.html"; return; }
@@ -431,7 +601,6 @@
         
         if (bar && text) {
             bar.style.width = `${pct}%`;
-            // Exibição em FRAÇÃO conforme pedido (8/9)
             text.textContent = `${data.done}/${data.total}`;
             
             if (pct === 100 && data.total > 0) {
@@ -629,35 +798,63 @@
     document.getElementById('btnSalvar').onclick = async () => {
         const title = document.getElementById('subjectTitle').value;
         const tag = document.getElementById('subjectTag').value || "Geral";
-        const content = quill.root.innerHTML;
+        
         if (!title) return alert("Título obrigatório");
-        fecharModal();
-        showFeedback("Salvando...", true);
 
-        const now = new Date();
-        const d0 = now.getTime();
-        const d1 = new Date(now).setDate(now.getDate() + 1);
-        const d7 = new Date(now).setDate(now.getDate() + 7);
-        const d21 = new Date(now).setDate(now.getDate() + 21);
-
-        const ciclos = [
-            { n: `[REC] ${title}`, t: d0 }, { n: `[D+1] ${title}`, t: d1 },
-            { n: `[D+7] ${title}`, t: d7 }, { n: `[D+21] ${title}`, t: d21 }
-        ];
-
-        await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
-            nome: title, content: content, tag: tag.toUpperCase(), data: d0, tipo: 'texto' 
-        });
-
-        for (const c of ciclos) {
-            await addDoc(collection(db, "planners", currentUID, "tasks"), {
-                titulo: c.n, tag: tag.toUpperCase(), content: content, 
-                targetDate: c.t, concluido: false, criadoEm: serverTimestamp(), tipo: 'texto'
-            });
+        let contentHTML = quill.root.innerHTML;
+        if (contentHTML.includes('src="data:image')) {
+             alert("Algumas imagens foram coladas indevidamente e serão removidas para garantir o salvamento.");
+             contentHTML = contentHTML.replace(/<img[^>]+src="data:image[^">]+"[^>]*>/gi, '');
         }
-        showFeedback("Salvo!", false);
-        loadDataAndInit();
-        carregarBiblioteca();
+        
+        try {
+            showFeedback("Salvando...", true); 
+
+            const now = new Date();
+            const d0 = now.getTime();
+            const d1 = new Date(now).setDate(now.getDate() + 1);
+            const d7 = new Date(now).setDate(now.getDate() + 7);
+            const d21 = new Date(now).setDate(now.getDate() + 21);
+
+            const ciclos = [
+                { n: `[REC] ${title}`, t: d0 }, { n: `[D+1] ${title}`, t: d1 },
+                { n: `[D+7] ${title}`, t: d7 }, { n: `[D+21] ${title}`, t: d21 }
+            ];
+
+            await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
+                nome: title, 
+                contentHTML: contentHTML, 
+                tag: tag.toUpperCase(), 
+                data: d0, 
+                tipo: 'texto' 
+            });
+
+            for (const c of ciclos) {
+                await addDoc(collection(db, "planners", currentUID, "tasks"), {
+                    titulo: c.n, 
+                    tag: tag.toUpperCase(), 
+                    contentHTML: contentHTML,
+                    targetDate: c.t, 
+                    concluido: false, 
+                    criadoEm: serverTimestamp(), 
+                    tipo: 'texto'
+                });
+            }
+
+            showFeedback("Salvo!", false);
+            modalEditorContent.classList.remove('editor-max');
+            btnCompress.style.display = 'none';
+            btnExpand.style.display = 'inline-flex';
+            
+            fecharModal(); 
+            loadDataAndInit();
+            carregarBiblioteca();
+
+        } catch (e) {
+            console.error(e);
+            showFeedback("Erro ao salvar", false);
+            alert("Erro ao salvar o conteúdo. Verifique o tamanho das imagens.");
+        }
     };
 
     async function carregarBiblioteca() {
@@ -684,6 +881,21 @@
         });
     }
 
+    function renderQuillContent(container, data) {
+        container.innerHTML = ''; 
+        const viewerDiv = document.createElement('div');
+        viewerDiv.id = 'viewer-container'; 
+        viewerDiv.style.height = '100%';
+        container.appendChild(viewerDiv);
+
+        const viewer = new Quill(viewerDiv, {
+            theme: 'snow',
+            readOnly: true,
+            modules: { toolbar: false } 
+        });
+        viewer.clipboard.dangerouslyPasteHTML(data.contentHTML || "");
+    }
+
     window.abrirArquivoBiblioteca = (fileData) => {
         const container = document.getElementById('viewContainer');
         const btnEdit = document.getElementById('btnEditarNota');
@@ -698,8 +910,8 @@
             initPDF(fileData.url);
         } else {
             document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-alt" style="color:#2383e2; font-size:20px;"></i>';
-            btnEdit.style.display = 'none';
-            container.innerHTML = `<div class="ql-editor" style="padding:40px; overflow-y:auto;">${fileData.content}</div>`;
+            btnEdit.style.display = 'none'; 
+            renderQuillContent(container, fileData);
         }
     };
 
@@ -724,7 +936,7 @@
         } else {
             document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-alt" style="color:#2383e2; font-size:20px;"></i>';
             btnEdit.style.display = 'block';
-            container.innerHTML = `<div class="ql-editor" style="padding:40px; overflow-y:auto;">${data.content}</div>`;
+            renderQuillContent(container, data);
         }
     };
 
@@ -761,7 +973,12 @@
     };
     window.fecharModal = () => document.getElementById('modalEditor').style.display = 'none';
     window.fecharModalView = () => document.getElementById('modalView').style.display = 'none';
-    document.getElementById('btnNovoAssunto').onclick = () => document.getElementById('modalEditor').style.display = 'flex';
+    
+    document.getElementById('btnNovoAssunto').onclick = () => { 
+        document.getElementById('modalEditor').style.display = 'flex';
+        setTimeout(() => quill.focus(), 100); 
+    };
+    
     document.getElementById('navBoard').onclick = () => { document.getElementById('secBoard').classList.remove('hidden'); document.getElementById('secLib').classList.add('hidden'); document.getElementById('navBoard').classList.add('active'); document.getElementById('navLib').classList.remove('active'); };
     document.getElementById('navLib').onclick = () => { document.getElementById('secBoard').classList.add('hidden'); document.getElementById('secLib').classList.remove('hidden'); document.getElementById('navBoard').classList.remove('active'); document.getElementById('navLib').classList.add('active'); carregarBiblioteca(); };
 </script>
