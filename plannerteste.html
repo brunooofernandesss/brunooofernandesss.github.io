@@ -182,7 +182,7 @@
         #secBoard { overflow-x: auto; overflow-y: hidden; }
         #secLib { height: 100%; overflow-y: auto; }
         
-        /* Ajuste para o viewer de Delta */
+        /* Ajuste para o viewer */
         #viewer-container { border: none !important; }
         #viewer-container .ql-container.ql-snow { border: none !important; }
     </style>
@@ -368,11 +368,11 @@
         }
     });
 
-    // Função de upload segura (Anti-loop)
-    function imageHandler() {
+    // Função de upload segura e com feedback
+    async function imageHandler() {
         if (isUploadingImage) return; 
-        isUploadingImage = true;
-
+        if (!currentUID) { alert("Usuário não autenticado"); return; }
+        
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
@@ -380,32 +380,27 @@
 
         input.onchange = async () => {
             const file = input.files[0];
-            if (!file) {
-                isUploadingImage = false;
-                return;
-            }
-            if (!currentUID) {
-                alert("Usuário não identificado.");
-                isUploadingImage = false;
-                return;
-            }
-
-            const range = quill.getSelection(true) || { index: quill.getLength() };
+            if (!file) return;
             
+            isUploadingImage = true;
+            showFeedback("Enviando imagem...", true);
+
             try {
+                const range = quill.getSelection(true) || { index: quill.getLength() };
                 const imgRef = ref(storage, `planners/${currentUID}/editor_images/${Date.now()}_${file.name}`);
                 await uploadBytes(imgRef, file);
                 const url = await getDownloadURL(imgRef);
 
-                // Insere direto a imagem no ponto do cursor
+                // Insere direto a imagem
                 quill.insertEmbed(range.index, 'image', url);
+                quill.setSelection(range.index + 1);
                 
-                // Move o cursor para DEPOIS da imagem
-                quill.setSelection(range.index + 1, 0);
+                showFeedback("Imagem inserida", false);
 
-            } catch (err) {
-                console.error(err);
-                alert("Erro ao enviar imagem.");
+            } catch (e) {
+                console.error(e);
+                alert("Erro ao inserir imagem");
+                showFeedback("Erro no upload", false);
             } finally {
                 isUploadingImage = false; 
             }
@@ -688,13 +683,11 @@
         
         if (!title) return alert("Título obrigatório");
 
-        // 1. CAPTURA O CONTEÚDO ANTES DE FECHAR O MODAL
+        // ✅ SALVAMOS APENAS HTML (MAIS SEGURO)
         const contentHTML = quill.root.innerHTML;
-        const contentDelta = quill.getContents(); // ✅ AGORA É UM OBJETO PURO, SEM STRINGIFY
         
         try {
             showFeedback("Salvando...", true); 
-            // ❌ REMOVIDO FECHAR MODAL DAQUI (isso quebrava tudo)
 
             const now = new Date();
             const d0 = now.getTime();
@@ -710,9 +703,7 @@
             // Arquivos
             await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
                 nome: title, 
-                content: contentHTML, 
                 contentHTML: contentHTML, 
-                contentDelta: contentDelta, // Gravando como objeto
                 tag: tag.toUpperCase(), 
                 data: d0, 
                 tipo: 'texto' 
@@ -723,9 +714,7 @@
                 await addDoc(collection(db, "planners", currentUID, "tasks"), {
                     titulo: c.n, 
                     tag: tag.toUpperCase(), 
-                    content: contentHTML,
                     contentHTML: contentHTML,
-                    contentDelta: contentDelta, // Gravando como objeto
                     targetDate: c.t, 
                     concluido: false, 
                     criadoEm: serverTimestamp(), 
@@ -734,7 +723,7 @@
             }
 
             showFeedback("Salvo!", false);
-            fecharModal(); // ✅ SÓ FECHA AGORA QUE DEU CERTO
+            fecharModal(); 
             loadDataAndInit();
             carregarBiblioteca();
 
@@ -769,38 +758,23 @@
         });
     }
 
-    // --- NOVA FUNÇÃO DE VISUALIZAÇÃO COM QUILL READ-ONLY ---
+    // --- NOVA FUNÇÃO DE VISUALIZAÇÃO SIMPLIFICADA (BLINDADA) ---
     function renderQuillContent(container, data) {
-        container.innerHTML = ''; // Limpa
+        container.innerHTML = ''; 
         
-        // Cria um elemento limpo para o Quill
         const viewerDiv = document.createElement('div');
         viewerDiv.id = 'viewer-container'; 
         viewerDiv.style.height = '100%';
         container.appendChild(viewerDiv);
 
-        // Instancia Quill em modo leitura
         const viewer = new Quill(viewerDiv, {
             theme: 'snow',
             readOnly: true,
-            modules: { toolbar: false } // Sem barra de ferramentas
+            modules: { toolbar: false } 
         });
 
-        // Tenta usar Delta (preferencial), senão HTML
-        if (data.contentDelta) {
-            try {
-                let delta = data.contentDelta;
-                // Se veio como string do Firestore (legado), faz parse. Se for objeto, usa direto.
-                if (typeof delta === 'string') delta = JSON.parse(delta);
-                viewer.setContents(delta);
-            } catch (e) {
-                console.error("Erro ao carregar Delta, usando HTML", e);
-                viewer.clipboard.dangerouslyPasteHTML(data.contentHTML || data.content || "");
-            }
-        } else {
-            // Legado
-            viewer.clipboard.dangerouslyPasteHTML(data.contentHTML || data.content || "");
-        }
+        // Simplesmente cola o HTML. Infalível.
+        viewer.clipboard.dangerouslyPasteHTML(data.contentHTML || "");
     }
 
     window.abrirArquivoBiblioteca = (fileData) => {
