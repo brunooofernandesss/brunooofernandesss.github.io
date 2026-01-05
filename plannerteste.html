@@ -259,8 +259,12 @@
                 <button class="btn-action" onclick="fecharModalView()"><i class="fas fa-times"></i></button>
             </div>
             <div id="viewContainer" style="flex:1; overflow:hidden; display:flex; flex-direction:column;"></div>
+            
             <div style="padding: 15px; border-top: 1px solid #eee; display:flex; justify-content: space-between;">
                  <button class="btn-action" id="btnEditarNota">Editar Texto</button>
+                 <button class="btn-action" id="btnExcluirEstudo" style="color:#d44c47; border-color: #ffe2dd; background: #fff5f5;">
+                    <i class="fas fa-trash"></i> Excluir Estudo
+                 </button>
             </div>
         </div>
     </div>
@@ -366,7 +370,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
     const firebaseConfig = {
@@ -794,7 +798,7 @@
     document.getElementById('btnSalvar').onclick = async () => {
         const title = document.getElementById('subjectTitle').value;
         const tag = document.getElementById('subjectTag').value || "Geral";
-        const isEditing = editingDocId !== null; // Verifica se é edição
+        const isEditing = editingDocId !== null; 
 
         if (!title) return alert("Título obrigatório");
 
@@ -808,7 +812,6 @@
             showFeedback("Salvando...", true); 
 
             if (isEditing) {
-                // --- MODO EDIÇÃO ---
                 await updateDoc(doc(db, "planners", currentUID, "tasks", editingDocId), {
                     titulo: title.includes('[REC]') ? title : `[REC] ${title}`,
                     tag: tag.toUpperCase(),
@@ -816,7 +819,6 @@
                 });
                 showFeedback("Atualizado!", false);
             } else {
-                // --- MODO CRIAÇÃO ---
                 const now = new Date();
                 const d0 = now.getTime();
                 const d1 = new Date(now).setDate(now.getDate() + 1);
@@ -861,7 +863,7 @@
         } catch (e) {
             console.error(e);
             showFeedback("Erro ao salvar", false);
-            alert("Erro ao salvar o conteúdo. Verifique sua conexão.");
+            alert("Erro ao salvar o conteúdo.");
         }
     };
 
@@ -907,6 +909,8 @@
     window.abrirArquivoBiblioteca = (fileData) => {
         const container = document.getElementById('viewContainer');
         const btnEdit = document.getElementById('btnEditarNota');
+        const btnExcluir = document.getElementById('btnExcluirEstudo');
+        
         document.getElementById('viewTitle').textContent = fileData.nome;
         document.getElementById('viewTagDisplay').textContent = fileData.tag;
         document.getElementById('modalView').style.display = 'flex';
@@ -914,11 +918,13 @@
         if (fileData.tipo === 'pdf') {
             document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-pdf" style="color:#d44c47; font-size:20px;"></i>';
             btnEdit.style.display = 'none';
+            btnExcluir.style.display = 'block'; // PDF pode excluir
             container.innerHTML = `<div style="background:#333; padding:10px; display:flex; justify-content:center; gap:20px; color:white;"><button class="btn-action" onclick="window.prevPage()">◀</button><span>Pg <span id="page_num">1</span> / <span id="page_count">--</span></span><button class="btn-action" onclick="window.nextPage()">▶</button></div><div id="pdfContainer"><canvas id="the-canvas"></canvas></div>`;
             initPDF(fileData.url);
         } else {
             document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-alt" style="color:#2383e2; font-size:20px;"></i>';
             btnEdit.style.display = 'none'; 
+            btnExcluir.style.display = 'block'; // Texto pode excluir
             renderQuillContent(container, fileData);
         }
     };
@@ -934,22 +940,26 @@
         document.getElementById('viewTagDisplay').textContent = data.tag;
         const container = document.getElementById('viewContainer');
         const btnEdit = document.getElementById('btnEditarNota');
+        const btnExcluir = document.getElementById('btnExcluirEstudo');
+        
         document.getElementById('modalView').style.display = 'flex';
+        editingDocId = id; // SALVA O ID
 
         if (data.pdfUrl) {
             document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-pdf" style="color:#d44c47; font-size:20px;"></i>';
             btnEdit.style.display = 'none';
+            btnExcluir.style.display = 'block';
             container.innerHTML = `<div style="background:#333; padding:10px; display:flex; justify-content:center; gap:20px; color:white;"><button class="btn-action" onclick="window.prevPage()">◀</button><span>Pg <span id="page_num">1</span> / <span id="page_count">--</span></span><button class="btn-action" onclick="window.nextPage()">▶</button></div><div id="pdfContainer"><canvas id="the-canvas"></canvas></div>`;
             initPDF(data.pdfUrl);
         } else {
             document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-alt" style="color:#2383e2; font-size:20px;"></i>';
             btnEdit.style.display = 'block';
-            editingDocId = id; // SALVA O ID PARA EDIÇÃO
+            btnExcluir.style.display = 'block';
             renderQuillContent(container, data);
         }
     };
 
-    // --- FUNÇÃO DO BOTÃO EDITAR (CORRIGIDA) ---
+    // --- FUNÇÃO DO BOTÃO EDITAR ---
     document.getElementById('btnEditarNota').onclick = async () => {
         if (!editingDocId) return;
         const refDoc = doc(db, "planners", currentUID, "tasks", editingDocId);
@@ -957,18 +967,66 @@
         if (!snap.exists()) return alert("Documento não encontrado");
         
         const data = snap.data();
-        
-        // Preenche o editor
         document.getElementById('subjectTitle').value = data.titulo.replace(/\[.*?\]/, '').trim();
         document.getElementById('subjectTag').value = data.tag || '';
         quill.clipboard.dangerouslyPasteHTML(data.contentHTML || '');
-        
-        // Ajusta UI
         document.getElementById('btnSalvar').textContent = "Salvar Alterações";
         document.getElementById('modalView').style.display = 'none';
         document.getElementById('modalEditor').style.display = 'flex';
-        
         setTimeout(() => quill.focus(), 100);
+    };
+
+    // --- FUNÇÃO DO BOTÃO EXCLUIR ESTUDO ---
+    document.getElementById('btnExcluirEstudo').onclick = async () => {
+        if (!editingDocId) return;
+        const confirmacao = confirm("⚠️ Tem certeza?\n\nIsso excluirá o estudo e TODAS as revisões associadas (REC, D+1, D+7, etc).");
+        if (!confirmacao) return;
+
+        try {
+            showFeedback("Excluindo estudo...", true);
+            
+            // 1. Pega os dados do documento atual para saber o título base
+            const refDoc = doc(db, "planners", currentUID, "tasks", editingDocId);
+            const snap = await getDoc(refDoc);
+            if (!snap.exists()) throw "Documento não encontrado";
+            
+            const data = snap.data();
+            const baseTitle = data.titulo.replace(/\[.*?\]/, '').trim(); // Remove prefixos
+
+            // 2. Apagar TODAS as tasks com esse título base
+            const q = query(collection(db, "planners", currentUID, "tasks"));
+            const all = await getDocs(q);
+            const deletions = [];
+            
+            all.forEach(d => {
+                const t = d.data();
+                const tBase = t.titulo.replace(/\[.*?\]/, '').trim();
+                if (tBase === baseTitle) {
+                    deletions.push(deleteDoc(d.ref));
+                }
+            });
+            await Promise.all(deletions);
+
+            // 3. Apagar da biblioteca (texto)
+            const qLib = query(collection(db, "planners", currentUID, "arquivos"));
+            const libSnap = await getDocs(qLib);
+            libSnap.forEach(d => {
+                if (d.data().nome === baseTitle) {
+                    deleteDoc(d.ref);
+                }
+            });
+
+            showFeedback("Estudo excluído", false);
+            editingDocId = null;
+            fecharModalView();
+            loadDataAndInit();
+            carregarBiblioteca();
+
+        } catch (e) {
+            console.error(e);
+            showFeedback("Erro ao excluir", false);
+            alert("Erro ao excluir o estudo.");
+        }
     };
 
     let pdfDoc = null, pageNum = 1, pageRendering = false, pageNumPending = null, canvas, ctx;
@@ -1007,10 +1065,10 @@
     
     // --- RESET NOVO ESTUDO ---
     document.getElementById('btnNovoAssunto').onclick = () => { 
-        editingDocId = null; // Limpa ID de edição
+        editingDocId = null; 
         document.getElementById('subjectTitle').value = '';
         document.getElementById('subjectTag').value = '';
-        quill.setText(''); // Limpa editor
+        quill.setText(''); 
         document.getElementById('btnSalvar').textContent = "Criar Cronograma";
         
         document.getElementById('modalEditor').style.display = 'flex';
