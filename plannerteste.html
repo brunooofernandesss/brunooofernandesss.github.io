@@ -103,6 +103,11 @@
         .card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.08); border-color: #d0d0d0; }
         .card-top { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
         
+        /* --- ESTILO DE ATRASO (NOVO) --- */
+        .card.atrasada { border-left: 5px solid #d44c47; background: #fff5f5; } 
+        .card.atrasada .card-title { color: #b42318; font-weight: 600; } 
+        .atraso-badge { display: inline-flex; align-items: center; gap: 4px; background: #ffe2dd; color: #d44c47; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 12px; margin-left: 8px; }
+
         .custom-checkbox { appearance: none; width: 18px; height: 18px; border: 2px solid #d0d0d0; border-radius: 4px; cursor: pointer; flex-shrink: 0; margin-top: 2px; position: relative; }
         .custom-checkbox:checked { background: var(--text-green); border-color: var(--text-green); }
         .custom-checkbox:checked::after { content: '✓'; color: white; position: absolute; top: -2px; left: 3px; font-size: 12px; font-weight: bold; }
@@ -111,7 +116,7 @@
         .card.completed .card-title { text-decoration: line-through; color: #a0a0a0; }
         .card.completed { background: #f9f9f9; opacity: 0.8; }
         .tag-pill { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: var(--tag-blue); color: var(--text-blue); display: inline-flex; align-items: center; }
-        .card-meta { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 11px; color: var(--text-secondary); }
+        .card-meta { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 11px; color: var(--text-secondary); flex-wrap: wrap;}
 
         /* UI Elements */
         .week-selector-wrapper { display: flex; align-items: center; gap: 8px; position: relative; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: 0.2s; }
@@ -716,8 +721,13 @@
             const colIndex = columns.findIndex(col => isSameDay(col.date, taskDate));
             
             if (colIndex !== -1) {
+                // --- LÓGICA DE ATRASO ---
+                const hoje = new Date(); hoje.setHours(0,0,0,0);
+                const dataTask = new Date(t.targetDate); dataTask.setHours(0,0,0,0);
+                const atrasada = !t.concluido && dataTask < hoje;
+
                 const card = document.createElement('div');
-                card.className = `card ${t.concluido ? 'completed' : ''}`;
+                card.className = `card ${t.concluido ? 'completed' : ''} ${atrasada ? 'atrasada' : ''}`;
                 card.onclick = (e) => {
                     if(e.target.classList.contains('custom-checkbox')) return;
                     abrirItem(t.id);
@@ -743,7 +753,10 @@
                             </div>
                         </div>
                     </div>
-                    <div class="card-meta"><span class="meta-item">${icon} ${labelRevisao}</span></div>
+                    <div class="card-meta">
+                        <span class="meta-item">${icon} ${labelRevisao}</span>
+                        ${atrasada ? `<span class="atraso-badge"><i class="fas fa-exclamation-circle"></i> Atrasado</span>` : ''}
+                    </div>
                 `;
                 columns[colIndex].element.appendChild(card);
             }
@@ -918,13 +931,13 @@
         if (fileData.tipo === 'pdf') {
             document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-pdf" style="color:#d44c47; font-size:20px;"></i>';
             btnEdit.style.display = 'none';
-            btnExcluir.style.display = 'block'; // PDF pode excluir
+            btnExcluir.style.display = 'block'; 
             container.innerHTML = `<div style="background:#333; padding:10px; display:flex; justify-content:center; gap:20px; color:white;"><button class="btn-action" onclick="window.prevPage()">◀</button><span>Pg <span id="page_num">1</span> / <span id="page_count">--</span></span><button class="btn-action" onclick="window.nextPage()">▶</button></div><div id="pdfContainer"><canvas id="the-canvas"></canvas></div>`;
             initPDF(fileData.url);
         } else {
             document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-alt" style="color:#2383e2; font-size:20px;"></i>';
             btnEdit.style.display = 'none'; 
-            btnExcluir.style.display = 'block'; // Texto pode excluir
+            btnExcluir.style.display = 'block'; 
             renderQuillContent(container, fileData);
         }
     };
@@ -943,7 +956,7 @@
         const btnExcluir = document.getElementById('btnExcluirEstudo');
         
         document.getElementById('modalView').style.display = 'flex';
-        editingDocId = id; // SALVA O ID
+        editingDocId = id; 
 
         if (data.pdfUrl) {
             document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-pdf" style="color:#d44c47; font-size:20px;"></i>';
@@ -985,15 +998,13 @@
         try {
             showFeedback("Excluindo estudo...", true);
             
-            // 1. Pega os dados do documento atual para saber o título base
             const refDoc = doc(db, "planners", currentUID, "tasks", editingDocId);
             const snap = await getDoc(refDoc);
             if (!snap.exists()) throw "Documento não encontrado";
             
             const data = snap.data();
-            const baseTitle = data.titulo.replace(/\[.*?\]/, '').trim(); // Remove prefixos
+            const baseTitle = data.titulo.replace(/\[.*?\]/, '').trim(); 
 
-            // 2. Apagar TODAS as tasks com esse título base
             const q = query(collection(db, "planners", currentUID, "tasks"));
             const all = await getDocs(q);
             const deletions = [];
@@ -1007,7 +1018,6 @@
             });
             await Promise.all(deletions);
 
-            // 3. Apagar da biblioteca (texto)
             const qLib = query(collection(db, "planners", currentUID, "arquivos"));
             const libSnap = await getDocs(qLib);
             libSnap.forEach(d => {
