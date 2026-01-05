@@ -686,54 +686,63 @@
         const title = document.getElementById('subjectTitle').value;
         const tag = document.getElementById('subjectTag').value || "Geral";
         
-        // --- NOVO: SALVANDO HTML + DELTA PARA SEGURANÇA ---
-        const contentHTML = quill.root.innerHTML;
-        const contentDelta = JSON.stringify(quill.getContents());
-        // --------------------------------------------------
-
         if (!title) return alert("Título obrigatório");
-        fecharModal();
-        showFeedback("Salvando...", true);
 
-        const now = new Date();
-        const d0 = now.getTime();
-        const d1 = new Date(now).setDate(now.getDate() + 1);
-        const d7 = new Date(now).setDate(now.getDate() + 7);
-        const d21 = new Date(now).setDate(now.getDate() + 21);
+        // 1. CAPTURA O CONTEÚDO ANTES DE FECHAR O MODAL
+        const contentHTML = quill.root.innerHTML;
+        const contentDelta = quill.getContents(); // ✅ AGORA É UM OBJETO PURO, SEM STRINGIFY
+        
+        try {
+            showFeedback("Salvando...", true); 
+            // ❌ REMOVIDO FECHAR MODAL DAQUI (isso quebrava tudo)
 
-        const ciclos = [
-            { n: `[REC] ${title}`, t: d0 }, { n: `[D+1] ${title}`, t: d1 },
-            { n: `[D+7] ${title}`, t: d7 }, { n: `[D+21] ${title}`, t: d21 }
-        ];
+            const now = new Date();
+            const d0 = now.getTime();
+            const d1 = new Date(now).setDate(now.getDate() + 1);
+            const d7 = new Date(now).setDate(now.getDate() + 7);
+            const d21 = new Date(now).setDate(now.getDate() + 21);
 
-        // Arquivos
-        await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
-            nome: title, 
-            content: contentHTML, 
-            contentHTML: contentHTML, // Redundância para garantir
-            contentDelta: contentDelta, // Ouro
-            tag: tag.toUpperCase(), 
-            data: d0, 
-            tipo: 'texto' 
-        });
+            const ciclos = [
+                { n: `[REC] ${title}`, t: d0 }, { n: `[D+1] ${title}`, t: d1 },
+                { n: `[D+7] ${title}`, t: d7 }, { n: `[D+21] ${title}`, t: d21 }
+            ];
 
-        // Tasks
-        for (const c of ciclos) {
-            await addDoc(collection(db, "planners", currentUID, "tasks"), {
-                titulo: c.n, 
+            // Arquivos
+            await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
+                nome: title, 
+                content: contentHTML, 
+                contentHTML: contentHTML, 
+                contentDelta: contentDelta, // Gravando como objeto
                 tag: tag.toUpperCase(), 
-                content: contentHTML,
-                contentHTML: contentHTML,
-                contentDelta: contentDelta,
-                targetDate: c.t, 
-                concluido: false, 
-                criadoEm: serverTimestamp(), 
-                tipo: 'texto'
+                data: d0, 
+                tipo: 'texto' 
             });
+
+            // Tasks
+            for (const c of ciclos) {
+                await addDoc(collection(db, "planners", currentUID, "tasks"), {
+                    titulo: c.n, 
+                    tag: tag.toUpperCase(), 
+                    content: contentHTML,
+                    contentHTML: contentHTML,
+                    contentDelta: contentDelta, // Gravando como objeto
+                    targetDate: c.t, 
+                    concluido: false, 
+                    criadoEm: serverTimestamp(), 
+                    tipo: 'texto'
+                });
+            }
+
+            showFeedback("Salvo!", false);
+            fecharModal(); // ✅ SÓ FECHA AGORA QUE DEU CERTO
+            loadDataAndInit();
+            carregarBiblioteca();
+
+        } catch (e) {
+            console.error(e);
+            showFeedback("Erro ao salvar", false);
+            alert("Erro ao salvar o conteúdo.");
         }
-        showFeedback("Salvo!", false);
-        loadDataAndInit();
-        carregarBiblioteca();
     };
 
     async function carregarBiblioteca() {
@@ -781,7 +790,7 @@
         if (data.contentDelta) {
             try {
                 let delta = data.contentDelta;
-                // Se veio como string do Firestore
+                // Se veio como string do Firestore (legado), faz parse. Se for objeto, usa direto.
                 if (typeof delta === 'string') delta = JSON.parse(delta);
                 viewer.setContents(delta);
             } catch (e) {
