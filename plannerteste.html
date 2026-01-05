@@ -181,6 +181,10 @@
         .hidden { display: none !important; }
         #secBoard { overflow-x: auto; overflow-y: hidden; }
         #secLib { height: 100%; overflow-y: auto; }
+        
+        /* Ajuste para o viewer de Delta */
+        #viewer-container { border: none !important; }
+        #viewer-container .ql-container.ql-snow { border: none !important; }
     </style>
 </head>
 <body>
@@ -341,7 +345,7 @@
     let editingDocId = null;
     let currentBoardStart = new Date(); 
     let allTasksCache = []; 
-    let isUploadingImage = false; // TRAVA DE SEGURANÇA PARA UPLOAD
+    let isUploadingImage = false; 
 
     // --- CONFIGURAÇÃO QUILL COM SUPORTE A IMAGENS ---
     const quill = new Quill('#quill-editor', {
@@ -364,9 +368,9 @@
         }
     });
 
-    // Função de upload SIMPLIFICADA E SEGURA
+    // Função de upload segura (Anti-loop)
     function imageHandler() {
-        if (isUploadingImage) return; // 🔒 trava anti-duplicação
+        if (isUploadingImage) return; 
         isUploadingImage = true;
 
         const input = document.createElement('input');
@@ -386,11 +390,7 @@
                 return;
             }
 
-            // Pega seleção atual ou fim do documento
             const range = quill.getSelection(true) || { index: quill.getLength() };
-
-            // NÃO INSERE TEXTO PLACEHOLDER (Isso causava o bug)
-            // Apenas bloqueia novos uploads e processa
             
             try {
                 const imgRef = ref(storage, `planners/${currentUID}/editor_images/${Date.now()}_${file.name}`);
@@ -407,7 +407,7 @@
                 console.error(err);
                 alert("Erro ao enviar imagem.");
             } finally {
-                isUploadingImage = false; // 🔓 libera a trava
+                isUploadingImage = false; 
             }
         };
     }
@@ -685,7 +685,12 @@
     document.getElementById('btnSalvar').onclick = async () => {
         const title = document.getElementById('subjectTitle').value;
         const tag = document.getElementById('subjectTag').value || "Geral";
-        const content = quill.root.innerHTML;
+        
+        // --- NOVO: SALVANDO HTML + DELTA PARA SEGURANÇA ---
+        const contentHTML = quill.root.innerHTML;
+        const contentDelta = JSON.stringify(quill.getContents());
+        // --------------------------------------------------
+
         if (!title) return alert("Título obrigatório");
         fecharModal();
         showFeedback("Salvando...", true);
@@ -701,14 +706,29 @@
             { n: `[D+7] ${title}`, t: d7 }, { n: `[D+21] ${title}`, t: d21 }
         ];
 
+        // Arquivos
         await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
-            nome: title, content: content, tag: tag.toUpperCase(), data: d0, tipo: 'texto' 
+            nome: title, 
+            content: contentHTML, 
+            contentHTML: contentHTML, // Redundância para garantir
+            contentDelta: contentDelta, // Ouro
+            tag: tag.toUpperCase(), 
+            data: d0, 
+            tipo: 'texto' 
         });
 
+        // Tasks
         for (const c of ciclos) {
             await addDoc(collection(db, "planners", currentUID, "tasks"), {
-                titulo: c.n, tag: tag.toUpperCase(), content: content, 
-                targetDate: c.t, concluido: false, criadoEm: serverTimestamp(), tipo: 'texto'
+                titulo: c.n, 
+                tag: tag.toUpperCase(), 
+                content: contentHTML,
+                contentHTML: contentHTML,
+                contentDelta: contentDelta,
+                targetDate: c.t, 
+                concluido: false, 
+                criadoEm: serverTimestamp(), 
+                tipo: 'texto'
             });
         }
         showFeedback("Salvo!", false);
@@ -740,6 +760,40 @@
         });
     }
 
+    // --- NOVA FUNÇÃO DE VISUALIZAÇÃO COM QUILL READ-ONLY ---
+    function renderQuillContent(container, data) {
+        container.innerHTML = ''; // Limpa
+        
+        // Cria um elemento limpo para o Quill
+        const viewerDiv = document.createElement('div');
+        viewerDiv.id = 'viewer-container'; 
+        viewerDiv.style.height = '100%';
+        container.appendChild(viewerDiv);
+
+        // Instancia Quill em modo leitura
+        const viewer = new Quill(viewerDiv, {
+            theme: 'snow',
+            readOnly: true,
+            modules: { toolbar: false } // Sem barra de ferramentas
+        });
+
+        // Tenta usar Delta (preferencial), senão HTML
+        if (data.contentDelta) {
+            try {
+                let delta = data.contentDelta;
+                // Se veio como string do Firestore
+                if (typeof delta === 'string') delta = JSON.parse(delta);
+                viewer.setContents(delta);
+            } catch (e) {
+                console.error("Erro ao carregar Delta, usando HTML", e);
+                viewer.clipboard.dangerouslyPasteHTML(data.contentHTML || data.content || "");
+            }
+        } else {
+            // Legado
+            viewer.clipboard.dangerouslyPasteHTML(data.contentHTML || data.content || "");
+        }
+    }
+
     window.abrirArquivoBiblioteca = (fileData) => {
         const container = document.getElementById('viewContainer');
         const btnEdit = document.getElementById('btnEditarNota');
@@ -754,8 +808,8 @@
             initPDF(fileData.url);
         } else {
             document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-alt" style="color:#2383e2; font-size:20px;"></i>';
-            btnEdit.style.display = 'none';
-            container.innerHTML = `<div class="ql-editor" style="padding:40px; overflow-y:auto;">${fileData.content}</div>`;
+            btnEdit.style.display = 'none'; // Visualização apenas
+            renderQuillContent(container, fileData);
         }
     };
 
@@ -780,7 +834,7 @@
         } else {
             document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-alt" style="color:#2383e2; font-size:20px;"></i>';
             btnEdit.style.display = 'block';
-            container.innerHTML = `<div class="ql-editor" style="padding:40px; overflow-y:auto;">${data.content}</div>`;
+            renderQuillContent(container, data);
         }
     };
 
