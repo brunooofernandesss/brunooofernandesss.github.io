@@ -342,6 +342,7 @@
     let editingDocId = null;
     let currentBoardStart = new Date(); 
     let allTasksCache = []; 
+    let isUploadingImage = false; // TRAVA DE SEGURANÇA PARA UPLOAD
 
     // --- CONFIGURAÇÃO QUILL COM SUPORTE A IMAGENS ---
     const quill = new Quill('#quill-editor', {
@@ -364,39 +365,52 @@
         }
     });
 
-    // Função para fazer upload de imagem e inserir URL no editor
+    // Função de upload segura (Anti-loop Mobile)
     function imageHandler() {
+        if (isUploadingImage) return; // 🔒 trava anti-loop
+        isUploadingImage = true;
+
         const input = document.createElement('input');
-        input.setAttribute('type', 'file');
-        input.setAttribute('accept', 'image/*');
+        input.type = 'file';
+        input.accept = 'image/*';
         input.click();
 
         input.onchange = async () => {
             const file = input.files[0];
-            if (!file) return;
+            if (!file) {
+                isUploadingImage = false;
+                return;
+            }
             if (!currentUID) {
-                alert("Erro: Usuário não identificado. Faça login novamente.");
+                alert("Usuário não identificado.");
+                isUploadingImage = false;
                 return;
             }
 
-            const range = quill.getSelection(true);
+            const range = quill.getSelection(true) || { index: quill.getLength() };
             
-            // Texto temporário de loading
-            quill.insertText(range.index, 'Carregando imagem...', { 'color': '#999', 'italic': true });
+            // Placeholder visual
+            quill.insertText(range.index, '\n[Enviando imagem...]\n', { italic: true, color: '#999' });
 
             try {
-                // Upload para o Firebase Storage
-                const refImg = ref(storage, `planners/${currentUID}/editor_images/${Date.now()}_${file.name}`);
-                await uploadBytes(refImg, file);
-                const url = await getDownloadURL(refImg);
+                const imgRef = ref(storage, `planners/${currentUID}/editor_images/${Date.now()}_${file.name}`);
+                await uploadBytes(imgRef, file);
+                const url = await getDownloadURL(imgRef);
 
-                // Remove o texto e insere a imagem
-                quill.deleteText(range.index, 'Carregando imagem...'.length);
+                // Remove placeholder e ajusta
+                quill.deleteText(range.index, '[Enviando imagem...]'.length + 2);
+                
+                // Insere imagem
                 quill.insertEmbed(range.index, 'image', url);
-            } catch (error) {
-                console.error("Erro upload imagem:", error);
-                quill.deleteText(range.index, 'Carregando imagem...'.length);
-                alert("Falha ao enviar a imagem.");
+                
+                // 🔑 MOVE O CURSOR (Evita loop de foco)
+                quill.setSelection(range.index + 1);
+
+            } catch (err) {
+                console.error(err);
+                alert("Erro ao enviar imagem.");
+            } finally {
+                isUploadingImage = false; // 🔓 libera a trava
             }
         };
     }
