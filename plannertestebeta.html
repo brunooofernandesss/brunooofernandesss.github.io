@@ -440,9 +440,10 @@
         quill.setSelection(range.index + 3, 0);
     });
 
-            // --- VERSÃO 4.0: UNIFICAÇÃO TOTAL (HTML + MARKDOWN) ---
+               // --- VERSÃO 5.0: PROCESSAMENTO LINHA A LINHA (SEM CORTES) ---
     
     // 1. MATCHER PARA TABELAS HTML (Cópia com Mouse / Seleção)
+    // Mantemos este pois funciona perfeitamente para tabelas visuais
     quill.clipboard.addMatcher('TABLE', function(node, delta) {
         const NewDelta = Quill.import('delta');
         const novaDelta = new NewDelta();
@@ -462,84 +463,87 @@
                 });
                 novaDelta.insert(' | ', { color: '#ccc' });
             });
-            novaDelta.insert('\n'); // Quebra linha após cada linha da tabela
+            novaDelta.insert('\n');
         });
-        
         novaDelta.insert('\n'); 
         return novaDelta;
     });
 
-    // 2. MATCHER PARA TEXTO MARKDOWN (Botão Copiar do Gemini)
+    // 2. MATCHER PARA TEXTO GERAL E MARKDOWN (Correção do Gemini)
     quill.clipboard.addMatcher(Node.TEXT_NODE, function(node, delta) {
         const text = node.data;
         
-        // Verifica se é uma tabela Markdown (várias linhas começando ou contendo |)
-        // Regex: Procura blocos de texto que tenham barras verticais
-        const isMarkdownTable = /((?:\|.+?\|+\n?)+)/.test(text);
+        // Se não tiver tabelas nem formatação complexa, retorna o padrão
+        if (!text.includes('|') && !text.includes('**')) return delta;
 
-        if (isMarkdownTable) {
-            const NewDelta = Quill.import('delta');
-            const novaDelta = new NewDelta();
-            
-            // Divide o texto em linhas para processar
-            const lines = text.split('\n');
-            
-            let insideTable = false;
+        const NewDelta = Quill.import('delta');
+        const novaDelta = new NewDelta();
+        const lines = text.split('\n');
+        
+        let insideTable = false;
 
-            lines.forEach(line => {
-                // Se a linha tem barras | e parece uma tabela
-                if (line.trim().includes('|') && line.trim().length > 3) {
+        lines.forEach((line) => {
+            const trimmed = line.trim();
+
+            // LÓGICA DE DETECÇÃO DE TABELA MAIS RIGOROSA
+            // Linha de tabela deve ter barra vertical E (começar com barra OU ter múltiplas barras)
+            const isTableLine = trimmed.includes('|') && (trimmed.startsWith('|') || trimmed.split('|').length > 2);
+            const isSeparator = /^[|\-\s:]+$/.test(trimmed); // Detecta linhas tipo |---|---|
+
+            if (isTableLine && !isSeparator) {
+                // Se estamos entrando numa tabela agora, coloca o cabeçalho UMA VEZ
+                if (!insideTable) {
+                    novaDelta.insert('\n📋 Tabela Importada:', { bold: true, color: '#555' });
+                    novaDelta.insert('\n');
+                    insideTable = true;
+                }
+
+                // Processa as células
+                const cells = trimmed.split('|').filter(c => c.trim() !== ''); // Remove células vazias das pontas
+                
+                cells.forEach((cell, index) => {
+                    // Limpa asteriscos de negrito do Markdown dentro da célula
+                    let cellText = cell.trim().replace(/\*\*/g, ''); 
                     
-                    // Pula linhas de separação tipo |---|---|
-                    if (/^[|\-\s]+$/.test(line.trim())) return;
+                    // A primeira linha costuma ser cabeçalho no Gemini
+                    novaDelta.insert(cellText, { background: '#f9f9f9' });
+                    novaDelta.insert(' | ', { color: '#ccc' });
+                });
+                novaDelta.insert('\n'); // Fim da linha da tabela
 
-                    if (!insideTable) {
-                        novaDelta.insert('\n📋 Tabela Importada (Markdown):', { bold: true, color: '#787774' });
-                        novaDelta.insert('\n');
-                        insideTable = true;
-                    }
+            } else {
+                // Se era tabela e parou de ser, desliga a flag
+                if (insideTable && !isSeparator) {
+                    insideTable = false;
+                    novaDelta.insert('\n'); // Espaço após a tabela
+                }
 
-                    // Processa as células da linha
-                    const cells = line.split('|').filter(c => c.trim() !== '');
-                    cells.forEach(cell => {
-                        novaDelta.insert(cell.trim(), { background: '#f9f9f9' });
-                        novaDelta.insert(' | ', { color: '#ccc' });
+                // Se for linha de separação (|---|), apenas ignora e não faz nada
+                if (isSeparator) return;
+
+                // PROCESSAMENTO DE TEXTO NORMAL (NEGRITOS E LISTAS)
+                if (trimmed !== '') {
+                    // Tratamento simples para Negrito (**texto**)
+                    const parts = line.split(/(\*\*.*?\*\*)/);
+                    parts.forEach(part => {
+                        if (part.startsWith('**') && part.endsWith('**')) {
+                            novaDelta.insert(part.replace(/\*\*/g, ''), { bold: true });
+                        } else {
+                            novaDelta.insert(part);
+                        }
                     });
                     novaDelta.insert('\n');
-
                 } else {
-                    // Texto normal (fora da tabela)
-                    if (insideTable) {
-                         novaDelta.insert('\n'); 
-                         insideTable = false;
-                    }
-                    // Insere o texto normal mantendo a formatação original
-                    if (line.trim() !== '') {
-                        novaDelta.insert(line + '\n');
-                    }
+                    // Mantém linhas vazias originais para espaçamento
+                    novaDelta.insert('\n');
                 }
-            });
+            }
+        });
 
-            return novaDelta;
-        }
-
-        // Se não for tabela, deixa o Quill processar normal (para listas e negritos)
-        // Mas usamos o marked se tiver negritos/tópicos para garantir a beleza
-        const temOutrosMarkdowns = /[#*`]/.test(text) && (text.includes('**') || /^\s*[\*\-]\s/m.test(text));
-        
-        if (temOutrosMarkdowns && typeof marked !== 'undefined') {
-             try {
-                // Configuração simples para listas e negritos
-                const renderer = new marked.Renderer();
-                renderer.paragraph = (text) => `<p>${text}</p>`;
-                marked.setOptions({ renderer: renderer, breaks: true, gfm: true });
-                return quill.clipboard.convert(marked.parse(text));
-             } catch(e) { return delta; }
-        }
-
-        return delta;
+        return novaDelta;
     });
     // -----------------------------------------------------------
+
 
 
     
