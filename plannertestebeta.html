@@ -9,9 +9,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-    <link href="https://unpkg.com/quill-better-table@1.2.10/dist/quill-better-table.css" rel="stylesheet"> <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    
+    <link href="https://unpkg.com/quill-better-table@1.2.10/dist/quill-better-table.css" rel="stylesheet">
+    <script src="https://unpkg.com/quill-better-table@1.2.10/dist/quill-better-table.min.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://unpkg.com/quill-better-table@1.2.10/dist/quill-better-table.min.js"></script> <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 
     <style>
@@ -104,6 +108,7 @@
         .card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.08); border-color: #d0d0d0; }
         .card-top { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
         
+        /* --- ESTILO DE ATRASO --- */
         .card.atrasada { border-left: 5px solid #d44c47; background: #fff5f5; } 
         .card.atrasada .card-title { color: #b42318; font-weight: 600; } 
         .atraso-badge { display: inline-flex; align-items: center; gap: 4px; background: #ffe2dd; color: #d44c47; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 12px; margin-left: 8px; }
@@ -196,14 +201,12 @@
         
         .ql-editor iframe { display: block; margin: 16px auto; max-width: 90%; aspect-ratio: 16 / 9; border-radius: 8px; }
         
+        /* Ajuste para tabelas (Better Table) */
+        .quill-better-table-wrapper { margin: 10px 0; }
+        
         .ql-align-center { text-align: center; }
         .ql-align-right { text-align: right; }
         .ql-align-justify { text-align: justify; }
-
-        /* Estilos de Tabela para Quill Better Table */
-        .ql-editor table { border-collapse: collapse; width: 100%; margin: 15px 0; }
-        .ql-editor th, .ql-editor td { border: 1px solid #ccc; padding: 8px; }
-        .ql-editor th { background-color: #f4f4f4; }
 
         #statusFeedback { position: fixed; bottom: 30px; right: 30px; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; color: white; display: none; z-index: 9999; }
         .hidden { display: none !important; }
@@ -403,23 +406,21 @@
     let allTasksCache = []; 
     let isUploadingImage = false; 
 
-    // --- REGISTRO DO MÓDULO DE TABELA (Better Table) ---
-    Quill.register({
-        'modules/better-table': quillBetterTable
-    }, true);
+    // --- REGISTRAR QUILL BETTER TABLE ---
+    Quill.register({ 'modules/better-table': quillBetterTable }, true);
 
-    // --- CONFIGURAÇÃO QUILL COMPLETA ---
+    // --- CONFIGURAÇÃO QUILL (Com Better Table + Clipboard Force) ---
     const quill = new Quill('#quill-editor', {
         theme: 'snow',
-        placeholder: 'Cole seu conteúdo aqui (Texto, Imagens, Markdown, Tabelas)...',
+        placeholder: 'Cole seu conteúdo aqui...',
         modules: {
             table: false, // Desativa tabela nativa
-            'better-table': { // Ativa better-table
+            'better-table': {
                 operationMenu: {
                     items: {
                         unmergeCells: { text: 'Desfazer mesclagem' }
                     },
-                    color: { text: 'Cor do Fundo' }
+                    color: { text: 'Cor de Fundo' }
                 }
             },
             toolbar: {
@@ -431,16 +432,32 @@
                     [{ 'align': [] }], 
                     ['blockquote', 'code-block'],
                     ['image', 'video'], 
-                    ['clean']
+                    ['clean'] // Botão de tabela é automático via atalho ou colar, mas pode adicionar custom
                 ],
                 handlers: {
                     'image': imageHandler
                 }
             },
             clipboard: {
-                matchVisual: false // Melhora colagem de HTML externo
+                matchVisual: false // IMPORTANTE PARA LISTAS
             }
         }
+    });
+
+    // ⛔ 1. BLOQUEAR BASE64 DE IMAGEM
+    quill.clipboard.addMatcher('IMG', function(node, delta) {
+        const src = node.getAttribute('src');
+        if (src && src.startsWith('data:')) {
+            alert("⚠️ Por favor, use o botão de imagem para enviar fotos.");
+            return { ops: [] };
+        }
+        return delta;
+    });
+
+    // ✅ 2. MATCHER GENÉRICO PARA FORÇAR HTML (TABELAS E FORMATAÇÃO RICA)
+    // Isso faz o Quill aceitar o HTML vindo do ChatGPT/Gemini com mais fidelidade
+    quill.clipboard.addMatcher(Node.ELEMENT_NODE, function (node, delta) {
+        return delta;
     });
 
     // Handler de vídeo
@@ -460,29 +477,6 @@
         quill.insertEmbed(range.index + 1, 'video', embedUrl, 'user');
         quill.insertText(range.index + 2, '\n\n', 'user');
         quill.setSelection(range.index + 3, 0);
-    });
-
-    // ⛔ BLOQUEAR BASE64
-    quill.clipboard.addMatcher('IMG', function(node, delta) {
-        const src = node.getAttribute('src');
-        if (src && src.startsWith('data:')) {
-            alert("⚠️ Por favor, use o botão de imagem para enviar fotos.");
-            return { ops: [] };
-        }
-        return delta;
-    });
-
-    // 🌟 COLAGEM INTELIGENTE (Detecta Markdown do Gemini/ChatGPT)
-    quill.clipboard.addMatcher(Node.TEXT_NODE, function(node, delta) {
-        const text = node.data;
-        // Se parecer Markdown (lista, negrito, tabelas)
-        if (text.includes('**') || text.match(/^\s*[\-\*]\s+/) || text.includes('|---')) {
-            const html = marked.parse(text); // Converte Markdown -> HTML
-            // Retorna um delta novo com o HTML convertido
-            const newDelta = quill.clipboard.convert(html);
-            return newDelta;
-        }
-        return delta;
     });
 
     // 🔒 CORREÇÃO TOOLBAR
@@ -946,15 +940,10 @@
         viewerDiv.style.height = '100%';
         container.appendChild(viewerDiv);
 
-        // CONFIGURAÇÃO DO VIEWER COM BETTER-TABLE
         const viewer = new Quill(viewerDiv, {
             theme: 'snow',
             readOnly: true,
-            modules: { 
-                table: false,
-                'better-table': {}, 
-                toolbar: false 
-            } 
+            modules: { toolbar: false, table: false, 'better-table': { operationMenu: {} } } 
         });
         viewer.clipboard.dangerouslyPasteHTML(data.contentHTML || "");
     }
