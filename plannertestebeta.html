@@ -206,6 +206,14 @@
         #secLib { height: 100%; overflow-y: auto; }
         #viewer-container { border: none !important; }
         #viewer-container .ql-container.ql-snow { border: none !important; }
+    
+                /* --- ESTILO TABELA HÍBRIDA (VISUALIZADOR) --- */
+    
+        .hybrid-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+        .hybrid-table th { background: #f3f3f3; font-weight: 600; color: #37352f; }
+        .hybrid-table th, .hybrid-table td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; }
+        .hybrid-table tr:nth-child(even) td { background: #fafafa; }
+
     </style>
 </head>
 <body>
@@ -1011,6 +1019,62 @@
         });
     }
 
+        // --- RENDERIZADOR HÍBRIDO: Converte Texto/Pipes em Tabela HTML Real ---
+    function renderHybridContent(rawHTML) {
+        if (!rawHTML) return "";
+        const lines = rawHTML.split('\n');
+        let output = '';
+        let tableBuffer = [];
+        let insideTable = false;
+
+        const flushTable = () => {
+            if (tableBuffer.length === 0) return;
+            output += `<table class="hybrid-table"><tbody>`;
+            tableBuffer.forEach((row, i) => {
+                // Remove tags HTML que possam ter ficado (como <p>) para pegar só o texto e os pipes
+                const cleanRow = row.replace(/<\/?[^>]+(>|$)/g, ""); 
+                const cells = cleanRow.split('|').filter(c => c.trim() !== '');
+                
+                if (cells.length > 0) {
+                    output += '<tr>';
+                    cells.forEach(cell => {
+                        // Se for a primeira linha, assume que é cabeçalho (TH), senão é célula (TD)
+                        output += i === 0 
+                            ? `<th>${cell.trim()}</th>` 
+                            : `<td>${cell.trim()}</td>`;
+                    });
+                    output += '</tr>';
+                }
+            });
+            output += `</tbody></table>`;
+            tableBuffer = [];
+        };
+
+        lines.forEach(line => {
+            // Remove tags HTML para verificar a estrutura de pipes
+            const textContent = line.replace(/<\/?[^>]+(>|$)/g, "");
+            
+            // Detecta se a linha parece uma tabela (tem pipe e pelo menos 2 colunas)
+            const isTableLine = textContent.includes('|') && textContent.split('|').length > 2;
+
+            if (isTableLine) {
+                insideTable = true;
+                tableBuffer.push(line);
+            } else {
+                if (insideTable) {
+                    flushTable();
+                    insideTable = false;
+                }
+                // Se não é tabela, mantém o HTML original da linha
+                output += line; 
+            }
+        });
+        
+        // Garante que se o texto terminar com tabela, ela seja renderizada
+        flushTable(); 
+        return output;
+    }
+
     function renderQuillContent(container, data) {
         container.innerHTML = ''; 
         const viewerDiv = document.createElement('div');
@@ -1023,8 +1087,12 @@
             readOnly: true,
             modules: { toolbar: false } 
         });
-        viewer.clipboard.dangerouslyPasteHTML(data.contentHTML || "");
+
+        // AQUI A MÁGICA: Pré-processa o texto antes de mostrar
+        const processed = renderHybridContent(data.contentHTML || "");
+        viewer.clipboard.dangerouslyPasteHTML(processed);
     }
+
 
     window.abrirArquivoBiblioteca = (fileData) => {
         const container = document.getElementById('viewContainer');
