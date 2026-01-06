@@ -103,7 +103,7 @@
         .card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.08); border-color: #d0d0d0; }
         .card-top { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
         
-        /* --- ESTILO DE ATRASO (NOVO) --- */
+        /* --- ESTILO DE ATRASO --- */
         .card.atrasada { border-left: 5px solid #d44c47; background: #fff5f5; } 
         .card.atrasada .card-title { color: #b42318; font-weight: 600; } 
         .atraso-badge { display: inline-flex; align-items: center; gap: 4px; background: #ffe2dd; color: #d44c47; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 12px; margin-left: 8px; }
@@ -129,7 +129,7 @@
         .btn-primary { background: var(--text-primary); color: white; border: none; }
         .btn-primary:hover { background: #111; }
 
-        /* --- MODAL EDITOR (100dvh + FLEX) --- */
+        /* --- MODAL EDITOR --- */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; }
         
         .modal-content { 
@@ -163,7 +163,7 @@
         }
         #quill-editor { flex: 1; font-size: 16px; border: none; }
 
-        /* --- LIGHTBOX & VISUALIZAÇÃO DE IMAGENS --- */
+        /* --- LIGHTBOX --- */
         .image-modal-content {
             width: 100vw; height: 100dvh; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
@@ -183,7 +183,19 @@
             object-fit: contain; border-radius: 4px;
         }
 
-        /* Estilo para imagens dentro do Texto (Leitura Confortável) */
+        /* --- NOVO: ESTILO PARA TABELAS DO QUILL --- */
+        .ql-editor table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        .ql-editor table td, .ql-editor table th {
+            border: 1px solid #ccc;
+            padding: 8px;
+        }
+        /* ------------------------------------------- */
+
+        /* Estilo para imagens e vídeos */
         .ql-editor img { 
             display: block; margin: 16px auto; 
             max-width: 700px; 
@@ -398,15 +410,12 @@
     let allTasksCache = []; 
     let isUploadingImage = false; 
 
-        // --- CONFIGURAÇÃO QUILL COM SUPORTE A TABELAS E MARKDOWN ---
-    
-    // 1. Registra o módulo de tabela (necessário para colar tabelas)
-    // O Quill 1.3 precisa dessa configuração básica para aceitar tags <table>
+    // --- CONFIGURAÇÃO QUILL COM SUPORTE A TABELAS E MARKDOWN ---
     const quill = new Quill('#quill-editor', {
         theme: 'snow',
         placeholder: 'Cole seu conteúdo aqui (ChatGPT, Gemini, Word)...',
         modules: {
-            // Habilita funcionamento de tabelas
+            // --- NOVO: HABILITA SUPORTE A TABELAS ---
             table: true, 
             
             toolbar: {
@@ -424,51 +433,32 @@
                     'image': imageHandler
                 }
             },
-            // Configuração da Área de Transferência (Colar)
+            // --- NOVO: AJUSTE PARA MELHOR COLAGEM ---
             clipboard: {
-                matchVisual: false // Melhora a compatibilidade ao colar de outros sites
+                matchVisual: false 
             }
         }
     });
 
-    // --- MAGIA: INTERCEPTADOR DE COLAGEM (MARKDOWN -> HTML) ---
-    // Isso detecta se você colou um texto cru (com * ou |) e converte para visual
+    // --- NOVO: MATCHER PARA CONVERTER MARKDOWN DO CHATGPT EM HTML ---
     quill.clipboard.addMatcher(Node.TEXT_NODE, function(node, delta) {
         const text = node.data;
-
-        // Verifica se o texto tem cara de Markdown (tabelas com | ou listas com *)
-        // Expressão Regular simples para detectar tabelas ou listas do ChatGPT
-        const isMarkdown = /\|.*\|.*\|/g.test(text) || /^\s*[\*\-]\s+/m.test(text) || /^\s*(\d+\.)\s+/m.test(text);
-
+        // Regex para identificar tabelas (|...|) ou listas (* item ou 1. item)
+        const isMarkdown = /\|.*\|/g.test(text) || /^\s*[\*\-]\s+/m.test(text) || /^\s*\d+\.\s+/m.test(text);
+        
         if (isMarkdown && typeof marked !== 'undefined') {
             try {
-                // 1. Converte o Markdown (texto feio) para HTML (texto bonito)
-                const html = marked.parse(text);
-                
-                // 2. Converte o HTML gerado para o formato Delta do Quill
-                const newDelta = quill.clipboard.convert(html);
-                
-                return newDelta;
+                // Converte Markdown cru para HTML
+                const html = marked.parse(text); 
+                // Converte HTML para Delta do Quill
+                return quill.clipboard.convert(html); 
             } catch (e) {
-                console.error("Erro ao converter Markdown:", e);
-                return delta; // Se der erro, cola normal
+                console.error("Erro conversão MD:", e);
+                return delta;
             }
-        }
-        
-        return delta; // Se não for markdown, cola normal
-    });
-
-    // ⛔ BLOQUEAR BASE64 (Mantenha isso para segurança)
-    quill.clipboard.addMatcher('IMG', function(node, delta) {
-        const src = node.getAttribute('src');
-        if (src && src.startsWith('data:')) {
-            alert("⚠️ Por favor, use o botão de imagem para enviar fotos pesadas.");
-            return { ops: [] };
         }
         return delta;
     });
-    // -----------------------------------------------------------
-
 
     // Handler de vídeo
     quill.getModule('toolbar').addHandler('video', () => {
@@ -493,7 +483,7 @@
     quill.clipboard.addMatcher('IMG', function(node, delta) {
         const src = node.getAttribute('src');
         if (src && src.startsWith('data:')) {
-            alert("⚠️ Por favor, use o botão de imagem para enviar fotos.");
+            alert("⚠️ Por favor, use o botão de imagem para enviar fotos pesadas.");
             return { ops: [] };
         }
         return delta;
