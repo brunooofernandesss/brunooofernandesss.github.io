@@ -8,11 +8,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-    <link href="https://unpkg.com/quill-better-table@1.2.10/dist/quill-better-table.css" rel="stylesheet">
-
+    <!-- Bibliotecas para Tabelas -->
+    <link rel="stylesheet" href="https://unpkg.com/quill-better-table@1.2.10/dist/quill-better-table.css">
+    
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
     <script src="https://unpkg.com/quill-better-table@1.2.10/dist/quill-better-table.min.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
@@ -107,200 +107,86 @@
         .card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.08); border-color: #d0d0d0; }
         .card-top { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
         
-        /* --- ESTILO DE ATRASO (NOVO) --- */
+        /* --- ESTILO DE ATRASO --- */
         .card.atrasada { border-left: 5px solid #d44c47; background: #fff5f5; } 
         .card.atrasada .card-title { color: #b42318; font-weight: 600; } 
         .atraso-badge { display: inline-flex; align-items: center; gap: 4px; background: #ffe2dd; color: #d44c47; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 12px; margin-left: 8px; }
 
-        .custom-checkbox { appearance: none; width: 18px; height: 18px; border: 2px solid #d0d0d0; border-radius: 4px; cursor: pointer; flex-shrink: 0; margin-top: 2px; position: relative; }
-        .custom-checkbox:checked { background: var(--text-green); border-color: var(--text-green); }
-        .custom-checkbox:checked::after { content: '✓'; color: white; position: absolute; top: -2px; left: 3px; font-size: 12px; font-weight: bold; }
-
-        .card-title { font-size: 14px; font-weight: 500; line-height: 1.4; color: var(--text-primary); }
-        .card.completed .card-title { text-decoration: line-through; color: #a0a0a0; }
-        .card.completed { background: #f9f9f9; opacity: 0.8; }
-        .tag-pill { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: var(--tag-blue); color: var(--text-blue); display: inline-flex; align-items: center; }
-        .card-meta { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 11px; color: var(--text-secondary); flex-wrap: wrap;}
-
-        /* UI Elements */
-        .week-selector-wrapper { display: flex; align-items: center; gap: 8px; position: relative; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: 0.2s; }
-        .week-selector-wrapper:hover { background: #f0f0f0; }
-        .week-select-native { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10; }
-        .week-display { display: flex; align-items: center; gap: 6px; font-size: 13px; }
-
-        .btn-action { background: white; border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
-        .btn-action:hover { background: #f7f7f5; }
-        .btn-primary { background: var(--text-primary); color: white; border: none; }
-        .btn-primary:hover { background: #111; }
-
-        /* --- MODAL EDITOR (100dvh + FLEX) --- */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; }
+        .card-title { font-size: 14px; font-weight: 500; line-height: 1.4; flex: 1; }
+        .card-tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; display: inline-block; margin-top: 8px; }
+        .card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; font-size: 11px; color: var(--text-secondary); }
+        .btn-check { width: 18px; height: 18px; border: 2px solid #ddd; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
+        .btn-check.done { background: var(--text-green); border-color: var(--text-green); color: white; }
         
-        .modal-content { 
-            background: white; width: 95%; max-width: 800px; height: 90vh; border-radius: 12px; 
-            display: flex; flex-direction: column; overflow: hidden; 
-            box-shadow: 0 20px 50px rgba(0,0,0,0.2); transition: all 0.3s ease; 
-        }
+        /* Modais */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: white; border-radius: 12px; width: 90%; max-width: 800px; max-height: 90vh; display: flex; flex-direction: column; position: relative; transition: all 0.3s ease; }
+        .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 24px; overflow-y: auto; flex: 1; }
+        .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 12px; }
         
-        .modal-content.editor-max { 
-            width: 100vw !important; height: 100dvh !important; max-width: none !important; max-height: none !important; 
-            border-radius: 0 !important; display: flex; flex-direction: column;
-        }
-
-        .editor-header {
-            flex-shrink: 0; padding: 20px 25px 15px; background: white; border-bottom: 1px solid #eee;
-            display: flex; justify-content: space-between; align-items: center; z-index: 10;
-        }
-
-        .editor-body {
-            flex: 1; overflow-y: auto; padding: 20px 25px; display: flex; flex-direction: column; min-height: 0;
-        }
-
-        .editor-footer {
-            flex-shrink: 0; padding: 15px 25px; background: white; border-top: 1px solid #eee;
-            display: flex; justify-content: flex-end; gap: 10px; z-index: 10;
-        }
-
-        #quill-editor-container {
-            flex: 1; display: flex; flex-direction: column; border: 1px solid #ddd;
-            border-radius: 6px; overflow: hidden; min-height: 300px;
-        }
-        #quill-editor { flex: 1; font-size: 16px; border: none; }
-
-        /* --- LIGHTBOX & VISUALIZAÇÃO DE IMAGENS --- */
-        .image-modal-content {
-            width: 100vw; height: 100dvh; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            position: relative;
-        }
-
-        .image-close-btn {
-            position: fixed; top: 15px; right: 15px; 
-            z-index: 4000; background: white; border: none; 
-            border-radius: 20px; padding: 8px 16px; 
-            font-size: 13px; font-weight: 600; cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-
-        #imageModalImg {
-            max-width: 95vw; max-height: 90dvh; 
-            object-fit: contain; border-radius: 4px;
-        }
-
-        /* Estilo para imagens dentro do Texto (Leitura Confortável) */
-        .ql-editor img { 
-            display: block; margin: 16px auto; 
-            max-width: 700px; 
-            width: 100%; 
-            height: auto; 
-            border-radius: 8px; cursor: zoom-in; 
-            transition: transform 0.2s ease;
-        }
-        .ql-editor img:hover { transform: scale(1.01); }
+        /* Editor Maximize */
+        .editor-max { width: 100% !important; height: 100% !important; max-width: none !important; max-height: none !important; border-radius: 0 !important; }
         
-        .ql-editor iframe { display: block; margin: 16px auto; max-width: 90%; aspect-ratio: 16 / 9; border-radius: 8px; }
+        /* Quill Adjustments */
+        #quill-editor { height: 400px; font-family: 'Inter', sans-serif; font-size: 15px; }
+        .ql-container.ql-snow { border: none !important; }
+        .ql-toolbar.ql-snow { border: none !important; border-bottom: 1px solid var(--border-color) !important; padding: 8px 16px !important; }
         
-        .ql-align-center { text-align: center; }
-        .ql-align-right { text-align: right; }
-        .ql-align-justify { text-align: justify; }
-
-        #statusFeedback { position: fixed; bottom: 30px; right: 30px; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; color: white; display: none; z-index: 9999; }
+        /* Inputs */
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; }
+        .input-standard { width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; outline: none; transition: 0.2s; }
+        .input-standard:focus { border-color: var(--accent-color); box-shadow: 0 0 0 3px rgba(35, 131, 226, 0.1); }
+        
+        /* Buttons */
+        .btn-primary { background: var(--accent-color); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-secondary { background: white; border: 1px solid var(--border-color); padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .btn-action { background: #f0f0f0; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        
+        /* Utils */
         .hidden { display: none !important; }
-        #secBoard { overflow-x: auto; overflow-y: hidden; }
-        #secLib { height: 100%; overflow-y: auto; }
-        #viewer-container { border: none !important; }
-        #viewer-container .ql-container.ql-snow { border: none !important; }
+        #statusFeedback { position: fixed; bottom: 24px; right: 24px; padding: 12px 24px; border-radius: 8px; color: white; font-weight: 600; z-index: 2000; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        
+        /* Biblioteca */
+        .lib-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .lib-table th { text-align: left; padding: 12px; border-bottom: 2px solid var(--border-color); font-size: 12px; color: var(--text-secondary); text-transform: uppercase; }
+        
+        /* PDF Viewer */
+        #pdfContainer { width: 100%; height: 600px; overflow: auto; background: #525659; display: flex; justify-content: center; padding: 20px; }
+        #the-canvas { box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+
+        /* Estilos para Tabelas no Quill */
+        .ql-better-table-wrapper { margin: 10px 0; }
     </style>
 </head>
 <body>
 
-    <div id="imageModal" class="modal" style="z-index:3000; background: rgba(0,0,0,0.9);">
-        <div class="image-modal-content">
-            <button onclick="closeImageModal()" class="image-close-btn">
-                <i class="fas fa-times"></i> Fechar
-            </button>
-            <img id="imageModalImg">
-        </div>
-    </div>
-
-    <div class="modal" id="modalEditor">
-        <div class="modal-content">
-            
-            <div class="editor-header">
-                <h3 style="margin:0;">Novo Estudo</h3>
-                <div>
-                    <button id="btnToggleEditor" class="btn-action" title="Expandir Tela">
-                        <i class="fas fa-expand"></i> Expandir
-                    </button>
-                    <button id="btnCloseEditor" class="btn-action" title="Minimizar" style="display:none;">
-                        <i class="fas fa-compress"></i> Minimizar
-                    </button>
-                </div>
-            </div>
-
-            <div class="editor-body">
-                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                    <input type="text" id="subjectTitle" style="flex:1; padding: 10px; border: 1px solid #ddd; border-radius: 6px;" placeholder="Título do Assunto...">
-                    <input type="text" id="subjectTag" style="width: 150px; padding: 10px; border: 1px solid #ddd; border-radius: 6px;" placeholder="Matéria (Ex: Pediatria)">
-                </div>
-                
-                <div id="quill-editor-container">
-                    <div id="quill-editor"></div>
-                </div>
-            </div>
-
-            <div class="editor-footer">
-                <button class="btn-action" onclick="fecharModal()">Cancelar</button>
-                <button class="btn-action btn-primary" id="btnSalvar">Criar Cronograma</button>
-            </div>
-
-        </div>
-    </div>
-
-    <div class="modal" id="modalView">
-        <div class="modal-content">
-            <div style="padding: 15px 25px; border-bottom: 1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
-                <div style="display:flex; align-items:center; gap: 10px;">
-                    <span id="viewTypeIcon"></span>
-                    <h2 id="viewTitle" style="font-size: 18px; font-weight:700; margin:0;"></h2>
-                    <span id="viewTagDisplay" class="tag-pill"></span>
-                </div>
-                <button class="btn-action" onclick="fecharModalView()"><i class="fas fa-times"></i></button>
-            </div>
-            <div id="viewContainer" style="flex:1; overflow:hidden; display:flex; flex-direction:column;"></div>
-            
-            <div style="padding: 15px; border-top: 1px solid #eee; display:flex; justify-content: space-between;">
-                 <button class="btn-action" id="btnEditarNota">Editar Texto</button>
-                 <button class="btn-action" id="btnExcluirEstudo" style="color:#d44c47; border-color: #ffe2dd; background: #fff5f5;">
-                    <i class="fas fa-trash"></i> Excluir Estudo
-                 </button>
-            </div>
-        </div>
-    </div>
-
-    <div id="statusFeedback">Processando...</div>
-
     <aside class="sidebar">
         <div class="sidebar-header">
-            <div id="headerUserName" class="user-id-text">Carregando...</div>
-            <div id="headerUserIP" class="user-ip-text">...</div>
+            <div class="user-id-text" id="headerUserName">Carregando...</div>
+            <div class="user-ip-text" id="headerUserIP">IP: Detectando...</div>
         </div>
-        
-        <nav style="flex: 1 0 auto;"> <div class="nav-item active" id="navBoard"><i class="far fa-calendar-alt"></i> Cronograma Semanal</div>
-            <div class="nav-item" id="navLib"><i class="fas fa-folder-open"></i> Biblioteca de Aulas</div>
+
+        <nav>
+            <div class="nav-item active" id="navBoard">
+                <i class="fas fa-columns"></i> Planner Semanal
+            </div>
+            <div class="nav-item" id="navLib">
+                <i class="fas fa-book"></i> Biblioteca de Estudos
+            </div>
         </nav>
 
         <div class="sidebar-goals">
-            <div class="goals-title"><i class="fas fa-bullseye"></i> Metas</div>
+            <div class="goals-title">Metas de Conclusão</div>
             
             <div class="goal-item">
                 <div class="goal-header">
-                    <span>Diária</span>
+                    <span>Diária (Hoje)</span>
                     <span id="goalDailyText">0/0</span>
                 </div>
-                <div class="goal-bar-bg">
-                    <div id="goalDailyBar" class="goal-bar-fill"></div>
-                </div>
+                <div class="goal-bar-bg"><div id="goalDailyBar" class="goal-bar-fill"></div></div>
             </div>
 
             <div class="goal-item">
@@ -308,9 +194,7 @@
                     <span>Semanal</span>
                     <span id="goalWeeklyText">0/0</span>
                 </div>
-                <div class="goal-bar-bg">
-                    <div id="goalWeeklyBar" class="goal-bar-fill"></div>
-                </div>
+                <div class="goal-bar-bg"><div id="goalWeeklyBar" class="goal-bar-fill"></div></div>
             </div>
 
             <div class="goal-item">
@@ -318,62 +202,111 @@
                     <span>Mensal</span>
                     <span id="goalMonthlyText">0/0</span>
                 </div>
-                <div class="goal-bar-bg">
-                    <div id="goalMonthlyBar" class="goal-bar-fill"></div>
-                </div>
+                <div class="goal-bar-bg"><div id="goalMonthlyBar" class="goal-bar-fill"></div></div>
             </div>
         </div>
     </aside>
 
     <main class="main-container">
         <div class="top-bar">
-            <div style="display:flex; align-items:center;">
-                <span style="margin-right: 8px;"><b>Semana:</b></span>
-                <div class="week-selector-wrapper">
-                    <div class="week-display">
-                        <span id="weekRangeDisplay">Carregando...</span>
-                        <i class="fas fa-chevron-down" style="font-size: 12px; color: var(--text-secondary);"></i>
-                    </div>
-                    <select id="weekSelect" class="week-select-native" onchange="window.changeWeek(this.value)">
-                        </select>
-                </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <i class="fas fa-calendar-alt" style="color: var(--accent-color)"></i>
+                <select id="weekSelect" class="input-standard" style="width: auto; padding: 4px 8px; font-size: 13px;"></select>
+            </div>
+            <div id="currentDateDisplay" style="font-weight: 600; color: var(--text-secondary)"></div>
+        </div>
+
+        <div id="secBoard" class="content">
+            <div class="header-actions">
+                <h1 class="page-title">Meu Cronograma</h1>
+                <button class="btn-primary" id="btnNovoAssunto">
+                    <i class="fas fa-plus"></i> Novo Estudo
+                </button>
             </div>
 
-            <div style="display:flex; gap: 10px;">
-                <button class="btn-action" id="btnNovoAssunto"><i class="fas fa-plus"></i> Novo Estudo</button>
-                <input type="file" id="pdfInput" hidden accept="application/pdf">
-                <label for="pdfInput" class="btn-action btn-primary"><i class="fas fa-cloud-upload-alt"></i> Upload PDF</label>
+            <div class="week-board" id="boardContainer">
+                <!-- Colunas geradas via JS -->
             </div>
         </div>
 
-        <div class="content">
-            <section id="secBoard" style="height: 100%; display: flex; flex-direction: column;">
-                <div class="header-actions">
-                    <h1 class="page-title">Cronograma de Revisões</h1>
-                </div>
-                
-                <div class="week-board" id="weeklyBoard">
-                    </div>
-            </section>
-
-            <section id="secLib" class="hidden">
-                <h1 class="page-title" style="margin-bottom: 20px;">Biblioteca de Materiais</h1>
-                <div style="background: white; border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden;">
-                    <table style="width:100%; border-collapse:collapse; font-size:14px;">
-                        <thead style="background: #f9f9f9; border-bottom: 1px solid var(--border-color);">
-                            <tr style="text-align:left; color: #777;">
-                                <th style="padding:12px;">Arquivo / Assunto</th>
-                                <th style="padding:12px;">Matéria</th>
-                                <th style="padding:12px;">Data Upload</th>
-                                <th style="padding:12px;">Ação</th>
-                            </tr>
-                        </thead>
-                        <tbody id="listaBiblioteca">
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+        <div id="secLib" class="content hidden">
+            <div class="header-actions">
+                <h1 class="page-title">Biblioteca</h1>
+            </div>
+            <div style="background: white; border-radius: 8px; border: 1px solid var(--border-color); flex: 1; overflow-y: auto; padding: 0 20px;">
+                <table class="lib-table">
+                    <thead>
+                        <tr>
+                            <th>Nome do Arquivo</th>
+                            <th>Tag</th>
+                            <th>Data de Criação</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaBiblioteca"></tbody>
+                </table>
+            </div>
         </div>
+
+        <!-- Modal Editor -->
+        <div class="modal" id="modalEditor">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modalEditorTitle">Novo Estudo</h2>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn-action" id="btnToggleEditor"><i class="fas fa-expand"></i></button>
+                        <button class="btn-action" id="btnCloseEditor" style="display:none;"><i class="fas fa-compress"></i></button>
+                        <button class="btn-action" onclick="fecharModal()"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <div class="input-group">
+                        <label>Título do Assunto</label>
+                        <input type="text" id="subjectTitle" class="input-standard" placeholder="Ex: Fisiologia Renal">
+                    </div>
+                    <div class="input-group">
+                        <label>Tag / Categoria</label>
+                        <input type="text" id="subjectTag" class="input-standard" placeholder="Ex: Clínica Médica">
+                    </div>
+                    <div class="input-group" style="flex: 1; display: flex; flex-direction: column;">
+                        <label>Conteúdo / Resumo</label>
+                        <div id="quill-editor"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" onclick="fecharModal()">Cancelar</button>
+                    <button class="btn-primary" id="btnSalvar">Criar Cronograma</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Visualização -->
+        <div class="modal" id="modalView">
+            <div class="modal-content" style="max-width: 900px;">
+                <div class="modal-header">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div id="viewTypeIcon"></div>
+                        <div>
+                            <h2 id="viewTitle" style="font-size: 18px;"></h2>
+                            <span id="viewTagDisplay" style="font-size: 11px; color: var(--text-secondary)"></span>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn-action" id="btnEditarNota"><i class="fas fa-edit"></i> Editar</button>
+                        <button class="btn-action" id="btnExcluirEstudo" style="color: #d44c47"><i class="fas fa-trash"></i> Excluir</button>
+                        <button class="btn-action" onclick="fecharModalView()"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+                <div class="modal-body" id="viewContainer"></div>
+            </div>
+        </div>
+
+        <!-- Lightbox Imagem -->
+        <div id="imageModal" class="modal" style="background: rgba(0,0,0,0.9);" onclick="closeImageModal()">
+            <img id="imageModalImg" style="max-width: 90%; max-height: 90%; border-radius: 4px; cursor: zoom-out;">
+        </div>
+
+        <div id="statusFeedback"></div>
     </main>
 
 <script type="module">
@@ -402,14 +335,27 @@
     let allTasksCache = []; 
     let isUploadingImage = false; 
 
-    // --- REGISTRAR MÓDULO DE TABELA (ANTES DO QUILL) ---
+    // --- CONFIGURAÇÃO QUILL COM SUPORTE A TABELAS ---
     Quill.register({ 'modules/better-table': quillBetterTable }, true);
 
-    // --- CONFIGURAÇÃO QUILL ATUALIZADA (SUPORTE HTML CHATGPT) ---
     const quill = new Quill('#quill-editor', {
         theme: 'snow',
         placeholder: 'Cole seu conteúdo aqui...',
         modules: {
+            table: false,  // desativa o módulo de tabela padrão
+            'better-table': {
+                operationMenu: {
+                    items: {
+                        unmergeCells: { text: 'Desfazer mesclagem' }
+                    }
+                }
+            },
+            keyboard: {
+                bindings: quillBetterTable.keyboardBindings
+            },
+            clipboard: {
+                matchVisual: false // Impede o Quill de "simplificar" o HTML colado
+            },
             toolbar: {
                 container: [
                     [{ 'header': [1, 2, 3, false] }], 
@@ -418,29 +364,21 @@
                     [{ 'list': 'ordered'}, { 'list': 'bullet' }], 
                     [{ 'align': [] }], 
                     ['blockquote', 'code-block'],
-                    ['link'], // Adicionado Link
-                    ['image', 'video'], 
+                    ['image', 'video'],
+                    ['table'], // Botão de tabela
                     ['clean']
                 ],
                 handlers: {
-                    'image': imageHandler
-                }
-            },
-            'better-table': {
-                operationMenu: {
-                    items: {
-                        unmergeCells: { text: 'Desfazer mesclagem' }
+                    'image': imageHandler,
+                    'table': function() {
+                        this.quill.getModule('better-table').insertTable(3, 3);
                     }
                 }
-            },
-            clipboard: {
-                matchVisual: false // Crucial para listas
             }
         }
-        // NÃO limitamos formats para permitir tudo que vier no paste
     });
 
-    // --- FORÇA O QUILL A ACEITAR O HTML ORIGINAL (MÁGICA DO COPY/PASTE) ---
+    // Impede o Quill de simplificar o HTML colado (Prioriza HTML)
     quill.clipboard.addMatcher(Node.ELEMENT_NODE, function (node, delta) {
         return delta;
     });
@@ -666,232 +604,196 @@
             const endOfWeek = new Date(loopDate);
             endOfWeek.setDate(loopDate.getDate() + 6);
             
-            const label = `${formatDateDisplay(loopDate)} - ${formatDateDisplay(endOfWeek)}`;
-            const value = loopDate.getTime();
-
             const option = document.createElement('option');
-            option.value = value;
-            option.text = label;
+            option.value = loopDate.getTime();
+            option.textContent = `${loopDate.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'})} - ${endOfWeek.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'})}`;
             
-            if (value === todayStart) {
+            if (loopDate.getTime() === todayStart) {
                 option.selected = true;
                 currentBoardStart = new Date(loopDate);
             }
             select.appendChild(option);
             loopDate.setDate(loopDate.getDate() + 7);
         }
-        updateWeekLabel();
-    }
 
-    window.changeWeek = (timestamp) => {
-        currentBoardStart = new Date(parseInt(timestamp));
-        updateWeekLabel();
-        renderWeeklyBoard();
-    };
-
-    function updateWeekLabel() {
-        const endOfWeek = new Date(currentBoardStart);
-        endOfWeek.setDate(currentBoardStart.getDate() + 6);
-        document.getElementById('weekRangeDisplay').textContent = 
-            `${formatDateDisplay(currentBoardStart)} - ${formatDateDisplay(endOfWeek)}`;
+        select.onchange = (e) => {
+            currentBoardStart = new Date(parseInt(e.target.value));
+            renderWeeklyBoard();
+        };
     }
 
     function getStartOfWeek(date) {
         const d = new Date(date);
-        const day = d.getDay(); 
-        const diff = d.getDate() - day;
-        const r = new Date(d.setDate(diff));
-        r.setHours(0,0,0,0);
-        return r;
-    }
-
-    function formatDateDisplay(date) {
-        return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-    }
-
-    function isSameDay(d1, d2) {
-        return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
+        d.setHours(0,0,0,0);
+        const day = d.getDay();
+        const diff = d.getDate() - day; 
+        return new Date(d.setDate(diff));
     }
 
     function renderWeeklyBoard() {
-        const board = document.getElementById('weeklyBoard');
-        board.innerHTML = ''; 
-        
-        const daysOfWeek = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-        const today = new Date(); 
+        const container = document.getElementById('boardContainer');
+        container.innerHTML = '';
+        const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        const todayStr = new Date().toLocaleDateString('pt-BR');
 
-        const columns = [];
-        
         for (let i = 0; i < 7; i++) {
-            const currentDay = new Date(currentBoardStart);
-            currentDay.setDate(currentBoardStart.getDate() + i);
-            const isToday = isSameDay(today, currentDay);
-            
-            const colDiv = document.createElement('div');
-            colDiv.className = 'day-column';
-            colDiv.innerHTML = `
+            const date = new Date(currentBoardStart);
+            date.setDate(currentBoardStart.getDate() + i);
+            const dateStr = date.toLocaleDateString('pt-BR');
+            const isToday = dateStr === todayStr;
+
+            const col = document.createElement('div');
+            col.className = 'day-column';
+            col.innerHTML = `
                 <div class="day-header ${isToday ? 'today' : ''}">
-                    <span>${daysOfWeek[i]}</span>
-                    <span style="font-weight:400; opacity:0.7">${formatDateDisplay(currentDay)}</span>
+                    <span>${days[i]}</span>
+                    <span style="font-size: 11px; opacity: 0.7">${date.getDate()}/${date.getMonth()+1}</span>
                 </div>
                 <div class="drop-zone" id="day-${i}"></div>
             `;
-            board.appendChild(colDiv);
-            columns.push({ element: colDiv.querySelector('.drop-zone'), date: currentDay });
-        }
+            container.appendChild(col);
 
-        allTasksCache.forEach(t => {
-            const taskDate = new Date(t.targetDate);
-            const colIndex = columns.findIndex(col => isSameDay(col.date, taskDate));
+            const tasks = allTasksCache.filter(t => new Date(t.targetDate).toLocaleDateString('pt-BR') === dateStr);
+            const zone = col.querySelector('.drop-zone');
             
-            if (colIndex !== -1) {
-                // --- LÓGICA DE ATRASO ---
-                const hoje = new Date(); hoje.setHours(0,0,0,0);
-                const dataTask = new Date(t.targetDate); dataTask.setHours(0,0,0,0);
-                const atrasada = !t.concluido && dataTask < hoje;
-
+            tasks.sort((a,b) => a.titulo.localeCompare(b.titulo)).forEach(t => {
                 const card = document.createElement('div');
-                card.className = `card ${t.concluido ? 'completed' : ''} ${atrasada ? 'atrasada' : ''}`;
-                card.onclick = (e) => {
-                    if(e.target.classList.contains('custom-checkbox')) return;
-                    abrirItem(t.id);
-                };
-
-                let tagColor = 'var(--tag-blue)'; let tagText = 'var(--text-blue)';
-                const tagUp = t.tag.toUpperCase();
-                if(tagUp.includes('GINE')) { tagColor = 'var(--tag-red)'; tagText = 'var(--text-red)'; }
-                if(tagUp.includes('PED')) { tagColor = 'var(--tag-yellow)'; tagText = 'var(--text-yellow)'; }
-                if(tagUp.includes('CIR')) { tagColor = 'var(--tag-green)'; tagText = 'var(--text-green)'; }
-
-                const icon = t.tipo === 'pdf' ? '<i class="far fa-file-pdf"></i>' : '<i class="far fa-file-alt"></i>';
-                const labelRevisao = t.titulo.includes('[REC]') ? 'Estudo' : 'Revisão';
+                card.className = 'card';
+                
+                // Lógica de Atraso
+                const taskDate = new Date(t.targetDate);
+                taskDate.setHours(23,59,59,999);
+                const isAtrasada = !t.concluido && taskDate < new Date();
+                if (isAtrasada) card.classList.add('atrasada');
 
                 card.innerHTML = `
                     <div class="card-top">
-                        <input type="checkbox" class="custom-checkbox" ${t.concluido ? 'checked' : ''} 
-                               onchange="window.toggleConcluido('${t.id}', this.checked)">
-                        <div>
-                            <div class="card-title">${t.titulo.replace(/\[.*?\]/, '').trim()}</div>
-                            <div class="card-tags">
-                                <span class="tag-pill" style="background:${tagColor}; color:${tagText}">${t.tag}</span>
-                            </div>
+                        <div class="btn-check ${t.concluido ? 'done' : ''}" id="check-${t.id}">
+                            ${t.concluido ? '<i class="fas fa-check"></i>' : ''}
+                        </div>
+                        <div class="card-title">
+                            ${t.titulo}
+                            ${isAtrasada ? '<span class="atraso-badge">ATRASADO</span>' : ''}
                         </div>
                     </div>
-                    <div class="card-meta">
-                        <span class="meta-item">${icon} ${labelRevisao}</span>
-                        ${atrasada ? `<span class="atraso-badge"><i class="fas fa-exclamation-circle"></i> Atrasado</span>` : ''}
+                    <div class="card-tag" style="background: ${getTagColor(t.tag).bg}; color: ${getTagColor(t.tag).text}">
+                        ${t.tag}
                     </div>
                 `;
-                columns[colIndex].element.appendChild(card);
-            }
-        });
-        updateGoals();
+                card.onclick = (e) => {
+                    if (e.target.closest('.btn-check')) return;
+                    abrirItem(t.id);
+                };
+                card.querySelector('.btn-check').onclick = () => toggleTask(t.id, !t.concluido);
+                zone.appendChild(card);
+            });
+        }
     }
 
-    window.toggleConcluido = async (id, status) => {
-        await updateDoc(doc(db, "planners", currentUID, "tasks", id), { concluido: status });
-        const task = allTasksCache.find(t => t.id === id);
-        if(task) task.concluido = status;
-        renderWeeklyBoard();
-    };
+    function getTagColor(tag) {
+        const colors = [
+            { bg: '#ffe2dd', text: '#d44c47' },
+            { bg: '#fdecc8', text: '#cb912f' },
+            { bg: '#dbeddb', text: '#448361' },
+            { bg: '#d3e5ef', text: '#18507a' },
+            { bg: '#e8deee', text: '#9065b0' }
+        ];
+        let hash = 0;
+        for (let i = 0; i < tag.length; i++) hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+        return colors[Math.abs(hash) % colors.length];
+    }
 
-    document.getElementById("pdfInput").onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const tag = prompt("Qual a matéria?", "Geral") || "Geral";
-        showFeedback("Enviando PDF...", true);
-
+    async function toggleTask(id, status) {
         try {
-            const refS = ref(storage, `planners/${currentUID}/${Date.now()}_${file.name}`);
-            await uploadBytes(refS, file);
-            const url = await getDownloadURL(refS);
-            const now = new Date();
-            const d0 = now.getTime();
-            const d1 = new Date(now).setDate(now.getDate() + 1);
-            const d7 = new Date(now).setDate(now.getDate() + 7);
-            const d21 = new Date(now).setDate(now.getDate() + 21);
-            
-            const ciclos = [
-                { n: `[REC] ${file.name}`, t: d0 }, { n: `[D+1] ${file.name}`, t: d1 },
-                { n: `[D+7] ${file.name}`, t: d7 }, { n: `[D+21] ${file.name}`, t: d21 }
-            ];
-
-            await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
-                nome: file.name, url, tag: tag.toUpperCase(), data: d0, tipo: 'pdf' 
-            });
-
-            for(const c of ciclos) {
-                await addDoc(collection(db, "planners", currentUID, "tasks"), { 
-                    titulo: c.n, tag: tag.toUpperCase(), pdfUrl: url, targetDate: c.t, 
-                    concluido: false, criadoEm: serverTimestamp(), tipo: 'pdf' 
-                });
-            }
-            showFeedback("Sucesso!", false);
+            await updateDoc(doc(db, "planners", currentUID, "tasks", id), { concluido: status });
             loadDataAndInit();
-            carregarBiblioteca();
-        } catch (err) { console.error(err); showFeedback("Erro.", false); }
-    };
+        } catch (e) { console.error(e); }
+    }
 
+    // --- SALVAR NOVO ESTUDO ---
     document.getElementById('btnSalvar').onclick = async () => {
-        const title = document.getElementById('subjectTitle').value;
-        const tag = document.getElementById('subjectTag').value || "Geral";
-        const isEditing = editingDocId !== null; 
+        const titulo = document.getElementById('subjectTitle').value.trim();
+        const tag = document.getElementById('subjectTag').value.trim();
+        const contentHTML = quill.root.innerHTML;
 
-        if (!title) return alert("Título obrigatório");
+        if (!titulo) return alert("Digite um título");
 
-        let contentHTML = quill.root.innerHTML;
-        if (contentHTML.includes('src="data:image')) {
-             alert("Algumas imagens foram coladas indevidamente e serão removidas para garantir o salvamento.");
-             contentHTML = contentHTML.replace(/<img[^>]+src="data:image[^">]+"[^>]*>/gi, '');
-        }
-        
         try {
-            showFeedback("Salvando...", true); 
+            showFeedback("Salvando...", true);
 
-            if (isEditing) {
-                await updateDoc(doc(db, "planners", currentUID, "tasks", editingDocId), {
-                    titulo: title.includes('[REC]') ? title : `[REC] ${title}`,
-                    tag: tag.toUpperCase(),
-                    contentHTML: contentHTML
+            if (editingDocId) {
+                // Modo Edição: Atualiza apenas o conteúdo HTML de todas as revisões com o mesmo título base
+                const refDoc = doc(db, "planners", currentUID, "tasks", editingDocId);
+                const snap = await getDoc(refDoc);
+                const oldData = snap.data();
+                const baseTitle = oldData.titulo.replace(/\[.*?\]/, '').trim();
+
+                const q = query(collection(db, "planners", currentUID, "tasks"));
+                const all = await getDocs(q);
+                const updates = [];
+                
+                all.forEach(d => {
+                    const t = d.data();
+                    const tBase = t.titulo.replace(/\[.*?\]/, '').trim();
+                    if (tBase === baseTitle) {
+                        updates.push(updateDoc(d.ref, { 
+                            titulo: t.titulo.replace(baseTitle, titulo),
+                            tag: tag,
+                            contentHTML: contentHTML 
+                        }));
+                    }
                 });
-                showFeedback("Atualizado!", false);
-            } else {
-                const now = new Date();
-                const d0 = now.getTime();
-                const d1 = new Date(now).setDate(now.getDate() + 1);
-                const d7 = new Date(now).setDate(now.getDate() + 7);
-                const d21 = new Date(now).setDate(now.getDate() + 21);
+                await Promise.all(updates);
 
-                const ciclos = [
-                    { n: `[REC] ${title}`, t: d0 }, { n: `[D+1] ${title}`, t: d1 },
-                    { n: `[D+7] ${title}`, t: d7 }, { n: `[D+21] ${title}`, t: d21 }
+                // Atualiza na biblioteca também
+                const qLib = query(collection(db, "planners", currentUID, "arquivos"));
+                const libSnap = await getDocs(qLib);
+                libSnap.forEach(d => {
+                    if (d.data().nome === baseTitle) {
+                        updateDoc(d.ref, { nome: titulo, tag: tag, contentHTML: contentHTML });
+                    }
+                });
+
+                showFeedback("Alterações salvas", false);
+            } else {
+                // Modo Novo: Cria o ciclo de revisões (D0, D1, D7, D15, D30)
+                const intervals = [
+                    { label: 'ESTUDO', days: 0 },
+                    { label: 'REC', days: 1 },
+                    { label: 'D+7', days: 7 },
+                    { label: 'D+15', days: 15 },
+                    { label: 'D+30', days: 30 }
                 ];
 
-                await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
-                    nome: title, 
-                    contentHTML: contentHTML, 
-                    tag: tag.toUpperCase(), 
-                    data: d0, 
-                    tipo: 'texto' 
+                const batch = [];
+                const now = new Date();
+                now.setHours(0,0,0,0);
+
+                intervals.forEach(inter => {
+                    const target = new Date(now);
+                    target.setDate(now.getDate() + inter.days);
+                    batch.push(addDoc(collection(db, "planners", currentUID, "tasks"), {
+                        titulo: `[${inter.label}] ${titulo}`,
+                        tag: tag,
+                        contentHTML: contentHTML,
+                        targetDate: target.getTime(),
+                        concluido: false,
+                        createdAt: serverTimestamp()
+                    }));
                 });
 
-                for (const c of ciclos) {
-                    await addDoc(collection(db, "planners", currentUID, "tasks"), {
-                        titulo: c.n, 
-                        tag: tag.toUpperCase(), 
-                        contentHTML: contentHTML,
-                        targetDate: c.t, 
-                        concluido: false, 
-                        criadoEm: serverTimestamp(), 
-                        tipo: 'texto'
-                    });
-                }
-                showFeedback("Criado com sucesso!", false);
-            }
+                // Adiciona à biblioteca
+                batch.push(addDoc(collection(db, "planners", currentUID, "arquivos"), {
+                    nome: titulo,
+                    tag: tag,
+                    contentHTML: contentHTML,
+                    tipo: 'nota',
+                    data: Date.now()
+                }));
 
-            modalEditorContent.classList.remove('editor-max');
-            btnCompress.style.display = 'none';
-            btnExpand.style.display = 'inline-flex';
+                await Promise.all(batch);
+                showFeedback("Cronograma criado!", false);
+            }
             
             fecharModal(); 
             loadDataAndInit();
@@ -935,10 +837,16 @@
         viewerDiv.style.height = '100%';
         container.appendChild(viewerDiv);
 
+        // Registra o módulo de tabela para o visualizador também
         const viewer = new Quill(viewerDiv, {
             theme: 'snow',
             readOnly: true,
-            modules: { toolbar: false } 
+            modules: { 
+                toolbar: false,
+                'better-table': {
+                    operationMenu: { items: { unmergeCells: { text: 'Desfazer mesclagem' } } }
+                }
+            } 
         });
         viewer.clipboard.dangerouslyPasteHTML(data.contentHTML || "");
     }
