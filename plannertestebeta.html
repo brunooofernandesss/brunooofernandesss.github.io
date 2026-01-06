@@ -441,40 +441,65 @@
     });
 
     
-        // --- NOVO: RECONHECIMENTO DE MARKDOWN (ChatGPT/Gemini) ---
-    // Se o texto colado tiver cara de Markdown (tabelas com |, listas com *, negrito **), 
-    // usamos a biblioteca 'marked' (que já está no seu head) para converter em HTML visual.
+            // --- NOVO: RECONHECIMENTO DE MARKDOWN (ChatGPT/Gemini) - VERSÃO 2.0 ---
     quill.clipboard.addMatcher(Node.TEXT_NODE, function(node, delta) {
         const text = node.data;
 
-        // Filtro simples: Só ativa se tiver caracteres típicos de Markdown
+        // Verifica se tem cara de Markdown (Tabelas, Negritos, Listas)
         const temSinaisMarkdown = /[|#*`]/.test(text) && (
-            text.includes('|') ||          // Tabelas
-            text.includes('**') ||         // Negrito
-            /^\s*[\*\-]\s/m.test(text) ||  // Listas (bullets)
-            /^\s*\d+\.\s/m.test(text) ||   // Listas numéricas
-            text.includes('###')           // Títulos
+            text.includes('|') ||          
+            text.includes('**') ||         
+            /^\s*[\*\-]\s/m.test(text) ||  
+            /^\s*\d+\.\s/m.test(text) ||   
+            text.includes('###')           
         );
 
         if (temSinaisMarkdown && typeof marked !== 'undefined') {
             try {
-                // Converte o texto cheio de símbolos em HTML limpo
-                // Nota: O Quill 1.3 básico pode simplificar tabelas complexas, 
-                // mas vai remover os caracteres '|---|' e formatar listas/negritos corretamente.
+                // --- CONFIGURAÇÃO ESPECIAL PARA SALVAR TABELAS ---
+                // O Quill 1.3 apaga tabelas HTML nativas (<table>). 
+                // Aqui criamos um "Renderer" que transforma tabelas em blocos de texto visíveis
+                const renderer = new marked.Renderer();
+
+                // 1. Transforma a Tabela em um bloco cinza
+                renderer.table = function(header, body) {
+                    return `<div style="background: #f8f9fa; padding: 10px; border-radius: 6px; border: 1px solid #eee; margin: 10px 0;">${header}${body}</div><p><br></p>`;
+                };
+
+                // 2. Transforma cada Linha da tabela em um parágrafo
+                renderer.tablerow = function(content) {
+                    return `<p style="margin: 0; padding: 4px 0; border-bottom: 1px dashed #ddd;">${content}</p>`;
+                };
+
+                // 3. Transforma cada Célula em texto separado por barra vertical (|)
+                renderer.tablecell = function(content, flags) {
+                    // Se for cabeçalho, coloca em negrito. Se for corpo, apenas texto.
+                    return flags.header 
+                        ? `<strong style="color:#2383e2;">${content}</strong> | ` 
+                        : `<span>${content}</span> <span style="color:#ccc">|</span> `;
+                };
+
+                // Aplica as configurações
+                marked.setOptions({
+                    renderer: renderer,
+                    gfm: true,    // Github Flavored Markdown (Importante para tabelas)
+                    breaks: true  // Transforma 'Enter' do Gemini em quebra de linha real <br>
+                });
+
+                // Converte e insere no Quill
                 const htmlConvertido = marked.parse(text);
-                
-                // Transforma esse HTML no formato que o Quill entende (Delta)
                 const deltaConvertido = quill.clipboard.convert(htmlConvertido);
                 return deltaConvertido;
+
             } catch (e) {
                 console.error("Erro ao converter Markdown:", e);
-                // Se der erro, mantém o texto original para não perder nada
                 return delta; 
             }
         }
         return delta;
     });
     // -----------------------------------------------------------
+
 
     
     // ⛔ BLOQUEAR BASE64
