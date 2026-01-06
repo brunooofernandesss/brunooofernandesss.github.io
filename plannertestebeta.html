@@ -440,16 +440,14 @@
         quill.setSelection(range.index + 3, 0);
     });
 
+            // --- VERSÃO 4.0: UNIFICAÇÃO TOTAL (HTML + MARKDOWN) ---
     
-                // --- VERSÃO 3.0: CORREÇÃO PARA TABELAS DO GEMINI E CORTE DE TEXTO ---
-    
-    // 1. MATCHER ESPECÍFICO PARA TABELAS (Gemini/Sites)
-    // Isso captura a tabela HTML antes que o Quill a delete e a transforma em texto formatado.
+    // 1. MATCHER PARA TABELAS HTML (Cópia com Mouse / Seleção)
     quill.clipboard.addMatcher('TABLE', function(node, delta) {
         const NewDelta = Quill.import('delta');
         const novaDelta = new NewDelta();
 
-        // Adiciona um título visual para separar
+        novaDelta.insert('\n');
         novaDelta.insert('📋 Tabela Importada:', { bold: true, color: '#2383e2' });
         novaDelta.insert('\n');
 
@@ -458,52 +456,87 @@
             const cells = row.querySelectorAll('th, td');
             cells.forEach((cell) => {
                 const isHeader = cell.tagName === 'TH' || row.parentElement.tagName === 'THEAD';
-                // Insere o conteúdo da célula
                 novaDelta.insert(cell.innerText.trim(), { 
                     bold: isHeader,
                     background: isHeader ? '#f0f0f0' : 'transparent'
                 });
-                // Insere a barra separadora
                 novaDelta.insert(' | ', { color: '#ccc' });
             });
-            // Quebra de linha ao fim de cada linha da tabela
-            novaDelta.insert('\n');
+            novaDelta.insert('\n'); // Quebra linha após cada linha da tabela
         });
         
-        novaDelta.insert('\n'); // Espaço extra após a tabela
+        novaDelta.insert('\n'); 
         return novaDelta;
     });
 
-    // 2. MATCHER PARA MARKDOWN (ChatGPT/Texto Puro)
+    // 2. MATCHER PARA TEXTO MARKDOWN (Botão Copiar do Gemini)
     quill.clipboard.addMatcher(Node.TEXT_NODE, function(node, delta) {
         const text = node.data;
         
-        // Verifica sinais de Markdown
-        const temSinaisMarkdown = /[|#*`]/.test(text) && (
-            text.includes('|') || text.includes('**') || text.includes('###') || /^\s*[\*\-]\s/m.test(text)
-        );
+        // Verifica se é uma tabela Markdown (várias linhas começando ou contendo |)
+        // Regex: Procura blocos de texto que tenham barras verticais
+        const isMarkdownTable = /((?:\|.+?\|+\n?)+)/.test(text);
 
-        if (temSinaisMarkdown && typeof marked !== 'undefined') {
-            try {
-                const renderer = new marked.Renderer();
-                
-                // SIMPLIFICAÇÃO EXTREMA: Transforma tudo em parágrafos simples para o Quill não cortar
-                renderer.table = (header, body) => `${header}${body}<p><br></p>`;
-                renderer.tablerow = (content) => `<p>${content}</p>`;
-                renderer.tablecell = (content, flags) => {
-                    return flags.header 
-                        ? `<strong>${content}</strong> <span style="color:#ccc">|</span> `
-                        : `${content} <span style="color:#ccc">|</span> `;
-                };
+        if (isMarkdownTable) {
+            const NewDelta = Quill.import('delta');
+            const novaDelta = new NewDelta();
+            
+            // Divide o texto em linhas para processar
+            const lines = text.split('\n');
+            
+            let insideTable = false;
 
-                marked.setOptions({ renderer: renderer, breaks: true, gfm: true });
-                
-                const html = marked.parse(text);
-                return quill.clipboard.convert(html);
-            } catch (e) {
-                return delta;
-            }
+            lines.forEach(line => {
+                // Se a linha tem barras | e parece uma tabela
+                if (line.trim().includes('|') && line.trim().length > 3) {
+                    
+                    // Pula linhas de separação tipo |---|---|
+                    if (/^[|\-\s]+$/.test(line.trim())) return;
+
+                    if (!insideTable) {
+                        novaDelta.insert('\n📋 Tabela Importada (Markdown):', { bold: true, color: '#787774' });
+                        novaDelta.insert('\n');
+                        insideTable = true;
+                    }
+
+                    // Processa as células da linha
+                    const cells = line.split('|').filter(c => c.trim() !== '');
+                    cells.forEach(cell => {
+                        novaDelta.insert(cell.trim(), { background: '#f9f9f9' });
+                        novaDelta.insert(' | ', { color: '#ccc' });
+                    });
+                    novaDelta.insert('\n');
+
+                } else {
+                    // Texto normal (fora da tabela)
+                    if (insideTable) {
+                         novaDelta.insert('\n'); 
+                         insideTable = false;
+                    }
+                    // Insere o texto normal mantendo a formatação original
+                    if (line.trim() !== '') {
+                        novaDelta.insert(line + '\n');
+                    }
+                }
+            });
+
+            return novaDelta;
         }
+
+        // Se não for tabela, deixa o Quill processar normal (para listas e negritos)
+        // Mas usamos o marked se tiver negritos/tópicos para garantir a beleza
+        const temOutrosMarkdowns = /[#*`]/.test(text) && (text.includes('**') || /^\s*[\*\-]\s/m.test(text));
+        
+        if (temOutrosMarkdowns && typeof marked !== 'undefined') {
+             try {
+                // Configuração simples para listas e negritos
+                const renderer = new marked.Renderer();
+                renderer.paragraph = (text) => `<p>${text}</p>`;
+                marked.setOptions({ renderer: renderer, breaks: true, gfm: true });
+                return quill.clipboard.convert(marked.parse(text));
+             } catch(e) { return delta; }
+        }
+
         return delta;
     });
     // -----------------------------------------------------------
