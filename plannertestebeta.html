@@ -440,6 +440,43 @@
         quill.setSelection(range.index + 3, 0);
     });
 
+    
+        // --- NOVO: RECONHECIMENTO DE MARKDOWN (ChatGPT/Gemini) ---
+    // Se o texto colado tiver cara de Markdown (tabelas com |, listas com *, negrito **), 
+    // usamos a biblioteca 'marked' (que já está no seu head) para converter em HTML visual.
+    quill.clipboard.addMatcher(Node.TEXT_NODE, function(node, delta) {
+        const text = node.data;
+
+        // Filtro simples: Só ativa se tiver caracteres típicos de Markdown
+        const temSinaisMarkdown = /[|#*`]/.test(text) && (
+            text.includes('|') ||          // Tabelas
+            text.includes('**') ||         // Negrito
+            /^\s*[\*\-]\s/m.test(text) ||  // Listas (bullets)
+            /^\s*\d+\.\s/m.test(text) ||   // Listas numéricas
+            text.includes('###')           // Títulos
+        );
+
+        if (temSinaisMarkdown && typeof marked !== 'undefined') {
+            try {
+                // Converte o texto cheio de símbolos em HTML limpo
+                // Nota: O Quill 1.3 básico pode simplificar tabelas complexas, 
+                // mas vai remover os caracteres '|---|' e formatar listas/negritos corretamente.
+                const htmlConvertido = marked.parse(text);
+                
+                // Transforma esse HTML no formato que o Quill entende (Delta)
+                const deltaConvertido = quill.clipboard.convert(htmlConvertido);
+                return deltaConvertido;
+            } catch (e) {
+                console.error("Erro ao converter Markdown:", e);
+                // Se der erro, mantém o texto original para não perder nada
+                return delta; 
+            }
+        }
+        return delta;
+    });
+    // -----------------------------------------------------------
+
+    
     // ⛔ BLOQUEAR BASE64
     quill.clipboard.addMatcher('IMG', function(node, delta) {
         const src = node.getAttribute('src');
