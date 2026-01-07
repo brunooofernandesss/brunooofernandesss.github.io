@@ -961,7 +961,28 @@
                 });
 
                 for (const c of ciclos) {
-                    await addDoc(collection(db, "planners", currentUID, "tasks"), {
+  const nivel =
+    c.col === 'recent' ? 0 :
+    c.col === 'd1' ? 1 :
+    c.col === 'd7' ? 2 :
+    c.col === 'd21' ? 3 : 0;
+
+  await addDoc(collection(db, "planners", currentUID, "tasks"), {
+    titulo: c.n,
+    tag: tag.toUpperCase(),
+    contentHTML: content,
+    targetDate: c.t,
+    column: c.col,
+    criadoEm: serverTimestamp(),
+    tipo: 'texto',
+
+    // 🔽 NOVOS CAMPOS
+    revisaoNivel: nivel,
+    origemId: null,
+    geradoPorIA: false,
+    precisaGerarIA: nivel > 0
+  });
+}
                         titulo: c.n, 
                         tag: tag.toUpperCase(), 
                         contentHTML: contentHTML,
