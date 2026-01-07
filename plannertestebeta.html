@@ -917,6 +917,79 @@
         } catch (err) { console.error(err); showFeedback("Erro.", false); }
     };
 
+        // =================================================================
+    // 🤖 FUNÇÕES DE INTELIGÊNCIA ARTIFICIAL (Worker + Firestore)
+    // =================================================================
+
+    async function gerarConteudoIA(textoOriginal, label) {
+        // Chama seu Cloudflare Worker
+        try {
+            const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "gerar_revisao", textoOriginal, label })
+            });
+
+            if (!response.ok) return `<p>Erro ao gerar revisão automática para ${label}.</p>`;
+
+            const data = await response.json();
+            return data.html; 
+        } catch (error) {
+            console.error("Erro Worker:", error);
+            return `<p>Erro de conexão ao gerar ${label}.</p>`;
+        }
+    }
+
+    async function criarRevisoesComIA(titulo, tag, contentOriginal) {
+        if (!currentUID) return;
+        
+        // Configuração dos dias de revisão
+        const cronograma = [
+            { label: "D+1", days: 1 },
+            { label: "D+7", days: 7 },
+            { label: "D+21", days: 21 }
+        ];
+
+        showFeedback("🤖 IA: Iniciando geração de revisões...", true);
+
+        for (const item of cronograma) {
+            try {
+                showFeedback(`🤖 Gerando revisão de ${item.label}...`, true);
+                
+                // 1. Gera o conteúdo resumido/explicativo via Worker
+                const conteudoIA = await gerarConteudoIA(contentOriginal, item.label);
+                
+                // 2. Calcula a data futura
+                const targetDate = new Date();
+                targetDate.setDate(targetDate.getDate() + item.days);
+
+                // 3. Salva no Firestore
+                await addDoc(collection(db, "planners", currentUID, "tasks"), {
+                    titulo: `[${item.label}] ${titulo}`,
+                    tag: tag,
+                    contentHTML: conteudoIA, // Conteúdo NOVO gerado pela IA
+                    targetDate: targetDate.getTime(),
+                    createdAt: serverTimestamp(),
+                    concluido: false,
+                    label: item.label,
+                    tipo: 'texto',
+                    geradoPorIA: true
+                });
+                
+            } catch(e) {
+                console.error(`Erro ao criar ${item.label}`, e);
+            }
+        }
+        
+        showFeedback("✅ Revisões D+1, D+7 e D+21 criadas!", false);
+        loadDataAndInit(); // Atualiza a tela no final
+    }
+
+    
+    
+        // =================================================================
+    // 💾 BOTÃO SALVAR (Cria Hoje + Chama IA para Futuro)
+    // =================================================================
     document.getElementById('btnSalvar').onclick = async () => {
         const title = document.getElementById('subjectTitle').value;
         const tag = document.getElementById('subjectTag').value || "Geral";
@@ -925,8 +998,10 @@
         if (!title) return alert("Título obrigatório");
 
         let contentHTML = quill.root.innerHTML;
+        
+        // Limpeza de segurança para imagens coladas direto (base64)
         if (contentHTML.includes('src="data:image')) {
-             alert("Algumas imagens foram coladas indevidamente e serão removidas para garantir o salvamento.");
+             alert("Imagens coladas diretamente foram removidas. Use o botão de upload.");
              contentHTML = contentHTML.replace(/<img[^>]+src="data:image[^">]+"[^>]*>/gi, '');
         }
         
@@ -934,56 +1009,56 @@
             showFeedback("Salvando...", true); 
 
             if (isEditing) {
+                // --- MODO EDIÇÃO (Só atualiza o card atual) ---
                 await updateDoc(doc(db, "planners", currentUID, "tasks", editingDocId), {
-                    titulo: title.includes('[REC]') ? title : `[REC] ${title}`,
+                    titulo: title,
                     tag: tag.toUpperCase(),
                     contentHTML: contentHTML
                 });
                 showFeedback("Atualizado!", false);
+                modalEditorContent.classList.remove('editor-max'); // reseta tamanho
+                fecharModal();
+                loadDataAndInit(); 
             } else {
-    const now = new Date();
-    const d0 = now.getTime();
-    const d1 = new Date(now).setDate(now.getDate() + 1);
-    const d7 = new Date(now).setDate(now.getDate() + 7);
-    const d21 = new Date(now).setDate(now.getDate() + 21);
-
-    const ciclos = [
-        { n: `[REC] ${title}`, t: d0 },
-        { n: `[D+1] ${title}`, t: d1 },
-        { n: `[D+7] ${title}`, t: d7 },
-        { n: `[D+21] ${title}`, t: d21 }
-    ];
-
-    await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
-        nome: title,
-        contentHTML: contentHTML,
-        tag: tag.toUpperCase(),
-        data: d0,
-        tipo: 'texto'
-    });
-
-    for (const c of ciclos) {
-        await addDoc(collection(db, "planners", currentUID, "tasks"), {
-            titulo: c.n,
-            tag: tag.toUpperCase(),
-            contentHTML: contentHTML,
-            targetDate: c.t,
-            concluido: false,
-            criadoEm: serverTimestamp(),
-            tipo: 'texto'
-        });
-    }
+                // --- MODO NOVO (Cria Hoje + Chama IA) ---
                 
-                showFeedback("Criado com sucesso!", false);
-            }
+                const now = new Date();
+                const d0 = now.getTime();
 
-            modalEditorContent.classList.remove('editor-max');
-            btnCompress.style.display = 'none';
-            btnExpand.style.display = 'inline-flex';
-            
-            fecharModal(); 
-            loadDataAndInit();
-            carregarBiblioteca();
+                // 1. Salva na Biblioteca (Backup do original)
+                await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
+                    nome: title,
+                    contentHTML: contentHTML,
+                    tag: tag.toUpperCase(),
+                    data: d0,
+                    tipo: 'texto'
+                });
+
+                // 2. Cria a tarefa de HOJE [REC] (Texto Original Completo)
+                await addDoc(collection(db, "planners", currentUID, "tasks"), {
+                    titulo: `[REC] ${title}`,
+                    tag: tag.toUpperCase(),
+                    contentHTML: contentHTML, 
+                    targetDate: d0,
+                    concluido: false,
+                    criadoEm: serverTimestamp(),
+                    tipo: 'texto'
+                });
+
+                // Fecha o modal para liberar o usuário
+                modalEditorContent.classList.remove('editor-max');
+                if(btnCompress) btnCompress.style.display = 'none';
+                if(btnExpand) btnExpand.style.display = 'inline-flex';
+                fecharModal(); 
+
+                // Atualiza a tela imediatamente com o card de hoje
+                loadDataAndInit(); 
+                carregarBiblioteca();
+
+                // 3. CHAMA A IA EM SEGUNDO PLANO PARA D+1, D+7, D+21
+                // A função cuidará de atualizar o feedback na tela
+                criarRevisoesComIA(title, tag.toUpperCase(), contentHTML);
+            }
 
         } catch (e) {
             console.error(e);
@@ -991,6 +1066,9 @@
             alert("Erro ao salvar o conteúdo.");
         }
     };
+
+    
+    
 
     async function carregarBiblioteca() {
         if(!currentUID) return;
