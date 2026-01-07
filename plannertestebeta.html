@@ -1019,21 +1019,21 @@
         });
     }
 
-                    // --- RENDERIZADOR HÍBRIDO V8.0 (SEGURANÇA TOTAL + TABELAS) ---
+                        // --- RENDERIZADOR HÍBRIDO V8.0 (CORREÇÃO TELA BRANCA + TABELAS) ---
     function renderHybridContent(rawHTML) {
         if (!rawHTML) return "";
 
         // 1. PREPARAÇÃO DO HTML (Insere quebras de linha estratégicas)
+        // Isso ajuda a separar o texto que foi salvo "grudado"
         let formattedHTML = rawHTML
-            // Tenta salvar tabelas HTML antigas transformando em pipes visuais
-            .replace(/<\/t[dh]>/gi, ' | ')
-            .replace(/<\/tr>/gi, '\n')
-            // Garante que parágrafos e quebras virem linhas processáveis
-            .replace(/<\/p>/gi, '</p>\n')
+            .replace(/<\/t[dh]>/gi, ' | ')  // Transforma células de tabela antiga em separadores visuais
+            .replace(/<\/tr>/gi, '\n')      // Quebra linha de tabela
+            .replace(/<\/p>/gi, '</p>\n')   // Garante 'Enter' após parágrafos
             .replace(/<\/div>/gi, '</div>\n')
             .replace(/<br\s*\/?>/gi, '<br>\n')
             .replace(/<\/li>/gi, '</li>\n');
 
+        // NÃO removemos mais o HTML aqui. Mantemos o original.
         const lines = formattedHTML.split('\n');
         
         let output = '';
@@ -1042,10 +1042,12 @@
 
         const flushTable = () => {
             if (tableBuffer.length === 0) return;
-            output += `<div style="overflow-x:auto; margin-bottom: 15px; border:1px solid #eee; border-radius:6px;"><table class="hybrid-table"><tbody>`;
+            
+            // Cria a estrutura da tabela bonita
+            output += `<div style="overflow-x:auto; margin-bottom: 15px; border:1px solid #eee; border-radius:6px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);"><table class="hybrid-table"><tbody>`;
             
             tableBuffer.forEach((row, i) => {
-                // Remove HTML apenas para processar os dados da tabela
+                // Aqui sim limpamos o HTML, mas SÓ DENTRO da tabela para processar os dados
                 const cleanRow = row.replace(/<\/?[^>]+(>|$)/g, "").trim();
                 if (!cleanRow) return;
 
@@ -1054,9 +1056,11 @@
                 if (cells.length > 0) {
                     output += '<tr>';
                     cells.forEach(cell => {
-                        // Restaura negritos do Markdown se existirem
+                        // Recupera negritos do Markdown (**texto**) se houver
                         let content = cell.trim().replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-                        output += i === 0 ? `<th>${content}</th>` : `<td>${content}</td>`;
+                        output += i === 0 
+                            ? `<th>${content}</th>` 
+                            : `<td>${content}</td>`;
                     });
                     output += '</tr>';
                 }
@@ -1066,7 +1070,7 @@
         };
 
         lines.forEach(line => {
-            // Verifica se é tabela olhando apenas o texto puro da linha
+            // Para verificar se é tabela, olhamos a versão "limpa" da linha
             const textContent = line.replace(/<\/?[^>]+(>|$)/g, "");
             
             // Regra: Tem pipe | E tem pelo menos 2 colunas
@@ -1080,7 +1084,7 @@
                     flushTable();
                     insideTable = false;
                 }
-                // SE NÃO FOR TABELA: Mantém a linha original com todo o HTML (imagens, cores, etc)
+                // SE NÃO FOR TABELA: Mantém a linha original COMPLETA (com imagens, cores, etc)
                 if (line.trim()) {
                     output += line;
                 }
@@ -1090,7 +1094,6 @@
         flushTable(); 
         return output;
     }
-
 
 
 
