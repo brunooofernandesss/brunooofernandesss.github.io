@@ -477,88 +477,39 @@
         return novaDelta;
     });
 
-    // --- VERSÃO 9.0: EDITOR COM "LÓGICA GRUDENTA" (Resolve picote do Gemini) ---
+        // --- MATCHER REVISADO: Limpa o |---| e evita picotamento no Editor ---
     quill.clipboard.addMatcher(Node.TEXT_NODE, function(node, delta) {
         const text = node.data;
         
-        // Se não tem pipe, processa como texto normal
+        // Se não tem pipe, deixa o Quill lidar com o texto normalmente
         if (!text.includes('|')) return delta;
 
         const NewDelta = Quill.import('delta');
         const novaDelta = new NewDelta();
         const lines = text.split('\n');
         
-        let insideTable = false;
-
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
+        lines.forEach((line) => {
             const trimmed = line.trim();
+            // Detecta a linha de separação do Markdown (ex: |---|)
+            const isSeparator = /^[|\s-:]+$/.test(trimmed) && trimmed.includes('-');
 
-            // DETECÇÃO DE TABELA:
-            // 1. Tem que ter pipe '|'
-            // 2. Tem que ter pelo menos 2 colunas (split > 2) OU começar com pipe
-            const hasPipe = trimmed.includes('|');
-            const looksLikeTable = hasPipe && (trimmed.startsWith('|') || trimmed.split('|').length > 1);
-            
-            // DETECÇÃO DE SEPARADOR: (ex: |---| ou |:---:|)
-            // Removemos pipes e espaços, se sobrar só traços/dois pontos, é separador
-            const cleanSeparator = trimmed.replace(/[|\s:-]/g, '');
-            const isSeparator = hasPipe && cleanSeparator.length === 0 && trimmed.length > 2;
+            // Se for separador, ignoramos (não cola nada)
+            if (isSeparator) return; 
 
-            if (looksLikeTable && !isSeparator) {
-                // Se não estávamos em tabela, INICIA uma nova agora
-                if (!insideTable) {
-                    novaDelta.insert('\n📋 Tabela Importada:', { bold: true, color: '#555' });
-                    novaDelta.insert('\n');
-                    insideTable = true;
-                }
-
-                // Processa e desenha a linha da tabela
-                const cells = trimmed.split('|').filter(c => c.trim() !== ''); // Remove sobras vazias
-                
-                cells.forEach((cell) => {
-                    // Limpa formatação Markdown de dentro da célula
-                    let cellText = cell.trim().replace(/\*\*/g, ''); 
-                    novaDelta.insert(cellText, { background: '#f9f9f9' });
-                    novaDelta.insert(' | ', { color: '#ccc' });
-                });
-                novaDelta.insert('\n');
-
+            if (trimmed.includes('|')) {
+                // Se for linha de tabela, removemos os negritos (**) para ficar limpo
+                const cleanLine = line.replace(/\*\*/g, ''); 
+                novaDelta.insert(cleanLine + '\n');
             } else {
-                // LÓGICA GRUDENTA (O Segredo):
-                // Se estamos dentro de uma tabela e a linha é vazia ou é um separador...
-                // NÃO FECHAMOS A TABELA. Apenas ignoramos a linha.
-                if (insideTable && (trimmed === '' || isSeparator)) {
-                    continue; // Pula para a próxima linha sem fazer nada (mantém tabela aberta)
-                }
-
-                // Se chegou aqui, é texto normal e não é vazio. ENTÃO fechamos a tabela.
-                if (insideTable) {
-                    insideTable = false;
-                    novaDelta.insert('\n'); 
-                }
-
-                // Processa o texto normal (mantendo negritos)
-                if (trimmed !== '') {
-                    const parts = line.split(/(\*\*.*?\*\*)/);
-                    parts.forEach(part => {
-                        if (part.startsWith('**') && part.endsWith('**')) {
-                            novaDelta.insert(part.replace(/\*\*/g, ''), { bold: true });
-                        } else {
-                            novaDelta.insert(part);
-                        }
-                    });
-                    novaDelta.insert('\n');
-                } else {
-                    // Mantém quebras de linha originais do texto fora da tabela
-                    novaDelta.insert('\n');
-                }
+                // Se for texto normal misturado, cola normal
+                novaDelta.insert(line + '\n');
             }
-        }
-
+        });
         return novaDelta;
     });
-    // -----------------------------------------------------------
+
+
+
 
     
 
@@ -1027,48 +978,28 @@
         });
     }
 
-                        // --- RENDERIZADOR HÍBRIDO V8.0 (CORREÇÃO TELA BRANCA + TABELAS) ---
+                           // --- RENDERIZADOR REVISADO (CORREÇÃO DE TABELAS) ---
+
+    // Transforma o texto salvo com "|" em tabela HTML visual
     function renderHybridContent(rawHTML) {
         if (!rawHTML) return "";
-
-        // 1. PREPARAÇÃO DO HTML (Insere quebras de linha estratégicas)
-        // Isso ajuda a separar o texto que foi salvo "grudado"
-        let formattedHTML = rawHTML
-            .replace(/<\/t[dh]>/gi, ' | ')  // Transforma células de tabela antiga em separadores visuais
-            .replace(/<\/tr>/gi, '\n')      // Quebra linha de tabela
-            .replace(/<\/p>/gi, '</p>\n')   // Garante 'Enter' após parágrafos
-            .replace(/<\/div>/gi, '</div>\n')
-            .replace(/<br\s*\/?>/gi, '<br>\n')
-            .replace(/<\/li>/gi, '</li>\n');
-
-        // NÃO removemos mais o HTML aqui. Mantemos o original.
-        const lines = formattedHTML.split('\n');
-        
+        // Divide o HTML pelas tags de parágrafo que o Quill gera
+        const lines = rawHTML.split(/<p>|<\/p>/); 
         let output = '';
         let tableBuffer = [];
         let insideTable = false;
 
         const flushTable = () => {
             if (tableBuffer.length === 0) return;
-            
-            // Cria a estrutura da tabela bonita
-            output += `<div style="overflow-x:auto; margin-bottom: 15px; border:1px solid #eee; border-radius:6px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);"><table class="hybrid-table"><tbody>`;
-            
+            output += `<div style="overflow-x:auto; margin: 16px 0;"><table class="hybrid-table"><tbody>`;
             tableBuffer.forEach((row, i) => {
-                // Aqui sim limpamos o HTML, mas SÓ DENTRO da tabela para processar os dados
-                const cleanRow = row.replace(/<\/?[^>]+(>|$)/g, "").trim();
-                if (!cleanRow) return;
-
+                // Remove qualquer tag HTML que tenha sobrado na linha para processar os pipes
+                const cleanRow = row.replace(/<[^>]*>?/gm, '').trim();
                 const cells = cleanRow.split('|').filter(c => c.trim() !== '');
-                
                 if (cells.length > 0) {
                     output += '<tr>';
                     cells.forEach(cell => {
-                        // Recupera negritos do Markdown (**texto**) se houver
-                        let content = cell.trim().replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-                        output += i === 0 
-                            ? `<th>${content}</th>` 
-                            : `<td>${content}</td>`;
+                        output += i === 0 ? `<th>${cell.trim()}</th>` : `<td>${cell.trim()}</td>`;
                     });
                     output += '</tr>';
                 }
@@ -1078,48 +1009,38 @@
         };
 
         lines.forEach(line => {
-            // Para verificar se é tabela, olhamos a versão "limpa" da linha
-            const textContent = line.replace(/<\/?[^>]+(>|$)/g, "");
-            
-            // Regra: Tem pipe | E tem pelo menos 2 colunas
-            const isTableLine = textContent.includes('|') && textContent.split('|').length > 2;
+            const cleanLine = line.replace(/<br>/g, '').trim();
+            // Detecta se a linha é de uma tabela (tem barras e conteúdo entre elas)
+            const isTableLine = cleanLine.includes('|') && cleanLine.split('|').length > 2;
 
             if (isTableLine) {
                 insideTable = true;
-                tableBuffer.push(line);
+                tableBuffer.push(cleanLine);
             } else {
                 if (insideTable) {
                     flushTable();
                     insideTable = false;
                 }
-                // SE NÃO FOR TABELA: Mantém a linha original COMPLETA (com imagens, cores, etc)
-                if (line.trim()) {
-                    output += line;
-                }
+                if (line.trim()) output += `<p>${line}</p>`;
             }
         });
-        
-        flushTable(); 
+        flushTable();
         return output;
     }
 
-                // Função que injeta o HTML no visualizador (SEM criar um novo Quill que apaga tabelas)
+    // Injeta o conteúdo no visualizador
     function renderQuillContent(container, data) {
         container.innerHTML = ''; 
-        
-        // 1. Processa o conteúdo para transformar tabelas de texto em HTML visual
         const processedHTML = renderHybridContent(data.contentHTML || "");
-
-        // 2. Injeta o HTML diretamente na div (Bypass no Quill)
+        
         container.innerHTML = `
             <div class="ql-container ql-snow" style="border:none;">
-                <div class="ql-editor" style="white-space: normal; padding: 0;">
+                <div class="ql-editor" style="padding: 0;">
                     ${processedHTML}
                 </div>
             </div>
         `;
     }
-
 
 
 
