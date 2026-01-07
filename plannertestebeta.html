@@ -207,12 +207,41 @@
         #viewer-container { border: none !important; }
         #viewer-container .ql-container.ql-snow { border: none !important; }
     
-                /* --- ESTILO TABELA HÍBRIDA (VISUALIZADOR) --- */
-    
-        .hybrid-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
-        .hybrid-table th { background: #f3f3f3; font-weight: 600; color: #37352f; }
-        .hybrid-table th, .hybrid-table td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; }
-        .hybrid-table tr:nth-child(even) td { background: #fafafa; }
+                    /* --- ESTILO TABELA HÍBRIDA (VISUALIZADOR) CORRIGIDO --- */
+    .table-wrapper {
+        overflow-x: auto;
+        border: 1px solid #e9e9e7;
+        border-radius: 6px;
+        margin: 16px 0;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+    .hybrid-table { 
+        width: 100%; 
+        border-collapse: collapse; 
+        font-size: 14px; 
+        background: #fff;
+    }
+    .hybrid-table th { 
+        background: #f9f9f9; 
+        font-weight: 600; 
+        color: #37352f; 
+        text-transform: uppercase;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #e9e9e7;
+    }
+    .hybrid-table th, .hybrid-table td { 
+        border: 1px solid #e9e9e7; 
+        padding: 12px 16px; 
+        text-align: left; 
+        line-height: 1.5;
+    }
+    /* Remove bordas laterais externas para visual mais limpo */
+    .hybrid-table tr:first-child th { border-top: none; }
+    .hybrid-table tr:last-child td { border-bottom: none; }
+    .hybrid-table th:first-child, .hybrid-table td:first-child { border-left: none; }
+    .hybrid-table th:last-child, .hybrid-table td:last-child { border-right: none; }
+
 
     </style>
 </head>
@@ -978,28 +1007,41 @@
         });
     }
 
-                           // --- RENDERIZADOR REVISADO (CORREÇÃO DE TABELAS) ---
-
-    // Transforma o texto salvo com "|" em tabela HTML visual
+                               // --- RENDERIZADOR CORRIGIDO V2 (Tabelas Unificadas) ---
     function renderHybridContent(rawHTML) {
         if (!rawHTML) return "";
-        // Divide o HTML pelas tags de parágrafo que o Quill gera
-        const lines = rawHTML.split(/<p>|<\/p>/); 
+        
+        // Limpeza prévia para garantir quebras de linha consistentes
+        let content = rawHTML
+            .replace(/<\/p>/gi, '\n')      // Fim de parágrafo vira quebra
+            .replace(/<p[^>]*>/gi, '')     // Remove início de parágrafo
+            .replace(/<br\s*\/?>/gi, '\n') // BR vira quebra
+            .replace(/&nbsp;/g, ' ');      // Espaços HTML viram espaços normais
+
+        const lines = content.split('\n');
+        
         let output = '';
         let tableBuffer = [];
         let insideTable = false;
 
         const flushTable = () => {
             if (tableBuffer.length === 0) return;
-            output += `<div style="overflow-x:auto; margin: 16px 0;"><table class="hybrid-table"><tbody>`;
+            
+            output += `<div class="table-wrapper"><table class="hybrid-table"><tbody>`;
+            
             tableBuffer.forEach((row, i) => {
-                // Remove qualquer tag HTML que tenha sobrado na linha para processar os pipes
-                const cleanRow = row.replace(/<[^>]*>?/gm, '').trim();
-                const cells = cleanRow.split('|').filter(c => c.trim() !== '');
+                const cells = row.split('|').map(c => c.trim());
+                
+                // Remove células vazias nas pontas
+                if(cells.length > 0 && cells[0] === '') cells.shift();
+                if(cells.length > 0 && cells[cells.length-1] === '') cells.pop();
+
                 if (cells.length > 0) {
-                    output += '<tr>';
+                    const isHeader = (i === 0);
+                    output += `<tr>`;
                     cells.forEach(cell => {
-                        output += i === 0 ? `<th>${cell.trim()}</th>` : `<td>${cell.trim()}</td>`;
+                        const tag = isHeader ? 'th' : 'td';
+                        output += `<${tag}>${cell}</${tag}>`;
                     });
                     output += '</tr>';
                 }
@@ -1009,11 +1051,13 @@
         };
 
         lines.forEach(line => {
-            const cleanLine = line.replace(/<br>/g, '').trim();
-            // Detecta se a linha é de uma tabela (tem barras e conteúdo entre elas)
-            const isTableLine = cleanLine.includes('|') && cleanLine.split('|').length > 2;
+            const cleanLine = line.trim();
+            
+            if (!cleanLine) return; 
 
-            if (isTableLine) {
+            if (cleanLine.includes('|')) {
+                if (/^[|\s-:]+$/.test(cleanLine)) return;
+
                 insideTable = true;
                 tableBuffer.push(cleanLine);
             } else {
@@ -1021,12 +1065,15 @@
                     flushTable();
                     insideTable = false;
                 }
-                if (line.trim()) output += `<p>${line}</p>`;
+                output += `<p style="margin-bottom: 12px; line-height: 1.6;">${line}</p>`;
             }
         });
-        flushTable();
+
+        if (insideTable) flushTable();
+        
         return output;
     }
+
 
     // Injeta o conteúdo no visualizador
     function renderQuillContent(container, data) {
