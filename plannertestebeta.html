@@ -1019,20 +1019,26 @@
         });
     }
 
-            // --- RENDERIZADOR HÍBRIDO V6.0: CORREÇÃO PARA TEXTO ENCAVALADO ---
+                // --- RENDERIZADOR HÍBRIDO V7.0 (CORREÇÃO DE AGLUTINAÇÃO) ---
     function renderHybridContent(rawHTML) {
         if (!rawHTML) return "";
 
-        // 1. TRUQUE PARA DESENCAVALAR: 
-        // Substitui o fim de parágrafos (</p>) e quebras (<br>) por um caractere especial de nova linha
-        // Isso garante que o código consiga ler linha por linha, mesmo em documentos antigos.
-        const formattedHTML = rawHTML
-            .replace(/<\/p>/gi, '</p>\n')  // Adiciona 'Enter' visual após cada parágrafo
-            .replace(/<\/div>/gi, '</div>\n') 
-            .replace(/<br\s*\/?>/gi, '<br>\n')
-            .replace(/<\/li>/gi, '</li>\n');
+        // 1. PRÉ-PROCESSAMENTO CIRÚRGICO
+        // Antes de remover o HTML, transformamos a estrutura da tabela em texto visual
+        let formattedHTML = rawHTML
+            // Se houver tabela HTML real salva, transforma </td> em " | " para não grudar o texto
+            .replace(/<\/t[dh]>/gi, ' | ') 
+            .replace(/<\/tr>/gi, '\n')     
+            // Garante quebra de linha visual para parágrafos e divs
+            .replace(/<\/p>/gi, '\n')
+            .replace(/<\/div>/gi, '\n')
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/<\/li>/gi, '\n');
 
-        const lines = formattedHTML.split('\n');
+        // Remove todas as outras tags HTML restantes para limpar o texto
+        const plainText = formattedHTML.replace(/<\/?[^>]+(>|$)/g, "").trim();
+
+        const lines = plainText.split('\n');
         
         let output = '';
         let tableBuffer = [];
@@ -1040,25 +1046,19 @@
 
         const flushTable = () => {
             if (tableBuffer.length === 0) return;
-            // Cria a tabela com estilo e overflow para não quebrar no celular
-            output += `<div style="overflow-x:auto; margin-bottom: 15px;"><table class="hybrid-table"><tbody>`;
+            output += `<div style="overflow-x:auto; margin-bottom: 15px; border:1px solid #eee; border-radius:6px;"><table class="hybrid-table"><tbody>`;
             
             tableBuffer.forEach((row, i) => {
-                // Remove tags HTML da linha da tabela para pegar só o texto puro
-                const cleanRow = row.replace(/<\/?[^>]+(>|$)/g, "").trim();
-                if (!cleanRow) return;
-
-                const cells = cleanRow.split('|').filter(c => c.trim() !== '');
+                const cells = row.split('|').filter(c => c.trim() !== '');
                 
                 if (cells.length > 0) {
                     output += '<tr>';
                     cells.forEach(cell => {
-                        // Se tiver negrito Markdown (**texto**), converte para HTML visual
-                        let cellContent = cell.trim().replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-                        
+                        // Recupera negritos simples se houver
+                        let content = cell.trim().replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
                         output += i === 0 
-                            ? `<th>${cellContent}</th>` 
-                            : `<td>${cellContent}</td>`;
+                            ? `<th>${content}</th>` 
+                            : `<td>${content}</td>`;
                     });
                     output += '</tr>';
                 }
@@ -1068,24 +1068,22 @@
         };
 
         lines.forEach(line => {
-            // Remove tags HTML apenas para ANALISAR se é uma tabela
-            const textContent = line.replace(/<\/?[^>]+(>|$)/g, "");
-            
+            const cleanLine = line.trim();
+            if (!cleanLine) return;
+
             // Regra: Tem pipe | E tem pelo menos 2 colunas
-            const isTableLine = textContent.includes('|') && textContent.split('|').length > 2;
+            const isTableLine = cleanLine.includes('|') && cleanLine.split('|').length > 2;
 
             if (isTableLine) {
                 insideTable = true;
-                tableBuffer.push(line);
+                tableBuffer.push(cleanLine);
             } else {
                 if (insideTable) {
                     flushTable();
                     insideTable = false;
                 }
-                // Se não for tabela, imprime a linha original (mantendo o HTML original dela)
-                if (line.trim()) {
-                    output += line;
-                }
+                // Reconstrói o parágrafo
+                output += `<p>${cleanLine}</p>`;
             }
         });
         
@@ -1093,23 +1091,6 @@
         return output;
     }
 
-    function renderQuillContent(container, data) {
-        container.innerHTML = ''; 
-        const viewerDiv = document.createElement('div');
-        viewerDiv.id = 'viewer-container'; 
-        viewerDiv.style.height = '100%';
-        container.appendChild(viewerDiv);
-
-        const viewer = new Quill(viewerDiv, {
-            theme: 'snow',
-            readOnly: true,
-            modules: { toolbar: false } 
-        });
-
-        // Aplica o renderizador
-        const processed = renderHybridContent(data.contentHTML || "");
-        viewer.clipboard.dangerouslyPasteHTML(processed);
-    }
 
 
 
