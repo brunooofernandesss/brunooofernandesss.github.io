@@ -1019,26 +1019,22 @@
         });
     }
 
-                // --- RENDERIZADOR HÍBRIDO V7.0 (CORREÇÃO DE AGLUTINAÇÃO) ---
+                    // --- RENDERIZADOR HÍBRIDO V8.0 (SEGURANÇA TOTAL + TABELAS) ---
     function renderHybridContent(rawHTML) {
         if (!rawHTML) return "";
 
-        // 1. PRÉ-PROCESSAMENTO CIRÚRGICO
-        // Antes de remover o HTML, transformamos a estrutura da tabela em texto visual
+        // 1. PREPARAÇÃO DO HTML (Insere quebras de linha estratégicas)
         let formattedHTML = rawHTML
-            // Se houver tabela HTML real salva, transforma </td> em " | " para não grudar o texto
-            .replace(/<\/t[dh]>/gi, ' | ') 
-            .replace(/<\/tr>/gi, '\n')     
-            // Garante quebra de linha visual para parágrafos e divs
-            .replace(/<\/p>/gi, '\n')
-            .replace(/<\/div>/gi, '\n')
-            .replace(/<br\s*\/?>/gi, '\n')
-            .replace(/<\/li>/gi, '\n');
+            // Tenta salvar tabelas HTML antigas transformando em pipes visuais
+            .replace(/<\/t[dh]>/gi, ' | ')
+            .replace(/<\/tr>/gi, '\n')
+            // Garante que parágrafos e quebras virem linhas processáveis
+            .replace(/<\/p>/gi, '</p>\n')
+            .replace(/<\/div>/gi, '</div>\n')
+            .replace(/<br\s*\/?>/gi, '<br>\n')
+            .replace(/<\/li>/gi, '</li>\n');
 
-        // Remove todas as outras tags HTML restantes para limpar o texto
-        const plainText = formattedHTML.replace(/<\/?[^>]+(>|$)/g, "").trim();
-
-        const lines = plainText.split('\n');
+        const lines = formattedHTML.split('\n');
         
         let output = '';
         let tableBuffer = [];
@@ -1049,16 +1045,18 @@
             output += `<div style="overflow-x:auto; margin-bottom: 15px; border:1px solid #eee; border-radius:6px;"><table class="hybrid-table"><tbody>`;
             
             tableBuffer.forEach((row, i) => {
-                const cells = row.split('|').filter(c => c.trim() !== '');
+                // Remove HTML apenas para processar os dados da tabela
+                const cleanRow = row.replace(/<\/?[^>]+(>|$)/g, "").trim();
+                if (!cleanRow) return;
+
+                const cells = cleanRow.split('|').filter(c => c.trim() !== '');
                 
                 if (cells.length > 0) {
                     output += '<tr>';
                     cells.forEach(cell => {
-                        // Recupera negritos simples se houver
+                        // Restaura negritos do Markdown se existirem
                         let content = cell.trim().replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-                        output += i === 0 
-                            ? `<th>${content}</th>` 
-                            : `<td>${content}</td>`;
+                        output += i === 0 ? `<th>${content}</th>` : `<td>${content}</td>`;
                     });
                     output += '</tr>';
                 }
@@ -1068,28 +1066,31 @@
         };
 
         lines.forEach(line => {
-            const cleanLine = line.trim();
-            if (!cleanLine) return;
-
+            // Verifica se é tabela olhando apenas o texto puro da linha
+            const textContent = line.replace(/<\/?[^>]+(>|$)/g, "");
+            
             // Regra: Tem pipe | E tem pelo menos 2 colunas
-            const isTableLine = cleanLine.includes('|') && cleanLine.split('|').length > 2;
+            const isTableLine = textContent.includes('|') && textContent.split('|').length > 2;
 
             if (isTableLine) {
                 insideTable = true;
-                tableBuffer.push(cleanLine);
+                tableBuffer.push(line);
             } else {
                 if (insideTable) {
                     flushTable();
                     insideTable = false;
                 }
-                // Reconstrói o parágrafo
-                output += `<p>${cleanLine}</p>`;
+                // SE NÃO FOR TABELA: Mantém a linha original com todo o HTML (imagens, cores, etc)
+                if (line.trim()) {
+                    output += line;
+                }
             }
         });
         
         flushTable(); 
         return output;
     }
+
 
 
 
