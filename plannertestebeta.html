@@ -477,7 +477,7 @@
         return novaDelta;
     });
 
-            // --- VERSÃO 6.0: EDITOR INTELIGENTE (CORREÇÃO DE QUEBRA DO GEMINI) ---
+                // --- VERSÃO 6.0: EDITOR INTELIGENTE (CORREÇÃO DE QUEBRA DO GEMINI) ---
     // 2. MATCHER PARA TEXTO GERAL E MARKDOWN
     quill.clipboard.addMatcher(Node.TEXT_NODE, function(node, delta) {
         const text = node.data;
@@ -494,7 +494,7 @@
         lines.forEach((line) => {
             const trimmed = line.trim();
 
-            // Regra mais flexível: É tabela se tem pipe '|' E (começa com pipe OU tem mais de 2 colunas)
+            // Regra: Tem pipe | E (começa com pipe OU tem pelo menos 2 colunas)
             const isTableLine = trimmed.includes('|') && (trimmed.startsWith('|') || trimmed.split('|').length > 2);
             const isSeparator = /^[|\-\s:]+$/.test(trimmed); // Detecta linhas divisórias |---|
 
@@ -510,7 +510,7 @@
                 const cells = trimmed.split('|').filter(c => c.trim() !== '');
                 
                 cells.forEach((cell) => {
-                    // Limpa asteriscos do markdown dentro da célula
+                    // Limpa asteriscos do markdown
                     let cellText = cell.trim().replace(/\*\*/g, ''); 
                     novaDelta.insert(cellText, { background: '#f9f9f9' });
                     novaDelta.insert(' | ', { color: '#ccc' });
@@ -520,16 +520,16 @@
             } else {
                 // LÓGICA DE PROTEÇÃO:
                 // Só fecha a tabela se encontrar texto que NÃO é vazio e NÃO é tabela.
-                // Se for linha vazia, ele MANTÉM a tabela aberta (insideTable = true)
+                // Se for linha vazia, ele MANTÉM a tabela aberta
                 if (insideTable && !isSeparator && trimmed !== '') {
                     insideTable = false;
                     novaDelta.insert('\n'); 
                 }
 
-                // Se for separador ou linha vazia dentro da tabela, apenas ignora
+                // Se for separador ou linha vazia dentro da tabela, ignora
                 if (isSeparator || (insideTable && trimmed === '')) return;
 
-                // Processamento normal de texto (fora da tabela)
+                // Processamento normal de texto
                 if (trimmed !== '') {
                     // Mantém negritos (**texto**)
                     const parts = line.split(/(\*\*.*?\*\*)/);
@@ -542,7 +542,6 @@
                     });
                     novaDelta.insert('\n');
                 } else {
-                    // Linhas vazias fora da tabela são mantidas
                     novaDelta.insert('\n');
                 }
             }
@@ -550,7 +549,7 @@
 
         return novaDelta;
     });
-    // -----------------------------------------------------------
+
 
 
     
@@ -1096,14 +1095,14 @@
         return output;
     }
 
-            // Função que injeta o HTML no visualizador (SEM criar um novo Quill que apaga tabelas)
+                // Função que injeta o HTML no visualizador (SEM criar um novo Quill que apaga tabelas)
     function renderQuillContent(container, data) {
         container.innerHTML = ''; 
         
         // 1. Processa o conteúdo para transformar tabelas de texto em HTML visual
         const processedHTML = renderHybridContent(data.contentHTML || "");
 
-        // 2. Injeta o HTML diretamente na div (Ignorando o Quill)
+        // 2. Injeta o HTML diretamente na div (Bypass no Quill)
         container.innerHTML = `
             <div class="ql-container ql-snow" style="border:none;">
                 <div class="ql-editor" style="white-space: normal; padding: 0;">
@@ -1112,6 +1111,7 @@
             </div>
         `;
     }
+
 
 
 
