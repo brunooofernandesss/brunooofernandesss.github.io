@@ -477,7 +477,7 @@
         return novaDelta;
     });
 
-        // --- VERSÃO 6.0: EDITOR INTELIGENTE (CORREÇÃO DE QUEBRA DO GEMINI) ---
+            // --- VERSÃO 6.0: EDITOR INTELIGENTE (CORREÇÃO DE QUEBRA DO GEMINI) ---
     // 2. MATCHER PARA TEXTO GERAL E MARKDOWN
     quill.clipboard.addMatcher(Node.TEXT_NODE, function(node, delta) {
         const text = node.data;
@@ -494,7 +494,7 @@
         lines.forEach((line) => {
             const trimmed = line.trim();
 
-            // Regra: Tem pipe | E (começa com pipe OU tem pelo menos 2 colunas)
+            // Regra mais flexível: É tabela se tem pipe '|' E (começa com pipe OU tem mais de 2 colunas)
             const isTableLine = trimmed.includes('|') && (trimmed.startsWith('|') || trimmed.split('|').length > 2);
             const isSeparator = /^[|\-\s:]+$/.test(trimmed); // Detecta linhas divisórias |---|
 
@@ -510,7 +510,7 @@
                 const cells = trimmed.split('|').filter(c => c.trim() !== '');
                 
                 cells.forEach((cell) => {
-                    // Limpa asteriscos do markdown
+                    // Limpa asteriscos do markdown dentro da célula
                     let cellText = cell.trim().replace(/\*\*/g, ''); 
                     novaDelta.insert(cellText, { background: '#f9f9f9' });
                     novaDelta.insert(' | ', { color: '#ccc' });
@@ -518,16 +518,18 @@
                 novaDelta.insert('\n');
 
             } else {
-                // SÓ fecha a tabela se encontrar texto que NÃO é vazio e NÃO é tabela
+                // LÓGICA DE PROTEÇÃO:
+                // Só fecha a tabela se encontrar texto que NÃO é vazio e NÃO é tabela.
+                // Se for linha vazia, ele MANTÉM a tabela aberta (insideTable = true)
                 if (insideTable && !isSeparator && trimmed !== '') {
                     insideTable = false;
                     novaDelta.insert('\n'); 
                 }
 
-                // Se for separador ou linha vazia dentro da tabela, ignora
+                // Se for separador ou linha vazia dentro da tabela, apenas ignora
                 if (isSeparator || (insideTable && trimmed === '')) return;
 
-                // Processamento normal de texto
+                // Processamento normal de texto (fora da tabela)
                 if (trimmed !== '') {
                     // Mantém negritos (**texto**)
                     const parts = line.split(/(\*\*.*?\*\*)/);
@@ -540,6 +542,7 @@
                     });
                     novaDelta.insert('\n');
                 } else {
+                    // Linhas vazias fora da tabela são mantidas
                     novaDelta.insert('\n');
                 }
             }
@@ -548,6 +551,7 @@
         return novaDelta;
     });
     // -----------------------------------------------------------
+
 
     
 
