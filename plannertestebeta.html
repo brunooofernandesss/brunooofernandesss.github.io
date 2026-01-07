@@ -479,8 +479,7 @@
 
                // --- VERSÃO 5.0: PROCESSAMENTO LINHA A LINHA (SEM CORTES) ---
     
-    // 1. MATCHER PARA TABELAS HTML (Cópia com Mouse / Seleção)
-    // Mantemos este pois funciona perfeitamente para tabelas visuais
+        // 1. MATCHER PARA TABELAS HTML (Cópia com Mouse / Seleção) CORRIGIDO
     quill.clipboard.addMatcher('TABLE', function(node, delta) {
         const NewDelta = Quill.import('delta');
         const novaDelta = new NewDelta();
@@ -491,20 +490,27 @@
 
         const rows = node.querySelectorAll('tr');
         rows.forEach((row) => {
-            const cells = row.querySelectorAll('th, td');
-            cells.forEach((cell) => {
+            // Transformamos em Array para saber qual é a última célula
+            const cells = Array.from(row.querySelectorAll('th, td'));
+            
+            cells.forEach((cell, index) => {
                 const isHeader = cell.tagName === 'TH' || row.parentElement.tagName === 'THEAD';
                 novaDelta.insert(cell.innerText.trim(), { 
                     bold: isHeader,
                     background: isHeader ? '#f0f0f0' : 'transparent'
                 });
-                novaDelta.insert(' | ', { color: '#ccc' });
+                
+                // CORREÇÃO: Só adiciona a barra se NÃO for a última célula da linha
+                if (index < cells.length - 1) {
+                    novaDelta.insert(' | ', { color: '#ccc' });
+                }
             });
             novaDelta.insert('\n');
         });
         novaDelta.insert('\n'); 
         return novaDelta;
     });
+
 
         // --- MATCHER REVISADO: Limpa o |---| e evita picotamento no Editor ---
     quill.clipboard.addMatcher(Node.TEXT_NODE, function(node, delta) {
