@@ -1095,6 +1095,24 @@
         return output;
     }
 
+        // Função que injeta o HTML no visualizador (SEM criar um novo Quill que apaga tabelas)
+    function renderQuillContent(container, data) {
+        container.innerHTML = ''; 
+        
+        // 1. Processa o conteúdo para transformar tabelas de texto em HTML visual
+        const processedHTML = renderHybridContent(data.contentHTML || "");
+
+        // 2. Injeta o HTML diretamente na div (Ignorando o Quill)
+        // Usamos as classes ql-container e ql-editor apenas para manter o mesmo estilo visual (fonte, tamanho)
+        container.innerHTML = `
+            <div class="ql-container ql-snow" style="border:none;">
+                <div class="ql-editor" style="white-space: normal; padding: 0;">
+                    ${processedHTML}
+                </div>
+            </div>
+        `;
+    }
+
 
 
 
