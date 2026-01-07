@@ -477,7 +477,8 @@
         return novaDelta;
     });
 
-    // 2. MATCHER PARA TEXTO GERAL E MARKDOWN (Correção do Gemini)
+        // --- VERSÃO 6.0: EDITOR INTELIGENTE (CORREÇÃO DE QUEBRA DO GEMINI) ---
+    // 2. MATCHER PARA TEXTO GERAL E MARKDOWN
     quill.clipboard.addMatcher(Node.TEXT_NODE, function(node, delta) {
         const text = node.data;
         
@@ -493,13 +494,12 @@
         lines.forEach((line) => {
             const trimmed = line.trim();
 
-            // LÓGICA DE DETECÇÃO DE TABELA MAIS RIGOROSA
-            // Linha de tabela deve ter barra vertical E (começar com barra OU ter múltiplas barras)
+            // Regra: Tem pipe | E (começa com pipe OU tem pelo menos 2 colunas)
             const isTableLine = trimmed.includes('|') && (trimmed.startsWith('|') || trimmed.split('|').length > 2);
-            const isSeparator = /^[|\-\s:]+$/.test(trimmed); // Detecta linhas tipo |---|---|
+            const isSeparator = /^[|\-\s:]+$/.test(trimmed); // Detecta linhas divisórias |---|
 
             if (isTableLine && !isSeparator) {
-                // Se estamos entrando numa tabela agora, coloca o cabeçalho UMA VEZ
+                // Se estamos entrando numa tabela nova
                 if (!insideTable) {
                     novaDelta.insert('\n📋 Tabela Importada:', { bold: true, color: '#555' });
                     novaDelta.insert('\n');
@@ -507,31 +507,29 @@
                 }
 
                 // Processa as células
-                const cells = trimmed.split('|').filter(c => c.trim() !== ''); // Remove células vazias das pontas
+                const cells = trimmed.split('|').filter(c => c.trim() !== '');
                 
-                cells.forEach((cell, index) => {
-                    // Limpa asteriscos de negrito do Markdown dentro da célula
+                cells.forEach((cell) => {
+                    // Limpa asteriscos do markdown
                     let cellText = cell.trim().replace(/\*\*/g, ''); 
-                    
-                    // A primeira linha costuma ser cabeçalho no Gemini
                     novaDelta.insert(cellText, { background: '#f9f9f9' });
                     novaDelta.insert(' | ', { color: '#ccc' });
                 });
-                novaDelta.insert('\n'); // Fim da linha da tabela
+                novaDelta.insert('\n');
 
             } else {
-                // Se era tabela e parou de ser, desliga a flag
-                if (insideTable && !isSeparator) {
+                // SÓ fecha a tabela se encontrar texto que NÃO é vazio e NÃO é tabela
+                if (insideTable && !isSeparator && trimmed !== '') {
                     insideTable = false;
-                    novaDelta.insert('\n'); // Espaço após a tabela
+                    novaDelta.insert('\n'); 
                 }
 
-                // Se for linha de separação (|---|), apenas ignora e não faz nada
-                if (isSeparator) return;
+                // Se for separador ou linha vazia dentro da tabela, ignora
+                if (isSeparator || (insideTable && trimmed === '')) return;
 
-                // PROCESSAMENTO DE TEXTO NORMAL (NEGRITOS E LISTAS)
+                // Processamento normal de texto
                 if (trimmed !== '') {
-                    // Tratamento simples para Negrito (**texto**)
+                    // Mantém negritos (**texto**)
                     const parts = line.split(/(\*\*.*?\*\*)/);
                     parts.forEach(part => {
                         if (part.startsWith('**') && part.endsWith('**')) {
@@ -542,7 +540,6 @@
                     });
                     novaDelta.insert('\n');
                 } else {
-                    // Mantém linhas vazias originais para espaçamento
                     novaDelta.insert('\n');
                 }
             }
@@ -552,7 +549,7 @@
     });
     // -----------------------------------------------------------
 
-
+    
 
     
     // ⛔ BLOQUEAR BASE64
@@ -1095,7 +1092,7 @@
         return output;
     }
 
-        // Função que injeta o HTML no visualizador (SEM criar um novo Quill que apaga tabelas)
+            // Função que injeta o HTML no visualizador (SEM criar um novo Quill que apaga tabelas)
     function renderQuillContent(container, data) {
         container.innerHTML = ''; 
         
@@ -1103,7 +1100,6 @@
         const processedHTML = renderHybridContent(data.contentHTML || "");
 
         // 2. Injeta o HTML diretamente na div (Ignorando o Quill)
-        // Usamos as classes ql-container e ql-editor apenas para manter o mesmo estilo visual (fonte, tamanho)
         container.innerHTML = `
             <div class="ql-container ql-snow" style="border:none;">
                 <div class="ql-editor" style="white-space: normal; padding: 0;">
@@ -1112,6 +1108,7 @@
             </div>
         `;
     }
+
 
 
 
