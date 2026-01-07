@@ -941,57 +941,39 @@
                 });
                 showFeedback("Atualizado!", false);
             } else {
-                const now = new Date();
-                const d0 = now.getTime();
-                const d1 = new Date(now).setDate(now.getDate() + 1);
-                const d7 = new Date(now).setDate(now.getDate() + 7);
-                const d21 = new Date(now).setDate(now.getDate() + 21);
+    const now = new Date();
+    const d0 = now.getTime();
+    const d1 = new Date(now).setDate(now.getDate() + 1);
+    const d7 = new Date(now).setDate(now.getDate() + 7);
+    const d21 = new Date(now).setDate(now.getDate() + 21);
 
-                const ciclos = [
-                    { n: `[REC] ${title}`, t: d0 }, { n: `[D+1] ${title}`, t: d1 },
-                    { n: `[D+7] ${title}`, t: d7 }, { n: `[D+21] ${title}`, t: d21 }
-                ];
+    const ciclos = [
+        { n: `[REC] ${title}`, t: d0 },
+        { n: `[D+1] ${title}`, t: d1 },
+        { n: `[D+7] ${title}`, t: d7 },
+        { n: `[D+21] ${title}`, t: d21 }
+    ];
 
-                await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
-                    nome: title, 
-                    contentHTML: contentHTML, 
-                    tag: tag.toUpperCase(), 
-                    data: d0, 
-                    tipo: 'texto' 
-                });
+    await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
+        nome: title,
+        contentHTML: contentHTML,
+        tag: tag.toUpperCase(),
+        data: d0,
+        tipo: 'texto'
+    });
 
-                for (const c of ciclos) {
-  const nivel =
-    c.col === 'recent' ? 0 :
-    c.col === 'd1' ? 1 :
-    c.col === 'd7' ? 2 :
-    c.col === 'd21' ? 3 : 0;
-
-  await addDoc(collection(db, "planners", currentUID, "tasks"), {
-    titulo: c.n,
-    tag: tag.toUpperCase(),
-    contentHTML: content,
-    targetDate: c.t,
-    column: c.col,
-    criadoEm: serverTimestamp(),
-    tipo: 'texto',
-
-    // 🔽 NOVOS CAMPOS
-    revisaoNivel: nivel,
-    origemId: null,
-    geradoPorIA: false,
-    precisaGerarIA: nivel > 0
-  });
-}
-                        titulo: c.n, 
-                        tag: tag.toUpperCase(), 
-                        contentHTML: contentHTML,
-                        targetDate: c.t, 
-                        concluido: false, 
-                        criadoEm: serverTimestamp(), 
-                        tipo: 'texto'
-                    });
-                }
+    for (const c of ciclos) {
+        await addDoc(collection(db, "planners", currentUID, "tasks"), {
+            titulo: c.n,
+            tag: tag.toUpperCase(),
+            contentHTML: contentHTML,
+            targetDate: c.t,
+            concluido: false,
+            criadoEm: serverTimestamp(),
+            tipo: 'texto'
+        });
+    }
+                
                 showFeedback("Criado com sucesso!", false);
             }
 
