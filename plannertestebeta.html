@@ -1162,19 +1162,29 @@
     }
 
 
-    // Injeta o conteúdo no visualizador
+        // Injeta o conteúdo no visualizador (Suporta HTML antigo e Markdown novo)
     function renderQuillContent(container, data) {
         container.innerHTML = ''; 
-        const processedHTML = renderHybridContent(data.contentHTML || "");
+        let htmlFinal = "";
+
+        // Verifica se é conteúdo gerado pela IA (que agora vem em Markdown)
+        if (data.geradoPorIA) {
+            // Converte Markdown para HTML usando a biblioteca 'marked' que você já tem
+            htmlFinal = marked.parse(data.contentHTML || "");
+        } else {
+            // Se for conteúdo antigo ou criado manualmente (Quill), usa o renderizador híbrido
+            htmlFinal = renderHybridContent(data.contentHTML || "");
+        }
         
         container.innerHTML = `
             <div class="ql-container ql-snow" style="border:none;">
                 <div class="ql-editor" style="padding: 0;">
-                    ${processedHTML}
+                    ${htmlFinal}
                 </div>
             </div>
         `;
     }
+
 
 
 
