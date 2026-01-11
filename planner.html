@@ -273,6 +273,39 @@
     }
     .btn-delete-agenda:hover { color: #d44c47; }
 
+    
+        /* --- ESTILOS DO QUIZ --- */
+    .quiz-card {
+        background: #fff; border: 1px solid #e9e9e7; border-radius: 8px;
+        padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .quiz-question { font-weight: 600; margin-bottom: 12px; color: #37352f; font-size: 15px; }
+    .quiz-options { display: flex; flex-direction: column; gap: 8px; }
+    .quiz-opt {
+        padding: 10px 14px; border: 1px solid #ddd; border-radius: 6px;
+        cursor: pointer; transition: 0.2s; font-size: 14px; background: #fff;
+    }
+    .quiz-opt:hover { background: #f7f7f5; }
+    
+    /* Cores de Resposta */
+    .quiz-opt.correct { background: #dbeddb !important; border-color: #448361 !important; color: #1f4a33; font-weight: 600; }
+    .quiz-opt.wrong { background: #ffe2dd !important; border-color: #d44c47 !important; color: #7a2522; opacity: 0.8; }
+    
+    .quiz-feedback {
+        margin-top: 10px; padding: 12px; background: #eef6fc; border-radius: 6px;
+        font-size: 13px; color: #18507a; border-left: 4px solid #2383e2; line-height: 1.4;
+    }
+
+    /* Botão pequeno de Cérebro no Card */
+    .btn-brain {
+        position: absolute; bottom: 10px; right: 10px; z-index: 10;
+        width: 28px; height: 28px; border-radius: 4px;
+        background: white; border: 1px solid #ddd; color: #555;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .btn-brain:hover { background: #f0f9ff; color: #0284c7; border-color: #0284c7; }
+
 
     </style>
 </head>
@@ -390,6 +423,7 @@
         <nav style="flex: 1 0 auto;"> <div class="nav-item active" id="navBoard"><i class="far fa-calendar-alt"></i> Cronograma Semanal</div>
             <div class="nav-item" id="navLib"><i class="fas fa-folder-open"></i> Biblioteca de Aulas</div>
             <div class="nav-item" id="navAgenda"><i class="far fa-clock"></i> Agenda Diária</div>
+            <div class="nav-item" id="navQuizzes"><i class="fas fa-brain"></i> Meus Simulados</div>
         </nav>
 
         <div class="sidebar-goals">
@@ -484,6 +518,26 @@
                 <div class="week-board" id="agendaBoard">
                     </div>
             </section>
+            
+                        <section id="secQuizzes" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+                <div class="header-actions">
+                    <h1 class="page-title">Meus Simulados</h1>
+                </div>
+                <div style="background: white; border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden;">
+                    <table style="width:100%; border-collapse:collapse; font-size:14px;">
+                        <thead style="background: #f9f9f9; border-bottom: 1px solid var(--border-color);">
+                            <tr style="text-align:left; color: #777;">
+                                <th style="padding:12px;">Assunto</th>
+                                <th style="padding:12px;">Data</th>
+                                <th style="padding:12px;">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaQuizzesBody">
+                            </tbody>
+                    </table>
+                </div>
+            </section>
+
 
             
         </div>
@@ -884,7 +938,7 @@
         return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
     }
 
-    function renderWeeklyBoard() {
+        function renderWeeklyBoard() {
         const board = document.getElementById('weeklyBoard');
         board.innerHTML = ''; 
         
@@ -916,16 +970,37 @@
             const colIndex = columns.findIndex(col => isSameDay(col.date, taskDate));
             
             if (colIndex !== -1) {
-                // --- LÓGICA DE ATRASO ---
                 const hoje = new Date(); hoje.setHours(0,0,0,0);
                 const dataTask = new Date(t.targetDate); dataTask.setHours(0,0,0,0);
                 const atrasada = !t.concluido && dataTask < hoje;
 
                 const card = document.createElement('div');
                 card.className = `card ${t.concluido ? 'completed' : ''} ${atrasada ? 'atrasada' : ''}`;
+                
+                // --- CONFIGURAÇÃO DO TIPO DE CARD ---
+                const isQuiz = t.tipo === 'quiz';
+                let icon = t.tipo === 'pdf' ? '<i class="far fa-file-pdf"></i>' : '<i class="far fa-file-alt"></i>';
+                if(isQuiz) icon = '<i class="fas fa-brain" style="color:#9065b0"></i>';
+
+                let labelRevisao = t.titulo.includes('[REC]') ? 'Estudo' : 'Revisão';
+                if(isQuiz) labelRevisao = 'Simulado';
+
+                // --- BOTÃO GERAR QUIZ (Só aparece se NÃO for quiz) ---
+                const btnGerarQuiz = !isQuiz ? 
+                    `<div class="btn-brain" title="Gerar Quiz" 
+                        onclick="event.stopPropagation(); window.gerarQuiz('${t.id}', '${t.titulo.replace(/'/g, "")}', '${t.tipo === 'texto' ? (t.contentHTML || '').replace(/'/g, "").replace(/"/g, "").replace(/\n/g, " ") : ''}', '${t.tipo}')">
+                        <i class="fas fa-brain"></i>
+                     </div>` : '';
+
+                // Ação do Clique no Card
                 card.onclick = (e) => {
-                    if(e.target.classList.contains('custom-checkbox')) return;
-                    abrirItem(t.id);
+                    if(e.target.classList.contains('custom-checkbox') || e.target.closest('.btn-brain')) return;
+                    
+                    if(isQuiz) {
+                        window.abrirQuizPlayer(t.titulo, t.contentHTML);
+                    } else {
+                        window.abrirItem(t.id);
+                    }
                 };
 
                 let tagColor = 'var(--tag-blue)'; let tagText = 'var(--text-blue)';
@@ -933,9 +1008,7 @@
                 if(tagUp.includes('GINE')) { tagColor = 'var(--tag-red)'; tagText = 'var(--text-red)'; }
                 if(tagUp.includes('PED')) { tagColor = 'var(--tag-yellow)'; tagText = 'var(--text-yellow)'; }
                 if(tagUp.includes('CIR')) { tagColor = 'var(--tag-green)'; tagText = 'var(--text-green)'; }
-
-                const icon = t.tipo === 'pdf' ? '<i class="far fa-file-pdf"></i>' : '<i class="far fa-file-alt"></i>';
-                const labelRevisao = t.titulo.includes('[REC]') ? 'Estudo' : 'Revisão';
+                if(tagUp === 'SIMULADO') { tagColor = '#f3e8ff'; tagText = '#9065b0'; }
 
                 card.innerHTML = `
                     <div class="card-top">
@@ -952,12 +1025,14 @@
                         <span class="meta-item">${icon} ${labelRevisao}</span>
                         ${atrasada ? `<span class="atraso-badge"><i class="fas fa-exclamation-circle"></i> Atrasado</span>` : ''}
                     </div>
+                    ${btnGerarQuiz}
                 `;
                 columns[colIndex].element.appendChild(card);
             }
         });
         updateGoals();
     }
+
 
     window.toggleConcluido = async (id, status) => {
         await updateDoc(doc(db, "planners", currentUID, "tasks", id), { concluido: status });
@@ -1156,7 +1231,7 @@
     
     
 
-    async function carregarBiblioteca() {
+        async function carregarBiblioteca() {
         if(!currentUID) return;
         const snap = await getDocs(query(collection(db, "planners", currentUID, "arquivos"), orderBy("data", "desc")));
         const tbody = document.getElementById('listaBiblioteca');
@@ -1169,16 +1244,28 @@
             const icon = f.tipo === 'pdf' ? '<i class="far fa-file-pdf" style="color:#d44c47"></i>' : '<i class="far fa-file-alt" style="color:#2383e2"></i>';
             const tr = document.createElement('tr');
             tr.style.borderBottom = '1px solid #f0f0f0';
+            
+            // Limpa o texto para passar no onclick sem quebrar o HTML
+            const conteudoLimpo = f.tipo === 'texto' ? (f.contentHTML || '').replace(/'/g, '').replace(/"/g, '').replace(/\n/g, ' ') : '';
+            
             tr.innerHTML = `
                 <td style="padding:12px;">${icon} ${f.nome}</td>
                 <td style="padding:12px;"><span class="tag-pill" style="background:#f0f0f0; color:#555">${f.tag}</span></td>
                 <td style="padding:12px; color:#999;">${date}</td>
-                <td style="padding:12px;"><button class="btn-action" style="padding:4px 10px;" id="btn-view-${d.id}">Visualizar</button></td>
+                <td style="padding:12px; display:flex; gap:8px;">
+                    <button class="btn-action" style="padding:4px 10px;" id="btn-view-${d.id}">Ver</button>
+                    <button class="btn-action" style="padding:4px 10px;" 
+                        onclick="window.gerarQuiz('${d.id}', '${f.nome.replace(/'/g, "")}', '${conteudoLimpo}', '${f.tipo}')"
+                        title="Gerar Simulado IA">
+                        <i class="fas fa-brain"></i>
+                    </button>
+                </td>
             `;
             tbody.appendChild(tr);
             document.getElementById(`btn-view-${d.id}`).onclick = () => abrirArquivoBiblioteca(f);
         });
     }
+
 
                                // --- RENDERIZADOR CORRIGIDO V2 (Tabelas Unificadas) ---
     function renderHybridContent(rawHTML) {
@@ -1572,38 +1659,237 @@
         } catch(e) { alert("Erro ao deletar"); }
     };
 
-    // --- NAVEGAÇÃO DO MENU (Sidebar) ---
-    document.getElementById('navAgenda').onclick = () => {
+        // --- NAVEGAÇÃO UNIFICADA DO MENU (Sidebar) ---
+
+    // 1. Botão Cronograma
+    document.getElementById('navBoard').onclick = () => {
         // Esconde as outras telas
+        document.getElementById('secLib').classList.add('hidden');
+        document.getElementById('secAgenda').classList.add('hidden');
+        document.getElementById('secQuizzes').classList.add('hidden');
+        
+        // Mostra o Cronograma
+        document.getElementById('secBoard').classList.remove('hidden');
+
+        // Atualiza estilo do menu
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('navBoard').classList.add('active');
+    };
+
+    // 2. Botão Biblioteca
+    document.getElementById('navLib').onclick = () => {
+        document.getElementById('secBoard').classList.add('hidden');
+        document.getElementById('secAgenda').classList.add('hidden');
+        document.getElementById('secQuizzes').classList.add('hidden');
+        
+        document.getElementById('secLib').classList.remove('hidden');
+
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('navLib').classList.add('active');
+        
+        carregarBiblioteca(); // Garante que a lista esteja atualizada
+    };
+
+    // 3. Botão Agenda
+    document.getElementById('navAgenda').onclick = () => {
         document.getElementById('secBoard').classList.add('hidden');
         document.getElementById('secLib').classList.add('hidden');
-        // Mostra a Agenda
+        document.getElementById('secQuizzes').classList.add('hidden');
+        
         document.getElementById('secAgenda').classList.remove('hidden');
         
-        // Atualiza cor do menu
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('navAgenda').classList.add('active');
         
-        renderAgendaBoard();
-    };
-    
-    // Atualizar clicks dos outros botões para esconder a agenda quando sair dela
-    const oldNavBoardClick = document.getElementById('navBoard').onclick;
-    document.getElementById('navBoard').onclick = () => {
-        oldNavBoardClick();
-        document.getElementById('secAgenda').classList.add('hidden');
-        document.getElementById('navAgenda').classList.remove('active');
+        renderAgendaBoard(); // Renderiza os cards da agenda
     };
 
-    const oldNavLibClick = document.getElementById('navLib').onclick;
-    document.getElementById('navLib').onclick = () => {
-        oldNavLibClick();
+    // 4. Botão Meus Simulados (Novo)
+    document.getElementById('navQuizzes').onclick = () => {
+        document.getElementById('secBoard').classList.add('hidden');
+        document.getElementById('secLib').classList.add('hidden');
         document.getElementById('secAgenda').classList.add('hidden');
-        document.getElementById('navAgenda').classList.remove('active');
+        
+        document.getElementById('secQuizzes').classList.remove('hidden');
+        
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('navQuizzes').classList.add('active');
+        
+        // Verifica se a função existe antes de chamar (segurança)
+        if (typeof carregarAbaQuizzes === "function") {
+            carregarAbaQuizzes();
+        }
+    };
+
+
+        // --- LÓGICA DE RESPOSTA DO QUIZ ---
+    window.checkAnswer = (el, isCorrect) => {
+        // Evita clicar duas vezes na mesma questão
+        if(el.parentElement.classList.contains('answered')) return;
+        
+        el.parentElement.classList.add('answered'); // Marca questão como respondida
+        
+        if(isCorrect) {
+            el.classList.add('correct');
+        } else {
+            el.classList.add('wrong');
+            // Mostra qual era a certa automaticamente
+            const siblings = el.parentElement.children;
+            for(let sib of siblings) {
+                if(sib.getAttribute('onclick').includes('true')) {
+                    sib.classList.add('correct');
+                }
+            }
+        }
+        
+        // Mostra o feedback (explicação) se houver
+        const card = el.closest('.quiz-card');
+        const feedback = card.querySelector('.quiz-feedback');
+        if(feedback) feedback.style.display = 'block';
+    };
+
+    
+        // --- GERAR QUIZ ---
+    window.gerarQuiz = async (arquivoId, titulo, textoContexto, tipo) => {
+        const confirmacao = confirm(`Gerar simulado sobre: "${titulo}"?`);
+        if(!confirmacao) return;
+
+        showFeedback("🧠 Criando questões...", true);
+
+        // Prepara o contexto para a IA
+        let promptText = "";
+        let promptLabel = titulo;
+
+        if (tipo === 'texto') {
+            // Limpa tags HTML para economizar tokens
+            const tmp = document.createElement("DIV");
+            tmp.innerHTML = textoContexto;
+            promptText = tmp.textContent || tmp.innerText || "";
+            // Limite de segurança
+            if(promptText.length > 12000) promptText = promptText.substring(0, 12000);
+        } else {
+            // Para PDF, enviamos vazio e a IA cria baseada no Título/Label
+            promptText = ""; 
+        }
+
+        try {
+            const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    action: "gerar_quiz_arquivo", 
+                    textoOriginal: promptText, 
+                    label: promptLabel 
+                })
+            });
+
+            if(!response.ok) throw new Error("Erro na API");
+            
+            const data = await response.json();
+            const quizHTML = data.html;
+
+            // 1. Salva na coleção 'quizzes' (Para a aba Meus Simulados)
+            const quizRef = await addDoc(collection(db, "planners", currentUID, "quizzes"), {
+                titulo: titulo,
+                html: quizHTML,
+                criadoEm: serverTimestamp(),
+                origemId: arquivoId
+            });
+
+            // 2. Salva no Cronograma como tarefa de hoje
+            const today = new Date().getTime();
+            await addDoc(collection(db, "planners", currentUID, "tasks"), {
+                titulo: `[QUIZ] ${titulo}`,
+                tag: "SIMULADO",
+                contentHTML: quizHTML, 
+                targetDate: today,
+                concluido: false,
+                criadoEm: serverTimestamp(),
+                tipo: 'quiz',
+                quizId: quizRef.id
+            });
+
+            showFeedback("Simulado criado com sucesso!", false);
+            loadDataAndInit(); // Atualiza o board
+            
+        } catch(e) {
+            console.error(e);
+            showFeedback("Erro ao gerar quiz.", false);
+        }
+    };
+
+        window.abrirQuizPlayer = (titulo, htmlContent) => {
+        document.getElementById('viewTitle').textContent = titulo;
+        document.getElementById('viewTagDisplay').textContent = "Simulado";
+        // Ícone de cérebro no modal
+        document.getElementById('viewTypeIcon').innerHTML = '<i class="fas fa-brain" style="color:#9065b0; font-size:20px;"></i>';
+        
+        const container = document.getElementById('viewContainer');
+        container.innerHTML = `<div style="padding:20px; overflow-y:auto; background:#fcfcfc;">${htmlContent}</div>`;
+        
+        // Esconde botões de edição de texto
+        document.getElementById('btnEditarNota').style.display = 'none';
+        document.getElementById('btnExcluirEstudo').style.display = 'none'; 
+        
+        document.getElementById('modalView').style.display = 'flex';
+    };
+
+    
+        async function carregarAbaQuizzes() {
+        if(!currentUID) return;
+        const q = query(collection(db, "planners", currentUID, "quizzes"), orderBy("criadoEm", "desc"));
+        const snap = await getDocs(q);
+        const tbody = document.getElementById('listaQuizzesBody');
+        tbody.innerHTML = '';
+        
+        if (snap.empty) {
+            tbody.innerHTML = '<tr><td colspan="3" style="padding:20px; text-align:center; color:#ccc;">Nenhum simulado encontrado.</td></tr>';
+            return;
+        }
+
+        snap.forEach(docSnap => {
+            const data = docSnap.data();
+            const dataCriacao = data.criadoEm ? new Date(data.criadoEm.seconds * 1000).toLocaleDateString() : '-';
+            
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid #f0f0f0';
+            tr.innerHTML = `
+                <td style="padding:12px; font-weight:500;">${data.titulo}</td>
+                <td style="padding:12px; color:#777;">${dataCriacao}</td>
+                <td style="padding:12px;">
+                    <button class="btn-action" onclick="window.fetchAndPlayQuiz('${docSnap.id}')"><i class="fas fa-play"></i> Fazer</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Busca o quiz pelo ID para jogar (usado na aba Meus Simulados)
+    window.fetchAndPlayQuiz = async (id) => {
+        const snap = await getDoc(doc(db, "planners", currentUID, "quizzes", id));
+        if(snap.exists()) {
+            const d = snap.data();
+            window.abrirQuizPlayer(d.titulo, d.html);
+        }
+    };
+
+    // --- NAVEGAÇÃO PARA ABA QUIZZES ---
+    document.getElementById('navQuizzes').onclick = () => {
+        document.getElementById('secBoard').classList.add('hidden');
+        document.getElementById('secLib').classList.add('hidden');
+        document.getElementById('secAgenda').classList.add('hidden');
+        document.getElementById('secQuizzes').classList.remove('hidden');
+        
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('navQuizzes').classList.add('active');
+        
+        carregarAbaQuizzes();
     };
 
     
     </script>
+    
+    
     <script type="module" src="padrao_simulado.js"></script>
 </body>
 </html>
