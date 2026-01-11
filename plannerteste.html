@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-br"
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -206,6 +206,157 @@
         #secLib { height: 100%; overflow-y: auto; }
         #viewer-container { border: none !important; }
         #viewer-container .ql-container.ql-snow { border: none !important; }
+    
+                    /* --- ESTILO TABELA HÍBRIDA (VISUALIZADOR) CORRIGIDO --- */
+    .table-wrapper {
+        overflow-x: auto;
+        border: 1px solid #e9e9e7;
+        border-radius: 6px;
+        margin: 16px 0;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+    .hybrid-table { 
+        width: 100%; 
+        border-collapse: collapse; 
+        font-size: 14px; 
+        background: #fff;
+    }
+    .hybrid-table th { 
+        background: #f9f9f9; 
+        font-weight: 600; 
+        color: #37352f; 
+        text-transform: uppercase;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #e9e9e7;
+    }
+    .hybrid-table th, .hybrid-table td { 
+        border: 1px solid #e9e9e7; 
+        padding: 12px 16px; 
+        text-align: left; 
+        line-height: 1.5;
+    }
+    /* Remove bordas laterais externas para visual mais limpo */
+    .hybrid-table tr:first-child th { border-top: none; }
+    .hybrid-table tr:last-child td { border-bottom: none; }
+    .hybrid-table th:first-child, .hybrid-table td:first-child { border-left: none; }
+    .hybrid-table th:last-child, .hybrid-table td:last-child { border-right: none; }
+
+        /* --- ESTILO DA AGENDA --- */
+    .agenda-card {
+        background: white; border: 1px solid #e9e9e7; border-radius: 6px; padding: 10px; margin-bottom: 8px;
+        display: flex; align-items: flex-start; gap: 10px; font-size: 13px; 
+        box-shadow: 0 1px 2px rgba(0,0,0,0.03); transition: 0.2s;
+    }
+    .agenda-card:hover { transform: translateY(-1px); box-shadow: 0 3px 6px rgba(0,0,0,0.06); }
+    .agenda-time-badge { 
+        font-family: 'Inter', monospace; font-size: 11px; color: var(--accent-color); 
+        background: #eef6fc; padding: 4px 6px; border-radius: 4px; font-weight: 700; 
+        white-space: nowrap; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    }
+    .agenda-content { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .agenda-text { font-weight: 500; color: var(--text-primary); line-height: 1.4; }
+    .agenda-check { 
+        cursor: pointer; width: 18px; height: 18px; border-radius: 4px; 
+        border: 2px solid #ccc; flex-shrink: 0; appearance: none; 
+        position: relative; margin-top: 2px;
+    }
+    .agenda-check:checked { background: var(--text-green); border-color: var(--text-green); }
+    .agenda-check:checked::after { content: '✓'; color: white; position: absolute; top: -2px; left: 3px; font-size: 12px; font-weight: bold; }
+    
+    .agenda-card.done { opacity: 0.6; background: #f9f9f9; }
+    .agenda-card.done .agenda-text { text-decoration: line-through; color: #aaa; }
+    
+    .btn-delete-agenda { 
+        border: none; background: transparent; color: #ddd; 
+        cursor: pointer; padding: 2px; font-size: 12px; transition: 0.2s;
+    }
+    .btn-delete-agenda:hover { color: #d44c47; }
+
+    
+        /* --- NOVO VISUALIZADOR PDF (Canvas + Texto) --- */
+    #pdfWrapper {
+        position: relative;
+        width: 100%;
+        max-width: 900px;
+        margin: 0 auto;
+        border: 1px solid #ddd;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    
+    #the-canvas {
+        display: block;
+        width: 100%;
+        height: auto;
+    }
+
+    .textLayer {
+        position: absolute;
+        left: 0; top: 0; right: 0; bottom: 0;
+        overflow: hidden;
+        opacity: 1; 
+        line-height: 1.0;
+        mix-blend-mode: multiply;
+    }
+
+    .textLayer > span {
+        color: transparent;
+        position: absolute;
+        white-space: pre;
+        cursor: text;
+        transform-origin: 0% 0%;
+    }
+
+    .textLayer ::selection {
+        background: rgba(33, 150, 243, 0.3);
+        color: transparent;
+    }
+
+    .ai-study-controls {
+        background: #fff; padding: 15px; border-bottom: 1px solid #eee;
+        display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center;
+    }
+    .ai-input-group {
+        display: flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; color: #555;
+    }
+    .ai-input-small {
+        width: 60px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; text-align: center;
+    }
+
+    
+        /* --- ESTILOS DO QUIZ --- */
+    .quiz-card {
+        background: #fff; border: 1px solid #e9e9e7; border-radius: 8px;
+        padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .quiz-question { font-weight: 600; margin-bottom: 12px; color: #37352f; font-size: 15px; }
+    .quiz-options { display: flex; flex-direction: column; gap: 8px; }
+    .quiz-opt {
+        padding: 10px 14px; border: 1px solid #ddd; border-radius: 6px;
+        cursor: pointer; transition: 0.2s; font-size: 14px; background: #fff;
+    }
+    .quiz-opt:hover { background: #f7f7f5; }
+    
+    /* Cores de Resposta */
+    .quiz-opt.correct { background: #dbeddb !important; border-color: #448361 !important; color: #1f4a33; font-weight: 600; }
+    .quiz-opt.wrong { background: #ffe2dd !important; border-color: #d44c47 !important; color: #7a2522; opacity: 0.8; }
+    
+    .quiz-feedback {
+        margin-top: 10px; padding: 12px; background: #eef6fc; border-radius: 6px;
+        font-size: 13px; color: #18507a; border-left: 4px solid #2383e2; line-height: 1.4;
+    }
+
+    /* Botão pequeno de Cérebro no Card */
+    .btn-brain {
+        position: absolute; bottom: 10px; right: 10px; z-index: 10;
+        width: 28px; height: 28px; border-radius: 4px;
+        background: white; border: 1px solid #ddd; color: #555;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .btn-brain:hover { background: #f0f9ff; color: #0284c7; border-color: #0284c7; }
+
+
     </style>
 </head>
 <body>
@@ -273,6 +424,43 @@
             </div>
         </div>
     </div>
+    
+    
+        <div class="modal" id="modalAgenda">
+        <div class="modal-content" style="height: auto; max-height: 90vh; width: 400px;">
+            <div class="editor-header">
+                <h3 style="margin:0">Novo Compromisso</h3>
+                <button class="btn-action" onclick="document.getElementById('modalAgenda').style.display='none'"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="editor-body" style="padding: 20px; overflow: visible;">
+                <div style="margin-bottom: 15px;">
+                    <label style="font-size:12px; font-weight:600; color:#666; display:block; margin-bottom:5px;">O que estudar/fazer?</label>
+                    <input type="text" id="agendaTitle" placeholder="Ex: Estudar Tutoria" style="padding: 10px; border: 1px solid #ddd; border-radius: 6px; width: 100%;">
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                     <label style="font-size:12px; font-weight:600; color:#666; display:block; margin-bottom:5px;">Data</label>
+                     <input type="date" id="agendaDate" style="padding: 10px; border: 1px solid #ddd; border-radius: 6px; width: 100%;">
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <div style="flex:1">
+                        <label style="font-size:12px; font-weight:600; color:#666; display:block; margin-bottom:5px;">Início</label>
+                        <input type="time" id="agendaStart" style="padding: 10px; border: 1px solid #ddd; border-radius: 6px; width: 100%;">
+                    </div>
+                    <div style="flex:1">
+                        <label style="font-size:12px; font-weight:600; color:#666; display:block; margin-bottom:5px;">Fim</label>
+                        <input type="time" id="agendaEnd" style="padding: 10px; border: 1px solid #ddd; border-radius: 6px; width: 100%;">
+                    </div>
+                </div>
+            </div>
+            <div class="editor-footer">
+                <button class="btn-action" onclick="document.getElementById('modalAgenda').style.display='none'">Cancelar</button>
+                <button class="btn-action btn-primary" id="btnSalvarAgenda">Salvar Horário</button>
+            </div>
+        </div>
+    </div>
+
 
     <div id="statusFeedback">Processando...</div>
 
@@ -284,6 +472,8 @@
         
         <nav style="flex: 1 0 auto;"> <div class="nav-item active" id="navBoard"><i class="far fa-calendar-alt"></i> Cronograma Semanal</div>
             <div class="nav-item" id="navLib"><i class="fas fa-folder-open"></i> Biblioteca de Aulas</div>
+            <div class="nav-item" id="navAgenda"><i class="far fa-clock"></i> Agenda Diária</div>
+            <div class="nav-item" id="navQuizzes"><i class="fas fa-brain"></i> Meus Simulados</div>
         </nav>
 
         <div class="sidebar-goals">
@@ -369,6 +559,37 @@
                     </table>
                 </div>
             </section>
+            
+                        <section id="secAgenda" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-x: auto; overflow-y: hidden;">
+                <div class="header-actions">
+                    <h1 class="page-title">Agenda Horária</h1>
+                    <button class="btn-action btn-primary" id="btnNovaAgenda"><i class="fas fa-plus"></i> Novo Horário</button>
+                </div>
+                <div class="week-board" id="agendaBoard">
+                    </div>
+            </section>
+            
+                        <section id="secQuizzes" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+                <div class="header-actions">
+                    <h1 class="page-title">Meus Simulados</h1>
+                </div>
+                <div style="background: white; border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden;">
+                    <table style="width:100%; border-collapse:collapse; font-size:14px;">
+                        <thead style="background: #f9f9f9; border-bottom: 1px solid var(--border-color);">
+                            <tr style="text-align:left; color: #777;">
+                                <th style="padding:12px;">Assunto</th>
+                                <th style="padding:12px;">Data</th>
+                                <th style="padding:12px;">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaQuizzesBody">
+                            </tbody>
+                    </table>
+                </div>
+            </section>
+
+
+            
         </div>
     </main>
 
@@ -396,6 +617,7 @@
     let editingDocId = null;
     let currentBoardStart = new Date(); 
     let allTasksCache = []; 
+    let allAgendaCache = [];
     let isUploadingImage = false; 
 
     // --- CONFIGURAÇÃO QUILL ---
@@ -440,6 +662,78 @@
         quill.setSelection(range.index + 3, 0);
     });
 
+               // --- VERSÃO 5.0: PROCESSAMENTO LINHA A LINHA (SEM CORTES) ---
+    
+        // 1. MATCHER PARA TABELAS HTML (Cópia com Mouse / Seleção) CORRIGIDO
+    quill.clipboard.addMatcher('TABLE', function(node, delta) {
+        const NewDelta = Quill.import('delta');
+        const novaDelta = new NewDelta();
+
+        novaDelta.insert('\n');
+        novaDelta.insert('📋 Tabela Importada:', { bold: true, color: '#2383e2' });
+        novaDelta.insert('\n');
+
+        const rows = node.querySelectorAll('tr');
+        rows.forEach((row) => {
+            // Transformamos em Array para saber qual é a última célula
+            const cells = Array.from(row.querySelectorAll('th, td'));
+            
+            cells.forEach((cell, index) => {
+                const isHeader = cell.tagName === 'TH' || row.parentElement.tagName === 'THEAD';
+                novaDelta.insert(cell.innerText.trim(), { 
+                    bold: isHeader,
+                    background: isHeader ? '#f0f0f0' : 'transparent'
+                });
+                
+                // CORREÇÃO: Só adiciona a barra se NÃO for a última célula da linha
+                if (index < cells.length - 1) {
+                    novaDelta.insert(' | ', { color: '#ccc' });
+                }
+            });
+            novaDelta.insert('\n');
+        });
+        novaDelta.insert('\n'); 
+        return novaDelta;
+    });
+
+
+        // --- MATCHER REVISADO: Limpa o |---| e evita picotamento no Editor ---
+    quill.clipboard.addMatcher(Node.TEXT_NODE, function(node, delta) {
+        const text = node.data;
+        
+        // Se não tem pipe, deixa o Quill lidar com o texto normalmente
+        if (!text.includes('|')) return delta;
+
+        const NewDelta = Quill.import('delta');
+        const novaDelta = new NewDelta();
+        const lines = text.split('\n');
+        
+        lines.forEach((line) => {
+            const trimmed = line.trim();
+            // Detecta a linha de separação do Markdown (ex: |---|)
+            const isSeparator = /^[|\s-:]+$/.test(trimmed) && trimmed.includes('-');
+
+            // Se for separador, ignoramos (não cola nada)
+            if (isSeparator) return; 
+
+            if (trimmed.includes('|')) {
+                // Se for linha de tabela, removemos os negritos (**) para ficar limpo
+                const cleanLine = line.replace(/\*\*/g, ''); 
+                novaDelta.insert(cleanLine + '\n');
+            } else {
+                // Se for texto normal misturado, cola normal
+                novaDelta.insert(line + '\n');
+            }
+        });
+        return novaDelta;
+    });
+
+
+
+
+    
+
+    
     // ⛔ BLOQUEAR BASE64
     quill.clipboard.addMatcher('IMG', function(node, delta) {
         const src = node.getAttribute('src');
@@ -545,7 +839,7 @@
         carregarBiblioteca();
     });
 
-    async function loadDataAndInit() {
+        async function loadDataAndInit() {
         if (!currentUID) return;
         const snap = await getDocs(query(collection(db, "planners", currentUID, "tasks")));
         allTasksCache = [];
@@ -553,7 +847,10 @@
         setupWeekNavigator();
         renderWeeklyBoard();
         updateGoals(); 
+        
+        await loadAgenda(); // <--- ADICIONEI ESTA LINHA
     }
+
 
     // --- LÓGICA DE METAS (X/TOTAL) ---
     function updateGoals() {
@@ -659,11 +956,13 @@
         updateWeekLabel();
     }
 
-    window.changeWeek = (timestamp) => {
+        window.changeWeek = (timestamp) => {
         currentBoardStart = new Date(parseInt(timestamp));
         updateWeekLabel();
         renderWeeklyBoard();
+        renderAgendaBoard(); // <--- Adicionado isso
     };
+
 
     function updateWeekLabel() {
         const endOfWeek = new Date(currentBoardStart);
@@ -689,7 +988,7 @@
         return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
     }
 
-    function renderWeeklyBoard() {
+        function renderWeeklyBoard() {
         const board = document.getElementById('weeklyBoard');
         board.innerHTML = ''; 
         
@@ -721,16 +1020,37 @@
             const colIndex = columns.findIndex(col => isSameDay(col.date, taskDate));
             
             if (colIndex !== -1) {
-                // --- LÓGICA DE ATRASO ---
                 const hoje = new Date(); hoje.setHours(0,0,0,0);
                 const dataTask = new Date(t.targetDate); dataTask.setHours(0,0,0,0);
                 const atrasada = !t.concluido && dataTask < hoje;
 
                 const card = document.createElement('div');
                 card.className = `card ${t.concluido ? 'completed' : ''} ${atrasada ? 'atrasada' : ''}`;
+                
+                // --- CONFIGURAÇÃO DO TIPO DE CARD ---
+                const isQuiz = t.tipo === 'quiz';
+                let icon = t.tipo === 'pdf' ? '<i class="far fa-file-pdf"></i>' : '<i class="far fa-file-alt"></i>';
+                if(isQuiz) icon = '<i class="fas fa-brain" style="color:#9065b0"></i>';
+
+                let labelRevisao = t.titulo.includes('[REC]') ? 'Estudo' : 'Revisão';
+                if(isQuiz) labelRevisao = 'Simulado';
+
+                // --- BOTÃO GERAR QUIZ (Só aparece se NÃO for quiz) ---
+                const btnGerarQuiz = !isQuiz ? 
+                    `<div class="btn-brain" title="Gerar Quiz" 
+                        onclick="event.stopPropagation(); window.gerarQuiz('${t.id}', '${t.titulo.replace(/'/g, "")}', '${t.tipo === 'texto' ? (t.contentHTML || '').replace(/'/g, "").replace(/"/g, "").replace(/\n/g, " ") : ''}', '${t.tipo}')">
+                        <i class="fas fa-brain"></i>
+                     </div>` : '';
+
+                // Ação do Clique no Card
                 card.onclick = (e) => {
-                    if(e.target.classList.contains('custom-checkbox')) return;
-                    abrirItem(t.id);
+                    if(e.target.classList.contains('custom-checkbox') || e.target.closest('.btn-brain')) return;
+                    
+                    if(isQuiz) {
+                        window.abrirQuizPlayer(t.titulo, t.contentHTML);
+                    } else {
+                        window.abrirItem(t.id);
+                    }
                 };
 
                 let tagColor = 'var(--tag-blue)'; let tagText = 'var(--text-blue)';
@@ -738,9 +1058,7 @@
                 if(tagUp.includes('GINE')) { tagColor = 'var(--tag-red)'; tagText = 'var(--text-red)'; }
                 if(tagUp.includes('PED')) { tagColor = 'var(--tag-yellow)'; tagText = 'var(--text-yellow)'; }
                 if(tagUp.includes('CIR')) { tagColor = 'var(--tag-green)'; tagText = 'var(--text-green)'; }
-
-                const icon = t.tipo === 'pdf' ? '<i class="far fa-file-pdf"></i>' : '<i class="far fa-file-alt"></i>';
-                const labelRevisao = t.titulo.includes('[REC]') ? 'Estudo' : 'Revisão';
+                if(tagUp === 'SIMULADO') { tagColor = '#f3e8ff'; tagText = '#9065b0'; }
 
                 card.innerHTML = `
                     <div class="card-top">
@@ -757,12 +1075,14 @@
                         <span class="meta-item">${icon} ${labelRevisao}</span>
                         ${atrasada ? `<span class="atraso-badge"><i class="fas fa-exclamation-circle"></i> Atrasado</span>` : ''}
                     </div>
+                    ${btnGerarQuiz}
                 `;
                 columns[colIndex].element.appendChild(card);
             }
         });
         updateGoals();
     }
+
 
     window.toggleConcluido = async (id, status) => {
         await updateDoc(doc(db, "planners", currentUID, "tasks", id), { concluido: status });
@@ -808,6 +1128,79 @@
         } catch (err) { console.error(err); showFeedback("Erro.", false); }
     };
 
+        // =================================================================
+    // 🤖 FUNÇÕES DE INTELIGÊNCIA ARTIFICIAL (Worker + Firestore)
+    // =================================================================
+
+    async function gerarConteudoIA(textoOriginal, label) {
+        // Chama seu Cloudflare Worker
+        try {
+            const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "gerar_revisao", textoOriginal, label })
+            });
+
+            if (!response.ok) return `<p>Erro ao gerar revisão automática para ${label}.</p>`;
+
+            const data = await response.json();
+            return data.html; 
+        } catch (error) {
+            console.error("Erro Worker:", error);
+            return `<p>Erro de conexão ao gerar ${label}.</p>`;
+        }
+    }
+
+    async function criarRevisoesComIA(titulo, tag, contentOriginal) {
+        if (!currentUID) return;
+        
+        // Configuração dos dias de revisão
+        const cronograma = [
+            { label: "D+1", days: 1 },
+            { label: "D+7", days: 7 },
+            { label: "D+21", days: 21 }
+        ];
+
+        showFeedback("🤖 IA: Iniciando geração de revisões...", true);
+
+        for (const item of cronograma) {
+            try {
+                showFeedback(`🤖 Gerando revisão de ${item.label}...`, true);
+                
+                // 1. Gera o conteúdo resumido/explicativo via Worker
+                const conteudoIA = await gerarConteudoIA(contentOriginal, item.label);
+                
+                // 2. Calcula a data futura
+                const targetDate = new Date();
+                targetDate.setDate(targetDate.getDate() + item.days);
+
+                // 3. Salva no Firestore
+                await addDoc(collection(db, "planners", currentUID, "tasks"), {
+                    titulo: `[${item.label}] ${titulo}`,
+                    tag: tag,
+                    contentHTML: conteudoIA, // Conteúdo NOVO gerado pela IA
+                    targetDate: targetDate.getTime(),
+                    createdAt: serverTimestamp(),
+                    concluido: false,
+                    label: item.label,
+                    tipo: 'texto',
+                    geradoPorIA: true
+                });
+                
+            } catch(e) {
+                console.error(`Erro ao criar ${item.label}`, e);
+            }
+        }
+        
+        showFeedback("✅ Revisões D+1, D+7 e D+21 criadas!", false);
+        loadDataAndInit(); // Atualiza a tela no final
+    }
+
+    
+    
+        // =================================================================
+    // 💾 BOTÃO SALVAR (Cria Hoje + Chama IA para Futuro)
+    // =================================================================
     document.getElementById('btnSalvar').onclick = async () => {
         const title = document.getElementById('subjectTitle').value;
         const tag = document.getElementById('subjectTag').value || "Geral";
@@ -816,8 +1209,10 @@
         if (!title) return alert("Título obrigatório");
 
         let contentHTML = quill.root.innerHTML;
+        
+        // Limpeza de segurança para imagens coladas direto (base64)
         if (contentHTML.includes('src="data:image')) {
-             alert("Algumas imagens foram coladas indevidamente e serão removidas para garantir o salvamento.");
+             alert("Imagens coladas diretamente foram removidas. Use o botão de upload.");
              contentHTML = contentHTML.replace(/<img[^>]+src="data:image[^">]+"[^>]*>/gi, '');
         }
         
@@ -825,53 +1220,56 @@
             showFeedback("Salvando...", true); 
 
             if (isEditing) {
+                // --- MODO EDIÇÃO (Só atualiza o card atual) ---
                 await updateDoc(doc(db, "planners", currentUID, "tasks", editingDocId), {
-                    titulo: title.includes('[REC]') ? title : `[REC] ${title}`,
+                    titulo: title,
                     tag: tag.toUpperCase(),
                     contentHTML: contentHTML
                 });
                 showFeedback("Atualizado!", false);
+                modalEditorContent.classList.remove('editor-max'); // reseta tamanho
+                fecharModal();
+                loadDataAndInit(); 
             } else {
+                // --- MODO NOVO (Cria Hoje + Chama IA) ---
+                
                 const now = new Date();
                 const d0 = now.getTime();
-                const d1 = new Date(now).setDate(now.getDate() + 1);
-                const d7 = new Date(now).setDate(now.getDate() + 7);
-                const d21 = new Date(now).setDate(now.getDate() + 21);
 
-                const ciclos = [
-                    { n: `[REC] ${title}`, t: d0 }, { n: `[D+1] ${title}`, t: d1 },
-                    { n: `[D+7] ${title}`, t: d7 }, { n: `[D+21] ${title}`, t: d21 }
-                ];
-
+                // 1. Salva na Biblioteca (Backup do original)
                 await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
-                    nome: title, 
-                    contentHTML: contentHTML, 
-                    tag: tag.toUpperCase(), 
-                    data: d0, 
-                    tipo: 'texto' 
+                    nome: title,
+                    contentHTML: contentHTML,
+                    tag: tag.toUpperCase(),
+                    data: d0,
+                    tipo: 'texto'
                 });
 
-                for (const c of ciclos) {
-                    await addDoc(collection(db, "planners", currentUID, "tasks"), {
-                        titulo: c.n, 
-                        tag: tag.toUpperCase(), 
-                        contentHTML: contentHTML,
-                        targetDate: c.t, 
-                        concluido: false, 
-                        criadoEm: serverTimestamp(), 
-                        tipo: 'texto'
-                    });
-                }
-                showFeedback("Criado com sucesso!", false);
-            }
+                // 2. Cria a tarefa de HOJE [REC] (Texto Original Completo)
+                await addDoc(collection(db, "planners", currentUID, "tasks"), {
+                    titulo: `[REC] ${title}`,
+                    tag: tag.toUpperCase(),
+                    contentHTML: contentHTML, 
+                    targetDate: d0,
+                    concluido: false,
+                    criadoEm: serverTimestamp(),
+                    tipo: 'texto'
+                });
 
-            modalEditorContent.classList.remove('editor-max');
-            btnCompress.style.display = 'none';
-            btnExpand.style.display = 'inline-flex';
-            
-            fecharModal(); 
-            loadDataAndInit();
-            carregarBiblioteca();
+                // Fecha o modal para liberar o usuário
+                modalEditorContent.classList.remove('editor-max');
+                if(btnCompress) btnCompress.style.display = 'none';
+                if(btnExpand) btnExpand.style.display = 'inline-flex';
+                fecharModal(); 
+
+                // Atualiza a tela imediatamente com o card de hoje
+                loadDataAndInit(); 
+                carregarBiblioteca();
+
+                // 3. CHAMA A IA EM SEGUNDO PLANO PARA D+1, D+7, D+21
+                // A função cuidará de atualizar o feedback na tela
+                criarRevisoesComIA(title, tag.toUpperCase(), contentHTML);
+            }
 
         } catch (e) {
             console.error(e);
@@ -880,7 +1278,10 @@
         }
     };
 
-    async function carregarBiblioteca() {
+    
+    
+
+        async function carregarBiblioteca() {
         if(!currentUID) return;
         const snap = await getDocs(query(collection(db, "planners", currentUID, "arquivos"), orderBy("data", "desc")));
         const tbody = document.getElementById('listaBiblioteca');
@@ -893,31 +1294,124 @@
             const icon = f.tipo === 'pdf' ? '<i class="far fa-file-pdf" style="color:#d44c47"></i>' : '<i class="far fa-file-alt" style="color:#2383e2"></i>';
             const tr = document.createElement('tr');
             tr.style.borderBottom = '1px solid #f0f0f0';
+            
+            // Limpa o texto para passar no onclick sem quebrar o HTML
+            const conteudoLimpo = f.tipo === 'texto' ? (f.contentHTML || '').replace(/'/g, '').replace(/"/g, '').replace(/\n/g, ' ') : '';
+            
             tr.innerHTML = `
                 <td style="padding:12px;">${icon} ${f.nome}</td>
                 <td style="padding:12px;"><span class="tag-pill" style="background:#f0f0f0; color:#555">${f.tag}</span></td>
                 <td style="padding:12px; color:#999;">${date}</td>
-                <td style="padding:12px;"><button class="btn-action" style="padding:4px 10px;" id="btn-view-${d.id}">Visualizar</button></td>
+                <td style="padding:12px; display:flex; gap:8px;">
+                    <button class="btn-action" style="padding:4px 10px;" id="btn-view-${d.id}">Ver</button>
+                    <button class="btn-action" style="padding:4px 10px;" 
+                        onclick="window.gerarQuiz('${d.id}', '${f.nome.replace(/'/g, "")}', '${conteudoLimpo}', '${f.tipo}')"
+                        title="Gerar Simulado IA">
+                        <i class="fas fa-brain"></i>
+                    </button>
+                </td>
             `;
             tbody.appendChild(tr);
             document.getElementById(`btn-view-${d.id}`).onclick = () => abrirArquivoBiblioteca(f);
         });
     }
 
+
+                               // --- RENDERIZADOR CORRIGIDO V2 (Tabelas Unificadas) ---
+    function renderHybridContent(rawHTML) {
+        if (!rawHTML) return "";
+        
+        // Limpeza prévia para garantir quebras de linha consistentes
+        let content = rawHTML
+            .replace(/<\/p>/gi, '\n')      // Fim de parágrafo vira quebra
+            .replace(/<p[^>]*>/gi, '')     // Remove início de parágrafo
+            .replace(/<br\s*\/?>/gi, '\n') // BR vira quebra
+            .replace(/&nbsp;/g, ' ');      // Espaços HTML viram espaços normais
+
+        const lines = content.split('\n');
+        
+        let output = '';
+        let tableBuffer = [];
+        let insideTable = false;
+
+        const flushTable = () => {
+            if (tableBuffer.length === 0) return;
+            
+            output += `<div class="table-wrapper"><table class="hybrid-table"><tbody>`;
+            
+            tableBuffer.forEach((row, i) => {
+                const cells = row.split('|').map(c => c.trim());
+                
+                // Remove células vazias nas pontas
+                if(cells.length > 0 && cells[0] === '') cells.shift();
+                if(cells.length > 0 && cells[cells.length-1] === '') cells.pop();
+
+                if (cells.length > 0) {
+                    const isHeader = (i === 0);
+                    output += `<tr>`;
+                    cells.forEach(cell => {
+                        const tag = isHeader ? 'th' : 'td';
+                        output += `<${tag}>${cell}</${tag}>`;
+                    });
+                    output += '</tr>';
+                }
+            });
+            output += `</tbody></table></div>`;
+            tableBuffer = [];
+        };
+
+        lines.forEach(line => {
+            const cleanLine = line.trim();
+            
+            if (!cleanLine) return; 
+
+            if (cleanLine.includes('|')) {
+                if (/^[|\s-:]+$/.test(cleanLine)) return;
+
+                insideTable = true;
+                tableBuffer.push(cleanLine);
+            } else {
+                if (insideTable) {
+                    flushTable();
+                    insideTable = false;
+                }
+                output += `<p style="margin-bottom: 12px; line-height: 1.6;">${line}</p>`;
+            }
+        });
+
+        if (insideTable) flushTable();
+        
+        return output;
+    }
+
+
+        // Injeta o conteúdo no visualizador (Suporta HTML antigo e Markdown novo)
     function renderQuillContent(container, data) {
         container.innerHTML = ''; 
-        const viewerDiv = document.createElement('div');
-        viewerDiv.id = 'viewer-container'; 
-        viewerDiv.style.height = '100%';
-        container.appendChild(viewerDiv);
+        let htmlFinal = "";
 
-        const viewer = new Quill(viewerDiv, {
-            theme: 'snow',
-            readOnly: true,
-            modules: { toolbar: false } 
-        });
-        viewer.clipboard.dangerouslyPasteHTML(data.contentHTML || "");
+        // Verifica se é conteúdo gerado pela IA (que agora vem em Markdown)
+        if (data.geradoPorIA) {
+            // Converte Markdown para HTML usando a biblioteca 'marked' que você já tem
+            htmlFinal = marked.parse(data.contentHTML || "");
+        } else {
+            // Se for conteúdo antigo ou criado manualmente (Quill), usa o renderizador híbrido
+            htmlFinal = renderHybridContent(data.contentHTML || "");
+        }
+        
+        container.innerHTML = `
+            <div class="ql-container ql-snow" style="border:none;">
+                <div class="ql-editor" style="padding: 0;">
+                    ${htmlFinal}
+                </div>
+            </div>
+        `;
     }
+
+
+
+
+
 
     window.abrirArquivoBiblioteca = (fileData) => {
         const container = document.getElementById('viewContainer');
@@ -928,12 +1422,17 @@
         document.getElementById('viewTagDisplay').textContent = fileData.tag;
         document.getElementById('modalView').style.display = 'flex';
 
-        if (fileData.tipo === 'pdf') {
+                if (fileData.tipo === 'pdf') {
             document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-pdf" style="color:#d44c47; font-size:20px;"></i>';
             btnEdit.style.display = 'none';
             btnExcluir.style.display = 'block'; 
-            container.innerHTML = `<div style="background:#333; padding:10px; display:flex; justify-content:center; gap:20px; color:white;"><button class="btn-action" onclick="window.prevPage()">◀</button><span>Pg <span id="page_num">1</span> / <span id="page_count">--</span></span><button class="btn-action" onclick="window.nextPage()">▶</button></div><div id="pdfContainer"><canvas id="the-canvas"></canvas></div>`;
+            
+            // INJETA O NOVO HTML
+            container.innerHTML = getPDFViewerHTML();
+            
             initPDF(fileData.url);
+        }
+
         } else {
             document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-alt" style="color:#2383e2; font-size:20px;"></i>';
             btnEdit.style.display = 'none'; 
@@ -958,12 +1457,17 @@
         document.getElementById('modalView').style.display = 'flex';
         editingDocId = id; 
 
-        if (data.pdfUrl) {
+                if (data.pdfUrl) {
             document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-pdf" style="color:#d44c47; font-size:20px;"></i>';
             btnEdit.style.display = 'none';
             btnExcluir.style.display = 'block';
-            container.innerHTML = `<div style="background:#333; padding:10px; display:flex; justify-content:center; gap:20px; color:white;"><button class="btn-action" onclick="window.prevPage()">◀</button><span>Pg <span id="page_num">1</span> / <span id="page_count">--</span></span><button class="btn-action" onclick="window.nextPage()">▶</button></div><div id="pdfContainer"><canvas id="the-canvas"></canvas></div>`;
+            
+            // INJETA O NOVO HTML
+            container.innerHTML = getPDFViewerHTML();
+            
             initPDF(data.pdfUrl);
+        }
+
         } else {
             document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-alt" style="color:#2383e2; font-size:20px;"></i>';
             btnEdit.style.display = 'block';
@@ -1039,30 +1543,159 @@
         }
     };
 
-    let pdfDoc = null, pageNum = 1, pageRendering = false, pageNumPending = null, canvas, ctx;
+        // ============================================================
+    // 📄 VISUALIZADOR PDF 2.0 (COM CAMADA DE TEXTO E SELEÇÃO)
+    // ============================================================
+
+    let pdfDoc = null;
+    let pageNum = 1;
+    let pageRendering = false;
+    let pageNumPending = null;
+    let scale = 1.5; 
+    let canvas, ctx, textLayerDiv;
+
+    // HTML Injetável do Visualizador
+    const getPDFViewerHTML = () => `
+        <div class="ai-study-controls">
+            <div class="ai-input-group">
+                <span>Pág Inicial:</span>
+                <input type="number" id="startPage" class="ai-input-small" value="1">
+            </div>
+            <div class="ai-input-group">
+                <span>Pág Final:</span>
+                <input type="number" id="endPage" class="ai-input-small" value="1">
+            </div>
+            <button class="btn-action btn-primary" onclick="window.mapearConceitosIA()">
+                <i class="fas fa-project-diagram"></i> Mapear Conceitos
+            </button>
+        </div>
+        
+        <div style="background:#333; padding:10px; display:flex; justify-content:center; gap:20px; color:white; align-items:center;">
+            <button class="btn-action" onclick="window.prevPage()">◀ Anterior</button>
+            <span>Página <span id="page_num">--</span> de <span id="page_count">--</span></span>
+            <button class="btn-action" onclick="window.nextPage()">Próxima ▶</button>
+        </div>
+
+        <div style="background: #525659; padding: 20px; overflow-y: auto; height: 100%; display: flex; justify-content: center;">
+            <div id="pdfWrapper">
+                <canvas id="the-canvas"></canvas>
+                <div id="text-layer" class="textLayer"></div>
+            </div>
+        </div>
+    `;
+
     async function initPDF(url) {
         try {
             const loadingTask = pdfjsLib.getDocument(url);
             pdfDoc = await loadingTask.promise;
-            document.getElementById('page_count').textContent = pdfDoc.numPages;
-            pageNum = 1; renderPage(pageNum);
-        } catch(e) { console.error(e); }
+            
+            // Tenta atualizar UI se os elementos existirem
+            const elCount = document.getElementById('page_count');
+            const elEnd = document.getElementById('endPage');
+            if(elCount) elCount.textContent = pdfDoc.numPages;
+            if(elEnd) elEnd.value = pdfDoc.numPages; 
+            
+            pageNum = 1;
+            renderPage(pageNum);
+        } catch(e) { 
+            console.error("Erro PDF:", e);
+            alert("Erro ao abrir PDF.");
+        }
     }
-    function renderPage(num) {
+
+    async function renderPage(num) {
         pageRendering = true;
-        pdfDoc.getPage(num).then(function(page) {
-            canvas = document.getElementById('the-canvas'); ctx = canvas.getContext('2d');
-            var viewport = page.getViewport({scale: 1.5});
-            canvas.height = viewport.height; canvas.width = viewport.width;
-            var renderContext = { canvasContext: ctx, viewport: viewport };
-            var renderTask = page.render(renderContext);
-            renderTask.promise.then(function() { pageRendering = false; if (pageNumPending !== null) { renderPage(pageNumPending); pageNumPending = null; } });
+        const page = await pdfDoc.getPage(num);
+        
+        canvas = document.getElementById('the-canvas');
+        textLayerDiv = document.getElementById('text-layer');
+        ctx = canvas.getContext('2d');
+
+        // Escala e Viewport
+        const viewport = page.getViewport({scale: scale});
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        // Renderiza Canvas
+        const renderContext = { canvasContext: ctx, viewport: viewport };
+        await page.render(renderContext).promise;
+
+        // Renderiza Texto (Text Layer)
+        textLayerDiv.innerHTML = '';
+        textLayerDiv.style.height = viewport.height + 'px';
+        textLayerDiv.style.width = viewport.width + 'px';
+
+        const textContent = await page.getTextContent();
+        
+        // Loop para criar os spans de texto invisível
+        textContent.items.forEach(item => {
+            const tx = pdfjsLib.Util.transform(
+                pdfjsLib.Util.transform(viewport.transform, item.transform),
+                [1, 0, 0, -1, 0, 0]
+            );
+            const style = textContent.styles[item.fontName];
+            const span = document.createElement('span');
+            span.textContent = item.str;
+            
+            // Matemática de posicionamento
+            const fontHeight = Math.sqrt((tx[2] * tx[2]) + (tx[3] * tx[3]));
+            const fontWidth = Math.sqrt((tx[0] * tx[0]) + (tx[1] * tx[1]));
+            
+            span.style.left = `${tx[4]}px`;
+            span.style.top = `${tx[5] - fontHeight}px`;
+            span.style.fontSize = `${fontHeight}px`;
+            span.style.fontFamily = style ? style.fontFamily : 'sans-serif';
+            span.style.transform = `scaleX(${fontWidth / fontHeight})`;
+            
+            textLayerDiv.appendChild(span);
         });
+
+        pageRendering = false;
+        if (pageNumPending !== null) { renderPage(pageNumPending); pageNumPending = null; }
+        
         document.getElementById('page_num').textContent = num;
+        
+        // Atualiza inputs de "Mapeamento" (opcional, para conveniência)
+        const startInput = document.getElementById('startPage');
+        if(startInput && document.activeElement !== startInput) startInput.value = num;
     }
+
     window.queueRenderPage = (num) => { if (pageRendering) pageNumPending = num; else renderPage(num); };
     window.prevPage = () => { if (pageNum <= 1) return; pageNum--; window.queueRenderPage(pageNum); };
     window.nextPage = () => { if (pageNum >= pdfDoc.numPages) return; pageNum++; window.queueRenderPage(pageNum); };
+
+    // --- FUNÇÃO DE EXTRAÇÃO (Passo 1 do Plano) ---
+    window.mapearConceitosIA = async () => {
+        const start = parseInt(document.getElementById('startPage').value);
+        const end = parseInt(document.getElementById('endPage').value);
+        
+        if (isNaN(start) || isNaN(end) || start > end) return alert("Páginas inválidas.");
+        if (!confirm(`Extrair texto das páginas ${start} a ${end} para mapeamento?`)) return;
+
+        showFeedback(`Lendo páginas ${start}-${end}...`, true);
+
+        try {
+            let fullText = "";
+            for (let i = start; i <= end; i++) {
+                const page = await pdfDoc.getPage(i);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items.map(item => item.str).join(' ');
+                fullText += `\n--- Pág ${i} ---\n` + pageText;
+            }
+            console.log("Texto Extraído:", fullText);
+            
+            // AQUI NO FUTURO VAMOS CHAMAR O WORKER
+            alert("Texto extraído! (Veja no Console F12). \nPróximo passo: Enviar para IA criar o JSON de conceitos.");
+            showFeedback("Texto extraído!", false);
+
+        } catch (e) {
+            console.error(e);
+            showFeedback("Erro na extração.", false);
+        }
+    };
+
+    
+
 
     window.showFeedback = (msg, loading) => {
         const el = document.getElementById('statusFeedback');
@@ -1087,7 +1720,365 @@
     
     document.getElementById('navBoard').onclick = () => { document.getElementById('secBoard').classList.remove('hidden'); document.getElementById('secLib').classList.add('hidden'); document.getElementById('navBoard').classList.add('active'); document.getElementById('navLib').classList.remove('active'); };
     document.getElementById('navLib').onclick = () => { document.getElementById('secBoard').classList.add('hidden'); document.getElementById('secLib').classList.remove('hidden'); document.getElementById('navBoard').classList.remove('active'); document.getElementById('navLib').classList.add('active'); carregarBiblioteca(); };
-</script>
+
+        // ============================================================
+    // 🕒 LÓGICA DA AGENDA (Adicione no final do Script)
+    // ============================================================
+    
+    async function loadAgenda() {
+        if (!currentUID) return;
+        // Busca na coleção "agenda"
+        const q = query(collection(db, "planners", currentUID, "agenda"));
+        const snap = await getDocs(q);
+        allAgendaCache = [];
+        snap.forEach(d => allAgendaCache.push({ id: d.id, ...d.data() }));
+        renderAgendaBoard();
+    }
+
+    function renderAgendaBoard() {
+        const board = document.getElementById('agendaBoard');
+        if (!board) return; // Segurança caso o elemento não exista
+        board.innerHTML = '';
+        
+        const daysOfWeek = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        const today = new Date(); 
+
+        for (let i = 0; i < 7; i++) {
+            const currentDay = new Date(currentBoardStart);
+            currentDay.setDate(currentBoardStart.getDate() + i);
+            const isToday = isSameDay(today, currentDay);
+
+            // Filtra itens deste dia e ordena por hora de início
+            const itensDoDia = allAgendaCache.filter(item => {
+                if(!item.data) return false;
+                // Converte string "2024-05-20" para data local correta
+                const parts = item.data.split('-'); 
+                const itemDate = new Date(parts[0], parts[1]-1, parts[2]);
+                return isSameDay(itemDate, currentDay);
+            }).sort((a, b) => a.inicio.localeCompare(b.inicio));
+
+            // Cria a coluna do dia
+            const colDiv = document.createElement('div');
+            colDiv.className = 'day-column';
+            colDiv.innerHTML = `
+                <div class="day-header ${isToday ? 'today' : ''}">
+                    <span>${daysOfWeek[i]}</span>
+                    <span style="font-weight:400; opacity:0.7">${formatDateDisplay(currentDay)}</span>
+                </div>
+                <div class="drop-zone" style="padding-right:4px;"></div>
+            `;
+            
+            const container = colDiv.querySelector('.drop-zone');
+            
+            // Cria os cartões de horário
+            itensDoDia.forEach(item => {
+                const el = document.createElement('div');
+                el.className = `agenda-card ${item.concluido ? 'done' : ''}`;
+                el.innerHTML = `
+                    <input type="checkbox" class="agenda-check" ${item.concluido ? 'checked' : ''} 
+                        onchange="window.toggleAgenda('${item.id}', this.checked)">
+                    <div class="agenda-content">
+                        <div class="agenda-text">${item.titulo}</div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px;">
+                            <div class="agenda-time-badge">
+                                <span>${item.inicio}</span>
+                                <span style="font-size:9px; opacity:0.7; font-weight:400;">até ${item.fim}</span>
+                            </div>
+                            <button class="btn-delete-agenda" onclick="window.deleteAgenda('${item.id}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(el);
+            });
+
+            board.appendChild(colDiv);
+        }
+    }
+
+    // --- ABRIR MODAL AGENDA ---
+    document.getElementById('btnNovaAgenda').onclick = () => {
+        document.getElementById('agendaTitle').value = '';
+        document.getElementById('agendaStart').value = '';
+        document.getElementById('agendaEnd').value = '';
+        document.getElementById('agendaDate').valueAsDate = new Date(); // Hoje
+        document.getElementById('modalAgenda').style.display = 'flex';
+    };
+
+    // --- SALVAR NO FIRESTORE ---
+    document.getElementById('btnSalvarAgenda').onclick = async () => {
+        const titulo = document.getElementById('agendaTitle').value;
+        const data = document.getElementById('agendaDate').value;
+        const inicio = document.getElementById('agendaStart').value;
+        const fim = document.getElementById('agendaEnd').value;
+
+        if(!titulo || !data || !inicio || !fim) return alert("Preencha todos os campos!");
+
+        showFeedback("Salvando horário...", true);
+        try {
+            await addDoc(collection(db, "planners", currentUID, "agenda"), {
+                titulo, data, inicio, fim, concluido: false, createdAt: serverTimestamp()
+            });
+            showFeedback("Salvo!", false);
+            document.getElementById('modalAgenda').style.display = 'none';
+            loadAgenda(); // Recarrega a tela
+        } catch(e) {
+            console.error(e);
+            showFeedback("Erro ao salvar", false);
+        }
+    };
+
+    // --- CHECKBOX (CONCLUIR) ---
+    window.toggleAgenda = async (id, status) => {
+        // Atualiza visualmente na hora (sem esperar o banco)
+        const item = allAgendaCache.find(i => i.id === id);
+        if(item) {
+            item.concluido = status; 
+            renderAgendaBoard(); 
+        }
+        await updateDoc(doc(db, "planners", currentUID, "agenda", id), { concluido: status });
+    };
+
+    // --- DELETAR ---
+    window.deleteAgenda = async (id) => {
+        if(!confirm("Apagar este horário?")) return;
+        try {
+            await deleteDoc(doc(db, "planners", currentUID, "agenda", id));
+            allAgendaCache = allAgendaCache.filter(i => i.id !== id); // Remove da lista local
+            renderAgendaBoard(); // Atualiza tela
+        } catch(e) { alert("Erro ao deletar"); }
+    };
+
+        // --- NAVEGAÇÃO UNIFICADA DO MENU (Sidebar) ---
+
+    // 1. Botão Cronograma
+    document.getElementById('navBoard').onclick = () => {
+        // Esconde as outras telas
+        document.getElementById('secLib').classList.add('hidden');
+        document.getElementById('secAgenda').classList.add('hidden');
+        document.getElementById('secQuizzes').classList.add('hidden');
+        
+        // Mostra o Cronograma
+        document.getElementById('secBoard').classList.remove('hidden');
+
+        // Atualiza estilo do menu
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('navBoard').classList.add('active');
+    };
+
+    // 2. Botão Biblioteca
+    document.getElementById('navLib').onclick = () => {
+        document.getElementById('secBoard').classList.add('hidden');
+        document.getElementById('secAgenda').classList.add('hidden');
+        document.getElementById('secQuizzes').classList.add('hidden');
+        
+        document.getElementById('secLib').classList.remove('hidden');
+
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('navLib').classList.add('active');
+        
+        carregarBiblioteca(); // Garante que a lista esteja atualizada
+    };
+
+    // 3. Botão Agenda
+    document.getElementById('navAgenda').onclick = () => {
+        document.getElementById('secBoard').classList.add('hidden');
+        document.getElementById('secLib').classList.add('hidden');
+        document.getElementById('secQuizzes').classList.add('hidden');
+        
+        document.getElementById('secAgenda').classList.remove('hidden');
+        
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('navAgenda').classList.add('active');
+        
+        renderAgendaBoard(); // Renderiza os cards da agenda
+    };
+
+    // 4. Botão Meus Simulados (Novo)
+    document.getElementById('navQuizzes').onclick = () => {
+        document.getElementById('secBoard').classList.add('hidden');
+        document.getElementById('secLib').classList.add('hidden');
+        document.getElementById('secAgenda').classList.add('hidden');
+        
+        document.getElementById('secQuizzes').classList.remove('hidden');
+        
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('navQuizzes').classList.add('active');
+        
+        // Verifica se a função existe antes de chamar (segurança)
+        if (typeof carregarAbaQuizzes === "function") {
+            carregarAbaQuizzes();
+        }
+    };
+
+
+        // --- LÓGICA DE RESPOSTA DO QUIZ ---
+    window.checkAnswer = (el, isCorrect) => {
+        // Evita clicar duas vezes na mesma questão
+        if(el.parentElement.classList.contains('answered')) return;
+        
+        el.parentElement.classList.add('answered'); // Marca questão como respondida
+        
+        if(isCorrect) {
+            el.classList.add('correct');
+        } else {
+            el.classList.add('wrong');
+            // Mostra qual era a certa automaticamente
+            const siblings = el.parentElement.children;
+            for(let sib of siblings) {
+                if(sib.getAttribute('onclick').includes('true')) {
+                    sib.classList.add('correct');
+                }
+            }
+        }
+        
+        // Mostra o feedback (explicação) se houver
+        const card = el.closest('.quiz-card');
+        const feedback = card.querySelector('.quiz-feedback');
+        if(feedback) feedback.style.display = 'block';
+    };
+
+    
+        // --- GERAR QUIZ ---
+    window.gerarQuiz = async (arquivoId, titulo, textoContexto, tipo) => {
+        const confirmacao = confirm(`Gerar simulado sobre: "${titulo}"?`);
+        if(!confirmacao) return;
+
+        showFeedback("🧠 Criando questões...", true);
+
+        // Prepara o contexto para a IA
+        let promptText = "";
+        let promptLabel = titulo;
+
+        if (tipo === 'texto') {
+            // Limpa tags HTML para economizar tokens
+            const tmp = document.createElement("DIV");
+            tmp.innerHTML = textoContexto;
+            promptText = tmp.textContent || tmp.innerText || "";
+            // Limite de segurança
+            if(promptText.length > 12000) promptText = promptText.substring(0, 12000);
+        } else {
+            // Para PDF, enviamos vazio e a IA cria baseada no Título/Label
+            promptText = ""; 
+        }
+
+        try {
+            const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    action: "gerar_quiz_arquivo", 
+                    textoOriginal: promptText, 
+                    label: promptLabel 
+                })
+            });
+
+            if(!response.ok) throw new Error("Erro na API");
+            
+            const data = await response.json();
+            const quizHTML = data.html;
+
+            // 1. Salva na coleção 'quizzes' (Para a aba Meus Simulados)
+            const quizRef = await addDoc(collection(db, "planners", currentUID, "quizzes"), {
+                titulo: titulo,
+                html: quizHTML,
+                criadoEm: serverTimestamp(),
+                origemId: arquivoId
+            });
+
+            // 2. Salva no Cronograma como tarefa de hoje
+            const today = new Date().getTime();
+            await addDoc(collection(db, "planners", currentUID, "tasks"), {
+                titulo: `[QUIZ] ${titulo}`,
+                tag: "SIMULADO",
+                contentHTML: quizHTML, 
+                targetDate: today,
+                concluido: false,
+                criadoEm: serverTimestamp(),
+                tipo: 'quiz',
+                quizId: quizRef.id
+            });
+
+            showFeedback("Simulado criado com sucesso!", false);
+            loadDataAndInit(); // Atualiza o board
+            
+        } catch(e) {
+            console.error(e);
+            showFeedback("Erro ao gerar quiz.", false);
+        }
+    };
+
+        window.abrirQuizPlayer = (titulo, htmlContent) => {
+        document.getElementById('viewTitle').textContent = titulo;
+        document.getElementById('viewTagDisplay').textContent = "Simulado";
+        // Ícone de cérebro no modal
+        document.getElementById('viewTypeIcon').innerHTML = '<i class="fas fa-brain" style="color:#9065b0; font-size:20px;"></i>';
+        
+        const container = document.getElementById('viewContainer');
+        container.innerHTML = `<div style="padding:20px; overflow-y:auto; background:#fcfcfc;">${htmlContent}</div>`;
+        
+        // Esconde botões de edição de texto
+        document.getElementById('btnEditarNota').style.display = 'none';
+        document.getElementById('btnExcluirEstudo').style.display = 'none'; 
+        
+        document.getElementById('modalView').style.display = 'flex';
+    };
+
+    
+        async function carregarAbaQuizzes() {
+        if(!currentUID) return;
+        const q = query(collection(db, "planners", currentUID, "quizzes"), orderBy("criadoEm", "desc"));
+        const snap = await getDocs(q);
+        const tbody = document.getElementById('listaQuizzesBody');
+        tbody.innerHTML = '';
+        
+        if (snap.empty) {
+            tbody.innerHTML = '<tr><td colspan="3" style="padding:20px; text-align:center; color:#ccc;">Nenhum simulado encontrado.</td></tr>';
+            return;
+        }
+
+        snap.forEach(docSnap => {
+            const data = docSnap.data();
+            const dataCriacao = data.criadoEm ? new Date(data.criadoEm.seconds * 1000).toLocaleDateString() : '-';
+            
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid #f0f0f0';
+            tr.innerHTML = `
+                <td style="padding:12px; font-weight:500;">${data.titulo}</td>
+                <td style="padding:12px; color:#777;">${dataCriacao}</td>
+                <td style="padding:12px;">
+                    <button class="btn-action" onclick="window.fetchAndPlayQuiz('${docSnap.id}')"><i class="fas fa-play"></i> Fazer</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Busca o quiz pelo ID para jogar (usado na aba Meus Simulados)
+    window.fetchAndPlayQuiz = async (id) => {
+        const snap = await getDoc(doc(db, "planners", currentUID, "quizzes", id));
+        if(snap.exists()) {
+            const d = snap.data();
+            window.abrirQuizPlayer(d.titulo, d.html);
+        }
+    };
+
+    // --- NAVEGAÇÃO PARA ABA QUIZZES ---
+    document.getElementById('navQuizzes').onclick = () => {
+        document.getElementById('secBoard').classList.add('hidden');
+        document.getElementById('secLib').classList.add('hidden');
+        document.getElementById('secAgenda').classList.add('hidden');
+        document.getElementById('secQuizzes').classList.remove('hidden');
+        
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('navQuizzes').classList.add('active');
+        
+        carregarAbaQuizzes();
+    };
+
+    
+    </script>
+    
+    
     <script type="module" src="padrao_simulado.js"></script>
 </body>
 </html>
