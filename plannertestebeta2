@@ -1,0 +1,2323 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planner R1 | Medicina UNIP</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
+
+
+    <style>
+        :root {
+            --bg-body: #f7f7f5;
+            --text-primary: #37352f;
+            --text-secondary: #787774;
+            --card-bg: #ffffff;
+            --border-color: #e9e9e7;
+            --accent-color: #2383e2;
+            
+            /* Cores Tags */
+            --tag-red: #ffe2dd; --text-red: #d44c47;
+            --tag-yellow: #fdecc8; --text-yellow: #cb912f;
+            --tag-green: #dbeddb; --text-green: #448361;
+            --tag-blue: #d3e5ef; --text-blue: #18507a;
+            --tag-purple: #e8deee; --text-purple: #9065b0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
+
+        /* Sidebar com correção para Chrome Mobile */
+        .sidebar { 
+            width: 240px; 
+            background: #fbfbfa; 
+            border-right: 1px solid var(--border-color); 
+            display: flex; 
+            flex-direction: column; 
+            flex-shrink: 0; 
+            height: 100vh;        
+            height: 100dvh;       
+            overflow-y: auto;     
+            overflow-x: hidden;
+            padding-bottom: 120px; 
+        }
+
+        .sidebar::-webkit-scrollbar { width: 6px; }
+        .sidebar::-webkit-scrollbar-thumb { background-color: #e0e0e0; border-radius: 3px; }
+
+        .sidebar-header { 
+            padding: 16px; 
+            border-bottom: 1px solid var(--border-color); 
+            margin-bottom: 12px; 
+            display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;
+        }
+        .user-id-text { font-weight: 600; font-size: 14px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .user-ip-text { font-size: 11px; color: var(--text-secondary); font-family: monospace; }
+
+        .nav-item { padding: 8px 16px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: var(--text-secondary); transition: 0.2s; border-radius: 4px; margin: 0 8px; flex-shrink: 0; }
+        .nav-item:hover { background: #efefef; color: var(--text-primary); }
+        .nav-item.active { background: #efefef; font-weight: 600; color: var(--text-primary); }
+
+        .sidebar-goals { 
+            padding: 20px 16px; 
+            margin-top: 20px; 
+            border-top: 1px solid var(--border-color); 
+            flex-shrink: 0; 
+            background: #fbfbfa;
+            padding-bottom: 80px; 
+        }
+
+        .goals-title { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+        .goal-item { margin-bottom: 12px; }
+        .goal-header { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; color: var(--text-primary); font-weight: 500; }
+        .goal-bar-bg { height: 6px; background: #e9e9e7; border-radius: 3px; overflow: hidden; }
+        .goal-bar-fill { height: 100%; background: var(--accent-color); width: 0%; transition: width 0.5s ease; border-radius: 3px; }
+        .goal-bar-fill.complete { background: var(--text-green); }
+
+        /* Main Content */
+        .main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .top-bar { height: 50px; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; border-bottom: 1px solid var(--border-color); background: white; flex-shrink: 0; }
+        
+        .content { flex: 1; overflow: hidden; padding: 24px; display: flex; flex-direction: column; }
+        .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-shrink: 0; }
+        .page-title { font-size: 26px; font-weight: 700; color: var(--text-primary); }
+
+        /* Board */
+        .week-board { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; flex: 1; min-width: 1400px; overflow: hidden; }
+        .day-column { background: transparent; display: flex; flex-direction: column; height: 100%; border-right: 1px dashed var(--border-color); padding-right: 8px; min-height: 0; }
+        .day-column:last-child { border-right: none; }
+        .day-header { padding: 8px 4px; margin-bottom: 12px; border-radius: 4px; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+        .day-header.today { background: #ffe2dd; color: #d44c47; }
+        .drop-zone { flex: 1; overflow-y: auto; padding-bottom: 100px; scrollbar-width: thin; }
+        .drop-zone::-webkit-scrollbar { width: 6px; }
+        .drop-zone::-webkit-scrollbar-thumb { background-color: #ddd; border-radius: 4px; }
+        
+        /* CARD */
+        .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); cursor: pointer; transition: all 0.2s ease; position: relative; }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.08); border-color: #d0d0d0; }
+        .card-top { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+        
+        /* --- ESTILO DE ATRASO (NOVO) --- */
+        .card.atrasada { border-left: 5px solid #d44c47; background: #fff5f5; } 
+        .card.atrasada .card-title { color: #b42318; font-weight: 600; } 
+        .atraso-badge { display: inline-flex; align-items: center; gap: 4px; background: #ffe2dd; color: #d44c47; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 12px; margin-left: 8px; }
+
+        .custom-checkbox { appearance: none; width: 18px; height: 18px; border: 2px solid #d0d0d0; border-radius: 4px; cursor: pointer; flex-shrink: 0; margin-top: 2px; position: relative; }
+        .custom-checkbox:checked { background: var(--text-green); border-color: var(--text-green); }
+        .custom-checkbox:checked::after { content: '✓'; color: white; position: absolute; top: -2px; left: 3px; font-size: 12px; font-weight: bold; }
+
+        .card-title { font-size: 14px; font-weight: 500; line-height: 1.4; color: var(--text-primary); }
+        .card.completed .card-title { text-decoration: line-through; color: #a0a0a0; }
+        .card.completed { background: #f9f9f9; opacity: 0.8; }
+        .tag-pill { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: var(--tag-blue); color: var(--text-blue); display: inline-flex; align-items: center; }
+        .card-meta { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 11px; color: var(--text-secondary); flex-wrap: wrap;}
+
+        /* UI Elements */
+        .week-selector-wrapper { display: flex; align-items: center; gap: 8px; position: relative; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: 0.2s; }
+        .week-selector-wrapper:hover { background: #f0f0f0; }
+        .week-select-native { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10; }
+        .week-display { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+
+        .btn-action { background: white; border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
+        .btn-action:hover { background: #f7f7f5; }
+        .btn-primary { background: var(--text-primary); color: white; border: none; }
+        .btn-primary:hover { background: #111; }
+
+        /* --- MODAL EDITOR (100dvh + FLEX) --- */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; }
+        
+        .modal-content { 
+            background: white; width: 95%; max-width: 800px; height: 90vh; border-radius: 12px; 
+            display: flex; flex-direction: column; overflow: hidden; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2); transition: all 0.3s ease; 
+        }
+        
+        .modal-content.editor-max { 
+            width: 100vw !important; height: 100dvh !important; max-width: none !important; max-height: none !important; 
+            border-radius: 0 !important; display: flex; flex-direction: column;
+        }
+
+        .editor-header {
+            flex-shrink: 0; padding: 20px 25px 15px; background: white; border-bottom: 1px solid #eee;
+            display: flex; justify-content: space-between; align-items: center; z-index: 10;
+        }
+
+        .editor-body {
+            flex: 1; overflow-y: auto; padding: 20px 25px; display: flex; flex-direction: column; min-height: 0;
+        }
+
+        .editor-footer {
+            flex-shrink: 0; padding: 15px 25px; background: white; border-top: 1px solid #eee;
+            display: flex; justify-content: flex-end; gap: 10px; z-index: 10;
+        }
+
+        #quill-editor-container {
+            flex: 1; display: flex; flex-direction: column; border: 1px solid #ddd;
+            border-radius: 6px; overflow: hidden; min-height: 300px;
+        }
+        #quill-editor { flex: 1; font-size: 16px; border: none; }
+
+        /* --- LIGHTBOX & VISUALIZAÇÃO DE IMAGENS --- */
+        .image-modal-content {
+            width: 100vw; height: 100dvh; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            position: relative;
+        }
+
+        .image-close-btn {
+            position: fixed; top: 15px; right: 15px; 
+            z-index: 4000; background: white; border: none; 
+            border-radius: 20px; padding: 8px 16px; 
+            font-size: 13px; font-weight: 600; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        #imageModalImg {
+            max-width: 95vw; max-height: 90dvh; 
+            object-fit: contain; border-radius: 4px;
+        }
+
+        /* Estilo para imagens dentro do Texto (Leitura Confortável) */
+        .ql-editor img { 
+            display: block; margin: 16px auto; 
+            max-width: 700px; 
+            width: 100%; 
+            height: auto; 
+            border-radius: 8px; cursor: zoom-in; 
+            transition: transform 0.2s ease;
+        }
+        .ql-editor img:hover { transform: scale(1.01); }
+        
+        .ql-editor iframe { display: block; margin: 16px auto; max-width: 90%; aspect-ratio: 16 / 9; border-radius: 8px; }
+        
+        .ql-align-center { text-align: center; }
+        .ql-align-right { text-align: right; }
+        .ql-align-justify { text-align: justify; }
+
+        #statusFeedback { position: fixed; bottom: 30px; right: 30px; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; color: white; display: none; z-index: 9999; }
+        .hidden { display: none !important; }
+        #secBoard { overflow-x: auto; overflow-y: hidden; }
+        #secLib { height: 100%; overflow-y: auto; }
+        #viewer-container { border: none !important; }
+        #viewer-container .ql-container.ql-snow { border: none !important; }
+    
+                    /* --- ESTILO TABELA HÍBRIDA (VISUALIZADOR) CORRIGIDO --- */
+    .table-wrapper {
+        overflow-x: auto;
+        border: 1px solid #e9e9e7;
+        border-radius: 6px;
+        margin: 16px 0;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+    .hybrid-table { 
+        width: 100%; 
+        border-collapse: collapse; 
+        font-size: 14px; 
+        background: #fff;
+    }
+    .hybrid-table th { 
+        background: #f9f9f9; 
+        font-weight: 600; 
+        color: #37352f; 
+        text-transform: uppercase;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #e9e9e7;
+    }
+    .hybrid-table th, .hybrid-table td { 
+        border: 1px solid #e9e9e7; 
+        padding: 12px 16px; 
+        text-align: left; 
+        line-height: 1.5;
+    }
+    /* Remove bordas laterais externas para visual mais limpo */
+    .hybrid-table tr:first-child th { border-top: none; }
+    .hybrid-table tr:last-child td { border-bottom: none; }
+    .hybrid-table th:first-child, .hybrid-table td:first-child { border-left: none; }
+    .hybrid-table th:last-child, .hybrid-table td:last-child { border-right: none; }
+
+        /* --- ESTILO DA AGENDA --- */
+    .agenda-card {
+        background: white; border: 1px solid #e9e9e7; border-radius: 6px; padding: 10px; margin-bottom: 8px;
+        display: flex; align-items: flex-start; gap: 10px; font-size: 13px; 
+        box-shadow: 0 1px 2px rgba(0,0,0,0.03); transition: 0.2s;
+    }
+    .agenda-card:hover { transform: translateY(-1px); box-shadow: 0 3px 6px rgba(0,0,0,0.06); }
+    .agenda-time-badge { 
+        font-family: 'Inter', monospace; font-size: 11px; color: var(--accent-color); 
+        background: #eef6fc; padding: 4px 6px; border-radius: 4px; font-weight: 700; 
+        white-space: nowrap; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    }
+    .agenda-content { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .agenda-text { font-weight: 500; color: var(--text-primary); line-height: 1.4; }
+    .agenda-check { 
+        cursor: pointer; width: 18px; height: 18px; border-radius: 4px; 
+        border: 2px solid #ccc; flex-shrink: 0; appearance: none; 
+        position: relative; margin-top: 2px;
+    }
+    .agenda-check:checked { background: var(--text-green); border-color: var(--text-green); }
+    .agenda-check:checked::after { content: '✓'; color: white; position: absolute; top: -2px; left: 3px; font-size: 12px; font-weight: bold; }
+    
+    .agenda-card.done { opacity: 0.6; background: #f9f9f9; }
+    .agenda-card.done .agenda-text { text-decoration: line-through; color: #aaa; }
+    
+    .btn-delete-agenda { 
+        border: none; background: transparent; color: #ddd; 
+        cursor: pointer; padding: 2px; font-size: 12px; transition: 0.2s;
+    }
+    .btn-delete-agenda:hover { color: #d44c47; }
+
+    
+        /* --- ESTILOS DO QUIZ --- */
+    .quiz-card {
+        background: #fff; border: 1px solid #e9e9e7; border-radius: 8px;
+        padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .quiz-question { font-weight: 600; margin-bottom: 12px; color: #37352f; font-size: 15px; }
+    .quiz-options { display: flex; flex-direction: column; gap: 8px; }
+    .quiz-opt {
+        padding: 10px 14px; border: 1px solid #ddd; border-radius: 6px;
+        cursor: pointer; transition: 0.2s; font-size: 14px; background: #fff;
+    }
+    .quiz-opt:hover { background: #f7f7f5; }
+    
+    /* Cores de Resposta */
+    .quiz-opt.correct { background: #dbeddb !important; border-color: #448361 !important; color: #1f4a33; font-weight: 600; }
+    .quiz-opt.wrong { background: #ffe2dd !important; border-color: #d44c47 !important; color: #7a2522; opacity: 0.8; }
+    
+    .quiz-feedback {
+        margin-top: 10px; padding: 12px; background: #eef6fc; border-radius: 6px;
+        font-size: 13px; color: #18507a; border-left: 4px solid #2383e2; line-height: 1.4;
+    }
+
+    /* Botão pequeno de Cérebro no Card */
+    .btn-brain {
+        position: absolute; bottom: 10px; right: 10px; z-index: 10;
+        width: 28px; height: 28px; border-radius: 4px;
+        background: white; border: 1px solid #ddd; color: #555;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .btn-brain:hover { background: #f0f9ff; color: #0284c7; border-color: #0284c7; }
+
+    
+        /* --- PDF.js TEXT LAYER (Fundamental para seleção de texto) --- */
+    #pdf-wrapper {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: auto; /* Permite scroll se o slide for grande */
+        background: #525659;
+        display: block; /* IMPORTANTE: Block evita corte lateral em slides largos */
+        text-align: center; /* Centraliza o slide */
+        padding: 20px 0;
+    }
+
+    #page-container {
+        position: relative; 
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        background: white;
+        display: inline-block; /* Mantém o container justo ao redor do PDF */
+        margin: 0 auto;
+    }
+
+    .textLayer {
+        /* A classe oficial do PDF.js cuida do posicionamento */
+        opacity: 1; 
+        mix-blend-mode: multiply;
+        display: block;
+    }
+
+    
+    /* Toolbar do PDF melhorada para a Fase 2 */
+    .pdf-toolbar {
+        background: #333; 
+        padding: 10px; 
+        display: flex; 
+        flex-wrap: wrap;
+        justify-content: center; 
+        gap: 15px; 
+        color: white;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    .ai-controls {
+        display: flex;
+        gap: 5px;
+        background: #444;
+        padding: 4px 10px;
+        border-radius: 4px;
+        align-items: center;
+    }
+
+    .ai-input {
+        width: 60px;
+        padding: 4px;
+        border-radius: 3px;
+        border: none;
+        font-size: 12px;
+        text-align: center;
+    }
+
+
+    </style>
+</head>
+<body>
+
+    <div id="imageModal" class="modal" style="z-index:3000; background: rgba(0,0,0,0.9);">
+        <div class="image-modal-content">
+            <button onclick="closeImageModal()" class="image-close-btn">
+                <i class="fas fa-times"></i> Fechar
+            </button>
+            <img id="imageModalImg">
+        </div>
+    </div>
+
+    <div class="modal" id="modalEditor">
+        <div class="modal-content">
+            
+            <div class="editor-header">
+                <h3 style="margin:0;">Novo Estudo</h3>
+                <div>
+                    <button id="btnToggleEditor" class="btn-action" title="Expandir Tela">
+                        <i class="fas fa-expand"></i> Expandir
+                    </button>
+                    <button id="btnCloseEditor" class="btn-action" title="Minimizar" style="display:none;">
+                        <i class="fas fa-compress"></i> Minimizar
+                    </button>
+                </div>
+            </div>
+
+            <div class="editor-body">
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <input type="text" id="subjectTitle" style="flex:1; padding: 10px; border: 1px solid #ddd; border-radius: 6px;" placeholder="Título do Assunto...">
+                    <input type="text" id="subjectTag" style="width: 150px; padding: 10px; border: 1px solid #ddd; border-radius: 6px;" placeholder="Matéria (Ex: Pediatria)">
+                </div>
+                
+                <div id="quill-editor-container">
+                    <div id="quill-editor"></div>
+                </div>
+            </div>
+
+            <div class="editor-footer">
+                <button class="btn-action" onclick="fecharModal()">Cancelar</button>
+                <button class="btn-action btn-primary" id="btnSalvar">Criar Cronograma</button>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="modal" id="modalView">
+        <div class="modal-content">
+            <div style="padding: 15px 25px; border-bottom: 1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; align-items:center; gap: 10px;">
+                    <span id="viewTypeIcon"></span>
+                    <h2 id="viewTitle" style="font-size: 18px; font-weight:700; margin:0;"></h2>
+                    <span id="viewTagDisplay" class="tag-pill"></span>
+                </div>
+                <button class="btn-action" onclick="fecharModalView()"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="viewContainer" style="flex:1; overflow:hidden; display:flex; flex-direction:column;"></div>
+            
+            <div style="padding: 15px; border-top: 1px solid #eee; display:flex; justify-content: space-between;">
+                 <button class="btn-action" id="btnEditarNota">Editar Texto</button>
+                 <button class="btn-action" id="btnExcluirEstudo" style="color:#d44c47; border-color: #ffe2dd; background: #fff5f5;">
+                    <i class="fas fa-trash"></i> Excluir Estudo
+                 </button>
+            </div>
+        </div>
+    </div>
+    
+    
+        <div class="modal" id="modalAgenda">
+        <div class="modal-content" style="height: auto; max-height: 90vh; width: 400px;">
+            <div class="editor-header">
+                <h3 style="margin:0">Novo Compromisso</h3>
+                <button class="btn-action" onclick="document.getElementById('modalAgenda').style.display='none'"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="editor-body" style="padding: 20px; overflow: visible;">
+                <div style="margin-bottom: 15px;">
+                    <label style="font-size:12px; font-weight:600; color:#666; display:block; margin-bottom:5px;">O que estudar/fazer?</label>
+                    <input type="text" id="agendaTitle" placeholder="Ex: Estudar Tutoria" style="padding: 10px; border: 1px solid #ddd; border-radius: 6px; width: 100%;">
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                     <label style="font-size:12px; font-weight:600; color:#666; display:block; margin-bottom:5px;">Data</label>
+                     <input type="date" id="agendaDate" style="padding: 10px; border: 1px solid #ddd; border-radius: 6px; width: 100%;">
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <div style="flex:1">
+                        <label style="font-size:12px; font-weight:600; color:#666; display:block; margin-bottom:5px;">Início</label>
+                        <input type="time" id="agendaStart" style="padding: 10px; border: 1px solid #ddd; border-radius: 6px; width: 100%;">
+                    </div>
+                    <div style="flex:1">
+                        <label style="font-size:12px; font-weight:600; color:#666; display:block; margin-bottom:5px;">Fim</label>
+                        <input type="time" id="agendaEnd" style="padding: 10px; border: 1px solid #ddd; border-radius: 6px; width: 100%;">
+                    </div>
+                </div>
+            </div>
+            <div class="editor-footer">
+                <button class="btn-action" onclick="document.getElementById('modalAgenda').style.display='none'">Cancelar</button>
+                <button class="btn-action btn-primary" id="btnSalvarAgenda">Salvar Horário</button>
+            </div>
+        </div>
+    </div>
+
+    
+        <div class="modal" id="modalConcepts">
+        <div class="modal-content" style="max-width: 600px; height: 80vh;">
+            <div class="editor-header">
+                <h3 style="margin:0;"><i class="fas fa-project-diagram" style="color:#2383e2;"></i> Mapa do Capítulo</h3>
+                <button class="btn-action" onclick="document.getElementById('modalConcepts').style.display='none'"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="editor-body" style="background: #fdfdfd;">
+                <div style="padding: 15px; background: #eef6fc; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #2383e2;">
+                    <p style="font-size: 13px; color: #555; margin:0;">
+                        <strong>IA Professor:</strong> "Analisei as páginas <span id="lblPages">--</span>. 
+                        Aqui estão os conceitos fundamentais que você precisa dominar. Clique em um para começar a aula."
+                    </p>
+                </div>
+                
+                <div id="conceptsList" style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="text-align:center; color:#999; padding: 20px;">
+                        <i class="fas fa-spinner fa-spin"></i> Lendo o livro e identificando conceitos...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="statusFeedback">Processando...</div>
+
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div id="headerUserName" class="user-id-text">Carregando...</div>
+            <div id="headerUserIP" class="user-ip-text">...</div>
+        </div>
+        
+        <nav style="flex: 1 0 auto;"> <div class="nav-item active" id="navBoard"><i class="far fa-calendar-alt"></i> Cronograma Semanal</div>
+            <div class="nav-item" id="navLib"><i class="fas fa-folder-open"></i> Biblioteca de Aulas</div>
+            <div class="nav-item" id="navAgenda"><i class="far fa-clock"></i> Agenda Diária</div>
+            <div class="nav-item" id="navQuizzes"><i class="fas fa-brain"></i> Meus Simulados</div>
+        </nav>
+
+        <div class="sidebar-goals">
+            <div class="goals-title"><i class="fas fa-bullseye"></i> Metas</div>
+            
+            <div class="goal-item">
+                <div class="goal-header">
+                    <span>Diária</span>
+                    <span id="goalDailyText">0/0</span>
+                </div>
+                <div class="goal-bar-bg">
+                    <div id="goalDailyBar" class="goal-bar-fill"></div>
+                </div>
+            </div>
+
+            <div class="goal-item">
+                <div class="goal-header">
+                    <span>Semanal</span>
+                    <span id="goalWeeklyText">0/0</span>
+                </div>
+                <div class="goal-bar-bg">
+                    <div id="goalWeeklyBar" class="goal-bar-fill"></div>
+                </div>
+            </div>
+
+            <div class="goal-item">
+                <div class="goal-header">
+                    <span>Mensal</span>
+                    <span id="goalMonthlyText">0/0</span>
+                </div>
+                <div class="goal-bar-bg">
+                    <div id="goalMonthlyBar" class="goal-bar-fill"></div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-container">
+        <div class="top-bar">
+            <div style="display:flex; align-items:center;">
+                <span style="margin-right: 8px;"><b>Semana:</b></span>
+                <div class="week-selector-wrapper">
+                    <div class="week-display">
+                        <span id="weekRangeDisplay">Carregando...</span>
+                        <i class="fas fa-chevron-down" style="font-size: 12px; color: var(--text-secondary);"></i>
+                    </div>
+                    <select id="weekSelect" class="week-select-native" onchange="window.changeWeek(this.value)">
+                        </select>
+                </div>
+            </div>
+
+            <div style="display:flex; gap: 10px;">
+                <button class="btn-action" id="btnNovoAssunto"><i class="fas fa-plus"></i> Novo Estudo</button>
+                <input type="file" id="pdfInput" hidden accept="application/pdf">
+                <label for="pdfInput" class="btn-action btn-primary"><i class="fas fa-cloud-upload-alt"></i> Upload PDF</label>
+            </div>
+        </div>
+
+        <div class="content">
+            <section id="secBoard" style="height: 100%; display: flex; flex-direction: column;">
+                <div class="header-actions">
+                    <h1 class="page-title">Cronograma de Revisões</h1>
+                </div>
+                
+                <div class="week-board" id="weeklyBoard">
+                    </div>
+            </section>
+
+            <section id="secLib" class="hidden">
+                <h1 class="page-title" style="margin-bottom: 20px;">Biblioteca de Materiais</h1>
+                <div style="background: white; border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden;">
+                    <table style="width:100%; border-collapse:collapse; font-size:14px;">
+                        <thead style="background: #f9f9f9; border-bottom: 1px solid var(--border-color);">
+                            <tr style="text-align:left; color: #777;">
+                                <th style="padding:12px;">Arquivo / Assunto</th>
+                                <th style="padding:12px;">Matéria</th>
+                                <th style="padding:12px;">Data Upload</th>
+                                <th style="padding:12px;">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaBiblioteca">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            
+                        <section id="secAgenda" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-x: auto; overflow-y: hidden;">
+                <div class="header-actions">
+                    <h1 class="page-title">Agenda Horária</h1>
+                    <button class="btn-action btn-primary" id="btnNovaAgenda"><i class="fas fa-plus"></i> Novo Horário</button>
+                </div>
+                <div class="week-board" id="agendaBoard">
+                    </div>
+            </section>
+            
+                        <section id="secQuizzes" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+                <div class="header-actions">
+                    <h1 class="page-title">Meus Simulados</h1>
+                </div>
+                <div style="background: white; border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden;">
+                    <table style="width:100%; border-collapse:collapse; font-size:14px;">
+                        <thead style="background: #f9f9f9; border-bottom: 1px solid var(--border-color);">
+                            <tr style="text-align:left; color: #777;">
+                                <th style="padding:12px;">Assunto</th>
+                                <th style="padding:12px;">Data</th>
+                                <th style="padding:12px;">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaQuizzesBody">
+                            </tbody>
+                    </table>
+                </div>
+            </section>
+
+
+            
+        </div>
+    </main>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc, getDoc, deleteDoc, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDj-c4uArNjAr7cSg396yfQR6xuyumh5_M",
+        authDomain: "simuladosmedicina-6a01b.firebaseapp.com",
+        projectId: "simuladosmedicina-6a01b",
+        storageBucket: "simuladosmedicina-6a01b.firebasestorage.app",
+        messagingSenderId: "577452734306",
+        appId: "1:577452734306:web:5926d087a27a216a97de3b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    let currentUID = null;
+    let editingDocId = null;
+    let currentBoardStart = new Date(); 
+    let allTasksCache = []; 
+    let allAgendaCache = [];
+    let isUploadingImage = false; 
+
+    // --- CONFIGURAÇÃO QUILL ---
+    const quill = new Quill('#quill-editor', {
+        theme: 'snow',
+        placeholder: 'Cole seu conteúdo aqui...',
+        modules: {
+            toolbar: {
+                container: [
+                    [{ 'header': [1, 2, 3, false] }], 
+                    ['bold', 'italic', 'underline', 'strike'], 
+                    [{ 'color': [] }, { 'background': [] }], 
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }], 
+                    [{ 'align': [] }], 
+                    ['blockquote', 'code-block'],
+                    ['image', 'video'], 
+                    ['clean']
+                ],
+                handlers: {
+                    'image': imageHandler
+                }
+            }
+        }
+    });
+
+    // Handler de vídeo
+    quill.getModule('toolbar').addHandler('video', () => {
+        const url = prompt("Cole o link do YouTube:");
+        if (!url) return;
+        let embedUrl = url;
+        if (url.includes('youtube.com/watch')) {
+            const id = new URL(url).searchParams.get('v');
+            embedUrl = `https://www.youtube.com/embed/${id}`;
+        } else if (url.includes('youtu.be/')) {
+            const id = url.split('/').pop();
+            embedUrl = `https://www.youtube.com/embed/${id}`;
+        }
+        const range = quill.getSelection(true) || { index: quill.getLength() };
+        quill.insertText(range.index, '\n', 'user');
+        quill.insertEmbed(range.index + 1, 'video', embedUrl, 'user');
+        quill.insertText(range.index + 2, '\n\n', 'user');
+        quill.setSelection(range.index + 3, 0);
+    });
+
+               // --- VERSÃO 5.0: PROCESSAMENTO LINHA A LINHA (SEM CORTES) ---
+    
+        // 1. MATCHER PARA TABELAS HTML (Cópia com Mouse / Seleção) CORRIGIDO
+    quill.clipboard.addMatcher('TABLE', function(node, delta) {
+        const NewDelta = Quill.import('delta');
+        const novaDelta = new NewDelta();
+
+        novaDelta.insert('\n');
+        novaDelta.insert('📋 Tabela Importada:', { bold: true, color: '#2383e2' });
+        novaDelta.insert('\n');
+
+        const rows = node.querySelectorAll('tr');
+        rows.forEach((row) => {
+            // Transformamos em Array para saber qual é a última célula
+            const cells = Array.from(row.querySelectorAll('th, td'));
+            
+            cells.forEach((cell, index) => {
+                const isHeader = cell.tagName === 'TH' || row.parentElement.tagName === 'THEAD';
+                novaDelta.insert(cell.innerText.trim(), { 
+                    bold: isHeader,
+                    background: isHeader ? '#f0f0f0' : 'transparent'
+                });
+                
+                // CORREÇÃO: Só adiciona a barra se NÃO for a última célula da linha
+                if (index < cells.length - 1) {
+                    novaDelta.insert(' | ', { color: '#ccc' });
+                }
+            });
+            novaDelta.insert('\n');
+        });
+        novaDelta.insert('\n'); 
+        return novaDelta;
+    });
+
+
+        // --- MATCHER REVISADO: Limpa o |---| e evita picotamento no Editor ---
+    quill.clipboard.addMatcher(Node.TEXT_NODE, function(node, delta) {
+        const text = node.data;
+        
+        // Se não tem pipe, deixa o Quill lidar com o texto normalmente
+        if (!text.includes('|')) return delta;
+
+        const NewDelta = Quill.import('delta');
+        const novaDelta = new NewDelta();
+        const lines = text.split('\n');
+        
+        lines.forEach((line) => {
+            const trimmed = line.trim();
+            // Detecta a linha de separação do Markdown (ex: |---|)
+            const isSeparator = /^[|\s-:]+$/.test(trimmed) && trimmed.includes('-');
+
+            // Se for separador, ignoramos (não cola nada)
+            if (isSeparator) return; 
+
+            if (trimmed.includes('|')) {
+                // Se for linha de tabela, removemos os negritos (**) para ficar limpo
+                const cleanLine = line.replace(/\*\*/g, ''); 
+                novaDelta.insert(cleanLine + '\n');
+            } else {
+                // Se for texto normal misturado, cola normal
+                novaDelta.insert(line + '\n');
+            }
+        });
+        return novaDelta;
+    });
+
+
+
+
+    
+
+    
+    // ⛔ BLOQUEAR BASE64
+    quill.clipboard.addMatcher('IMG', function(node, delta) {
+        const src = node.getAttribute('src');
+        if (src && src.startsWith('data:')) {
+            alert("⚠️ Por favor, use o botão de imagem para enviar fotos.");
+            return { ops: [] };
+        }
+        return delta;
+    });
+
+    // 🔒 CORREÇÃO TOOLBAR
+    quill.on('editor-change', (eventName) => {
+        if (eventName === 'text-change') {
+            const range = quill.getSelection();
+            if (!range && document.activeElement === quill.root) {
+            }
+        }
+    });
+
+    // --- LÓGICA DE MAXIMIZAR/MINIMIZAR ---
+    const modalEditorContent = document.querySelector('#modalEditor .modal-content');
+    const btnExpand = document.getElementById('btnToggleEditor');
+    const btnCompress = document.getElementById('btnCloseEditor');
+
+    btnExpand.onclick = () => {
+        modalEditorContent.classList.add('editor-max');
+        btnExpand.style.display = 'none';
+        btnCompress.style.display = 'inline-flex';
+        setTimeout(() => quill.focus(), 100);
+    };
+
+    btnCompress.onclick = () => {
+        modalEditorContent.classList.remove('editor-max');
+        btnCompress.style.display = 'none';
+        btnExpand.style.display = 'inline-flex';
+        setTimeout(() => quill.focus(), 100);
+    };
+
+    // --- LIGHTBOX ---
+    document.addEventListener('click', (e) => {
+        if (e.target.tagName === 'IMG' && e.target.closest('.ql-editor')) {
+            const modal = document.getElementById('imageModal');
+            const img = document.getElementById('imageModalImg');
+            img.src = e.target.src;
+            modal.style.display = 'flex';
+        }
+    });
+    window.closeImageModal = () => {
+        document.getElementById('imageModal').style.display = 'none';
+    };
+
+    // Função de upload segura
+    async function imageHandler() {
+        if (isUploadingImage) return; 
+        if (!currentUID) { alert("Usuário não autenticado"); return; }
+        
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.click();
+
+        input.onchange = async () => {
+            const file = input.files[0];
+            if (!file) return;
+            
+            isUploadingImage = true;
+            showFeedback("Enviando imagem...", true);
+
+            try {
+                const range = quill.getSelection(true) || { index: quill.getLength() };
+                const imgRef = ref(storage, `planners/${currentUID}/editor_images/${Date.now()}_${file.name}`);
+                await uploadBytes(imgRef, file);
+                const url = await getDownloadURL(imgRef);
+
+                quill.insertText(range.index, '\n', 'user'); 
+                quill.insertEmbed(range.index + 1, 'image', url, 'user'); 
+                quill.insertText(range.index + 2, '\n\n', 'user');
+                quill.setSelection(range.index + 3, 0, 'silent'); 
+                
+                showFeedback("Imagem inserida", false);
+
+            } catch (e) {
+                console.error(e);
+                alert("Erro ao inserir imagem");
+                showFeedback("Erro no upload", false);
+            } finally {
+                isUploadingImage = false; 
+            }
+        };
+    }
+    // ------------------------------------------------
+
+    onAuthStateChanged(auth, (user) => {
+        if (!user) { window.location.href = "login.html"; return; }
+        currentUID = user.uid;
+        document.getElementById("headerUserName").textContent = user.email;
+        fetch('https://api.ipify.org?format=json')
+            .then(r => r.json())
+            .then(d => document.getElementById('headerUserIP').textContent = "IP: " + d.ip)
+            .catch(() => document.getElementById('headerUserIP').textContent = "IP: Detectando...");
+
+        loadDataAndInit();
+        carregarBiblioteca();
+    });
+
+        async function loadDataAndInit() {
+        if (!currentUID) return;
+        const snap = await getDocs(query(collection(db, "planners", currentUID, "tasks")));
+        allTasksCache = [];
+        snap.forEach(d => allTasksCache.push({ id: d.id, ...d.data() }));
+        setupWeekNavigator();
+        renderWeeklyBoard();
+        updateGoals(); 
+        
+        await loadAgenda(); // <--- ADICIONEI ESTA LINHA
+    }
+
+
+    // --- LÓGICA DE METAS (X/TOTAL) ---
+    function updateGoals() {
+        if (!allTasksCache.length) return;
+
+        const now = new Date();
+        const todayStr = now.toLocaleDateString('pt-BR');
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+
+        const currentWeekStart = getStartOfWeek(now);
+        const currentWeekEnd = new Date(currentWeekStart);
+        currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
+
+        let stats = {
+            daily: { total: 0, done: 0 },
+            weekly: { total: 0, done: 0 },
+            monthly: { total: 0, done: 0 }
+        };
+
+        allTasksCache.forEach(t => {
+            const tDate = new Date(t.targetDate);
+            // Diária (Hoje)
+            if (tDate.toLocaleDateString('pt-BR') === todayStr) {
+                stats.daily.total++;
+                if (t.concluido) stats.daily.done++;
+            }
+            // Semanal (Real)
+            if (tDate >= currentWeekStart && tDate <= currentWeekEnd) {
+                stats.weekly.total++;
+                if (t.concluido) stats.weekly.done++;
+            }
+            // Mensal
+            if (tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear) {
+                stats.monthly.total++;
+                if (t.concluido) stats.monthly.done++;
+            }
+        });
+
+        updateProgressBar('Daily', stats.daily);
+        updateProgressBar('Weekly', stats.weekly);
+        updateProgressBar('Monthly', stats.monthly);
+    }
+
+    function updateProgressBar(type, data) {
+        const pct = data.total === 0 ? 0 : Math.round((data.done / data.total) * 100);
+        
+        const bar = document.getElementById(`goal${type}Bar`);
+        const text = document.getElementById(`goal${type}Text`);
+        
+        if (bar && text) {
+            bar.style.width = `${pct}%`;
+            text.textContent = `${data.done}/${data.total}`;
+            
+            if (pct === 100 && data.total > 0) {
+                bar.classList.add('complete');
+            } else {
+                bar.classList.remove('complete');
+            }
+        }
+    }
+
+    // --- NAVEGAÇÃO ---
+    function setupWeekNavigator() {
+        const select = document.getElementById('weekSelect');
+        select.innerHTML = '';
+
+        let minDate = new Date().getTime(); 
+        let maxDate = new Date().getTime();
+
+        if (allTasksCache.length > 0) {
+            allTasksCache.forEach(t => {
+                if (t.targetDate < minDate) minDate = t.targetDate;
+                if (t.targetDate > maxDate) maxDate = t.targetDate;
+            });
+        }
+
+        const historyStart = getStartOfWeek(new Date(minDate)); 
+        const futureEnd = new Date(maxDate);
+        futureEnd.setDate(futureEnd.getDate() + 7); 
+
+        let loopDate = new Date(historyStart);
+        const todayStart = getStartOfWeek(new Date()).getTime();
+        
+        while (loopDate <= futureEnd) {
+            const endOfWeek = new Date(loopDate);
+            endOfWeek.setDate(loopDate.getDate() + 6);
+            
+            const label = `${formatDateDisplay(loopDate)} - ${formatDateDisplay(endOfWeek)}`;
+            const value = loopDate.getTime();
+
+            const option = document.createElement('option');
+            option.value = value;
+            option.text = label;
+            
+            if (value === todayStart) {
+                option.selected = true;
+                currentBoardStart = new Date(loopDate);
+            }
+            select.appendChild(option);
+            loopDate.setDate(loopDate.getDate() + 7);
+        }
+        updateWeekLabel();
+    }
+
+        window.changeWeek = (timestamp) => {
+        currentBoardStart = new Date(parseInt(timestamp));
+        updateWeekLabel();
+        renderWeeklyBoard();
+        renderAgendaBoard(); // <--- Adicionado isso
+    };
+
+
+    function updateWeekLabel() {
+        const endOfWeek = new Date(currentBoardStart);
+        endOfWeek.setDate(currentBoardStart.getDate() + 6);
+        document.getElementById('weekRangeDisplay').textContent = 
+            `${formatDateDisplay(currentBoardStart)} - ${formatDateDisplay(endOfWeek)}`;
+    }
+
+    function getStartOfWeek(date) {
+        const d = new Date(date);
+        const day = d.getDay(); 
+        const diff = d.getDate() - day;
+        const r = new Date(d.setDate(diff));
+        r.setHours(0,0,0,0);
+        return r;
+    }
+
+    function formatDateDisplay(date) {
+        return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    }
+
+    function isSameDay(d1, d2) {
+        return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
+    }
+
+        function renderWeeklyBoard() {
+        const board = document.getElementById('weeklyBoard');
+        board.innerHTML = ''; 
+        
+        const daysOfWeek = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        const today = new Date(); 
+
+        const columns = [];
+        
+        for (let i = 0; i < 7; i++) {
+            const currentDay = new Date(currentBoardStart);
+            currentDay.setDate(currentBoardStart.getDate() + i);
+            const isToday = isSameDay(today, currentDay);
+            
+            const colDiv = document.createElement('div');
+            colDiv.className = 'day-column';
+            colDiv.innerHTML = `
+                <div class="day-header ${isToday ? 'today' : ''}">
+                    <span>${daysOfWeek[i]}</span>
+                    <span style="font-weight:400; opacity:0.7">${formatDateDisplay(currentDay)}</span>
+                </div>
+                <div class="drop-zone" id="day-${i}"></div>
+            `;
+            board.appendChild(colDiv);
+            columns.push({ element: colDiv.querySelector('.drop-zone'), date: currentDay });
+        }
+
+        allTasksCache.forEach(t => {
+            const taskDate = new Date(t.targetDate);
+            const colIndex = columns.findIndex(col => isSameDay(col.date, taskDate));
+            
+            if (colIndex !== -1) {
+                const hoje = new Date(); hoje.setHours(0,0,0,0);
+                const dataTask = new Date(t.targetDate); dataTask.setHours(0,0,0,0);
+                const atrasada = !t.concluido && dataTask < hoje;
+
+                const card = document.createElement('div');
+                card.className = `card ${t.concluido ? 'completed' : ''} ${atrasada ? 'atrasada' : ''}`;
+                
+                // --- CONFIGURAÇÃO DO TIPO DE CARD ---
+                const isQuiz = t.tipo === 'quiz';
+                let icon = t.tipo === 'pdf' ? '<i class="far fa-file-pdf"></i>' : '<i class="far fa-file-alt"></i>';
+                if(isQuiz) icon = '<i class="fas fa-brain" style="color:#9065b0"></i>';
+
+                let labelRevisao = t.titulo.includes('[REC]') ? 'Estudo' : 'Revisão';
+                if(isQuiz) labelRevisao = 'Simulado';
+
+                // --- BOTÃO GERAR QUIZ (Só aparece se NÃO for quiz) ---
+                const btnGerarQuiz = !isQuiz ? 
+                    `<div class="btn-brain" title="Gerar Quiz" 
+                        onclick="event.stopPropagation(); window.gerarQuiz('${t.id}', '${t.titulo.replace(/'/g, "")}', '${t.tipo === 'texto' ? (t.contentHTML || '').replace(/'/g, "").replace(/"/g, "").replace(/\n/g, " ") : ''}', '${t.tipo}')">
+                        <i class="fas fa-brain"></i>
+                     </div>` : '';
+
+                // Ação do Clique no Card
+                card.onclick = (e) => {
+                    if(e.target.classList.contains('custom-checkbox') || e.target.closest('.btn-brain')) return;
+                    
+                    if(isQuiz) {
+                        window.abrirQuizPlayer(t.titulo, t.contentHTML);
+                    } else {
+                        window.abrirItem(t.id);
+                    }
+                };
+
+                let tagColor = 'var(--tag-blue)'; let tagText = 'var(--text-blue)';
+                const tagUp = t.tag.toUpperCase();
+                if(tagUp.includes('GINE')) { tagColor = 'var(--tag-red)'; tagText = 'var(--text-red)'; }
+                if(tagUp.includes('PED')) { tagColor = 'var(--tag-yellow)'; tagText = 'var(--text-yellow)'; }
+                if(tagUp.includes('CIR')) { tagColor = 'var(--tag-green)'; tagText = 'var(--text-green)'; }
+                if(tagUp === 'SIMULADO') { tagColor = '#f3e8ff'; tagText = '#9065b0'; }
+
+                card.innerHTML = `
+                    <div class="card-top">
+                        <input type="checkbox" class="custom-checkbox" ${t.concluido ? 'checked' : ''} 
+                               onchange="window.toggleConcluido('${t.id}', this.checked)">
+                        <div>
+                            <div class="card-title">${t.titulo.replace(/\[.*?\]/, '').trim()}</div>
+                            <div class="card-tags">
+                                <span class="tag-pill" style="background:${tagColor}; color:${tagText}">${t.tag}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-meta">
+                        <span class="meta-item">${icon} ${labelRevisao}</span>
+                        ${atrasada ? `<span class="atraso-badge"><i class="fas fa-exclamation-circle"></i> Atrasado</span>` : ''}
+                    </div>
+                    ${btnGerarQuiz}
+                `;
+                columns[colIndex].element.appendChild(card);
+            }
+        });
+        updateGoals();
+    }
+
+
+    window.toggleConcluido = async (id, status) => {
+        await updateDoc(doc(db, "planners", currentUID, "tasks", id), { concluido: status });
+        const task = allTasksCache.find(t => t.id === id);
+        if(task) task.concluido = status;
+        renderWeeklyBoard();
+    };
+
+    document.getElementById("pdfInput").onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const tag = prompt("Qual a matéria?", "Geral") || "Geral";
+        showFeedback("Enviando PDF...", true);
+
+        try {
+            const refS = ref(storage, `planners/${currentUID}/${Date.now()}_${file.name}`);
+            await uploadBytes(refS, file);
+            const url = await getDownloadURL(refS);
+            const now = new Date();
+            const d0 = now.getTime();
+            const d1 = new Date(now).setDate(now.getDate() + 1);
+            const d7 = new Date(now).setDate(now.getDate() + 7);
+            const d21 = new Date(now).setDate(now.getDate() + 21);
+            
+            const ciclos = [
+                { n: `[REC] ${file.name}`, t: d0 }, { n: `[D+1] ${file.name}`, t: d1 },
+                { n: `[D+7] ${file.name}`, t: d7 }, { n: `[D+21] ${file.name}`, t: d21 }
+            ];
+
+            await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
+                nome: file.name, url, tag: tag.toUpperCase(), data: d0, tipo: 'pdf' 
+            });
+
+            for(const c of ciclos) {
+                await addDoc(collection(db, "planners", currentUID, "tasks"), { 
+                    titulo: c.n, tag: tag.toUpperCase(), pdfUrl: url, targetDate: c.t, 
+                    concluido: false, criadoEm: serverTimestamp(), tipo: 'pdf' 
+                });
+            }
+            showFeedback("Sucesso!", false);
+            loadDataAndInit();
+            carregarBiblioteca();
+        } catch (err) { console.error(err); showFeedback("Erro.", false); }
+    };
+
+        // =================================================================
+    // 🤖 FUNÇÕES DE INTELIGÊNCIA ARTIFICIAL (Worker + Firestore)
+    // =================================================================
+
+    async function gerarConteudoIA(textoOriginal, label) {
+        // Chama seu Cloudflare Worker
+        try {
+            const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "gerar_revisao", textoOriginal, label })
+            });
+
+            if (!response.ok) return `<p>Erro ao gerar revisão automática para ${label}.</p>`;
+
+            const data = await response.json();
+            return data.html; 
+        } catch (error) {
+            console.error("Erro Worker:", error);
+            return `<p>Erro de conexão ao gerar ${label}.</p>`;
+        }
+    }
+
+    async function criarRevisoesComIA(titulo, tag, contentOriginal) {
+        if (!currentUID) return;
+        
+        // Configuração dos dias de revisão
+        const cronograma = [
+            { label: "D+1", days: 1 },
+            { label: "D+7", days: 7 },
+            { label: "D+21", days: 21 }
+        ];
+
+        showFeedback("🤖 IA: Iniciando geração de revisões...", true);
+
+        for (const item of cronograma) {
+            try {
+                showFeedback(`🤖 Gerando revisão de ${item.label}...`, true);
+                
+                // 1. Gera o conteúdo resumido/explicativo via Worker
+                const conteudoIA = await gerarConteudoIA(contentOriginal, item.label);
+                
+                // 2. Calcula a data futura
+                const targetDate = new Date();
+                targetDate.setDate(targetDate.getDate() + item.days);
+
+                // 3. Salva no Firestore
+                await addDoc(collection(db, "planners", currentUID, "tasks"), {
+                    titulo: `[${item.label}] ${titulo}`,
+                    tag: tag,
+                    contentHTML: conteudoIA, // Conteúdo NOVO gerado pela IA
+                    targetDate: targetDate.getTime(),
+                    createdAt: serverTimestamp(),
+                    concluido: false,
+                    label: item.label,
+                    tipo: 'texto',
+                    geradoPorIA: true
+                });
+                
+            } catch(e) {
+                console.error(`Erro ao criar ${item.label}`, e);
+            }
+        }
+        
+        showFeedback("✅ Revisões D+1, D+7 e D+21 criadas!", false);
+        loadDataAndInit(); // Atualiza a tela no final
+    }
+
+    
+    
+        // =================================================================
+    // 💾 BOTÃO SALVAR (Cria Hoje + Chama IA para Futuro)
+    // =================================================================
+    document.getElementById('btnSalvar').onclick = async () => {
+        const title = document.getElementById('subjectTitle').value;
+        const tag = document.getElementById('subjectTag').value || "Geral";
+        const isEditing = editingDocId !== null; 
+
+        if (!title) return alert("Título obrigatório");
+
+        let contentHTML = quill.root.innerHTML;
+        
+        // Limpeza de segurança para imagens coladas direto (base64)
+        if (contentHTML.includes('src="data:image')) {
+             alert("Imagens coladas diretamente foram removidas. Use o botão de upload.");
+             contentHTML = contentHTML.replace(/<img[^>]+src="data:image[^">]+"[^>]*>/gi, '');
+        }
+        
+        try {
+            showFeedback("Salvando...", true); 
+
+            if (isEditing) {
+                // --- MODO EDIÇÃO (Só atualiza o card atual) ---
+                await updateDoc(doc(db, "planners", currentUID, "tasks", editingDocId), {
+                    titulo: title,
+                    tag: tag.toUpperCase(),
+                    contentHTML: contentHTML
+                });
+                showFeedback("Atualizado!", false);
+                modalEditorContent.classList.remove('editor-max'); // reseta tamanho
+                fecharModal();
+                loadDataAndInit(); 
+            } else {
+                // --- MODO NOVO (Cria Hoje + Chama IA) ---
+                
+                const now = new Date();
+                const d0 = now.getTime();
+
+                // 1. Salva na Biblioteca (Backup do original)
+                await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
+                    nome: title,
+                    contentHTML: contentHTML,
+                    tag: tag.toUpperCase(),
+                    data: d0,
+                    tipo: 'texto'
+                });
+
+                // 2. Cria a tarefa de HOJE [REC] (Texto Original Completo)
+                await addDoc(collection(db, "planners", currentUID, "tasks"), {
+                    titulo: `[REC] ${title}`,
+                    tag: tag.toUpperCase(),
+                    contentHTML: contentHTML, 
+                    targetDate: d0,
+                    concluido: false,
+                    criadoEm: serverTimestamp(),
+                    tipo: 'texto'
+                });
+
+                // Fecha o modal para liberar o usuário
+                modalEditorContent.classList.remove('editor-max');
+                if(btnCompress) btnCompress.style.display = 'none';
+                if(btnExpand) btnExpand.style.display = 'inline-flex';
+                fecharModal(); 
+
+                // Atualiza a tela imediatamente com o card de hoje
+                loadDataAndInit(); 
+                carregarBiblioteca();
+
+                // 3. CHAMA A IA EM SEGUNDO PLANO PARA D+1, D+7, D+21
+                // A função cuidará de atualizar o feedback na tela
+                criarRevisoesComIA(title, tag.toUpperCase(), contentHTML);
+            }
+
+        } catch (e) {
+            console.error(e);
+            showFeedback("Erro ao salvar", false);
+            alert("Erro ao salvar o conteúdo.");
+        }
+    };
+
+    
+    
+
+        async function carregarBiblioteca() {
+        if(!currentUID) return;
+        const snap = await getDocs(query(collection(db, "planners", currentUID, "arquivos"), orderBy("data", "desc")));
+        const tbody = document.getElementById('listaBiblioteca');
+        tbody.innerHTML = '';
+        if (snap.empty) { tbody.innerHTML = '<tr><td colspan="4" style="padding:20px; text-align:center; color:#999;">Vazio.</td></tr>'; return; }
+        
+        snap.forEach(d => {
+            const f = d.data();
+            const date = new Date(f.data).toLocaleDateString('pt-BR') + ' ' + new Date(f.data).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+            const icon = f.tipo === 'pdf' ? '<i class="far fa-file-pdf" style="color:#d44c47"></i>' : '<i class="far fa-file-alt" style="color:#2383e2"></i>';
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid #f0f0f0';
+            
+            // Limpa o texto para passar no onclick sem quebrar o HTML
+            const conteudoLimpo = f.tipo === 'texto' ? (f.contentHTML || '').replace(/'/g, '').replace(/"/g, '').replace(/\n/g, ' ') : '';
+            
+            tr.innerHTML = `
+                <td style="padding:12px;">${icon} ${f.nome}</td>
+                <td style="padding:12px;"><span class="tag-pill" style="background:#f0f0f0; color:#555">${f.tag}</span></td>
+                <td style="padding:12px; color:#999;">${date}</td>
+                <td style="padding:12px; display:flex; gap:8px;">
+                    <button class="btn-action" style="padding:4px 10px;" id="btn-view-${d.id}">Ver</button>
+                    <button class="btn-action" style="padding:4px 10px;" 
+                        onclick="window.gerarQuiz('${d.id}', '${f.nome.replace(/'/g, "")}', '${conteudoLimpo}', '${f.tipo}')"
+                        title="Gerar Simulado IA">
+                        <i class="fas fa-brain"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+            document.getElementById(`btn-view-${d.id}`).onclick = () => abrirArquivoBiblioteca(f);
+        });
+    }
+
+
+                               // --- RENDERIZADOR CORRIGIDO V2 (Tabelas Unificadas) ---
+    function renderHybridContent(rawHTML) {
+        if (!rawHTML) return "";
+        
+        // Limpeza prévia para garantir quebras de linha consistentes
+        let content = rawHTML
+            .replace(/<\/p>/gi, '\n')      // Fim de parágrafo vira quebra
+            .replace(/<p[^>]*>/gi, '')     // Remove início de parágrafo
+            .replace(/<br\s*\/?>/gi, '\n') // BR vira quebra
+            .replace(/&nbsp;/g, ' ');      // Espaços HTML viram espaços normais
+
+        const lines = content.split('\n');
+        
+        let output = '';
+        let tableBuffer = [];
+        let insideTable = false;
+
+        const flushTable = () => {
+            if (tableBuffer.length === 0) return;
+            
+            output += `<div class="table-wrapper"><table class="hybrid-table"><tbody>`;
+            
+            tableBuffer.forEach((row, i) => {
+                const cells = row.split('|').map(c => c.trim());
+                
+                // Remove células vazias nas pontas
+                if(cells.length > 0 && cells[0] === '') cells.shift();
+                if(cells.length > 0 && cells[cells.length-1] === '') cells.pop();
+
+                if (cells.length > 0) {
+                    const isHeader = (i === 0);
+                    output += `<tr>`;
+                    cells.forEach(cell => {
+                        const tag = isHeader ? 'th' : 'td';
+                        output += `<${tag}>${cell}</${tag}>`;
+                    });
+                    output += '</tr>';
+                }
+            });
+            output += `</tbody></table></div>`;
+            tableBuffer = [];
+        };
+
+        lines.forEach(line => {
+            const cleanLine = line.trim();
+            
+            if (!cleanLine) return; 
+
+            if (cleanLine.includes('|')) {
+                if (/^[|\s-:]+$/.test(cleanLine)) return;
+
+                insideTable = true;
+                tableBuffer.push(cleanLine);
+            } else {
+                if (insideTable) {
+                    flushTable();
+                    insideTable = false;
+                }
+                output += `<p style="margin-bottom: 12px; line-height: 1.6;">${line}</p>`;
+            }
+        });
+
+        if (insideTable) flushTable();
+        
+        return output;
+    }
+
+
+        // Injeta o conteúdo no visualizador (Suporta HTML antigo e Markdown novo)
+    function renderQuillContent(container, data) {
+        container.innerHTML = ''; 
+        let htmlFinal = "";
+
+        // Verifica se é conteúdo gerado pela IA (que agora vem em Markdown)
+        if (data.geradoPorIA) {
+            // Converte Markdown para HTML usando a biblioteca 'marked' que você já tem
+            htmlFinal = marked.parse(data.contentHTML || "");
+        } else {
+            // Se for conteúdo antigo ou criado manualmente (Quill), usa o renderizador híbrido
+            htmlFinal = renderHybridContent(data.contentHTML || "");
+        }
+        
+        container.innerHTML = `
+            <div class="ql-container ql-snow" style="border:none;">
+                <div class="ql-editor" style="padding: 0;">
+                    ${htmlFinal}
+                </div>
+            </div>
+        `;
+    }
+
+
+
+
+
+
+    window.abrirArquivoBiblioteca = (fileData) => {
+        const container = document.getElementById('viewContainer');
+        const btnEdit = document.getElementById('btnEditarNota');
+        const btnExcluir = document.getElementById('btnExcluirEstudo');
+        
+            document.getElementById('viewTitle').textContent = fileData.nome;
+    document.getElementById('viewTagDisplay').textContent = fileData.tag;
+    document.getElementById('modalView').style.display = 'flex';
+
+    if (fileData.tipo === 'pdf') {
+        document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-pdf" style="color:#d44c47; font-size:20px;"></i>';
+        btnEdit.style.display = 'none';
+        btnExcluir.style.display = 'block'; 
+        
+        // NOVO VISUALIZADOR COM BARRA DE FERRAMENTAS
+        container.innerHTML = `
+            <div class="pdf-toolbar">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <button class="btn-action" onclick="window.prevPage()">◀</button>
+                    <span>Pg <span id="page_num">1</span> / <span id="page_count">--</span></span>
+                    <button class="btn-action" onclick="window.nextPage()">▶</button>
+                </div>
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <button class="btn-action" onclick="window.zoomOut()" title="Diminuir"><i class="fas fa-search-minus"></i></button>
+                    <button class="btn-action" onclick="window.zoomIn()" title="Aumentar"><i class="fas fa-search-plus"></i></button>
+                </div>
+                <div class="ai-controls">
+                    <span style="font-size:11px; color:#ddd;">IA:</span>
+                    <input type="number" id="startPage" class="ai-input" placeholder="Início">
+                    <span style="color:#ddd">-</span>
+                    <input type="number" id="endPage" class="ai-input" placeholder="Fim">
+                    <button class="btn-action btn-primary" id="btnMapearCapitulo" style="padding: 4px 8px; font-size: 11px;">
+                        <i class="fas fa-robot"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="pdf-wrapper">
+                <div id="page-container">
+                    <canvas id="the-canvas"></canvas>
+                    <div id="text-layer" class="textLayer"></div>
+                </div>
+            </div>`;
+        initPDF(fileData.url);
+    } else {
+            document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-alt" style="color:#2383e2; font-size:20px;"></i>';
+            btnEdit.style.display = 'none'; 
+            btnExcluir.style.display = 'block'; 
+            renderQuillContent(container, fileData);
+        }
+    };
+
+    window.abrirItem = async (id) => {
+        let data = allTasksCache.find(t => t.id === id);
+        if(!data) {
+            const d = await getDoc(doc(db, "planners", currentUID, "tasks", id));
+            if(!d.exists()) return;
+            data = d.data();
+        }
+        document.getElementById('viewTitle').textContent = data.titulo.replace(/\[.*?\]/, '');
+        document.getElementById('viewTagDisplay').textContent = data.tag;
+        const container = document.getElementById('viewContainer');
+        const btnEdit = document.getElementById('btnEditarNota');
+        const btnExcluir = document.getElementById('btnExcluirEstudo');
+        
+        document.getElementById('modalView').style.display = 'flex';
+        editingDocId = id; 
+
+            document.getElementById('modalView').style.display = 'flex';
+    editingDocId = id; 
+
+    if (data.pdfUrl) {
+        document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-pdf" style="color:#d44c47; font-size:20px;"></i>';
+        btnEdit.style.display = 'none';
+        btnExcluir.style.display = 'block';
+        
+        container.innerHTML = `
+            <div class="pdf-toolbar">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <button class="btn-action" onclick="window.prevPage()">◀</button>
+                    <span>Pg <span id="page_num">1</span> / <span id="page_count">--</span></span>
+                    <button class="btn-action" onclick="window.nextPage()">▶</button>
+                </div>
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <button class="btn-action" onclick="window.zoomOut()"><i class="fas fa-search-minus"></i></button>
+                    <button class="btn-action" onclick="window.zoomIn()"><i class="fas fa-search-plus"></i></button>
+                </div>
+                <div class="ai-controls">
+                    <span style="font-size:11px; color:#ddd;">IA:</span>
+                    <input type="number" id="startPage" class="ai-input" placeholder="Início">
+                    <span style="color:#ddd">-</span>
+                    <input type="number" id="endPage" class="ai-input" placeholder="Fim">
+                    <button class="btn-action btn-primary" id="btnMapearCapitulo" style="padding: 4px 8px; font-size: 11px;">
+                        <i class="fas fa-robot"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="pdf-wrapper">
+                <div id="page-container">
+                    <canvas id="the-canvas"></canvas>
+                    <div id="text-layer" class="textLayer"></div>
+                </div>
+            </div>`;
+        initPDF(data.pdfUrl);
+    } else {
+            document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-alt" style="color:#2383e2; font-size:20px;"></i>';
+            btnEdit.style.display = 'block';
+            btnExcluir.style.display = 'block';
+            renderQuillContent(container, data);
+        }
+    };
+
+    // --- FUNÇÃO DO BOTÃO EDITAR ---
+    document.getElementById('btnEditarNota').onclick = async () => {
+        if (!editingDocId) return;
+        const refDoc = doc(db, "planners", currentUID, "tasks", editingDocId);
+        const snap = await getDoc(refDoc);
+        if (!snap.exists()) return alert("Documento não encontrado");
+        
+        const data = snap.data();
+        document.getElementById('subjectTitle').value = data.titulo.replace(/\[.*?\]/, '').trim();
+        document.getElementById('subjectTag').value = data.tag || '';
+        quill.clipboard.dangerouslyPasteHTML(data.contentHTML || '');
+        document.getElementById('btnSalvar').textContent = "Salvar Alterações";
+        document.getElementById('modalView').style.display = 'none';
+        document.getElementById('modalEditor').style.display = 'flex';
+        setTimeout(() => quill.focus(), 100);
+    };
+
+    // --- FUNÇÃO DO BOTÃO EXCLUIR ESTUDO ---
+    document.getElementById('btnExcluirEstudo').onclick = async () => {
+        if (!editingDocId) return;
+        const confirmacao = confirm("⚠️ Tem certeza?\n\nIsso excluirá o estudo e TODAS as revisões associadas (REC, D+1, D+7, etc).");
+        if (!confirmacao) return;
+
+        try {
+            showFeedback("Excluindo estudo...", true);
+            
+            const refDoc = doc(db, "planners", currentUID, "tasks", editingDocId);
+            const snap = await getDoc(refDoc);
+            if (!snap.exists()) throw "Documento não encontrado";
+            
+            const data = snap.data();
+            const baseTitle = data.titulo.replace(/\[.*?\]/, '').trim(); 
+
+            const q = query(collection(db, "planners", currentUID, "tasks"));
+            const all = await getDocs(q);
+            const deletions = [];
+            
+            all.forEach(d => {
+                const t = d.data();
+                const tBase = t.titulo.replace(/\[.*?\]/, '').trim();
+                if (tBase === baseTitle) {
+                    deletions.push(deleteDoc(d.ref));
+                }
+            });
+            await Promise.all(deletions);
+
+            const qLib = query(collection(db, "planners", currentUID, "arquivos"));
+            const libSnap = await getDocs(qLib);
+            libSnap.forEach(d => {
+                if (d.data().nome === baseTitle) {
+                    deleteDoc(d.ref);
+                }
+            });
+
+            showFeedback("Estudo excluído", false);
+            editingDocId = null;
+            fecharModalView();
+            loadDataAndInit();
+            carregarBiblioteca();
+
+        } catch (e) {
+            console.error(e);
+            showFeedback("Erro ao excluir", false);
+            alert("Erro ao excluir o estudo.");
+        }
+    };
+
+        // --- LÓGICA DO PDF.JS (REFEITA PARA TEXTO SELECIONÁVEL & ZOOM) ---
+    let pdfDoc = null;
+    let pageNum = 1;
+    let pageRendering = false;
+    let pageNumPending = null;
+    let scale = 1.3; // Zoom inicial mais confortável
+    let canvas, ctx, textLayerDiv;
+
+    async function initPDF(url) {
+        try {
+            pdfDoc = null;
+            pageNum = 1;
+            scale = 1.3;
+            
+            if(document.getElementById('page_num')) document.getElementById('page_num').textContent = pageNum;
+            if(document.getElementById('page_count')) document.getElementById('page_count').textContent = "--";
+
+            const loadingTask = pdfjsLib.getDocument(url);
+            pdfDoc = await loadingTask.promise;
+            
+            if(document.getElementById('page_count')) document.getElementById('page_count').textContent = pdfDoc.numPages;
+            
+            renderPage(pageNum);
+        } catch(e) { 
+            console.error("Erro PDF:", e);
+        }
+    }
+
+        function renderPage(num) {
+        pageRendering = true;
+        
+        pdfDoc.getPage(num).then(function(page) {
+            canvas = document.getElementById('the-canvas');
+            if(!canvas) return; 
+            
+            ctx = canvas.getContext('2d');
+            textLayerDiv = document.getElementById('text-layer');
+
+            // 1. Configura Escala (Zoom)
+            var viewport = page.getViewport({scale: scale});
+            
+            // Define dimensões explícitas do canvas (importante para slides)
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            canvas.style.height = viewport.height + 'px';
+            canvas.style.width = viewport.width + 'px';
+
+            // Ajusta a camada de texto
+            if(textLayerDiv) {
+                textLayerDiv.style.height = viewport.height + 'px';
+                textLayerDiv.style.width = viewport.width + 'px';
+                
+                // CRUCIAL: Passa a escala para o CSS do PDF.js alinhar o texto corretamente
+                textLayerDiv.style.setProperty('--scale-factor', scale);
+                
+                textLayerDiv.innerHTML = ''; 
+            }
+
+            // 2. Renderiza a Imagem
+            var renderContext = { canvasContext: ctx, viewport: viewport };
+            var renderTask = page.render(renderContext);
+
+            // 3. Renderiza o Texto
+            renderTask.promise.then(function() {
+                return page.getTextContent();
+            }).then(function(textContent) {
+                if(textLayerDiv) {
+                    // CORREÇÃO: Usar 'textContent' em vez de 'textContentSource'
+                    pdfjsLib.renderTextLayer({
+                        textContent: textContent, 
+                        container: textLayerDiv,
+                        viewport: viewport,
+                        textDivs: []
+                    });
+                }
+                
+                pageRendering = false;
+                if (pageNumPending !== null) {
+                    renderPage(pageNumPending);
+                    pageNumPending = null;
+                }
+            });
+        });
+
+        // Atualiza UI
+        if(document.getElementById('page_num')) document.getElementById('page_num').textContent = num;
+        
+        const startInput = document.getElementById('startPage');
+        if(startInput && startInput.value === '') startInput.value = num;
+    }
+
+
+
+    // --- CONTROLES GLOBAIS DE PDF ---
+    window.queueRenderPage = (num) => {
+        if (pageRendering) pageNumPending = num;
+        else renderPage(num);
+    };
+
+    window.prevPage = () => {
+        if (pageNum <= 1) return;
+        pageNum--;
+        window.queueRenderPage(pageNum);
+    };
+
+    window.nextPage = () => {
+        if (pageNum >= pdfDoc.numPages) return;
+        pageNum++;
+        window.queueRenderPage(pageNum);
+    };
+
+    window.zoomIn = () => {
+        scale += 0.2;
+        renderPage(pageNum);
+    };
+
+    window.zoomOut = () => {
+        if (scale <= 0.6) return;
+        scale -= 0.2;
+        renderPage(pageNum);
+    };
+    
+    
+    
+        // ============================================================
+    // 🧠 MÓDULO DE INTELIGÊNCIA E ESTUDO (VERSÃO FINAL CORRIGIDA)
+    // ============================================================
+
+    // 1. Extração de Texto do PDF
+    async function extractPdfText(startPage, endPage) {
+        if (!pdfDoc) return null;
+        let fullText = "";
+        
+        for (let i = startPage; i <= endPage; i++) {
+            try {
+                const page = await pdfDoc.getPage(i);
+                const tokenizedText = await page.getTextContent();
+                const pageText = tokenizedText.items.map(token => token.str).join(' ');
+                fullText += `\n--- PÁGINA ${i} ---\n${pageText}\n`;
+                showFeedback(`Lendo página ${i}...`, true); 
+            } catch (e) {
+                console.error(`Erro ao ler página ${i}`, e);
+            }
+        }
+        return fullText;
+    }
+
+    // 2. Conexão com a IA (Worker)
+    async function mapearConceitosComIA(texto) {
+        try {
+            // Limite de segurança para não estourar requisição
+            const textoLimitado = texto.substring(0, 35000); 
+            
+            const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    action: "mapear_capitulo",
+                    texto: textoLimitado 
+                })
+            });
+
+            if (!response.ok) throw new Error("Falha na comunicação com a IA");
+            
+            const data = await response.json();
+            
+            if(data.conceitos && Array.isArray(data.conceitos)) {
+                return data.conceitos;
+            } else {
+                return ["Erro: A IA não retornou uma lista válida."];
+            }
+        } catch (e) {
+            console.error(e);
+            return ["Erro de conexão com o servidor da IA."];
+        }
+    }
+
+    // 3. Salvar no Banco (Persistência)
+    async function salvarMapeamento(pdfName, startPage, endPage, fullText, conceitos) {
+        if (!currentUID) return;
+        
+        try {
+            showFeedback("Salvando estudo no banco...", true);
+            
+            const docRef = await addDoc(collection(db, "planners", currentUID, "study_units"), {
+                arquivo: pdfName,
+                paginas: `${startPage}-${endPage}`,
+                textoCompleto: fullText, 
+                conceitos: conceitos,    
+                status: "em_andamento",
+                criadoEm: serverTimestamp(),
+                progresso: 0,
+                totalConceitos: conceitos.length
+            });
+
+            console.log("Estudo salvo ID:", docRef.id);
+            showFeedback("✅ Estudo salvo e memorizado!", false);
+            return docRef.id;
+            
+        } catch (e) {
+            console.error("Erro ao salvar estudo:", e);
+            alert("Erro ao salvar o progresso.");
+        }
+    }
+
+    // 4. Verificar Memória (Economia de Tokens)
+    async function verificarEstudoExistente(pdfName, start, end) {
+        if (!currentUID) return null;
+        
+        const paginasStr = `${start}-${end}`;
+        const q = query(
+            collection(db, "planners", currentUID, "study_units"), 
+            where("arquivo", "==", pdfName),
+            where("paginas", "==", paginasStr)
+        );
+        
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+            return { id: snap.docs[0].id, ...snap.docs[0].data() };
+        }
+        return null;
+    }
+
+    // 5. Renderizar Lista na Tela
+    function renderConceptsList(concepts) {
+        const container = document.getElementById('conceptsList');
+        container.innerHTML = '';
+        
+        concepts.forEach((concept, index) => {
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.style.marginBottom = '10px';
+            div.style.borderLeft = '4px solid #448361';
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="font-weight:600; color:#37352f;">${index + 1}. ${concept}</div>
+                    <button class="btn-action btn-primary" onclick="alert('Na Fase 3 (Worker), isso criará a aula sobre: ${concept}')">
+                        <i class="fas fa-play"></i> Estudar
+                    </button>
+                </div>`;
+            container.appendChild(div);
+        });
+    }
+
+    // 6. GATILHO DO BOTÃO "MAPEAR" (Lógica Principal)
+    document.addEventListener('click', async function(e){
+        if(e.target && e.target.closest('#btnMapearCapitulo')){
+            const startInput = document.getElementById('startPage').value;
+            const endInput = document.getElementById('endPage').value;
+            const pdfName = document.getElementById('viewTitle').textContent || "Documento PDF";
+            
+            if(!startInput || !endInput) return alert("Defina as páginas de Início e Fim.");
+            const start = parseInt(startInput);
+            const end = parseInt(endInput);
+            
+            if(end < start) return alert("A página final deve ser maior que a inicial.");
+            if((end - start) > 50) return alert("Selecione no máximo 50 páginas por vez.");
+
+            // Abre modal
+            document.getElementById('modalConcepts').style.display = 'flex';
+            document.getElementById('lblPages').textContent = `${start} a ${end}`;
+            document.getElementById('conceptsList').innerHTML = `
+                <div style="text-align:center; padding:40px; color:#666;">
+                    <i class="fas fa-search fa-pulse" style="font-size:30px; color:#2383e2; margin-bottom:15px;"></i><br>
+                    Verificando memória de estudos...
+                </div>`;
+
+            // Lógica de Decisão: Memória vs IA
+            const estudoExistente = await verificarEstudoExistente(pdfName, start, end);
+
+            if (estudoExistente) {
+                // CAMINHO A: MEMÓRIA (Grátis)
+                console.log("Recuperado da memória:", estudoExistente);
+                showFeedback("Estudo recuperado da memória! 🧠", false);
+                renderConceptsList(estudoExistente.conceitos);
+            } else {
+                // CAMINHO B: NOVA ANÁLISE (Gasta Token)
+                document.getElementById('conceptsList').innerHTML = `
+                    <div style="text-align:center; padding:40px; color:#666;">
+                        <i class="fas fa-spinner fa-spin" style="font-size:30px; color:#2383e2; margin-bottom:15px;"></i><br>
+                        Lendo livro...
+                    </div>`;
+
+                const texto = await extractPdfText(start, end);
+                
+                document.getElementById('conceptsList').innerHTML = `
+                    <div style="text-align:center; padding:40px; color:#666;">
+                        <i class="fas fa-brain fa-pulse" style="font-size:30px; color:#9065b0; margin-bottom:15px;"></i><br>
+                        A IA está mapeando os conceitos...
+                    </div>`;
+                
+                const conceitos = await mapearConceitosComIA(texto);
+                
+                // Salva para o futuro
+                await salvarMapeamento(pdfName, start, end, texto, conceitos);
+                
+                // Exibe
+                renderConceptsList(conceitos);
+            }
+        }
+    });
+
+    
+    
+    
+    
+
+    window.showFeedback = (msg, loading) => {
+        const el = document.getElementById('statusFeedback');
+        el.textContent = msg; el.style.display = 'block';
+        el.style.background = loading ? '#2383e2' : '#448361';
+        if(!loading) setTimeout(() => el.style.display = 'none', 3000);
+    };
+    window.fecharModal = () => document.getElementById('modalEditor').style.display = 'none';
+    window.fecharModalView = () => document.getElementById('modalView').style.display = 'none';
+    
+    // --- RESET NOVO ESTUDO ---
+    document.getElementById('btnNovoAssunto').onclick = () => { 
+        editingDocId = null; 
+        document.getElementById('subjectTitle').value = '';
+        document.getElementById('subjectTag').value = '';
+        quill.setText(''); 
+        document.getElementById('btnSalvar').textContent = "Criar Cronograma";
+        
+        document.getElementById('modalEditor').style.display = 'flex';
+        setTimeout(() => quill.focus(), 100); 
+    };
+    
+    document.getElementById('navBoard').onclick = () => { document.getElementById('secBoard').classList.remove('hidden'); document.getElementById('secLib').classList.add('hidden'); document.getElementById('navBoard').classList.add('active'); document.getElementById('navLib').classList.remove('active'); };
+    document.getElementById('navLib').onclick = () => { document.getElementById('secBoard').classList.add('hidden'); document.getElementById('secLib').classList.remove('hidden'); document.getElementById('navBoard').classList.remove('active'); document.getElementById('navLib').classList.add('active'); carregarBiblioteca(); };
+
+        // ============================================================
+    // 🕒 LÓGICA DA AGENDA (Adicione no final do Script)
+    // ============================================================
+    
+    async function loadAgenda() {
+        if (!currentUID) return;
+        // Busca na coleção "agenda"
+        const q = query(collection(db, "planners", currentUID, "agenda"));
+        const snap = await getDocs(q);
+        allAgendaCache = [];
+        snap.forEach(d => allAgendaCache.push({ id: d.id, ...d.data() }));
+        renderAgendaBoard();
+    }
+
+    function renderAgendaBoard() {
+        const board = document.getElementById('agendaBoard');
+        if (!board) return; // Segurança caso o elemento não exista
+        board.innerHTML = '';
+        
+        const daysOfWeek = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        const today = new Date(); 
+
+        for (let i = 0; i < 7; i++) {
+            const currentDay = new Date(currentBoardStart);
+            currentDay.setDate(currentBoardStart.getDate() + i);
+            const isToday = isSameDay(today, currentDay);
+
+            // Filtra itens deste dia e ordena por hora de início
+            const itensDoDia = allAgendaCache.filter(item => {
+                if(!item.data) return false;
+                // Converte string "2024-05-20" para data local correta
+                const parts = item.data.split('-'); 
+                const itemDate = new Date(parts[0], parts[1]-1, parts[2]);
+                return isSameDay(itemDate, currentDay);
+            }).sort((a, b) => a.inicio.localeCompare(b.inicio));
+
+            // Cria a coluna do dia
+            const colDiv = document.createElement('div');
+            colDiv.className = 'day-column';
+            colDiv.innerHTML = `
+                <div class="day-header ${isToday ? 'today' : ''}">
+                    <span>${daysOfWeek[i]}</span>
+                    <span style="font-weight:400; opacity:0.7">${formatDateDisplay(currentDay)}</span>
+                </div>
+                <div class="drop-zone" style="padding-right:4px;"></div>
+            `;
+            
+            const container = colDiv.querySelector('.drop-zone');
+            
+            // Cria os cartões de horário
+            itensDoDia.forEach(item => {
+                const el = document.createElement('div');
+                el.className = `agenda-card ${item.concluido ? 'done' : ''}`;
+                el.innerHTML = `
+                    <input type="checkbox" class="agenda-check" ${item.concluido ? 'checked' : ''} 
+                        onchange="window.toggleAgenda('${item.id}', this.checked)">
+                    <div class="agenda-content">
+                        <div class="agenda-text">${item.titulo}</div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px;">
+                            <div class="agenda-time-badge">
+                                <span>${item.inicio}</span>
+                                <span style="font-size:9px; opacity:0.7; font-weight:400;">até ${item.fim}</span>
+                            </div>
+                            <button class="btn-delete-agenda" onclick="window.deleteAgenda('${item.id}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(el);
+            });
+
+            board.appendChild(colDiv);
+        }
+    }
+
+    // --- ABRIR MODAL AGENDA ---
+    document.getElementById('btnNovaAgenda').onclick = () => {
+        document.getElementById('agendaTitle').value = '';
+        document.getElementById('agendaStart').value = '';
+        document.getElementById('agendaEnd').value = '';
+        document.getElementById('agendaDate').valueAsDate = new Date(); // Hoje
+        document.getElementById('modalAgenda').style.display = 'flex';
+    };
+
+    // --- SALVAR NO FIRESTORE ---
+    document.getElementById('btnSalvarAgenda').onclick = async () => {
+        const titulo = document.getElementById('agendaTitle').value;
+        const data = document.getElementById('agendaDate').value;
+        const inicio = document.getElementById('agendaStart').value;
+        const fim = document.getElementById('agendaEnd').value;
+
+        if(!titulo || !data || !inicio || !fim) return alert("Preencha todos os campos!");
+
+        showFeedback("Salvando horário...", true);
+        try {
+            await addDoc(collection(db, "planners", currentUID, "agenda"), {
+                titulo, data, inicio, fim, concluido: false, createdAt: serverTimestamp()
+            });
+            showFeedback("Salvo!", false);
+            document.getElementById('modalAgenda').style.display = 'none';
+            loadAgenda(); // Recarrega a tela
+        } catch(e) {
+            console.error(e);
+            showFeedback("Erro ao salvar", false);
+        }
+    };
+
+    // --- CHECKBOX (CONCLUIR) ---
+    window.toggleAgenda = async (id, status) => {
+        // Atualiza visualmente na hora (sem esperar o banco)
+        const item = allAgendaCache.find(i => i.id === id);
+        if(item) {
+            item.concluido = status; 
+            renderAgendaBoard(); 
+        }
+        await updateDoc(doc(db, "planners", currentUID, "agenda", id), { concluido: status });
+    };
+
+    // --- DELETAR ---
+    window.deleteAgenda = async (id) => {
+        if(!confirm("Apagar este horário?")) return;
+        try {
+            await deleteDoc(doc(db, "planners", currentUID, "agenda", id));
+            allAgendaCache = allAgendaCache.filter(i => i.id !== id); // Remove da lista local
+            renderAgendaBoard(); // Atualiza tela
+        } catch(e) { alert("Erro ao deletar"); }
+    };
+
+        // --- NAVEGAÇÃO UNIFICADA DO MENU (Sidebar) ---
+
+    // 1. Botão Cronograma
+    document.getElementById('navBoard').onclick = () => {
+        // Esconde as outras telas
+        document.getElementById('secLib').classList.add('hidden');
+        document.getElementById('secAgenda').classList.add('hidden');
+        document.getElementById('secQuizzes').classList.add('hidden');
+        
+        // Mostra o Cronograma
+        document.getElementById('secBoard').classList.remove('hidden');
+
+        // Atualiza estilo do menu
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('navBoard').classList.add('active');
+    };
+
+    // 2. Botão Biblioteca
+    document.getElementById('navLib').onclick = () => {
+        document.getElementById('secBoard').classList.add('hidden');
+        document.getElementById('secAgenda').classList.add('hidden');
+        document.getElementById('secQuizzes').classList.add('hidden');
+        
+        document.getElementById('secLib').classList.remove('hidden');
+
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('navLib').classList.add('active');
+        
+        carregarBiblioteca(); // Garante que a lista esteja atualizada
+    };
+
+    // 3. Botão Agenda
+    document.getElementById('navAgenda').onclick = () => {
+        document.getElementById('secBoard').classList.add('hidden');
+        document.getElementById('secLib').classList.add('hidden');
+        document.getElementById('secQuizzes').classList.add('hidden');
+        
+        document.getElementById('secAgenda').classList.remove('hidden');
+        
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('navAgenda').classList.add('active');
+        
+        renderAgendaBoard(); // Renderiza os cards da agenda
+    };
+
+    // 4. Botão Meus Simulados (Novo)
+    document.getElementById('navQuizzes').onclick = () => {
+        document.getElementById('secBoard').classList.add('hidden');
+        document.getElementById('secLib').classList.add('hidden');
+        document.getElementById('secAgenda').classList.add('hidden');
+        
+        document.getElementById('secQuizzes').classList.remove('hidden');
+        
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('navQuizzes').classList.add('active');
+        
+        // Verifica se a função existe antes de chamar (segurança)
+        if (typeof carregarAbaQuizzes === "function") {
+            carregarAbaQuizzes();
+        }
+    };
+
+
+        // --- LÓGICA DE RESPOSTA DO QUIZ ---
+    window.checkAnswer = (el, isCorrect) => {
+        // Evita clicar duas vezes na mesma questão
+        if(el.parentElement.classList.contains('answered')) return;
+        
+        el.parentElement.classList.add('answered'); // Marca questão como respondida
+        
+        if(isCorrect) {
+            el.classList.add('correct');
+        } else {
+            el.classList.add('wrong');
+            // Mostra qual era a certa automaticamente
+            const siblings = el.parentElement.children;
+            for(let sib of siblings) {
+                if(sib.getAttribute('onclick').includes('true')) {
+                    sib.classList.add('correct');
+                }
+            }
+        }
+        
+        // Mostra o feedback (explicação) se houver
+        const card = el.closest('.quiz-card');
+        const feedback = card.querySelector('.quiz-feedback');
+        if(feedback) feedback.style.display = 'block';
+    };
+
+    
+        // --- GERAR QUIZ ---
+    window.gerarQuiz = async (arquivoId, titulo, textoContexto, tipo) => {
+        const confirmacao = confirm(`Gerar simulado sobre: "${titulo}"?`);
+        if(!confirmacao) return;
+
+        showFeedback("🧠 Criando questões...", true);
+
+        // Prepara o contexto para a IA
+        let promptText = "";
+        let promptLabel = titulo;
+
+        if (tipo === 'texto') {
+            // Limpa tags HTML para economizar tokens
+            const tmp = document.createElement("DIV");
+            tmp.innerHTML = textoContexto;
+            promptText = tmp.textContent || tmp.innerText || "";
+            // Limite de segurança
+            if(promptText.length > 12000) promptText = promptText.substring(0, 12000);
+        } else {
+            // Para PDF, enviamos vazio e a IA cria baseada no Título/Label
+            promptText = ""; 
+        }
+
+        try {
+            const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    action: "gerar_quiz_arquivo", 
+                    textoOriginal: promptText, 
+                    label: promptLabel 
+                })
+            });
+
+            if(!response.ok) throw new Error("Erro na API");
+            
+            const data = await response.json();
+            const quizHTML = data.html;
+
+            // 1. Salva na coleção 'quizzes' (Para a aba Meus Simulados)
+            const quizRef = await addDoc(collection(db, "planners", currentUID, "quizzes"), {
+                titulo: titulo,
+                html: quizHTML,
+                criadoEm: serverTimestamp(),
+                origemId: arquivoId
+            });
+
+            // 2. Salva no Cronograma como tarefa de hoje
+            const today = new Date().getTime();
+            await addDoc(collection(db, "planners", currentUID, "tasks"), {
+                titulo: `[QUIZ] ${titulo}`,
+                tag: "SIMULADO",
+                contentHTML: quizHTML, 
+                targetDate: today,
+                concluido: false,
+                criadoEm: serverTimestamp(),
+                tipo: 'quiz',
+                quizId: quizRef.id
+            });
+
+            showFeedback("Simulado criado com sucesso!", false);
+            loadDataAndInit(); // Atualiza o board
+            
+        } catch(e) {
+            console.error(e);
+            showFeedback("Erro ao gerar quiz.", false);
+        }
+    };
+
+        window.abrirQuizPlayer = (titulo, htmlContent) => {
+        document.getElementById('viewTitle').textContent = titulo;
+        document.getElementById('viewTagDisplay').textContent = "Simulado";
+        // Ícone de cérebro no modal
+        document.getElementById('viewTypeIcon').innerHTML = '<i class="fas fa-brain" style="color:#9065b0; font-size:20px;"></i>';
+        
+        const container = document.getElementById('viewContainer');
+        container.innerHTML = `<div style="padding:20px; overflow-y:auto; background:#fcfcfc;">${htmlContent}</div>`;
+        
+        // Esconde botões de edição de texto
+        document.getElementById('btnEditarNota').style.display = 'none';
+        document.getElementById('btnExcluirEstudo').style.display = 'none'; 
+        
+        document.getElementById('modalView').style.display = 'flex';
+    };
+
+    
+        async function carregarAbaQuizzes() {
+        if(!currentUID) return;
+        const q = query(collection(db, "planners", currentUID, "quizzes"), orderBy("criadoEm", "desc"));
+        const snap = await getDocs(q);
+        const tbody = document.getElementById('listaQuizzesBody');
+        tbody.innerHTML = '';
+        
+        if (snap.empty) {
+            tbody.innerHTML = '<tr><td colspan="3" style="padding:20px; text-align:center; color:#ccc;">Nenhum simulado encontrado.</td></tr>';
+            return;
+        }
+
+        snap.forEach(docSnap => {
+            const data = docSnap.data();
+            const dataCriacao = data.criadoEm ? new Date(data.criadoEm.seconds * 1000).toLocaleDateString() : '-';
+            
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid #f0f0f0';
+            tr.innerHTML = `
+                <td style="padding:12px; font-weight:500;">${data.titulo}</td>
+                <td style="padding:12px; color:#777;">${dataCriacao}</td>
+                <td style="padding:12px;">
+                    <button class="btn-action" onclick="window.fetchAndPlayQuiz('${docSnap.id}')"><i class="fas fa-play"></i> Fazer</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Busca o quiz pelo ID para jogar (usado na aba Meus Simulados)
+    window.fetchAndPlayQuiz = async (id) => {
+        const snap = await getDoc(doc(db, "planners", currentUID, "quizzes", id));
+        if(snap.exists()) {
+            const d = snap.data();
+            window.abrirQuizPlayer(d.titulo, d.html);
+        }
+    };
+
+    // --- NAVEGAÇÃO PARA ABA QUIZZES ---
+    document.getElementById('navQuizzes').onclick = () => {
+        document.getElementById('secBoard').classList.add('hidden');
+        document.getElementById('secLib').classList.add('hidden');
+        document.getElementById('secAgenda').classList.add('hidden');
+        document.getElementById('secQuizzes').classList.remove('hidden');
+        
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('navQuizzes').classList.add('active');
+        
+        carregarAbaQuizzes();
+    };
+
+    
+    </script>
+    
+    
+    <script type="module" src="padrao_simulado.js"></script>
+</body>
+</html>
