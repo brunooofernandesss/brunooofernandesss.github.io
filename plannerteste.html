@@ -475,6 +475,30 @@
         </div>
     </div>
 
+    
+        <div class="modal" id="modalConcepts">
+        <div class="modal-content" style="max-width: 600px; height: 80vh;">
+            <div class="editor-header">
+                <h3 style="margin:0;"><i class="fas fa-project-diagram" style="color:#2383e2;"></i> Mapa do Capítulo</h3>
+                <button class="btn-action" onclick="document.getElementById('modalConcepts').style.display='none'"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="editor-body" style="background: #fdfdfd;">
+                <div style="padding: 15px; background: #eef6fc; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #2383e2;">
+                    <p style="font-size: 13px; color: #555; margin:0;">
+                        <strong>IA Professor:</strong> "Analisei as páginas <span id="lblPages">--</span>. 
+                        Aqui estão os conceitos fundamentais que você precisa dominar. Clique em um para começar a aula."
+                    </p>
+                </div>
+                
+                <div id="conceptsList" style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="text-align:center; color:#999; padding: 20px;">
+                        <i class="fas fa-spinner fa-spin"></i> Lendo o livro e identificando conceitos...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <div id="statusFeedback">Processando...</div>
 
@@ -1726,19 +1750,105 @@
         scale -= 0.2;
         renderPage(pageNum);
     };
+    
+        // --- FASE 2: NOVAS FUNÇÕES (EXTRAÇÃO + IA) ---
 
-    // --- ESCUTAR CLIQUE NO BOTÃO "MAPEAR" (PARA A PRÓXIMA FASE) ---
-    document.addEventListener('click', function(e){
+    // 1. Lê o texto das páginas selecionadas
+    async function extractPdfText(startPage, endPage) {
+        if (!pdfDoc) return null;
+        let fullText = "";
+        
+        for (let i = startPage; i <= endPage; i++) {
+            try {
+                const page = await pdfDoc.getPage(i);
+                const tokenizedText = await page.getTextContent();
+                const pageText = tokenizedText.items.map(token => token.str).join(' ');
+                fullText += `\n--- PÁGINA ${i} ---\n${pageText}\n`;
+                showFeedback(`Lendo página ${i}...`, true); // Feedback visual
+            } catch (e) {
+                console.error(`Erro ao ler página ${i}`, e);
+            }
+        }
+        return fullText;
+    }
+
+    // 2. Simula a IA (Substituiremos pelo Worker real na Fase 3)
+    async function mapearConceitosComIA(texto) {
+        return new Promise(resolve => {
+            setTimeout(() => {
+                resolve([
+                    "Fisiopatologia e Mecanismos",
+                    "Quadro Clínico Típico",
+                    "Abordagem Diagnóstica",
+                    "Protocolos de Tratamento",
+                    "Critérios de Internação"
+                ]);
+            }, 2000); 
+        });
+    }
+
+    // 3. Desenha a lista de conceitos no Modal
+    function renderConceptsList(concepts) {
+        const container = document.getElementById('conceptsList');
+        container.innerHTML = '';
+        concepts.forEach((concept, index) => {
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.style.marginBottom = '10px';
+            div.style.borderLeft = '4px solid #448361';
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="font-weight:600; color:#37352f;">${index + 1}. ${concept}</div>
+                    <button class="btn-action btn-primary" onclick="alert('Na Fase 3, isso criará a aula sobre: ${concept}')">
+                        <i class="fas fa-play"></i> Estudar
+                    </button>
+                </div>`;
+            container.appendChild(div);
+        });
+    }
+
+
+        // --- GATILHO ATUALIZADO (FASE 2) ---
+    document.addEventListener('click', async function(e){
         if(e.target && e.target.closest('#btnMapearCapitulo')){
-            const start = document.getElementById('startPage').value;
-            const end = document.getElementById('endPage').value;
+            const startInput = document.getElementById('startPage').value;
+            const endInput = document.getElementById('endPage').value;
             
-            if(!start || !end) return alert("Por favor, defina a Página Inicial e Final do capítulo.");
-            if(Number(end) < Number(start)) return alert("A página final deve ser maior que a inicial.");
+            if(!startInput || !endInput) return alert("Defina as páginas de Início e Fim.");
+            const start = parseInt(startInput);
+            const end = parseInt(endInput);
             
-            alert(`🏗️ SUCESSO! Na próxima fase, a IA vai ler das páginas ${start} até ${end}.`);
+            if(end < start) return alert("A página final deve ser maior que a inicial.");
+            if((end - start) > 50) return alert("Selecione no máximo 50 páginas por vez.");
+
+            // 1. Abre modal e mostra loading
+            document.getElementById('modalConcepts').style.display = 'flex';
+            document.getElementById('lblPages').textContent = `${start} a ${end}`;
+            document.getElementById('conceptsList').innerHTML = `
+                <div style="text-align:center; padding:40px; color:#666;">
+                    <i class="fas fa-spinner fa-spin" style="font-size:30px; color:#2383e2; margin-bottom:15px;"></i><br>
+                    Extraindo texto do livro...
+                </div>`;
+
+            // 2. Extrai o texto real do PDF
+            const texto = await extractPdfText(start, end);
+            
+            // 3. Chama a simulação da IA
+            document.getElementById('conceptsList').innerHTML = `
+                <div style="text-align:center; padding:40px; color:#666;">
+                    <i class="fas fa-brain fa-pulse" style="font-size:30px; color:#9065b0; margin-bottom:15px;"></i><br>
+                    A IA está mapeando os conceitos...
+                </div>`;
+            
+            const conceitos = await mapearConceitosComIA(texto);
+            
+            // 4. Mostra o resultado final
+            renderConceptsList(conceitos);
+            showFeedback("Conceitos mapeados!", false);
         }
     });
+
+
 
     window.showFeedback = (msg, loading) => {
         const el = document.getElementById('statusFeedback');
