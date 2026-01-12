@@ -12,6 +12,8 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
+
 
     <style>
         :root {
@@ -311,38 +313,29 @@
     #pdf-wrapper {
         position: relative;
         width: 100%;
-        overflow: auto;
-        background: #525659; /* Cor de fundo padrão de visualizadores */
-        display: flex;
-        justify-content: center;
+        height: 100%;
+        overflow: auto; /* Permite scroll se o slide for grande */
+        background: #525659;
+        display: block; /* IMPORTANTE: Block evita corte lateral em slides largos */
+        text-align: center; /* Centraliza o slide */
         padding: 20px 0;
     }
 
     #page-container {
         position: relative; 
         box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        background: white;
+        display: inline-block; /* Mantém o container justo ao redor do PDF */
+        margin: 0 auto;
     }
 
     .textLayer {
-        position: absolute;
-        left: 0;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        overflow: hidden;
-        opacity: 0.2; /* Dica: Mude para 0.2 para ver o alinhamento, depois deixe 0 */
-        line-height: 1.0;
-        pointer-events: none; /* Deixa clicar no canvas se precisar */
+        /* A classe oficial do PDF.js cuida do posicionamento */
+        opacity: 1; 
+        mix-blend-mode: multiply;
+        display: block;
     }
 
-    .textLayer > span {
-        color: transparent;
-        position: absolute;
-        white-space: pre;
-        cursor: text;
-        transform-origin: 0% 0%;
-        pointer-events: all; /* Permite selecionar o texto */
-    }
     
     /* Toolbar do PDF melhorada para a Fase 2 */
     .pdf-toolbar {
@@ -1640,7 +1633,7 @@
         }
     }
 
-    function renderPage(num) {
+        function renderPage(num) {
         pageRendering = true;
         
         pdfDoc.getPage(num).then(function(page) {
@@ -1652,27 +1645,36 @@
 
             // 1. Configura Escala (Zoom)
             var viewport = page.getViewport({scale: scale});
+            
+            // Define dimensões explícitas do canvas (importante para slides)
             canvas.height = viewport.height;
             canvas.width = viewport.width;
+            canvas.style.height = viewport.height + 'px';
+            canvas.style.width = viewport.width + 'px';
 
-            // Ajusta a camada de texto para ter o mesmo tamanho da imagem
+            // Ajusta a camada de texto
             if(textLayerDiv) {
                 textLayerDiv.style.height = viewport.height + 'px';
                 textLayerDiv.style.width = viewport.width + 'px';
-                textLayerDiv.innerHTML = ''; // Limpa texto da página anterior
+                
+                // CRUCIAL: Passa a escala para o CSS do PDF.js alinhar o texto corretamente
+                textLayerDiv.style.setProperty('--scale-factor', scale);
+                
+                textLayerDiv.innerHTML = ''; 
             }
 
-            // 2. Renderiza a Imagem (Canvas)
+            // 2. Renderiza a Imagem
             var renderContext = { canvasContext: ctx, viewport: viewport };
             var renderTask = page.render(renderContext);
 
-            // 3. Renderiza o Texto Invisível (Text Layer)
+            // 3. Renderiza o Texto
             renderTask.promise.then(function() {
                 return page.getTextContent();
             }).then(function(textContent) {
                 if(textLayerDiv) {
+                    // CORREÇÃO: Usar 'textContent' em vez de 'textContentSource'
                     pdfjsLib.renderTextLayer({
-                        textContentSource: textContent,
+                        textContent: textContent, 
                         container: textLayerDiv,
                         viewport: viewport,
                         textDivs: []
@@ -1687,13 +1689,14 @@
             });
         });
 
-        // Atualiza número da página na tela
+        // Atualiza UI
         if(document.getElementById('page_num')) document.getElementById('page_num').textContent = num;
         
-        // Sugere página atual no input de início da IA (UX)
         const startInput = document.getElementById('startPage');
         if(startInput && startInput.value === '') startInput.value = num;
     }
+
+
 
     // --- CONTROLES GLOBAIS DE PDF ---
     window.queueRenderPage = (num) => {
