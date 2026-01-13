@@ -1754,12 +1754,12 @@
     
     
           // ============================================================
-    // 🧠 CÉREBRO: EXTRAÇÃO, IA E AULAS (ATUALIZADO FASE 4)
+    // 🧠 CÉREBRO: EXTRAÇÃO, IA E AULAS (VERSÃO CORRIGIDA)
     // ============================================================
 
     let currentStudyText = ""; // Variável global para guardar o texto do livro
 
-    // A. Extração de Texto do PDF
+    // 1. Extração de Texto do PDF
     async function extractPdfText(startPage, endPage) {
         if (!pdfDoc) return null;
         let fullText = "";
@@ -1779,7 +1779,7 @@
         return fullText;
     }
 
-    // B. Conexão com Worker: Mapear Conceitos
+    // 2. Conexão com Worker: Mapear Conceitos
     async function mapearConceitosComIA(texto) {
         try {
             const textoLimitado = texto.substring(0, 35000); 
@@ -1806,15 +1806,15 @@
         }
     }
 
-    // C. Conexão com Worker: GERAR AULA (Essa é a função que faltava!)
+    // 3. FUNÇÃO ESTUDAR: Gera a aula e abre o editor
     window.gerarAulaConceito = async (conceito) => {
-        // Se a memória estiver vazia, tenta recuperar do banco
+        // Tenta recuperar texto da memória se estiver vazio
         if (!currentStudyText) {
              const pdfName = document.getElementById('viewTitle').textContent;
              const startPage = parseInt(document.getElementById('startPage').value);
              const endPage = parseInt(document.getElementById('endPage').value);
              
-             showFeedback("Recuperando texto da memória...", true);
+             showFeedback("Buscando texto na memória...", true);
              const estudo = await verificarEstudoExistente(pdfName, startPage, endPage);
              
              if(estudo && estudo.textoCompleto) {
@@ -1846,7 +1846,7 @@
             
             // Abre o editor com o conteúdo gerado
             abrirEditorComAula(conceito, data.html);
-            showFeedback("Aula pronta! Revise e salve.", false);
+            showFeedback("Aula pronta! Revise e clique em 'Salvar' para criar os cards.", false);
 
         } catch (e) {
             console.error(e);
@@ -1855,7 +1855,6 @@
         }
     };
 
-    // Abre o editor e preenche com a aula
     function abrirEditorComAula(titulo, markdown) {
         document.getElementById('subjectTitle').value = titulo;
         const tagAtual = document.getElementById('viewTagDisplay').textContent;
@@ -1865,34 +1864,32 @@
         const html = marked.parse(markdown);
         quill.clipboard.dangerouslyPasteHTML(html);
         
-        editingDocId = null; 
+        editingDocId = null; // Garante que será um NOVO card
         document.getElementById('btnSalvar').textContent = "Salvar Estudo";
         document.getElementById('modalEditor').style.display = 'flex';
         
         setTimeout(() => quill.focus(), 100);
     }
 
-    // D. Salvar no Banco (Persistência)
+    // 4. Salvar no Banco (Persistência do Mapeamento)
     async function salvarMapeamento(pdfName, startPage, endPage, fullText, conceitos) {
         if (!currentUID) return;
         try {
-            showFeedback("Salvando estudo no banco...", true);
-            const docRef = await addDoc(collection(db, "planners", currentUID, "study_units"), {
+            showFeedback("Salvando mapeamento...", true);
+            await addDoc(collection(db, "planners", currentUID, "study_units"), {
                 arquivo: pdfName,
                 paginas: `${startPage}-${endPage}`,
                 textoCompleto: fullText, 
                 conceitos: conceitos,    
                 status: "em_andamento",
                 criadoEm: serverTimestamp(),
-                progresso: 0,
                 totalConceitos: conceitos.length
             });
-            showFeedback("✅ Estudo salvo e memorizado!", false);
-            return docRef.id;
+            showFeedback("✅ Mapeamento salvo!", false);
         } catch (e) { console.error(e); }
     }
 
-    // E. Verificar Memória
+    // 5. Verificar Memória
     async function verificarEstudoExistente(pdfName, start, end) {
         if (!currentUID) return null;
         const paginasStr = `${start}-${end}`;
@@ -1908,7 +1905,7 @@
         return null;
     }
 
-    // F. Renderizar Lista na Tela (Com botão Estudar funcionando)
+    // 6. Renderizar Lista na Tela (LAYOUT CORRIGIDO)
     function renderConceptsList(concepts) {
         const container = document.getElementById('conceptsList');
         container.innerHTML = '';
@@ -1917,14 +1914,15 @@
             div.className = 'card';
             div.style.marginBottom = '10px';
             div.style.borderLeft = '4px solid #448361';
+            div.style.padding = '15px'; // Mais espaçamento interno
             
-            // Corrige problema de aspas simples no título
             const conceitoSafe = concept.replace(/'/g, "\\'");
             
+            // Flexbox ajustado para separar texto do botão
             div.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <div style="font-weight:600; color:#37352f;">${index + 1}. ${concept}</div>
-                    <button class="btn-action btn-primary" onclick="window.gerarAulaConceito('${conceitoSafe}')">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap: 15px;">
+                    <div style="font-weight:600; color:#37352f; flex: 1;">${index + 1}. ${concept}</div>
+                    <button class="btn-action btn-primary" style="flex-shrink: 0;" onclick="window.gerarAulaConceito('${conceitoSafe}')">
                         <i class="fas fa-chalkboard-teacher"></i> Estudar
                     </button>
                 </div>`;
@@ -1932,7 +1930,7 @@
         });
     }
 
-    // G. GATILHO DO BOTÃO "MAPEAR"
+    // 7. GATILHO DO BOTÃO "MAPEAR"
     document.addEventListener('click', async function(e){
         if(e.target && e.target.closest('#btnMapearCapitulo')){
             const startInput = document.getElementById('startPage').value;
@@ -1943,7 +1941,7 @@
             const start = parseInt(startInput);
             const end = parseInt(endInput);
             
-            if(end < start) return alert("A página final deve ser maior que a inicial.");
+            if(end < start) return alert("Erro nas páginas.");
             if((end - start) > 50) return alert("Selecione no máximo 50 páginas por vez.");
 
             document.getElementById('modalConcepts').style.display = 'flex';
@@ -1958,7 +1956,7 @@
             const estudoExistente = await verificarEstudoExistente(pdfName, start, end);
 
             if (estudoExistente) {
-                console.log("Recuperado da memória:", estudoExistente);
+                console.log("Recuperado da memória.");
                 showFeedback("Estudo recuperado da memória! 🧠", false);
                 currentStudyText = estudoExistente.textoCompleto; // Carrega memória
                 renderConceptsList(estudoExistente.conceitos);
@@ -1979,7 +1977,6 @@
                 
                 const conceitos = await mapearConceitosComIA(texto);
                 
-                // Agora a função de salvar existe!
                 await salvarMapeamento(pdfName, start, end, texto, conceitos);
                 renderConceptsList(conceitos);
             }
