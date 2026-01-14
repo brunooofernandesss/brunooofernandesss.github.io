@@ -376,6 +376,41 @@
         font-size: 12px;
         text-align: center;
     }
+    
+        /* --- SPLIT VIEW (PDF Esquerda | Painel Direita) --- */
+    .split-view { display: flex; width: 100%; height: 100%; overflow: hidden; }
+    
+    .pdf-area { 
+        flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; 
+    }
+    
+    .sidebar-area { 
+        width: 320px; background: #fbfbfa; border-left: 1px solid #e9e9e7; 
+        display: flex; flex-direction: column; flex-shrink: 0; z-index: 50; 
+        box-shadow: -2px 0 10px rgba(0,0,0,0.03); 
+    }
+
+    .sidebar-block { padding: 15px; border-bottom: 1px solid #e9e9e7; }
+    
+    .sb-title { 
+        font-size: 11px; font-weight: 700; color: #787774; text-transform: uppercase; 
+        margin-bottom: 10px; display: flex; justify-content: space-between; 
+    }
+
+    /* Itens do Painel */
+    .hist-item { 
+        padding: 8px; border-radius: 6px; font-size: 12px; cursor: pointer; 
+        display: flex; justify-content: space-between; margin-bottom: 4px; color: #333;
+    }
+    .hist-item:hover { background: #efefef; }
+    .hist-item.active { background: #eef6fc; color: #2383e2; font-weight: 600; }
+
+    .sb-concept-item { 
+        padding: 10px; background: white; border: 1px solid #eee; 
+        border-radius: 6px; margin-bottom: 8px; cursor: pointer; font-size: 13px; line-height: 1.4;
+    }
+    .sb-concept-item:hover { border-color: #2383e2; transform: translateX(-2px); transition: 0.2s; }
+
 
 
     </style>
@@ -1463,51 +1498,80 @@
         const btnEdit = document.getElementById('btnEditarNota');
         const btnExcluir = document.getElementById('btnExcluirEstudo');
         
-            document.getElementById('viewTitle').textContent = fileData.nome;
-    document.getElementById('viewTagDisplay').textContent = fileData.tag;
-    document.getElementById('modalView').style.display = 'flex';
+        document.getElementById('viewTitle').textContent = fileData.nome;
+        document.getElementById('viewTagDisplay').textContent = fileData.tag;
+        document.getElementById('modalView').style.display = 'flex';
 
-    if (fileData.tipo === 'pdf') {
-        document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-pdf" style="color:#d44c47; font-size:20px;"></i>';
-        btnEdit.style.display = 'none';
-        btnExcluir.style.display = 'block'; 
-        
-        // NOVO VISUALIZADOR COM BARRA DE FERRAMENTAS
-        container.innerHTML = `
-            <div class="pdf-toolbar">
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <button class="btn-action" onclick="window.prevPage()">◀</button>
-                    <span>Pg <span id="page_num">1</span> / <span id="page_count">--</span></span>
-                    <button class="btn-action" onclick="window.nextPage()">▶</button>
-                </div>
-                <div style="display:flex; align-items:center; gap:5px;">
-                    <button class="btn-action" onclick="window.zoomOut()" title="Diminuir"><i class="fas fa-search-minus"></i></button>
-                    <button class="btn-action" onclick="window.zoomIn()" title="Aumentar"><i class="fas fa-search-plus"></i></button>
-                </div>
-                <div class="ai-controls">
-                    <span style="font-size:11px; color:#ddd;">IA:</span>
-                    <input type="number" id="startPage" class="ai-input" placeholder="Início">
-                    <span style="color:#ddd">-</span>
-                    <input type="number" id="endPage" class="ai-input" placeholder="Fim">
-                    <button class="btn-action btn-primary" id="btnMapearCapitulo" style="padding: 4px 8px; font-size: 11px;">
-                        <i class="fas fa-robot"></i>
-                    </button>
-                </div>
-            </div>
-            <div id="pdf-wrapper">
-                <div id="page-container">
-                    <canvas id="the-canvas"></canvas>
-                    <div id="text-layer" class="textLayer"></div>
-                </div>
-            </div>`;
-        initPDF(fileData.url);
-    } else {
+        if (fileData.tipo === 'pdf') {
+            // 1. Configura ícone e botões (AQUI ESTÃO AS LINHAS QUE TINHAM SUMIDO)
+            document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-pdf" style="color:#d44c47; font-size:20px;"></i>';
+            btnEdit.style.display = 'none';       
+            btnExcluir.style.display = 'block'; 
+            
+            // 2. Cria a estrutura Split View (PDF + Sidebar)
+            container.innerHTML = `
+                <div class="split-view">
+                    <div class="pdf-area">
+                        <div class="pdf-toolbar" style="padding: 10px; background: white; border-bottom: 1px solid #eee; display:flex; gap:15px; align-items:center;">
+                            <div style="display:flex; align-items:center; gap:5px;">
+                                <button class="btn-action" onclick="window.prevPage()">◀</button>
+                                <span style="font-size:12px; font-weight:600;">Pg <span id="page_num">1</span></span>
+                                <button class="btn-action" onclick="window.nextPage()">▶</button>
+                            </div>
+                            <div class="ai-controls" style="display:flex; gap:5px; background:#f5f5f5; padding:4px; border-radius:4px;">
+                                <input type="number" id="startPage" class="ai-input" placeholder="Início" style="width:50px; text-align:center;">
+                                <span>-</span>
+                                <input type="number" id="endPage" class="ai-input" placeholder="Fim" style="width:50px; text-align:center;">
+                                <button class="btn-action btn-primary" id="btnMapearCapitulo" style="padding:2px 10px; font-size:12px;">Mapear</button>
+                            </div>
+                            <div style="flex:1;"></div>
+                            <button class="btn-action" onclick="window.zoomOut()"><i class="fas fa-minus"></i></button>
+                            <button class="btn-action" onclick="window.zoomIn()"><i class="fas fa-plus"></i></button>
+                        </div>
+                        
+                        <div id="pdf-wrapper" style="background: #525659; flex:1; overflow:auto; display:flex; justify-content:center; padding:20px;">
+                            <div id="page-container" style="position:relative; box-shadow: 0 0 10px rgba(0,0,0,0.5);">
+                                <canvas id="the-canvas"></canvas>
+                                <div id="text-layer" class="textLayer"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-area">
+                        <div class="sidebar-block" style="max-height: 200px; overflow-y:auto;">
+                            <div class="sb-title">📌 Histórico de Estudo</div>
+                            <div id="sidebarHistoryList">
+                                <div style="color:#ccc; font-size:12px; text-align:center; padding:10px;">Carregando...</div>
+                            </div>
+                        </div>
+
+                        <div class="sidebar-block" style="flex:1; overflow-y:auto; background:white;">
+                            <div class="sb-title">
+                                📚 Conceitos Ativos
+                                <span id="tagPaginasAtual" class="tag-pill" style="font-size:9px;">--</span>
+                            </div>
+                            <div id="sidebarConceptsList">
+                                <div style="text-align:center; padding:30px 10px; color:#999; font-size:13px;">
+                                    Selecione as páginas acima e clique em <b>Mapear</b> para ver os conceitos aqui.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            
+            initPDF(fileData.url);
+            // Carrega o histórico lateral
+            if(window.carregarHistoricoSidebar) window.carregarHistoricoSidebar(fileData.nome);
+
+        } else {
+            // Lógica para Texto Comum (Quill)
             document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-alt" style="color:#2383e2; font-size:20px;"></i>';
-            btnEdit.style.display = 'none'; 
+            btnEdit.style.display = 'block'; 
             btnExcluir.style.display = 'block'; 
             renderQuillContent(container, fileData);
         }
     };
+
 
     window.abrirItem = async (id) => {
         let data = allTasksCache.find(t => t.id === id);
@@ -1759,14 +1823,13 @@
     };
     
     
-    
     // ============================================================
-    // 🧠 CÉREBRO: EXTRAÇÃO, INTELIGÊNCIA E AULAS (CORRIGIDO)
+    // 🧠 MÓDULO INTEGRADO: CÉREBRO + SIDEBAR + AULAS
     // ============================================================
 
-    let currentStudyText = ""; // Memória do texto
+    let currentStudyText = ""; // Memória do texto (Declarada apenas uma vez!)
 
-    // 1. Extração de Texto do PDF
+    // 1. EXTRAÇÃO DE PDF
     async function extractPdfText(startPage, endPage) {
         if (!pdfDoc) return null;
         let fullText = "";
@@ -1777,20 +1840,23 @@
                 const tokenizedText = await page.getTextContent();
                 const pageText = tokenizedText.items.map(token => token.str).join(' ');
                 fullText += `\n--- PÁGINA ${i} ---\n${pageText}\n`;
-                // Feedback persistente (não some sozinho)
+                
+                // Feedback visual na Sidebar ou Flutuante
                 const el = document.getElementById('statusFeedback');
-                el.textContent = `Lendo página ${i}...`;
-                el.style.display = 'block';
-                el.style.background = '#2383e2';
+                if(el) {
+                    el.textContent = `Lendo página ${i}...`;
+                    el.style.display = 'block';
+                    el.style.background = '#2383e2';
+                }
             } catch (e) {
-                console.error(`Erro ao ler página ${i}`, e);
+                console.error(e);
             }
         }
         currentStudyText = fullText; 
         return fullText;
     }
 
-    // 2. Conexão com Worker: Mapear Conceitos
+    // 2. IA: MAPEAR CONCEITOS
     async function mapearConceitosComIA(texto) {
         try {
             const textoLimitado = texto.substring(0, 35000); 
@@ -1800,48 +1866,41 @@
                 body: JSON.stringify({ action: "mapear_capitulo", texto: textoLimitado })
             });
 
-            if (!response.ok) throw new Error("Falha na comunicação com a IA");
+            if (!response.ok) throw new Error("Falha na IA");
             const data = await response.json();
             
             if(data.conceitos && Array.isArray(data.conceitos)) return data.conceitos;
-            return ["Erro: A IA não retornou uma lista válida."];
+            return ["Erro na resposta da IA"];
         } catch (e) {
             console.error(e);
-            return ["Erro de conexão com o servidor da IA."];
+            return ["Erro de conexão"];
         }
     }
 
-    // 3. FUNÇÃO ESTUDAR (Com layout e loading corrigidos)
+    // 3. IA: GERAR AULA (FUNÇÃO ESTUDAR)
     window.gerarAulaConceito = async (conceito) => {
-        // Verifica memória ou tenta recuperar
         if (!currentStudyText) {
              const pdfName = document.getElementById('viewTitle').textContent;
              const startPage = parseInt(document.getElementById('startPage').value);
              const endPage = parseInt(document.getElementById('endPage').value);
              
-             // Feedback de recuperação
              const el = document.getElementById('statusFeedback');
-             el.textContent = "Recuperando texto da memória...";
+             el.textContent = "Recuperando memória...";
              el.style.display = 'block';
-             el.style.background = '#2383e2';
-
+             
              const estudo = await verificarEstudoExistente(pdfName, startPage, endPage);
-             if(estudo && estudo.textoCompleto) {
-                 currentStudyText = estudo.textoCompleto;
-             } else {
+             if(estudo) currentStudyText = estudo.textoCompleto;
+             else {
                  el.style.display = 'none';
-                 return alert("Erro: Texto não encontrado. Clique no robozinho 'Mapear' novamente.");
+                 return alert("Texto não encontrado. Mapeie novamente.");
              }
         }
 
-        // Esconde a lista mas MANTÉM O PDF ABERTO no fundo
-        document.getElementById('modalConcepts').style.display = 'none';
-        
-        // MOSTRA LOADING PERSISTENTE (Não usa showFeedback padrão que some em 3s)
-        const feedbackEl = document.getElementById('statusFeedback');
-        feedbackEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Criando aula sobre: <strong>${conceito}</strong>...`;
-        feedbackEl.style.display = 'block';
-        feedbackEl.style.background = '#2383e2';
+        // Feedback de Loading Persistente
+        const el = document.getElementById('statusFeedback');
+        el.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Escrevendo aula: <strong>${conceito}</strong>...`;
+        el.style.display = 'block';
+        el.style.background = '#2383e2';
 
         try {
             const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
@@ -1854,44 +1913,33 @@
                 })
             });
 
-            if (!response.ok) throw new Error("Erro na resposta da IA");
-
             const data = await response.json();
             
-            // Remove o loading
-            feedbackEl.style.display = 'none';
-
-            // Abre o editor POR CIMA do PDF
-            abrirEditorComAula(conceito, data.html);
-            showFeedback("Aula pronta! Revise e salve.", false);
+            el.style.display = 'none'; // Remove loading
+            abrirEditorComAula(conceito, data.html); // Abre editor (Z-Index alto)
+            showFeedback("Aula criada! ✅", false);
 
         } catch (e) {
             console.error(e);
-            feedbackEl.style.display = 'none';
-            alert("Erro ao gerar a aula. Verifique o console.");
-            document.getElementById('modalConcepts').style.display = 'flex'; 
+            el.style.display = 'none';
+            alert("Erro ao criar aula.");
         }
     };
 
     function abrirEditorComAula(titulo, markdown) {
         document.getElementById('subjectTitle').value = titulo;
-        const tagAtual = document.getElementById('viewTagDisplay').textContent;
-        document.getElementById('subjectTag').value = tagAtual || "Estudo Livro";
+        document.getElementById('subjectTag').value = "Estudo Livro";
         
-        // Converte MD para HTML
         const html = marked.parse(markdown);
         quill.clipboard.dangerouslyPasteHTML(html);
         
-        editingDocId = null; // Garante criação de novo card
+        editingDocId = null; 
         document.getElementById('btnSalvar').textContent = "Salvar Estudo e Criar Revisões";
-        
-        // Abre o editor (O CSS do Passo 1 garante que ele fique por cima)
         document.getElementById('modalEditor').style.display = 'flex';
-        
         setTimeout(() => quill.focus(), 100);
     }
 
-    // 4. Salvar no Banco (Mapeamento)
+    // 4. BANCO DE DADOS
     async function salvarMapeamento(pdfName, startPage, endPage, fullText, conceitos) {
         if (!currentUID) return;
         try {
@@ -1904,82 +1952,114 @@
                 criadoEm: serverTimestamp(),
                 totalConceitos: conceitos.length
             });
-            showFeedback("✅ Salvo!", false);
+            const el = document.getElementById('statusFeedback');
+            if(el) el.style.display = 'none';
         } catch (e) { console.error(e); }
     }
 
     async function verificarEstudoExistente(pdfName, start, end) {
         if (!currentUID) return null;
-        const paginasStr = `${start}-${end}`;
         const q = query(
             collection(db, "planners", currentUID, "study_units"), 
             where("arquivo", "==", pdfName),
-            where("paginas", "==", paginasStr)
+            where("paginas", "==", `${start}-${end}`)
         );
         const snap = await getDocs(q);
         if (!snap.empty) return { id: snap.docs[0].id, ...snap.docs[0].data() };
         return null;
     }
 
-    // 5. Renderizar Lista (LAYOUT CORRIGIDO - FLEXBOX)
-    function renderConceptsList(concepts) {
-        const container = document.getElementById('conceptsList');
+    // 5. LÓGICA DO PAINEL LATERAL (SIDEBAR)
+    window.carregarHistoricoSidebar = async (pdfName) => {
+        const lista = document.getElementById('sidebarHistoryList');
+        if(!lista) return;
+
+        const q = query(collection(db, "planners", currentUID, "study_units"), where("arquivo", "==", pdfName));
+        const snap = await getDocs(q);
+        
+        lista.innerHTML = '';
+        if (snap.empty) {
+            lista.innerHTML = '<div style="color:#ccc; font-size:12px; text-align:center;">Nada mapeado.</div>';
+        } else {
+            snap.forEach(docSnap => {
+                const d = docSnap.data();
+                const div = document.createElement('div');
+                div.className = 'hist-item';
+                div.innerHTML = `<span><i class="far fa-bookmark"></i> Pgs ${d.paginas}</span> <span>${d.totalConceitos} conceitos</span>`;
+                
+                div.onclick = () => {
+                    currentStudyText = d.textoCompleto;
+                    renderConceptsList(d.conceitos, d.paginas);
+                };
+                lista.appendChild(div);
+            });
+        }
+    };
+
+    function renderConceptsList(concepts, paginasLabel) {
+        const container = document.getElementById('sidebarConceptsList');
+        if(!container) return;
+
+        if(paginasLabel) {
+            document.getElementById('tagPaginasAtual').textContent = `Pgs ${paginasLabel}`;
+        } else {
+            const s = document.getElementById('startPage').value;
+            const e = document.getElementById('endPage').value;
+            document.getElementById('tagPaginasAtual').textContent = `Pgs ${s}-${e}`;
+        }
+
         container.innerHTML = '';
         concepts.forEach((concept, index) => {
             const div = document.createElement('div');
-            div.className = 'card';
-            // Estilo fixo para evitar "mistura"
-            div.style.cssText = "margin-bottom: 10px; border-left: 4px solid #448361; padding: 15px; display: flex; justify-content: space-between; align-items: center; gap: 15px;";
+            div.className = 'sb-concept-item';
+            const safeConcept = concept.replace(/'/g, "\\'");
             
-            const conceitoSafe = concept.replace(/'/g, "\\'");
-            
+            div.onclick = () => window.gerarAulaConceito(safeConcept);
+
             div.innerHTML = `
-                <div style="font-weight:600; color:#37352f; flex: 1; line-height: 1.4;">
-                    ${index + 1}. ${concept}
-                </div>
-                <button class="btn-action btn-primary" style="flex-shrink: 0; white-space: nowrap;" onclick="window.gerarAulaConceito('${conceitoSafe}')">
-                    <i class="fas fa-chalkboard-teacher"></i> Estudar
-                </button>
+                <div style="font-weight:600; color:#448361; margin-right:5px;">${index+1}.</div>
+                <div>${concept}</div>
             `;
             container.appendChild(div);
         });
+        
+        const pdfName = document.getElementById('viewTitle').textContent;
+        window.carregarHistoricoSidebar(pdfName);
     }
 
-    // 6. GATILHO DO BOTÃO "MAPEAR"
+    // 6. GATILHO DO BOTÃO MAPEAR (Conectado à Sidebar)
     document.addEventListener('click', async function(e){
         if(e.target && e.target.closest('#btnMapearCapitulo')){
-            const startInput = document.getElementById('startPage').value;
-            const endInput = document.getElementById('endPage').value;
+            const start = parseInt(document.getElementById('startPage').value);
+            const end = parseInt(document.getElementById('endPage').value);
             const pdfName = document.getElementById('viewTitle').textContent;
             
-            if(!startInput || !endInput) return alert("Defina as páginas.");
-            const start = parseInt(startInput);
-            const end = parseInt(endInput);
-            
-            if(end < start) return alert("Páginas inválidas.");
+            if(!start || !end || end < start) return alert("Páginas inválidas.");
 
-            document.getElementById('modalConcepts').style.display = 'flex';
-            document.getElementById('lblPages').textContent = `${start} a ${end}`;
-            document.getElementById('conceptsList').innerHTML = `<div style="padding:40px; text-align:center; color:#666;">Verificando memória...</div>`;
+            // Feedback direto na Sidebar
+            const sidebarList = document.getElementById('sidebarConceptsList');
+            sidebarList.innerHTML = `<div style="padding:40px; text-align:center; color:#666;"><i class="fas fa-search"></i> Verificando...</div>`;
 
             const memoria = await verificarEstudoExistente(pdfName, start, end);
 
             if (memoria) {
-                showFeedback("Memória recuperada! 🧠", false);
                 currentStudyText = memoria.textoCompleto;
-                renderConceptsList(memoria.conceitos);
+                renderConceptsList(memoria.conceitos, memoria.paginas);
+                showFeedback("Memória recuperada!", false);
             } else {
-                document.getElementById('conceptsList').innerHTML = `<div style="padding:40px; text-align:center; color:#666;">Lendo livro...</div>`;
+                sidebarList.innerHTML = `<div style="padding:40px; text-align:center; color:#666;"><i class="fas fa-spinner fa-spin"></i> Lendo livro...</div>`;
                 const texto = await extractPdfText(start, end);
                 
-                document.getElementById('conceptsList').innerHTML = `<div style="padding:40px; text-align:center; color:#666;">IA Mapeando...</div>`;
+                sidebarList.innerHTML = `<div style="padding:40px; text-align:center; color:#666;"><i class="fas fa-brain fa-pulse"></i> IA pensando...</div>`;
                 const conceitos = await mapearConceitosComIA(texto);
                 
                 await salvarMapeamento(pdfName, start, end, texto, conceitos);
-                renderConceptsList(conceitos);
+                renderConceptsList(conceitos, `${start}-${end}`);
             }
         }
     });
+
+
 
 
 
