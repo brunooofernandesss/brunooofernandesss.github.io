@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projeto de Extensão - Pedagogia</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        /* --- ESTILO ABNT (Simplificado para Web) --- */
+        body {
+            background-color: #f0f0f0;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* Container que simula a folha A4 */
+        .a4-page {
+            background-color: white;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 3cm 2cm 2cm 3cm; /* Margens ABNT: Sup/Esq 3cm, Inf/Dir 2cm */
+            margin: 0 auto 20px auto;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            color: #000;
+            line-height: 1.5; /* Espaçamento entre linhas 1.5 */
+            font-size: 12pt;
+            text-align: justify;
+        }
+
+        /* Títulos */
+        h1, h2, h3 {
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 1.5cm;
+            font-size: 12pt;
+            text-align: left;
+        }
+        
+        .cover h1, .cover h2 {
+            text-align: center;
+        }
+
+        .cover-top {
+            margin-top: 0;
+            margin-bottom: 10cm;
+        }
+
+        .cover-bottom {
+            margin-top: 5cm;
+            text-align: center;
+        }
+
+        /* Parágrafos */
+        p {
+            text-indent: 1.25cm; /* Recuo primeira linha */
+            margin-bottom: 10px;
+        }
+
+        /* Citações Longas (+3 linhas) */
+        blockquote {
+            font-size: 10pt;
+            margin-left: 4cm;
+            line-height: 1;
+            text-align: justify;
+            font-style: normal;
+        }
+
+        /* Elementos da UI (não serão impressos/exportados se configurado corretamente) */
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #0056b3;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        button:hover {
+            background-color: #004494;
+        }
+
+        /* Estilo para imagens e gráficos */
+        .figure-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .figure-caption {
+            font-size: 10pt;
+            margin-top: 5px;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+        }
+        
+        /* Ajuste do Canvas do gráfico para caber na folha */
+        #chartContainer {
+            width: 80%;
+            margin: 0 auto;
+        }
+
+        /* Quebra de página para impressão */
+        .page-break {
+            page-break-before: always;
+            margin-top: 50px; 
+            border-top: 1px dashed #ccc; /* Visual apenas na web */
+            padding-top: 50px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="controls" data-html2canvas-ignore="true">
+        <button onclick="exportPDF()">Baixar PDF</button>
+        <button onclick="exportWord()">Baixar Word (.doc)</button>
+    </div>
+
+    <div id="document-content" class="a4-page">
+        
+        <div class="cover">
+            <div class="cover-top">
+                <h1>NOME DA UNIVERSIDADE / FACULDADE<br>CURSO DE LICENCIATURA EM PEDAGOGIA</h1>
+                <br><br><br>
+                <h2>NOME COMPLETO DO ALUNO</h2>
+            </div>
+
+            <div style="margin-top: 5cm; text-align: center;">
+                <h1>PROJETO DE EXTENSÃO I:<br>A LUDICIDADE NO PROCESSO DE ALFABETIZAÇÃO E LETRAMENTO</h1>
+            </div>
+
+            <div class="cover-bottom" style="margin-top: 8cm;">
+                <p style="text-indent: 0; text-align: center;">CIDADE - UF<br>2026</p>
+            </div>
+        </div>
+
+        <div class="page-break"></div>
+
+        <h2>1 INTRODUÇÃO</h2>
+        <p>O presente Projeto de Extensão tem como escopo a aplicação prática de conceitos teóricos estudados na disciplina de Pedagogia, especificamente no que tange à importância da ludicidade na alfabetização. A escolha deste tema justifica-se pela necessidade de tornar o ambiente escolar mais atrativo e participativo para crianças nas séries iniciais do Ensino Fundamental.</p>
+        <p>Segundo Kishimoto (1996), o jogo não é apenas um passatempo, mas um processo fundamental para a construção do conhecimento e desenvolvimento da personalidade infantil. Neste contexto, este projeto visa intervir em uma escola da comunidade local, propondo oficinas de leitura e jogos pedagógicos.</p>
+
+        <h2>2 OBJETIVOS</h2>
+        <h3>2.1 Objetivo Geral</h3>
+        <p>Promover práticas de alfabetização e letramento através de jogos e brincadeiras, facilitando a apropriação do sistema de escrita alfabética por crianças do 1º ano do Ensino Fundamental.</p>
+        <h3>2.2 Objetivos Específicos</h3>
+        <p>a) Identificar as dificuldades de leitura e escrita dos alunos;</p>
+        <p>b) Desenvolver jogos feitos com materiais recicláveis que estimulem a consciência fonológica;</p>
+        <p>c) Avaliar o engajamento das crianças durante as atividades lúdicas.</p>
+
+        <h2>3 METODOLOGIA</h2>
+        <p>O projeto será desenvolvido em três etapas. A primeira etapa consiste no levantamento bibliográfico e preparação dos materiais. A segunda etapa será a aplicação de oficinas de 4 horas de duração na Escola Municipal [Nome Fictício]. A terceira etapa será a análise dos resultados.</p>
+        <p>As atividades incluirão: bingo de letras, contação de histórias com fantoches e a "pescaria de palavras".</p>
+
+        <div class="page-break"></div>
+
+        <h2>4 DESENVOLVIMENTO E REGISTROS</h2>
+        <p>Durante a execução do projeto, foram realizadas diversas atividades. Abaixo, apresentamos o registro fotográfico de uma das oficinas de contação de histórias.</p>
+
+        <div class="figure-container">
+            <img src="https://placehold.co/600x400/EEE/31343C?text=Foto+da+Oficina+Pedag%C3%B3gica" alt="Crianças participando da oficina">
+            <div class="figure-caption">Figura 1: Alunos participando da atividade de contação de histórias. Fonte: O autor (2026).</div>
+        </div>
+
+        <p>Nota-se, pela observação da Figura 1, o interesse das crianças e a participação ativa, validando a premissa de que o lúdico prende a atenção e facilita a retenção de conteúdo.</p>
+
+        <h2>5 ANÁLISE DE DADOS</h2>
+        <p>Para mensurar o impacto do projeto, foi realizado um levantamento sobre o nível de participação dos alunos antes e durante o uso de jogos pedagógicos. Os dados foram compilados no gráfico a seguir.</p>
+
+        <div class="figure-container">
+            <div id="chartContainer">
+                <canvas id="meuGrafico"></canvas>
+            </div>
+            <div class="figure-caption">Gráfico 1: Comparativo de Engajamento dos Alunos. Fonte: O autor (2026).</div>
+        </div>
+        
+        <p>Os dados demonstram um aumento de 45% na participação ativa dos alunos quando expostos a metodologias lúdicas em comparação com aulas expositivas tradicionais.</p>
+
+        <h2>6 CONCLUSÃO</h2>
+        <p>Conclui-se que o Projeto de Extensão alcançou seus objetivos propostos. A inserção da ludicidade no processo de alfabetização mostrou-se uma ferramenta eficaz não apenas para o aprendizado cognitivo, mas também para a socialização e o desenvolvimento emocional das crianças.</p>
+        <p>A experiência proporcionou ao acadêmico de Pedagogia a vivência da realidade escolar, unindo a teoria estudada em sala de aula com a prática necessária para a formação docente.</p>
+
+        <h2>REFERÊNCIAS</h2>
+        <p style="text-indent: 0; margin-bottom: 20px;">BRASIL. Ministério da Educação. <strong>Base Nacional Comum Curricular</strong>. Brasília: MEC, 2018.</p>
+        <p style="text-indent: 0; margin-bottom: 20px;">FERREIRO, Emilia; TEBEROSKY, Ana. <strong>Psicogênese da língua escrita</strong>. Porto Alegre: Artes Médicas, 1999.</p>
+        <p style="text-indent: 0; margin-bottom: 20px;">KISHIMOTO, Tizuko Morchida (Org.). <strong>Jogo, brinquedo, brincadeira e a educação</strong>. São Paulo: Cortez, 1996.</p>
+    </div>
+
+    <script>
+        // 1. GERAR GRÁFICO (Chart.js)
+        const ctx = document.getElementById('meuGrafico').getContext('2d');
+        const myChart = new Chart(ctx, {
+            type: 'bar', // Tipo de gráfico: Barra
+            data: {
+                labels: ['Aula Expositiva', 'Aula com Jogos', 'Contação de Histórias'],
+                datasets: [{
+                    label: 'Nível de Engajamento (%)',
+                    data: [40, 85, 75], // Dados fictícios
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.2)',
+                        'rgba(54, 162, 235, 0.2)',
+                        'rgba(255, 206, 86, 0.2)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                },
+                animation: false // Desativar animação para garantir exportação correta
+            }
+        });
+
+        // 2. EXPORTAR PARA PDF
+        function exportPDF() {
+            const element = document.getElementById('document-content');
+            const opt = {
+                margin:       [0, 0, 0, 0], // Margem zero pois o CSS .a4-page já tem padding
+                filename:     'Projeto_Extensao_Pedagogia.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+
+        // 3. EXPORTAR PARA WORD
+        function exportWord() {
+            // Para o Word, precisamos converter o Canvas (gráfico) em Imagem estática
+            const canvas = document.getElementById('meuGrafico');
+            const chartImgUrl = canvas.toDataURL("image/png");
+            
+            // Criar uma imagem temporária para substituir o canvas no HTML exportado
+            const imgHtml = `<img src="${chartImgUrl}" style="width:100%; max-width:500px;">`;
+            
+            // Pegar o HTML
+            let htmlContent = document.getElementById('document-content').innerHTML;
+            
+            // Hack simples: substituir o canvas pelo HTML da imagem na string
+            // Nota: Isso depende da estrutura exata do ID container.
+            // Para garantir, vamos fazer uma cópia do conteúdo para manipular
+            let clone = document.getElementById('document-content').cloneNode(true);
+            let canvasInClone = clone.querySelector('canvas');
+            let parentDiv = canvasInClone.parentElement;
+            
+            // Substitui o canvas por imagem no clone
+            let imgEl = document.createElement('img');
+            imgEl.src = chartImgUrl;
+            imgEl.style.width = '100%';
+            parentDiv.innerHTML = '';
+            parentDiv.appendChild(imgEl);
+
+            // Cabeçalho para forçar o Word a reconhecer a codificação e layout
+            const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' "+
+                "xmlns:w='urn:schemas-microsoft-com:office:word' "+
+                "xmlns='http://www.w3.org/TR/REC-html40'>"+
+                "<head><meta charset='utf-8'><title>Export HTML to Word Document with JavaScript</title></head><body>";
+            
+            const footer = "</body></html>";
+            const sourceHTML = header + clone.innerHTML + footer;
+            
+            const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
+            
+            const fileDownload = document.createElement("a");
+            document.body.appendChild(fileDownload);
+            fileDownload.href = source;
+            fileDownload.download = 'Projeto_Extensao_Pedagogia.doc';
+            fileDownload.click();
+            document.body.removeChild(fileDownload);
+        }
+    </script>
+</body>
+</html>
