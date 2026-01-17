@@ -2553,15 +2553,20 @@
             const optsContainer = document.getElementById('anatOptions');
             optsContainer.innerHTML = '';
 
-            data.options.forEach(opt => {
+            // --- ALTERAÇÃO AQUI: Passando o Index (número) ---
+            data.options.forEach((opt, index) => {
                 const div = document.createElement('div');
                 div.className = 'quiz-opt';
                 div.innerText = opt;
-                div.onclick = () => window.checkAnatomiaAnswer(div, opt, data.correct_answer, data.explanation);
+                
+                // Passamos o 'index' (0,1,2...) do clique e o 'correctIndex' que veio da IA
+                div.onclick = () => window.checkAnatomiaAnswer(div, index, data.correctIndex, data.explanation);
+                
                 optsContainer.appendChild(div);
             });
 
             quizContainer.classList.remove('hidden');
+
 
         } catch (error) {
             console.error(error);
@@ -2582,21 +2587,15 @@
             .trim();
     };
 
-    window.checkAnatomiaAnswer = (el, choice, correct, explanation) => {
+    window.checkAnatomiaAnswer = (el, selectedIndex, correctIndex, explanation) => {
         if(el.parentElement.classList.contains('answered')) return;
         el.parentElement.classList.add('answered');
 
         const feedback = document.getElementById('anatFeedback');
         feedback.classList.remove('hidden');
 
-        // Limpa os dois lados para garantir uma comparação justa
-        const textoUsuario = limparTexto(choice);
-        const textoCorreto = limparTexto(correct);
-        
-        // Verifica se são iguais OU se um está dentro do outro (Flexibilidade total)
-        const isCorrect = textoUsuario === textoCorreto || 
-                          textoUsuario.includes(textoCorreto) || 
-                          textoCorreto.includes(textoUsuario);
+        // Comparação Numérica (Agora é infalível: 1 é igual a 1)
+        const isCorrect = Number(selectedIndex) === Number(correctIndex);
 
         if (isCorrect) {
             el.classList.add('correct');
@@ -2607,22 +2606,19 @@
         } else {
             el.classList.add('wrong');
             
-            // Tenta encontrar o botão certo visualmente para marcar de verde
-            const irmaos = el.parentElement.children;
-            for (let i = 0; i < irmaos.length; i++) {
-                const textoOpcao = limparTexto(irmaos[i].innerText);
-                // Se a opção for parecida com a correta, marca de verde
-                if (textoOpcao === textoCorreto || textoCorreto.includes(textoOpcao)) {
-                    irmaos[i].classList.add('correct');
-                }
+            // Ilumina a opção correta visualmente usando o índice
+            const parent = el.parentElement;
+            if(parent.children[correctIndex]) {
+                parent.children[correctIndex].classList.add('correct');
             }
-
-            feedback.innerHTML = `<strong><i class="fas fa-times-circle"></i> Incorreto.</strong><br>A resposta correta é: <b>${correct}</b>.<br><br>${explanation}`;
+            
+            feedback.innerHTML = `<strong><i class="fas fa-times-circle"></i> Incorreto.</strong><br>Veja a explicação acima.<br><br>${explanation}`;
             feedback.style.background = "#ffe2dd";
             feedback.style.color = "#7a2522";
             feedback.style.borderColor = "#d44c47";
         }
     };
+
 
 
     window.verImagemOriginal = () => {
