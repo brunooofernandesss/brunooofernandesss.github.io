@@ -1,7 +1,7 @@
 // Mapeamento das pastas com seus títulos em português
             // e o número máximo de imagens (ajuste conforme necessário)
             // IMPORTANTE: Ajuste o max_images para o *total* de imagens, incluindo a "EmbeddedImage.jpg"
-            const folders = {
+            export const bancoAnatomia = {
                 'Abdominal_Wall_Peritoneum_and_Intestines': {
                     title_pt: 'Parede Abdominal, Peritônio e Intestinos',
                     max_images: 43, // Ajustado para 42 imagens neste bloco (1 original + 41 numeradas)
