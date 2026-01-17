@@ -2496,7 +2496,7 @@
         document.getElementById('navAnatomia').classList.add('active');
     };
 
-    // 2. Lógica do Jogo
+    // 2. Lógica do Jogo (Versão Blindada v3)
     window.gerarNovoDesafioAnatomia = async () => {
         const imgEl = document.getElementById('imgAnatomia');
         const loader = document.getElementById('loadingAnatomia');
@@ -2510,19 +2510,17 @@
         loader.style.display = 'block';
         document.getElementById('anatFeedback').classList.add('hidden');
 
-        // 2.1 Escolher Imagem Aleatória do Banco Local
+        // 2.1 Escolher Imagem
         const pastas = Object.keys(bancoAnatomia);
         const pastaAleatoria = pastas[Math.floor(Math.random() * pastas.length)];
         const dadosPasta = bancoAnatomia[pastaAleatoria];
-        
         const imagensNomes = Object.keys(dadosPasta.descriptions);
         const imagemNome = imagensNomes[Math.floor(Math.random() * imagensNomes.length)];
         const descricaoTecnica = dadosPasta.descriptions[imagemNome];
 
-        // Monta URL (Baseado no seu repo do GitHub)
+        // Monta URL
         const imgUrl = `https://brunooofernandesss.github.io/Anatomia/Michigan/${pastaAleatoria}/${imagemNome}`;
         
-        // Carrega a imagem na tela
         imgEl.src = imgUrl;
         imgEl.onload = () => {
             loader.style.display = 'none';
@@ -2531,7 +2529,6 @@
         
         document.getElementById('anatRegion').textContent = dadosPasta.title_pt;
 
-        // 2.2 Chamar o Worker para criar o caso clínico
         try {
             const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
                 method: "POST",
@@ -2544,7 +2541,21 @@
 
             if (!response.ok) throw new Error("Erro no Preceptor IA");
 
-            const data = await response.json(); // O Worker já devolve JSON limpo agora
+            const data = await response.json();
+            console.log("🔍 Dados recebidos do Worker:", data); // Log para debug
+
+            // BLINDAGEM: Tenta encontrar o índice correto em várias chaves possíveis
+            let indiceCorreto = data.correctIndex;
+            if (indiceCorreto === undefined) indiceCorreto = data.correct_index;
+            if (indiceCorreto === undefined) indiceCorreto = data.correctAnswerIndex;
+            
+            // Se ainda assim falhar (a IA mandou texto), tenta descobrir pelo texto
+            if (indiceCorreto === undefined && data.correct_answer) {
+                indiceCorreto = data.options.findIndex(opt => opt.includes(data.correct_answer) || data.correct_answer.includes(opt));
+            }
+
+            // Garante que é número
+            indiceCorreto = Number(indiceCorreto);
 
             // 2.3 Renderizar Questão
             document.getElementById('anatCase').textContent = `"${data.clinical_case}"`;
@@ -2553,11 +2564,12 @@
             const optsContainer = document.getElementById('anatOptions');
             optsContainer.innerHTML = '';
 
-            data.options.forEach(opt => {
+            data.options.forEach((opt, index) => {
                 const div = document.createElement('div');
                 div.className = 'quiz-opt';
                 div.innerText = opt;
-                div.onclick = () => window.checkAnatomiaAnswer(div, opt, data.correct_answer, data.explanation);
+                // Passa o índice calculado e blindado
+                div.onclick = () => window.checkAnatomiaAnswer(div, index, indiceCorreto, data.explanation);
                 optsContainer.appendChild(div);
             });
 
@@ -2565,25 +2577,35 @@
 
         } catch (error) {
             console.error(error);
-            alert("O preceptor está ocupado (Erro na API). Tente novamente.");
+            alert("O preceptor está ocupado. Tente novamente.");
             loader.style.display = 'none';
             startMsg.style.display = 'block';
         }
     };
 
-    window.checkAnatomiaAnswer = (el, choice, correct, explanation) => {
+
+    // Função auxiliar para limpar o texto (remove acentos, pontos e deixa minúsculo)
+    const limparTexto = (texto) => {
+        if (!texto) return "";
+        return texto
+            .toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove acentos
+            .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "")      // Remove pontuação
+            .replace(/\s{2,}/g, " ")                           // Remove espaços duplos
+            .trim();
+    };
+
+    window.checkAnatomiaAnswer = (el, selectedIndex, correctIndex, explanation) => {
         if(el.parentElement.classList.contains('answered')) return;
         el.parentElement.classList.add('answered');
 
         const feedback = document.getElementById('anatFeedback');
         feedback.classList.remove('hidden');
 
-        // Limpeza simples para comparar strings (ignora espaços extras ou case)
-        const cleanChoice = choice.trim().toLowerCase();
-        const cleanCorrect = correct.trim().toLowerCase();
-        
-        // Verificação flexível (se a resposta correta estiver contida na opção ou vice-versa)
-        const isCorrect = cleanChoice === cleanCorrect || cleanChoice.includes(cleanCorrect);
+        console.log(`Clicou: ${selectedIndex}, Correto: ${correctIndex}`); // Debug
+
+        // Comparação Numérica Simples
+        const isCorrect = Number(selectedIndex) === Number(correctIndex);
 
         if (isCorrect) {
             el.classList.add('correct');
@@ -2593,19 +2615,21 @@
             feedback.style.borderColor = "#448361";
         } else {
             el.classList.add('wrong');
-            feedback.innerHTML = `<strong><i class="fas fa-times-circle"></i> Incorreto.</strong><br>A resposta correta é: <b>${correct}</b>.<br><br>${explanation}`;
+            
+            // Ilumina a correta se o índice for válido
+            const parent = el.parentElement;
+            if (parent.children[correctIndex]) {
+                parent.children[correctIndex].classList.add('correct');
+            }
+            
+            feedback.innerHTML = `<strong><i class="fas fa-times-circle"></i> Incorreto.</strong><br>Veja a explicação acima.<br><br>${explanation}`;
             feedback.style.background = "#ffe2dd";
             feedback.style.color = "#7a2522";
             feedback.style.borderColor = "#d44c47";
-            
-            // Tenta iluminar a correta visualmente
-            Array.from(el.parentElement.children).forEach(child => {
-                if(child.innerText.toLowerCase().includes(cleanCorrect)) {
-                    child.classList.add('correct');
-                }
-            });
         }
     };
+
+
 
     window.verImagemOriginal = () => {
         const src = document.getElementById('imgAnatomia').src;
