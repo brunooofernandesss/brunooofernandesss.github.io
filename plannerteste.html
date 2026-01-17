@@ -519,6 +519,8 @@
             <div class="nav-item" id="navLib"><i class="fas fa-folder-open"></i> Biblioteca de Aulas</div>
             <div class="nav-item" id="navAgenda"><i class="far fa-clock"></i> Agenda Diária</div>
             <div class="nav-item" id="navQuizzes"><i class="fas fa-brain"></i> Meus Simulados</div>
+            <div class="nav-item" id="navAnatomia" style="color: #2383e2; font-weight: 500;"><i class="fas fa-bone"></i> Desafio Anatomia</div>
+
         </nav>
 
         <div class="sidebar-goals">
@@ -632,6 +634,59 @@
                     </table>
                 </div>
             </section>
+            
+            <section id="secAnatomia" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+    <div class="header-actions">
+        <h1 class="page-title">Laboratório de Anatomia Clínica</h1>
+        <button class="btn-action btn-primary" onclick="window.gerarNovoDesafioAnatomia()">
+            <i class="fas fa-sync-alt"></i> Próximo Caso
+        </button>
+    </div>
+
+    <div style="max-width: 900px; margin: 0 auto; width: 100%;">
+        <div style="background: white; border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+            <div style="position: relative; background: #000; min-height: 300px; display: flex; align-items: center; justify-content: center;">
+                <img id="imgAnatomia" src="" style="max-width: 100%; max-height: 500px; object-fit: contain; display: none;">
+                
+                <div id="loadingAnatomia" style="color: white; text-align: center; display: none;">
+                    <i class="fas fa-dna fa-spin" style="font-size: 40px; margin-bottom: 15px; color: #2383e2;"></i>
+                    <p>O Preceptor está analisando a lâmina...</p>
+                </div>
+
+                <div id="startAnatomia" style="color: #888; text-align: center;">
+                    <i class="fas fa-microscope" style="font-size: 40px; margin-bottom: 15px;"></i>
+                    <p>Clique em "Próximo Caso" para começar.</p>
+                </div>
+            </div>
+            
+            <div style="padding: 20px; border-top: 1px solid #eee;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span id="anatRegion" class="tag-pill" style="background: #f0f0f0; color: #555;">Região</span>
+                    <button class="btn-action" onclick="window.verImagemOriginal()" title="Expandir">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="quizAnatomiaContainer" class="hidden">
+            <div class="quiz-card" style="border-left: 5px solid #2383e2;">
+                <h3 style="color: #2383e2; margin-bottom: 10px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Caso Clínico</h3>
+                <p id="anatCase" style="font-size: 16px; line-height: 1.6; margin-bottom: 20px; color: #333; font-style: italic;"></p>
+                
+                <h3 style="margin-bottom: 15px; font-weight: 700; color: #111;">
+                    <i class="fas fa-question-circle" style="color: #2383e2;"></i> 
+                    <span id="anatQuestion"></span>
+                </h3>
+
+                <div id="anatOptions" class="quiz-options"></div>
+                
+                <div id="anatFeedback" class="quiz-feedback hidden"></div>
+            </div>
+        </div>
+    </div>
+</section>
+
 
 
             
@@ -643,6 +698,8 @@
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc, getDoc, deleteDoc, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+    import { bancoAnatomia } from './banco_anatomia.js'; // <--- BANCO DE ANATOMIA
+
 
     const firebaseConfig = {
         apiKey: "AIzaSyDj-c4uArNjAr7cSg396yfQR6xuyumh5_M",
@@ -958,29 +1015,47 @@
         }
     }
 
-    // --- NAVEGAÇÃO ---
+    // --- NAVEGAÇÃO BLINDADA (SUBSTITUA A FUNÇÃO ORIGINAL) ---
     function setupWeekNavigator() {
         const select = document.getElementById('weekSelect');
         select.innerHTML = '';
 
         let minDate = new Date().getTime(); 
         let maxDate = new Date().getTime();
+        let hasTasks = false;
 
+        // 1. Encontrar a data da primeira e última tarefa (com proteção)
         if (allTasksCache.length > 0) {
             allTasksCache.forEach(t => {
-                if (t.targetDate < minDate) minDate = t.targetDate;
-                if (t.targetDate > maxDate) maxDate = t.targetDate;
+                // Proteção: Ignora datas inválidas, nulas ou muito antigas (antes de 2023)
+                // Isso impede que um erro de banco de dados trave o navegador
+                if (t.targetDate && t.targetDate > 1672531200000) { 
+                    if (t.targetDate < minDate) minDate = t.targetDate;
+                    if (t.targetDate > maxDate) maxDate = t.targetDate;
+                    hasTasks = true;
+                }
             });
         }
 
+        // Se não tiver tarefas válidas, define o "hoje" como base
+        if (!hasTasks) {
+            minDate = new Date().getTime();
+            maxDate = new Date().getTime();
+        }
+
+        // 2. Definir limites do calendário
         const historyStart = getStartOfWeek(new Date(minDate)); 
         const futureEnd = new Date(maxDate);
-        futureEnd.setDate(futureEnd.getDate() + 7); 
+        futureEnd.setDate(futureEnd.getDate() + 21); // Adiciona 3 semanas de margem no futuro
 
         let loopDate = new Date(historyStart);
         const todayStart = getStartOfWeek(new Date()).getTime();
         
-        while (loopDate <= futureEnd) {
+        // 3. Loop Seguro (Com trava de segurança)
+        let safeCounter = 0;
+        const LIMIT_WEEKS = 200; // Máximo de 200 semanas (~4 anos) para evitar travamento
+        
+        while (loopDate <= futureEnd && safeCounter < LIMIT_WEEKS) {
             const endOfWeek = new Date(loopDate);
             endOfWeek.setDate(loopDate.getDate() + 6);
             
@@ -991,15 +1066,33 @@
             option.value = value;
             option.text = label;
             
+            // Seleciona a semana atual automaticamente
             if (value === todayStart) {
                 option.selected = true;
                 currentBoardStart = new Date(loopDate);
             }
             select.appendChild(option);
+            
+            // Avança 7 dias
             loopDate.setDate(loopDate.getDate() + 7);
+            safeCounter++;
         }
+
+        // Fallback: Se por algum motivo 'currentBoardStart' não foi definido (ex: data do pc errada)
+        if (!currentBoardStart) {
+            currentBoardStart = new Date(todayStart);
+            // Se a semana atual não foi gerada no loop, força a criação dela
+            if (select.options.length === 0 || select.value !== todayStart.toString()) {
+                 // Força o início do board para a primeira opção disponível se hoje não existir
+                 if(select.options.length > 0) {
+                     currentBoardStart = new Date(parseInt(select.options[0].value));
+                 }
+            }
+        }
+
         updateWeekLabel();
     }
+
 
         window.changeWeek = (timestamp) => {
         currentBoardStart = new Date(parseInt(timestamp));
@@ -2385,6 +2478,159 @@
         document.getElementById('navQuizzes').classList.add('active');
         
         carregarAbaQuizzes();
+    };
+
+    
+        // ============================================================
+    // 💀 MÓDULO ANATOMIA (INTEGRAÇÃO COM BANCO DE IMAGENS)
+    // ============================================================
+
+    // 1. Navegação
+    document.getElementById('navAnatomia').onclick = () => {
+        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes'].forEach(id => 
+            document.getElementById(id).classList.add('hidden')
+        );
+        document.getElementById('secAnatomia').classList.remove('hidden');
+        
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('navAnatomia').classList.add('active');
+    };
+
+    // 2. Lógica do Jogo
+    window.gerarNovoDesafioAnatomia = async () => {
+        const imgEl = document.getElementById('imgAnatomia');
+        const loader = document.getElementById('loadingAnatomia');
+        const startMsg = document.getElementById('startAnatomia');
+        const quizContainer = document.getElementById('quizAnatomiaContainer');
+        
+        // Reset UI
+        imgEl.style.display = 'none';
+        startMsg.style.display = 'none';
+        quizContainer.classList.add('hidden');
+        loader.style.display = 'block';
+        document.getElementById('anatFeedback').classList.add('hidden');
+
+        // 2.1 Escolher Imagem Aleatória do Banco Local
+        const pastas = Object.keys(bancoAnatomia);
+        const pastaAleatoria = pastas[Math.floor(Math.random() * pastas.length)];
+        const dadosPasta = bancoAnatomia[pastaAleatoria];
+        
+        const imagensNomes = Object.keys(dadosPasta.descriptions);
+        const imagemNome = imagensNomes[Math.floor(Math.random() * imagensNomes.length)];
+        const descricaoTecnica = dadosPasta.descriptions[imagemNome];
+
+        // Monta URL (Baseado no seu repo do GitHub)
+        const imgUrl = `https://brunooofernandesss.github.io/Anatomia/Michigan/${pastaAleatoria}/${imagemNome}`;
+        
+        // Carrega a imagem na tela
+        imgEl.src = imgUrl;
+        imgEl.onload = () => {
+            loader.style.display = 'none';
+            imgEl.style.display = 'block';
+        };
+        
+        document.getElementById('anatRegion').textContent = dadosPasta.title_pt;
+
+        // 2.2 Chamar o Worker para criar o caso clínico
+        try {
+            const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    action: "gerar_quiz_anatomia", 
+                    description: descricaoTecnica
+                })
+            });
+
+            if (!response.ok) throw new Error("Erro no Preceptor IA");
+
+            const data = await response.json(); // O Worker já devolve JSON limpo agora
+
+            // 2.3 Renderizar Questão
+            document.getElementById('anatCase').textContent = `"${data.clinical_case}"`;
+            document.getElementById('anatQuestion').textContent = data.question;
+            
+            const optsContainer = document.getElementById('anatOptions');
+            optsContainer.innerHTML = '';
+
+            data.options.forEach(opt => {
+                const div = document.createElement('div');
+                div.className = 'quiz-opt';
+                div.innerText = opt;
+                div.onclick = () => window.checkAnatomiaAnswer(div, opt, data.correct_answer, data.explanation);
+                optsContainer.appendChild(div);
+            });
+
+            quizContainer.classList.remove('hidden');
+
+        } catch (error) {
+            console.error(error);
+            alert("O preceptor está ocupado (Erro na API). Tente novamente.");
+            loader.style.display = 'none';
+            startMsg.style.display = 'block';
+        }
+    };
+
+    // Função auxiliar para limpar o texto (remove acentos, pontos e deixa minúsculo)
+    const limparTexto = (texto) => {
+        if (!texto) return "";
+        return texto
+            .toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove acentos
+            .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "")      // Remove pontuação
+            .replace(/\s{2,}/g, " ")                           // Remove espaços duplos
+            .trim();
+    };
+
+    window.checkAnatomiaAnswer = (el, choice, correct, explanation) => {
+        if(el.parentElement.classList.contains('answered')) return;
+        el.parentElement.classList.add('answered');
+
+        const feedback = document.getElementById('anatFeedback');
+        feedback.classList.remove('hidden');
+
+        // Limpa os dois lados para garantir uma comparação justa
+        const textoUsuario = limparTexto(choice);
+        const textoCorreto = limparTexto(correct);
+        
+        // Verifica se são iguais OU se um está dentro do outro (Flexibilidade total)
+        const isCorrect = textoUsuario === textoCorreto || 
+                          textoUsuario.includes(textoCorreto) || 
+                          textoCorreto.includes(textoUsuario);
+
+        if (isCorrect) {
+            el.classList.add('correct');
+            feedback.innerHTML = `<strong><i class="fas fa-check-circle"></i> Correto!</strong><br>${explanation}`;
+            feedback.style.background = "#dbeddb";
+            feedback.style.color = "#1f4a33";
+            feedback.style.borderColor = "#448361";
+        } else {
+            el.classList.add('wrong');
+            
+            // Tenta encontrar o botão certo visualmente para marcar de verde
+            const irmaos = el.parentElement.children;
+            for (let i = 0; i < irmaos.length; i++) {
+                const textoOpcao = limparTexto(irmaos[i].innerText);
+                // Se a opção for parecida com a correta, marca de verde
+                if (textoOpcao === textoCorreto || textoCorreto.includes(textoOpcao)) {
+                    irmaos[i].classList.add('correct');
+                }
+            }
+
+            feedback.innerHTML = `<strong><i class="fas fa-times-circle"></i> Incorreto.</strong><br>A resposta correta é: <b>${correct}</b>.<br><br>${explanation}`;
+            feedback.style.background = "#ffe2dd";
+            feedback.style.color = "#7a2522";
+            feedback.style.borderColor = "#d44c47";
+        }
+    };
+
+
+    window.verImagemOriginal = () => {
+        const src = document.getElementById('imgAnatomia').src;
+        if(src) {
+            document.getElementById('imageModalImg').src = src;
+            document.getElementById('imageModal').style.display = 'flex';
+        }
     };
 
     
