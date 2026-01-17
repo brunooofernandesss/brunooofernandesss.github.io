@@ -2502,7 +2502,11 @@
         const loader = document.getElementById('loadingAnatomia');
         const startMsg = document.getElementById('startAnatomia');
         const quizContainer = document.getElementById('quizAnatomiaContainer');
+        const optsContainer = document.getElementById('anatOptions');
         
+        // CORREÇÃO: Limpa estado anterior para evitar travamento
+        optsContainer.classList.remove('answered');
+
         // Reset UI
         imgEl.style.display = 'none';
         startMsg.style.display = 'none';
@@ -2542,26 +2546,30 @@
             if (!response.ok) throw new Error("Erro no Preceptor IA");
 
             const data = await response.json();
-            console.log("🔍 Dados recebidos do Worker:", data); // Log para debug
+            console.log("🔍 Dados do Quiz:", data);
 
             // BLINDAGEM: Tenta encontrar o índice correto em várias chaves possíveis
             let indiceCorreto = data.correctIndex;
+            // Fallback para outras nomenclaturas comuns de IA
             if (indiceCorreto === undefined) indiceCorreto = data.correct_index;
             if (indiceCorreto === undefined) indiceCorreto = data.correctAnswerIndex;
             
-            // Se ainda assim falhar (a IA mandou texto), tenta descobrir pelo texto
-            if (indiceCorreto === undefined && data.correct_answer) {
-                indiceCorreto = data.options.findIndex(opt => opt.includes(data.correct_answer) || data.correct_answer.includes(opt));
-            }
+            // Se vier como string "2", converte para número 2
+            if (indiceCorreto !== undefined) indiceCorreto = Number(indiceCorreto);
 
-            // Garante que é número
-            indiceCorreto = Number(indiceCorreto);
+            // Se ainda assim falhar (a IA mandou texto), tenta descobrir pelo texto da resposta
+            if (isNaN(indiceCorreto) && data.correct_answer) {
+                // Tenta achar qual opção contém o texto da resposta correta
+                indiceCorreto = data.options.findIndex(opt => 
+                    opt.toLowerCase().includes(data.correct_answer.toLowerCase()) || 
+                    data.correct_answer.toLowerCase().includes(opt.toLowerCase())
+                );
+            }
 
             // 2.3 Renderizar Questão
             document.getElementById('anatCase').textContent = `"${data.clinical_case}"`;
             document.getElementById('anatQuestion').textContent = data.question;
             
-            const optsContainer = document.getElementById('anatOptions');
             optsContainer.innerHTML = '';
 
             data.options.forEach((opt, index) => {
@@ -2583,18 +2591,6 @@
         }
     };
 
-
-    // Função auxiliar para limpar o texto (remove acentos, pontos e deixa minúsculo)
-    const limparTexto = (texto) => {
-        if (!texto) return "";
-        return texto
-            .toLowerCase()
-            .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove acentos
-            .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "")      // Remove pontuação
-            .replace(/\s{2,}/g, " ")                           // Remove espaços duplos
-            .trim();
-    };
-
     window.checkAnatomiaAnswer = (el, selectedIndex, correctIndex, explanation) => {
         if(el.parentElement.classList.contains('answered')) return;
         el.parentElement.classList.add('answered');
@@ -2602,10 +2598,8 @@
         const feedback = document.getElementById('anatFeedback');
         feedback.classList.remove('hidden');
 
-        console.log(`Clicou: ${selectedIndex}, Correto: ${correctIndex}`); // Debug
-
-        // Comparação Numérica Simples
-        const isCorrect = Number(selectedIndex) === Number(correctIndex);
+        // Comparação Numérica (Infalível se o índice estiver certo)
+        let isCorrect = Number(selectedIndex) === Number(correctIndex);
 
         if (isCorrect) {
             el.classList.add('correct');
@@ -2616,7 +2610,7 @@
         } else {
             el.classList.add('wrong');
             
-            // Ilumina a correta se o índice for válido
+            // Ilumina a opção correta visualmente se o índice for válido
             const parent = el.parentElement;
             if (parent.children[correctIndex]) {
                 parent.children[correctIndex].classList.add('correct');
@@ -2628,6 +2622,7 @@
             feedback.style.borderColor = "#d44c47";
         }
     };
+
 
 
 
