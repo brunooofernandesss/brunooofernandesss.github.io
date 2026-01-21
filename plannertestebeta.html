@@ -505,6 +505,28 @@
             </div>
         </div>
     </div>
+    
+        <div class="modal" id="modalAgendaIA">
+        <div class="modal-content" style="height: auto; max-width: 600px;">
+            <div class="editor-header">
+                <h3 style="margin:0"><i class="fas fa-robot" style="color:#9065b0;"></i> Organizador Inteligente</h3>
+                <button class="btn-action" onclick="document.getElementById('modalAgendaIA').style.display='none'"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="editor-body" style="padding: 20px;">
+                <p style="font-size:13px; color:#666; margin-bottom:10px;">
+                    Descreva sua semana. Ex: <em>"Tenho aula todo dia de manhã. Academia as 18h. Quero estudar Cardiologia nos horários livres."</em>
+                </p>
+                <textarea id="promptAgenda" style="width:100%; height:150px; padding:10px; border:1px solid #ddd; border-radius:6px; font-family:inherit;" placeholder="Digite sua rotina aqui..."></textarea>
+            </div>
+            <div class="editor-footer">
+                <button class="btn-action" onclick="document.getElementById('modalAgendaIA').style.display='none'">Cancelar</button>
+                <button class="btn-action" style="background:#9065b0; color:white; border:none;" onclick="window.processarAgendaIA()">
+                    <i class="fas fa-calendar-plus"></i> Gerar Horários
+                </button>
+            </div>
+        </div>
+    </div>
+
 
 
     <div id="statusFeedback">Processando...</div>
@@ -520,6 +542,7 @@
             <div class="nav-item" id="navAgenda"><i class="far fa-clock"></i> Agenda Diária</div>
             <div class="nav-item" id="navQuizzes"><i class="fas fa-brain"></i> Meus Simulados</div>
             <div class="nav-item" id="navAnatomia" style="color: #2383e2; font-weight: 500;"><i class="fas fa-bone"></i> Desafio Anatomia</div>
+            <div class="nav-item" id="navSyllabus"><i class="fas fa-th-list"></i> Matriz Curricular</div>
 
         </nav>
 
@@ -583,6 +606,10 @@
             <section id="secBoard" style="height: 100%; display: flex; flex-direction: column;">
                 <div class="header-actions">
                     <h1 class="page-title">Cronograma de Revisões</h1>
+                    <button class="btn-action" onclick="window.redistribuirAtrasos()" style="background: #fff5f5; color: #d44c47; border: 1px solid #ffe2dd;">
+                        <i class="fas fa-history"></i> Redistribuir Atrasos
+                    </button>
+                    
                 </div>
                 
                 <div class="week-board" id="weeklyBoard">
@@ -610,7 +637,12 @@
                         <section id="secAgenda" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-x: auto; overflow-y: hidden;">
                 <div class="header-actions">
                     <h1 class="page-title">Agenda Horária</h1>
-                    <button class="btn-action btn-primary" id="btnNovaAgenda"><i class="fas fa-plus"></i> Novo Horário</button>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn-action" style="background: #9065b0; color: white; border:none;" onclick="window.abrirModalAgendaIA()">
+                            <i class="fas fa-magic"></i> Gerar Rotina IA
+                        </button>
+                        <button class="btn-action btn-primary" id="btnNovaAgenda"><i class="fas fa-plus"></i> Novo Horário</button>
+                    </div>
                 </div>
                 <div class="week-board" id="agendaBoard">
                     </div>
@@ -634,6 +666,18 @@
                     </table>
                 </div>
             </section>
+            
+                        <section id="secSyllabus" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+                <div class="header-actions">
+                    <h1 class="page-title">Progresso por Matéria</h1>
+                    <div style="font-size: 13px; color: #666;">
+                        <i class="fas fa-info-circle"></i> Acompanhe o status das suas revisões (D1, D7, D21) agrupadas por disciplina.
+                    </div>
+                </div>
+                <div id="syllabusContainer" style="max-width: 1200px; padding-bottom: 50px;">
+                    </div>
+            </section>
+
             
             <section id="secAnatomia" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
     <div class="header-actions">
@@ -2631,6 +2675,296 @@
         if(src) {
             document.getElementById('imageModalImg').src = src;
             document.getElementById('imageModal').style.display = 'flex';
+        }
+    };
+    
+        // ============================================================
+    // 📅 GERAÇÃO DE AGENDA COM IA
+    // ============================================================
+
+    window.abrirModalAgendaIA = () => {
+        document.getElementById('promptAgenda').value = '';
+        document.getElementById('modalAgendaIA').style.display = 'flex';
+    };
+
+    window.processarAgendaIA = async () => {
+        const texto = document.getElementById('promptAgenda').value;
+        if (!texto.trim()) return alert("Digite sua rotina primeiro.");
+
+        document.getElementById('modalAgendaIA').style.display = 'none';
+        showFeedback("🤖 Criando sua agenda...", true);
+
+        try {
+            // Pega a data de hoje para a IA se localizar na semana
+            const hojeISO = new Date().toISOString().split('T')[0];
+
+            const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    action: "gerar_agenda_ia", 
+                    textoUsuario: texto,
+                    dataReferencia: hojeISO
+                })
+            });
+
+            if (!response.ok) throw new Error("Erro na IA");
+
+            const novosHorarios = await response.json();
+            
+            if (!novosHorarios || novosHorarios.length === 0) {
+                showFeedback("Nenhum horário gerado.", false);
+                return;
+            }
+
+            // Salva cada horário gerado no banco de dados
+            const promises = novosHorarios.map(item => {
+                return addDoc(collection(db, "planners", currentUID, "agenda"), {
+                    titulo: item.titulo,
+                    data: item.data,
+                    inicio: item.inicio,
+                    fim: item.fim,
+                    concluido: false,
+                    tipo: item.tipo || 'estudo',
+                    createdAt: serverTimestamp()
+                });
+            });
+
+            await Promise.all(promises);
+
+            showFeedback(`✅ ${novosHorarios.length} horários criados!`, false);
+            
+            // Atualiza a tela (Recarrega a função loadAgenda que já existe no seu código)
+            // Precisamos garantir que loadAgenda esteja acessível ou recarregar a semana
+            if (typeof loadAgenda === 'function') {
+                loadAgenda();
+            } else {
+                // Fallback: recarrega a semana atual
+                window.changeWeek(currentBoardStart.getTime());
+            }
+
+        } catch (e) {
+            console.error(e);
+            showFeedback("Erro ao gerar agenda.", false);
+            alert("Erro ao conectar com a IA.");
+        }
+    };
+    
+        // ============================================================
+    // 🎓 MÓDULO MATRIZ CURRICULAR (SYLLABUS) - LÓGICA
+    // ============================================================
+
+    // 1. Navegação
+    document.getElementById('navSyllabus').onclick = () => {
+        // Esconde todas as outras seções
+        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia'].forEach(id => 
+            document.getElementById(id).classList.add('hidden')
+        );
+        document.getElementById('secSyllabus').classList.remove('hidden');
+        
+        // Atualiza menu
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('navSyllabus').classList.add('active');
+        
+        renderSyllabus();
+    };
+
+    // 2. Renderizar a Tabela Inteligente
+    function renderSyllabus() {
+        const container = document.getElementById('syllabusContainer');
+        container.innerHTML = '<div style="padding:20px; color:#666;"><i class="fas fa-spinner fa-spin"></i> Analisando seu progresso...</div>';
+
+        // 1. Agrupar tarefas por MATÉRIA (Tag)
+        const tasksPorMateria = {};
+        
+        // Filtra apenas os estudos originais ([REC]) para saber quais assuntos existem
+        const assuntosOriginais = allTasksCache.filter(t => t.titulo.includes('[REC]'));
+
+        if (assuntosOriginais.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center; padding: 40px; color: #888;">
+                    <i class="far fa-folder-open" style="font-size: 40px; margin-bottom:10px;"></i>
+                    <p>Nenhuma matéria cadastrada ainda.<br>Crie um "Novo Estudo" para começar.</p>
+                </div>`;
+            return;
+        }
+
+        // Organiza o dicionário: { "CARDIOLOGIA": [tarefa1, tarefa2], ... }
+        assuntosOriginais.forEach(t => {
+            const materia = t.tag || "Geral"; 
+            if (!tasksPorMateria[materia]) tasksPorMateria[materia] = [];
+            tasksPorMateria[materia].push(t);
+        });
+
+        container.innerHTML = '';
+
+        // 2. Criar uma tabela para cada Matéria
+        const materiasOrdenadas = Object.keys(tasksPorMateria).sort();
+
+        materiasOrdenadas.forEach(materia => {
+            const assuntos = tasksPorMateria[materia];
+            
+            let totalChecks = assuntos.length * 4; // REC + D1 + D7 + D21
+            let feitos = 0;
+            let linhasHTML = '';
+            
+            assuntos.forEach(assunto => {
+                // Nome limpo (remove o [REC])
+                const nomeTopico = assunto.titulo.replace('[REC]', '').trim();
+                
+                // --- LÓGICA DE VERIFICAÇÃO ---
+                const checkStatus = (label) => {
+                    // Procura a tarefa de revisão correspondente no banco
+                    const tarefa = allTasksCache.find(t => 
+                        t.titulo.includes(nomeTopico) && t.titulo.includes(label)
+                    );
+                    
+                    // Se não existe (ainda não foi gerada)
+                    if (!tarefa) return '<span style="color:#eee; font-size:12px;">—</span>'; 
+                    
+                    // Se já foi concluída (Checkbox marcado no board)
+                    if (tarefa.concluido) {
+                        feitos++;
+                        return '<i class="fas fa-check-circle" style="color: var(--text-green); font-size: 16px;" title="Concluído"></i>';
+                    }
+                    
+                    // Se não foi concluída, verifica data
+                    const hoje = new Date();
+                    hoje.setHours(0,0,0,0);
+                    
+                    const dataTarefa = new Date(tarefa.targetDate);
+                    dataTarefa.setHours(0,0,0,0);
+                    
+                    // Se a data é menor que hoje = ATRASADO (Vermelho)
+                    if (dataTarefa < hoje) {
+                        return '<i class="fas fa-circle" style="color: var(--text-red); font-size: 14px;" title="Atrasado!"></i>';
+                    }
+                    
+                    // Futuro ou Hoje (Cinza)
+                    return '<i class="far fa-circle" style="color: #ccc; font-size: 14px;" title="Pendente"></i>'; 
+                };
+
+                // Verifica o status do estudo original (REC)
+                const statusREC = assunto.concluido ? 
+                    (feitos++, '<i class="fas fa-check-circle" style="color:var(--text-green); font-size:16px;"></i>') : 
+                    '<i class="far fa-circle" style="color:#ccc; font-size:14px;"></i>';
+
+                linhasHTML += `
+                    <tr style="border-bottom: 1px solid #f0f0f0;">
+                        <td style="padding: 12px 15px; font-weight: 500; color: #333;">${nomeTopico}</td>
+                        <td style="padding: 12px; text-align: center;">${statusREC}</td>
+                        <td style="padding: 12px; text-align: center;">${checkStatus('[D+1]')}</td>
+                        <td style="padding: 12px; text-align: center;">${checkStatus('[D+7]')}</td>
+                        <td style="padding: 12px; text-align: center;">${checkStatus('[D+21]')}</td>
+                    </tr>
+                `;
+            });
+
+            // Barra de progresso
+            const pct = Math.round((feitos / totalChecks) * 100);
+            
+            // HTML do Card da Matéria
+            const card = document.createElement('div');
+            card.style.cssText = `background: white; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 25px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.03);`;
+
+            card.innerHTML = `
+                <div style="padding: 15px 20px; background: #fcfcfc; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <h3 style="margin: 0; font-size: 16px; color: #2383e2; text-transform: uppercase; letter-spacing: 0.5px;">${materia}</h3>
+                        <span style="background: #eee; padding: 2px 8px; border-radius: 10px; font-size: 11px; color: #666;">${assuntos.length} Tópicos</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:12px; font-weight:600; color:#555;">${pct}%</span>
+                        <div style="width: 100px; height: 8px; background: #eee; border-radius: 4px; overflow:hidden;">
+                            <div style="width: ${pct}%; height: 100%; background: ${pct === 100 ? 'var(--text-green)' : 'var(--accent-color)'}; transition: width 0.5s;"></div>
+                        </div>
+                    </div>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="background: #fff; color: #999; font-size: 11px; text-transform: uppercase;">
+                            <th style="padding: 10px 15px; text-align: left; font-weight: 600;">Assunto</th>
+                            <th style="padding: 10px; text-align: center; width: 60px;">Estudo</th>
+                            <th style="padding: 10px; text-align: center; width: 60px;">D+1</th>
+                            <th style="padding: 10px; text-align: center; width: 60px;">D+7</th>
+                            <th style="padding: 10px; text-align: center; width: 60px;">D+21</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${linhasHTML}
+                    </tbody>
+                </table>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+
+    // ============================================================
+    // 🚑 SISTEMA SALVA-VIDAS (REDISTRIBUIÇÃO DE ATRASOS)
+    // ============================================================
+
+    window.redistribuirAtrasos = async () => {
+        const hoje = new Date();
+        hoje.setHours(0,0,0,0);
+
+        // 1. Encontrar tarefas atrasadas e não concluídas
+        const atrasadas = allTasksCache.filter(t => {
+            const dataT = new Date(t.targetDate);
+            dataT.setHours(0,0,0,0);
+            return !t.concluido && dataT < hoje;
+        });
+
+        if (atrasadas.length === 0) {
+            return alert("Você não tem tarefas atrasadas! Parabéns!");
+        }
+
+        const confirmar = confirm(`Você tem ${atrasadas.length} revisões atrasadas acumuladas.\n\nDeseja redistribuir essas tarefas automaticamente a partir de AMANHÃ (máx 3 por dia)?`);
+        
+        if (!confirmar) return;
+
+        showFeedback("♻️ Reorganizando sua vida...", true);
+
+        try {
+            // Lógica: Começa amanhã. Adiciona até 3 tarefas por dia. Depois pula pro próximo dia.
+            let diaAlvo = new Date();
+            diaAlvo.setDate(diaAlvo.getDate() + 1); // Começa amanhã
+            let contadorDia = 0;
+            const LIMIT_PER_DAY = 3; // Mude aqui se quiser mais ou menos
+
+            const updates = [];
+
+            for (const tarefa of atrasadas) {
+                // Define a nova data
+                const novaData = new Date(diaAlvo);
+                
+                // Atualiza no banco
+                updates.push(updateDoc(doc(db, "planners", currentUID, "tasks", tarefa.id), {
+                    targetDate: novaData.getTime()
+                }));
+
+                // Controle do loop
+                contadorDia++;
+                if (contadorDia >= LIMIT_PER_DAY) {
+                    contadorDia = 0;
+                    diaAlvo.setDate(diaAlvo.getDate() + 1); // Avança um dia
+                }
+            }
+
+            await Promise.all(updates);
+
+            showFeedback("✅ Cronograma salvo! Respire fundo e continue.", false);
+            
+            // Recarrega tudo
+            loadDataAndInit();
+            // Se a matriz estiver aberta, atualiza ela também
+            if(!document.getElementById('secSyllabus').classList.contains('hidden')){
+                renderSyllabus();
+            }
+
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao redistribuir.");
         }
     };
 
