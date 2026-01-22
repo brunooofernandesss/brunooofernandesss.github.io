@@ -455,6 +455,17 @@
                     <i class="fas fa-trash"></i> Excluir Estudo
                  </button>
             </div>
+
+                 <div style="display:flex; gap:10px;">
+                     <button class="btn-action" id="btnEditarNota">Editar Texto</button>
+                     <button class="btn-action" onclick="window.abrirCorretor()" style="color:#e67e22; border-color:#fadbd8; background:#fffbf0;">
+                        <i class="fas fa-highlighter"></i> Corretor Feynman
+                     </button>
+                 </div>
+                 <button class="btn-action" id="btnExcluirEstudo" style="color:#d44c47; border-color: #ffe2dd; background: #fff5f5;">
+                    <i class="fas fa-trash"></i> Excluir Estudo
+                 </button>
+            </div>
         </div>
     </div>
     
@@ -602,12 +613,15 @@
         </div>
     </div>
 
-    <div class="modal" id="modalCorretor">
-        <div class="modal-content" style="max-width: 95%; height: 90vh; display:flex; flex-direction:column;">
+    <div class="modal" id="modalCorretor" style="z-index: 3500;">
+        <div class="modal-content" style="max-width: 95%; height: 90vh; display:flex; flex-direction:column; box-shadow: 0 0 50px rgba(0,0,0,0.5);">
             <div class="editor-header">
                 <h3 style="margin:0; color:#e67e22;"><i class="fas fa-check-double"></i> Corretor de Resumos (Feynman)</h3>
-                <button class="btn-action" onclick="document.getElementById('modalCorretor').style.display='none'"><i class="fas fa-times"></i></button>
+                <button class="btn-action" onclick="document.getElementById('modalCorretor').style.display='none'" style="background:#f0f0f0; border:1px solid #ddd; font-weight:bold; color:#333;">
+                    <i class="fas fa-times"></i> FECHAR
+                </button>
             </div>
+
             
             <div class="editor-body" style="padding: 20px; flex:1; display:flex; gap:20px; overflow:hidden; flex-direction: row;">
                 <div style="flex:1; display:flex; flex-direction:column;">
