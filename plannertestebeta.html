@@ -445,7 +445,12 @@
             <div id="viewContainer" style="flex:1; overflow:hidden; display:flex; flex-direction:column;"></div>
             
             <div style="padding: 15px; border-top: 1px solid #eee; display:flex; justify-content: space-between;">
-                 <button class="btn-action" id="btnEditarNota">Editar Texto</button>
+                 <div style="display:flex; gap:10px;">
+                     <button class="btn-action" id="btnEditarNota">Editar Texto</button>
+                     <button class="btn-action" onclick="window.abrirCorretor()" style="color:#e67e22; border-color:#fadbd8; background:#fffbf0;">
+                        <i class="fas fa-highlighter"></i> Corretor Feynman
+                     </button>
+                 </div>
                  <button class="btn-action" id="btnExcluirEstudo" style="color:#d44c47; border-color: #ffe2dd; background: #fff5f5;">
                     <i class="fas fa-trash"></i> Excluir Estudo
                  </button>
@@ -597,6 +602,37 @@
         </div>
     </div>
 
+    <div class="modal" id="modalCorretor">
+        <div class="modal-content" style="max-width: 95%; height: 90vh; display:flex; flex-direction:column;">
+            <div class="editor-header">
+                <h3 style="margin:0; color:#e67e22;"><i class="fas fa-check-double"></i> Corretor de Resumos (Feynman)</h3>
+                <button class="btn-action" onclick="document.getElementById('modalCorretor').style.display='none'"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="editor-body" style="padding: 20px; flex:1; display:flex; gap:20px; overflow:hidden; flex-direction: row;">
+                <div style="flex:1; display:flex; flex-direction:column;">
+                    <label style="font-size:12px; font-weight:700; color:#666; margin-bottom:8px;">TEXTO REFERÊNCIA (GEMINI/AULA)</label>
+                    <textarea id="textoReferencia" placeholder="Cole aqui o resumo correto da aula..." style="flex:1; padding:15px; border:1px solid #ddd; border-radius:8px; resize:none; font-size:13px; line-height:1.5; font-family: 'Inter', sans-serif;"></textarea>
+                </div>
+
+                <div style="flex:1; display:flex; flex-direction:column;">
+                    <label style="font-size:12px; font-weight:700; color:#666; margin-bottom:8px;">SEU RESUMO (MANUSCRITO OCR)</label>
+                    <textarea id="textoAluno" placeholder="Cole aqui o que você escreveu (copie do Google Lens)..." style="flex:1; padding:15px; border:1px solid #e67e22; border-radius:8px; resize:none; font-size:13px; line-height:1.5; background:#fffbf0; font-family: 'Inter', sans-serif;"></textarea>
+                </div>
+            </div>
+
+            <div id="areaFeedbackCorretor" style="display:none; padding:20px; background:#f9f9f9; border-top:1px solid #ddd; height:35%; overflow-y:auto; border-left: 5px solid #e67e22;">
+                <h4 style="margin-top:0; color:#333; margin-bottom:10px;"><i class="fas fa-robot"></i> Avaliação do Professor:</h4>
+                <div id="conteudoFeedback" style="font-size:14px; line-height:1.6; color:#444;"></div>
+            </div>
+
+            <div class="editor-footer">
+                <button class="btn-action" style="background:#e67e22; color:white; border:none; width:100%; font-size:16px; font-weight:600;" onclick="corrigirAgora()">
+                    <i class="fas fa-magic"></i> Comparar e Corrigir
+                </button>
+            </div>
+        </div>
+    </div>
 
     <div id="statusFeedback">Processando...</div>
 
@@ -3376,6 +3412,89 @@
         document.querySelector('#modalErros .editor-body').style.display = 'block';
         // Recarrega a lista para atualizar excluídos
         renderizarListaErros(""); 
+    };
+
+  
+    // ============================================================
+    // 📝 CORRETOR DE RESUMOS (FEYNMAN)
+    // ============================================================
+
+    window.abrirCorretor = () => {
+        const modal = document.getElementById('modalCorretor');
+        modal.style.display = 'flex';
+        
+        // Tenta pegar o texto que já está aberto no visualizador para facilitar
+        // Se for PDF, não pega. Se for texto, pega o conteúdo limpo.
+        const viewContainer = document.getElementById('viewContainer');
+        const viewTypeIcon = document.getElementById('viewTypeIcon').innerHTML;
+        
+        // Se for ícone de texto (azul), tenta pré-preencher a referência
+        if (viewTypeIcon.includes('fa-file-alt')) {
+            const textoAtual = viewContainer.innerText || "";
+            document.getElementById('textoReferencia').value = textoAtual.trim();
+        } else {
+            // Se for PDF ou estiver vazio
+            document.getElementById('textoReferencia').value = '';
+        }
+
+        document.getElementById('textoAluno').value = '';
+        document.getElementById('areaFeedbackCorretor').style.display = 'none';
+        
+        // Ajusta layout para visualização inicial (Esconde feedback, aumenta textareas)
+        document.querySelector('#modalCorretor .editor-body').style.height = 'auto';
+        document.querySelector('#modalCorretor .editor-body').style.flex = '1';
+    };
+
+    window.corrigirAgora = async () => {
+        const original = document.getElementById('textoReferencia').value;
+        const aluno = document.getElementById('textoAluno').value;
+
+        if(!original || !aluno) return alert("Preencha os dois lados para a IA comparar.");
+
+        const btn = document.querySelector('#modalCorretor .editor-footer button');
+        const oldText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Lendo e Corrigindo...';
+        btn.disabled = true;
+        btn.style.opacity = "0.7";
+
+        try {
+            const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    action: "corrigir_resumo", 
+                    textoOriginal: original,
+                    textoAluno: aluno
+                })
+            });
+
+            if (!response.ok) throw new Error("Erro na API");
+
+            const data = await response.json();
+            
+            // Exibe Feedback
+            const area = document.getElementById('areaFeedbackCorretor');
+            const content = document.getElementById('conteudoFeedback');
+            
+            // Formata markdown básico que a IA manda (**bold**, - lista, \n quebra)
+            let html = (data.feedback || "Sem resposta.")
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>');
+            
+            content.innerHTML = html;
+            area.style.display = 'block';
+            
+            // Ajusta o tamanho da área de texto para dar espaço ao feedback
+            document.querySelector('#modalCorretor .editor-body').style.flex = '0 0 50%';
+
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao corrigir. Verifique sua conexão ou se o texto é muito longo.");
+        } finally {
+            btn.innerHTML = oldText;
+            btn.disabled = false;
+            btn.style.opacity = "1";
+        }
     };
 
     
