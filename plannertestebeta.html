@@ -120,6 +120,13 @@
         .tag-pill { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: var(--tag-blue); color: var(--text-blue); display: inline-flex; align-items: center; }
         .card-meta { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 11px; color: var(--text-secondary); flex-wrap: wrap;}
 
+        /* ESTILO DA BUSCA (NOVO) */
+        .search-item { padding: 10px 15px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; flex-direction: column; gap: 4px; }
+        .search-item:hover { background: #f5f5f5; }
+        .search-title { font-weight: 600; font-size: 13px; color: #333; }
+        .search-meta { font-size: 11px; color: #888; display: flex; justify-content: space-between; }
+        .search-highlight { background: #fff3cd; padding: 0 2px; border-radius: 2px; }
+
         /* UI Elements */
         .week-selector-wrapper { display: flex; align-items: center; gap: 8px; position: relative; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: 0.2s; }
         .week-selector-wrapper:hover { background: #f0f0f0; }
@@ -527,6 +534,68 @@
         </div>
     </div>
 
+    <div class="modal" id="modalErros">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="editor-header">
+                <h3 style="margin:0; color:#d44c47;"><i class="fas fa-exclamation-triangle"></i> Meus Pontos Cegos</h3>
+                <button class="btn-action" onclick="document.getElementById('modalErros').style.display='none'"><i class="fas fa-times"></i></button>
+            </div>
+                        <div id="areaRevanche" style="display:none; padding:20px; background:#222; color:white; text-align:center; min-height:350px; flex-direction:column; justify-content:center; align-items:center; border-radius: 0 0 8px 8px;">
+                <div style="font-size:12px; color:#aaa; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px; font-weight:600;">
+                    Modo Revanche <span id="contadorRevanche" style="color:white;">1/10</span>
+                </div>
+                
+                <div id="cardRevanche" onclick="virarRevanche()" style="background:white; color:#333; width:100%; max-width:320px; min-height:220px; padding:25px; border-radius:12px; cursor:pointer; display:flex; flex-direction:column; justify-content:center; align-items:center; box-shadow:0 10px 30px rgba(0,0,0,0.3); transition:transform 0.3s, box-shadow 0.3s; position:relative;">
+                    
+                    <div id="frenteRevanche" style="width:100%;">
+                        <div style="color:#d44c47; font-weight:700; margin-bottom:15px; font-size:13px; text-transform:uppercase; border-bottom:1px solid #eee; padding-bottom:5px;" id="revMateria">
+                            Matéria
+                        </div>
+                        <div style="font-size:16px; font-weight:600; line-height:1.5; color:#333;" id="revContexto">
+                            Contexto do Erro
+                        </div>
+                        <div style="margin-top:25px; font-size:11px; color:#999; font-style:italic;">
+                            <i class="fas fa-hand-pointer"></i> Toque para revelar a lição
+                        </div>
+                    </div>
+
+                    <div id="versoRevanche" style="display:none; width:100%; animation: fadeIn 0.3s;">
+                        <div style="color:#27ae60; font-weight:700; margin-bottom:10px; font-size:12px; text-transform:uppercase;">
+                            <i class="fas fa-lightbulb"></i> A Lição Era:
+                        </div>
+                        <div style="font-size:18px; font-weight:700; line-height:1.4; color:#2c3e50;" id="revAprendizado">
+                            A resposta correta
+                        </div>
+                    </div>
+                </div>
+
+                <div id="botoesRevanche" style="display:none; gap:15px; margin-top:30px;">
+                    <button onclick="proximaRevanche(false)" style="padding:10px 20px; border-radius:30px; border:none; background:#444; color:#ddd; cursor:pointer; font-weight:600; transition:0.2s;">
+                        <i class="fas fa-redo"></i> Ainda Errei
+                    </button>
+                    <button onclick="proximaRevanche(true)" style="padding:10px 25px; border-radius:30px; border:none; background:#27ae60; color:white; cursor:pointer; font-weight:600; box-shadow:0 0 15px rgba(39, 174, 96, 0.4); transform:scale(1.05);">
+                        <i class="fas fa-check"></i> Matei o Erro
+                    </button>
+                </div>
+                
+                <button onclick="fecharRevanche()" style="margin-top:20px; background:none; border:none; color:#666; font-size:12px; cursor:pointer; text-decoration:underline;">Sair do Jogo</button>
+            </div>
+
+            <div class="editor-body" style="background:#fff5f5; padding: 20px;">
+                <div style="margin-bottom:15px;">
+                    <input type="text" id="filtroErro" placeholder="🔍 Filtrar por assunto (ex: Cardio)..." 
+                           onkeyup="renderizarListaErros(this.value)"
+                           style="width:100%; padding:10px; border:1px solid #ffcccc; border-radius:6px;">
+                </div>
+                <button onclick="iniciarRevanche()" style="width:100%; margin-top:10px; margin-bottom:10px; background:#333; color:white; border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:600; display:flex; justify-content:center; align-items:center; gap:8px; box-shadow:0 2px 5px rgba(0,0,0,0.2);">
+                    <i class="fas fa-play"></i> Iniciar Modo Revanche
+                </button>
+
+                <div id="listaErrosContainer" style="display:flex; flex-direction:column; gap:10px; max-height: 400px; overflow-y: auto;">
+                    </div>
+            </div>
+        </div>
+    </div>
 
 
     <div id="statusFeedback">Processando...</div>
@@ -543,6 +612,7 @@
             <div class="nav-item" id="navQuizzes"><i class="fas fa-brain"></i> Meus Simulados</div>
             <div class="nav-item" id="navAnatomia" style="color: #2383e2; font-weight: 500;"><i class="fas fa-bone"></i> Desafio Anatomia</div>
             <div class="nav-item" id="navSyllabus"><i class="fas fa-th-list"></i> Matriz Curricular</div>
+            <div class="nav-item" onclick="window.abrirCadernoErros()" style="color: #d44c47; font-weight: 500;"><i class="fas fa-book-dead"></i> Caderno de Erros</div>
 
         </nav>
 
@@ -583,8 +653,19 @@
 
     <main class="main-container">
         <div class="top-bar">
+            <div style="position: relative; margin-right: 20px; flex: 1; max-width: 400px;">
+                <input type="text" id="globalSearch" placeholder="🔍 Buscar assunto..." 
+                       onkeyup="window.realizarBusca(this.value)"
+                       style="width: 100%; padding: 8px 35px 8px 15px; border-radius: 20px; border: 1px solid #e0e0e0; font-size: 13px; background: #f9f9f9; outline: none; transition: 0.2s;">
+                <i class="fas fa-times" onclick="window.limparBusca()" 
+                   style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #999; cursor: pointer; display: none;" 
+                   id="btnLimparBusca"></i>
+                <div id="searchResults" style="display: none; position: absolute; top: 110%; left: 0; width: 100%; max-height: 400px; overflow-y: auto; background: white; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 5000;"></div>
+            </div>
+
             <div style="display:flex; align-items:center;">
                 <span style="margin-right: 8px;"><b>Semana:</b></span>
+
                 <div class="week-selector-wrapper">
                     <div class="week-display">
                         <span id="weekRangeDisplay">Carregando...</span>
@@ -2360,31 +2441,47 @@
     };
 
 
-        // --- LÓGICA DE RESPOSTA DO QUIZ ---
+  
+    // Lógica do Quiz de Texto (COM CADERNO DE ERROS)
     window.checkAnswer = (el, isCorrect) => {
-        // Evita clicar duas vezes na mesma questão
         if(el.parentElement.classList.contains('answered')) return;
+        el.parentElement.classList.add('answered');
         
-        el.parentElement.classList.add('answered'); // Marca questão como respondida
-        
+        const card = el.closest('.quiz-card');
+
         if(isCorrect) {
             el.classList.add('correct');
         } else {
             el.classList.add('wrong');
-            // Mostra qual era a certa automaticamente
+            // Mostra a correta
             const siblings = el.parentElement.children;
             for(let sib of siblings) {
-                if(sib.getAttribute('onclick').includes('true')) {
-                    sib.classList.add('correct');
-                }
+                if(sib.getAttribute('onclick') && sib.getAttribute('onclick').includes('true')) sib.classList.add('correct');
             }
+
+            // --- CAPTURA DE ERRO ---
+            const tituloQuestao = card.querySelector('.quiz-question').innerText;
+            const tituloEstudo = document.getElementById('viewTitle') ? document.getElementById('viewTitle').textContent : "Quiz Geral";
+
+            const divErro = document.createElement('div');
+            divErro.style.marginTop = "15px";
+            divErro.innerHTML = `
+                <div style="background:#fff5f5; border:1px solid #ffcccc; padding:10px; border-radius:6px; animation: fadeIn 0.5s;">
+                    <p style="font-size:12px; color:#d44c47; margin-bottom:5px;"><strong><i class="fas fa-pen"></i> O que você aprendeu com esse erro?</strong></p>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" class="input-erro" style="flex:1; padding:8px; font-size:13px; border:1px solid #ffcccc; border-radius:4px;" placeholder="Ex: Betabloqueadores não funcionam em asma...">
+                        <button class="btn-action" style="background:#d44c47; color:white; border:none;" 
+                            onclick="salvarPontoCego(this, '${tituloEstudo}', '${tituloQuestao.substring(0,40)}...')">Salvar</button>
+                    </div>
+                </div>
+            `;
+            card.appendChild(divErro);
         }
         
-        // Mostra o feedback (explicação) se houver
-        const card = el.closest('.quiz-card');
         const feedback = card.querySelector('.quiz-feedback');
         if(feedback) feedback.style.display = 'block';
     };
+
 
     
         // --- GERAR QUIZ ---
@@ -2635,18 +2732,21 @@
         }
     };
 
-    window.checkAnatomiaAnswer = (el, selectedIndex, correctIndex, explanation) => {
+    // Lógica da Anatomia (Híbrida: Sua lógica original + Caderno de Erros)
+    window.checkAnatomiaAnswer = async (el, selectedIndex, correctIndex, explanation) => {
         if(el.parentElement.classList.contains('answered')) return;
         el.parentElement.classList.add('answered');
 
         const feedback = document.getElementById('anatFeedback');
         feedback.classList.remove('hidden');
 
-        // Comparação Numérica (Infalível se o índice estiver certo)
+        // 1. MANTIDO: Sua Comparação Numérica Original
         let isCorrect = Number(selectedIndex) === Number(correctIndex);
 
         if (isCorrect) {
             el.classList.add('correct');
+            
+            // MANTIDO: Seu estilo original de acerto
             feedback.innerHTML = `<strong><i class="fas fa-check-circle"></i> Correto!</strong><br>${explanation}`;
             feedback.style.background = "#dbeddb";
             feedback.style.color = "#1f4a33";
@@ -2654,18 +2754,48 @@
         } else {
             el.classList.add('wrong');
             
-            // Ilumina a opção correta visualmente se o índice for válido
+            // 2. MANTIDO: Sua lógica de iluminar o irmão correto
             const parent = el.parentElement;
             if (parent.children[correctIndex]) {
                 parent.children[correctIndex].classList.add('correct');
             }
             
+            // 3. MANTIDO: Seu texto original de erro
             feedback.innerHTML = `<strong><i class="fas fa-times-circle"></i> Incorreto.</strong><br>Veja a explicação acima.<br><br>${explanation}`;
             feedback.style.background = "#ffe2dd";
             feedback.style.color = "#7a2522";
             feedback.style.borderColor = "#d44c47";
+
+            // --- 4. A NOVIDADE: CAMPO DO CADERNO DE ERROS (Adicionado ao final) ---
+            // Só aparece se errar, logo abaixo da sua explicação
+            const regiao = document.getElementById('anatRegion') ? document.getElementById('anatRegion').textContent : "Anatomia";
+            
+            const inputHtml = `
+                <div style="margin-top:15px; border-top:1px solid #eebdbd; padding-top:10px; animation: fadeIn 0.5s;">
+                    <p style="font-size:12px; color:#d44c47; margin-bottom:5px; font-weight:600;">
+                        <i class="fas fa-pen"></i> Anote o aprendizado para não errar mais:
+                    </p>
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" id="inputErroAnato" style="flex:1; padding:8px; border:1px solid #eebdbd; border-radius:4px; font-size:13px;" placeholder="Ex: O nervo ulnar passa atrás do epicôndilo...">
+                        <button class="btn-action" style="background:#d44c47; color:white; border:none; padding: 0 15px;" 
+                            onclick="salvarPontoCego(this, 'Anatomia: ${regiao}', 'Quiz de Imagem')">Salvar</button>
+                    </div>
+                </div>
+            `;
+            feedback.innerHTML += inputHtml;
+        }
+
+        // 5. Salvar Estatística no Banco (Mantido da melhoria)
+        if (typeof currentUID !== 'undefined' && currentUID) {
+            try {
+                const regiaoAtual = document.getElementById('anatRegion') ? document.getElementById('anatRegion').textContent : "Geral";
+                await addDoc(collection(db, "planners", currentUID, "stats_anatomia"), {
+                    regiao: regiaoAtual, acertou: isCorrect, data: serverTimestamp(), tipo: "quiz_imagem"
+                });
+            } catch (e) { console.error("Erro estatística anato:", e); }
         }
     };
+
 
 
 
@@ -2749,6 +2879,81 @@
             alert("Erro ao conectar com a IA.");
         }
     };
+
+    // ============================================================
+    // 🔍 BUSCA GLOBAL INSTANTÂNEA
+    // ============================================================
+
+    window.realizarBusca = (termo) => {
+        const resultsContainer = document.getElementById('searchResults');
+        const btnLimpar = document.getElementById('btnLimparBusca');
+        
+        if (!termo || termo.length < 2) {
+            resultsContainer.style.display = 'none';
+            btnLimpar.style.display = 'none';
+            return;
+        }
+
+        btnLimpar.style.display = 'block';
+        const termLower = termo.toLowerCase();
+
+        // Filtra no Cache Local
+        const resultados = allTasksCache.filter(t => {
+            const titulo = (t.titulo || '').toLowerCase();
+            const tag = (t.tag || '').toLowerCase();
+            return titulo.includes(termLower) || tag.includes(termLower);
+        });
+
+        resultsContainer.innerHTML = '';
+
+        if (resultados.length === 0) {
+            resultsContainer.innerHTML = `<div style="padding:15px; text-align:center; color:#999; font-size:13px;">Nenhum resultado para "${termo}"</div>`;
+        } else {
+            // Mostra até 10 resultados
+            resultados.slice(0, 10).forEach(t => {
+                const div = document.createElement('div');
+                div.className = 'search-item';
+                div.onclick = () => {
+                    window.abrirItem(t.id); // Abre o item
+                    window.limparBusca();   // Limpa a busca
+                };
+
+                const data = new Date(t.targetDate).toLocaleDateString('pt-BR');
+                let icone = t.tipo === 'pdf' ? '<i class="far fa-file-pdf"></i>' : '<i class="far fa-file-alt"></i>';
+                if(t.tipo === 'quiz') icone = '<i class="fas fa-brain"></i>';
+
+                // Realça o texto encontrado
+                const regex = new RegExp(`(${termo})`, 'gi');
+                const tituloHighlight = t.titulo.replace(regex, '<span class="search-highlight">$1</span>');
+
+                div.innerHTML = `
+                    <div class="search-title">${icone} ${tituloHighlight}</div>
+                    <div class="search-meta">
+                        <span>${t.tag || 'Geral'}</span>
+                        <span>${data}</span>
+                    </div>
+                `;
+                resultsContainer.appendChild(div);
+            });
+        }
+
+        resultsContainer.style.display = 'block';
+    };
+
+    window.limparBusca = () => {
+        const input = document.getElementById('globalSearch');
+        input.value = '';
+        document.getElementById('searchResults').style.display = 'none';
+        document.getElementById('btnLimparBusca').style.display = 'none';
+    };
+
+    // Fecha a busca ao clicar fora
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#globalSearch') && !e.target.closest('#searchResults')) {
+            document.getElementById('searchResults').style.display = 'none';
+        }
+    });
+
     
         // ============================================================
     // 🎓 MÓDULO MATRIZ CURRICULAR (SYLLABUS) - LÓGICA
@@ -2966,6 +3171,211 @@
             console.error(e);
             alert("Erro ao redistribuir.");
         }
+    };
+
+    
+    // ============================================================
+    // 📓 CADERNO DE ERROS AUTOMATIZADO
+    // ============================================================
+
+    // Função que salva o erro no banco
+    window.salvarPontoCego = async (btn, materia, contexto) => {
+        // Tenta achar o input perto do botão
+        const input = btn.previousElementSibling || document.getElementById('inputErroAnato');
+        const liçao = input ? input.value : "Erro sem descrição";
+        
+        if(!liçao || !liçao.trim()) return alert("Escreva o que você aprendeu com esse erro.");
+
+        const textoOriginalBtn = btn.innerText;
+        btn.innerText = "Salvando...";
+        btn.disabled = true;
+        
+        try {
+            await addDoc(collection(db, "planners", currentUID, "caderno_erros"), {
+                materia: materia,
+                contexto: contexto,
+                aprendizado: liçao,
+                data: serverTimestamp()
+            });
+            
+            btn.innerText = "Salvo!";
+            btn.style.background = "#ccc";
+            
+            showFeedback("📓 Adicionado ao Caderno de Erros", false);
+        } catch(e) {
+            console.error(e);
+            alert("Erro ao salvar.");
+            btn.innerText = textoOriginalBtn;
+            btn.disabled = false;
+        }
+    };
+
+    let cacheErros = [];
+
+    // Abre a lista de erros
+    window.abrirCadernoErros = async () => {
+        document.getElementById('modalErros').style.display = 'flex';
+        document.getElementById('listaErrosContainer').innerHTML = '<div style="padding:20px; text-align:center;"><i class="fas fa-spinner fa-spin"></i> Carregando suas falhas...</div>';
+        
+        try {
+            const q = query(collection(db, "planners", currentUID, "caderno_erros"), orderBy("data", "desc"));
+            const snap = await getDocs(q);
+            
+            cacheErros = [];
+            snap.forEach(d => cacheErros.push({id: d.id, ...d.data()}));
+            
+            renderizarListaErros("");
+        } catch (e) {
+            console.error(e);
+            document.getElementById('listaErrosContainer').innerHTML = '<div style="padding:20px; text-align:center; color:red;">Erro ao carregar.</div>';
+        }
+    };
+
+    // Filtra e desenha os erros na tela
+    window.renderizarListaErros = (filtro) => {
+        const container = document.getElementById('listaErrosContainer');
+        container.innerHTML = '';
+        
+        const termo = filtro.toLowerCase();
+        const filtrados = cacheErros.filter(e => 
+            (e.materia || "").toLowerCase().includes(termo) || 
+            (e.aprendizado || "").toLowerCase().includes(termo)
+        );
+
+        if(filtrados.length === 0) {
+            container.innerHTML = '<div style="color:#999; text-align:center; padding:40px;">Nenhum erro encontrado (ou filtro muito específico).</div>';
+            return;
+        }
+
+        filtrados.forEach(erro => {
+            const dataF = erro.data ? new Date(erro.data.seconds * 1000).toLocaleDateString('pt-BR') : '-';
+            
+            const div = document.createElement('div');
+            div.style.cssText = `background:white; border-left:4px solid #d44c47; padding:15px; border-radius:6px; box-shadow:0 1px 3px rgba(0,0,0,0.1); position:relative;`;
+            
+            div.innerHTML = `
+                <div style="font-size:11px; color:#d44c47; font-weight:700; display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span style="background:#fff5f5; padding:2px 6px; border-radius:4px;">${erro.materia}</span>
+                    <span>${dataF}</span>
+                </div>
+                <div style="font-size:14px; color:#333; font-weight:500; line-height:1.4;">
+                    "${erro.aprendizado}"
+                </div>
+                <div style="font-size:11px; color:#999; margin-top:8px; font-style:italic; border-top:1px solid #f0f0f0; padding-top:4px;">
+                    Contexto: ${erro.contexto}
+                </div>
+                <button onclick="excluirErro('${erro.id}')" style="position:absolute; top:5px; right:5px; border:none; background:none; color:#ddd; cursor:pointer; font-size:12px;" title="Remover"><i class="fas fa-trash"></i></button>
+            `;
+            container.appendChild(div);
+        });
+    };
+
+    // Deletar um erro do caderno
+    window.excluirErro = async (id) => {
+        if(!confirm("Remover este item do caderno?")) return;
+        try {
+            await deleteDoc(doc(db, "planners", currentUID, "caderno_erros", id));
+            cacheErros = cacheErros.filter(e => e.id !== id);
+            // Re-renderiza o filtro atual
+            const termo = document.getElementById('filtroErro').value;
+            renderizarListaErros(termo);
+        } catch(e) { alert("Erro ao excluir"); }
+    };
+
+    // ============================================================
+    // ⚔️ MODO REVANCHE (GAMEPLAY)
+    // ============================================================
+
+    let filaRevanche = [];
+    let erroAtualIndex = 0;
+
+    window.iniciarRevanche = () => {
+        // Verifica se tem erros carregados
+        if (!cacheErros || cacheErros.length === 0) return alert("Seu caderno está vazio! Erre algumas questões primeiro.");
+        
+        // Embaralha os erros para criar surpresa
+        filaRevanche = [...cacheErros].sort(() => Math.random() - 0.5);
+        erroAtualIndex = 0;
+
+        // Esconde a lista normal e mostra a arena do jogo
+        // Acha o corpo do modal (onde está a lista)
+        const modalBody = document.querySelector('#modalErros .editor-body');
+        if(modalBody) modalBody.style.display = 'none';
+        
+        document.getElementById('areaRevanche').style.display = 'flex';
+        
+        mostrarCarta();
+    };
+
+    function mostrarCarta() {
+        // Verifica Fim de Jogo
+        if (erroAtualIndex >= filaRevanche.length) {
+            alert("Revanche finalizada! Parabéns.");
+            fecharRevanche();
+            return;
+        }
+
+        const erro = filaRevanche[erroAtualIndex];
+        
+        // Preenche Frente
+        document.getElementById('revMateria').textContent = erro.materia || "Geral";
+        document.getElementById('revContexto').textContent = erro.contexto || "Sem contexto";
+        
+        // Preenche Verso
+        document.getElementById('revAprendizado').textContent = erro.aprendizado || "...";
+
+        // Reseta Visual
+        document.getElementById('frenteRevanche').style.display = 'block';
+        document.getElementById('versoRevanche').style.display = 'none';
+        document.getElementById('botoesRevanche').style.display = 'none';
+        
+        // Contador
+        document.getElementById('contadorRevanche').textContent = `${erroAtualIndex + 1}/${filaRevanche.length}`;
+    }
+
+    window.virarRevanche = () => {
+        // Se já virou, ignora
+        if(document.getElementById('versoRevanche').style.display === 'block') return;
+
+        // Animação simples
+        const card = document.getElementById('cardRevanche');
+        card.style.transform = "scale(1.02)";
+        setTimeout(() => card.style.transform = "scale(1)", 150);
+
+        // Troca conteúdo
+        document.getElementById('frenteRevanche').style.display = 'none';
+        document.getElementById('versoRevanche').style.display = 'block';
+        document.getElementById('botoesRevanche').style.display = 'flex';
+    };
+
+    window.proximaRevanche = async (matouErro) => {
+        const erro = filaRevanche[erroAtualIndex];
+
+        if (matouErro) {
+            // DELETAR DO BANCO (Vitória!)
+            try {
+                if(confirm("Tem certeza que dominou esse assunto? Ele será removido do caderno.")) {
+                    await deleteDoc(doc(db, "planners", currentUID, "caderno_erros", erro.id));
+                    // Atualiza cache local para não mostrar mais na lista
+                    cacheErros = cacheErros.filter(e => e.id !== erro.id);
+                } else {
+                    return; // Cancelou
+                }
+            } catch(e) { console.error(e); }
+        } else {
+            // MANTÉM NO BANCO (Derrota)
+            // Opcional: Poderíamos reagendar, mas por enquanto só passa pro próximo
+        }
+
+        erroAtualIndex++;
+        mostrarCarta();
+    };
+
+    window.fecharRevanche = () => {
+        document.getElementById('areaRevanche').style.display = 'none';
+        document.querySelector('#modalErros .editor-body').style.display = 'block';
+        // Recarrega a lista para atualizar excluídos
+        renderizarListaErros(""); 
     };
 
     
