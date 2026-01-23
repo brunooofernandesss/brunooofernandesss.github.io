@@ -1299,60 +1299,6 @@
         }
     }
 
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
-
-        const currentWeekStart = getStartOfWeek(now);
-        const currentWeekEnd = new Date(currentWeekStart);
-        currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
-
-        let stats = {
-            daily: { total: 0, done: 0 },
-            weekly: { total: 0, done: 0 },
-            monthly: { total: 0, done: 0 }
-        };
-
-        allTasksCache.forEach(t => {
-            const tDate = new Date(t.targetDate);
-            // Diária (Hoje)
-            if (tDate.toLocaleDateString('pt-BR') === todayStr) {
-                stats.daily.total++;
-                if (t.concluido) stats.daily.done++;
-            }
-            // Semanal (Real)
-            if (tDate >= currentWeekStart && tDate <= currentWeekEnd) {
-                stats.weekly.total++;
-                if (t.concluido) stats.weekly.done++;
-            }
-            // Mensal
-            if (tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear) {
-                stats.monthly.total++;
-                if (t.concluido) stats.monthly.done++;
-            }
-        });
-
-        updateProgressBar('Daily', stats.daily);
-        updateProgressBar('Weekly', stats.weekly);
-        updateProgressBar('Monthly', stats.monthly);
-    }
-
-    function updateProgressBar(type, data) {
-        const pct = data.total === 0 ? 0 : Math.round((data.done / data.total) * 100);
-        
-        const bar = document.getElementById(`goal${type}Bar`);
-        const text = document.getElementById(`goal${type}Text`);
-        
-        if (bar && text) {
-            bar.style.width = `${pct}%`;
-            text.textContent = `${data.done}/${data.total}`;
-            
-            if (pct === 100 && data.total > 0) {
-                bar.classList.add('complete');
-            } else {
-                bar.classList.remove('complete');
-            }
-        }
-    }
 
     // --- NAVEGAÇÃO BLINDADA (SUBSTITUA A FUNÇÃO ORIGINAL) ---
     function setupWeekNavigator() {
