@@ -3156,8 +3156,150 @@
         document.querySelectorAll('.chk-materia').forEach(chk => chk.checked = checked);
     };
 
+    // ============================================================
+    // 🚀 MOTOR DO SIMULADO GERAL (FASE 2 - FINAL)
+    // ============================================================
     window.iniciarSimuladoMisto = async () => {
-        alert("Configuração pronta! Na próxima etapa, faremos o motor de mistura.");
+        // 1. CAPTURAR CONFIGURAÇÕES DO USUÁRIO
+        const chkMaterias = Array.from(document.querySelectorAll('.chk-materia:checked')).map(c => c.value);
+        const usarTodasTexto = document.getElementById('checkUsarTodas').checked;
+        const qtdTexto = usarTodasTexto ? 9999 : parseInt(document.getElementById('qtdQuestõesTexto').value);
+        
+        const incluirAnato = document.getElementById('checkIncluirAnatomia').checked;
+        const regiaoAnato = document.getElementById('selRegiaoSimulado').value;
+        const qtdAnato = parseInt(document.getElementById('qtdAnatomia').value);
+
+        if (chkMaterias.length === 0 && !incluirAnato) return alert("Selecione ao menos uma matéria ou inclua Anatomia.");
+
+        // Fecha modal e mostra loading
+        document.getElementById('modalConfigSimulado').style.display = 'none';
+        showFeedback("⚙️ Montando sua prova personalizada...", true);
+
+        let questoesFinais = [];
+
+        try {
+            // --- PARTE A: QUESTÕES DE TEXTO (DO FIRESTORE) ---
+            if (chkMaterias.length > 0) {
+                const q = query(collection(db, "planners", currentUID, "quizzes"));
+                const snap = await getDocs(q);
+                let poolTexto = [];
+
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    const titulo = (data.titulo || "").toUpperCase();
+                    // Filtro simples: Se "Selecionar Tudo" (lista cheia) ou se o título bate com alguma tag
+                    const ehRelevante = document.getElementById('checkAllMaterias').checked || 
+                                        chkMaterias.some(tag => titulo.includes(tag) || tag === "GERAL");
+
+                    if (ehRelevante) {
+                        const div = document.createElement('div');
+                        div.innerHTML = data.html;
+                        const cards = div.querySelectorAll('.quiz-card');
+                        
+                        cards.forEach(card => {
+                            // Adiciona etiqueta de origem para contexto
+                            const label = document.createElement('div');
+                            label.style.cssText = "font-size:10px; color:#aaa; margin-bottom:5px; text-transform:uppercase; letter-spacing:1px;";
+                            label.innerText = `Fonte: ${data.titulo}`;
+                            card.insertBefore(label, card.firstChild);
+                            poolTexto.push(card.outerHTML);
+                        });
+                    }
+                });
+
+                // Embaralha e corta
+                poolTexto.sort(() => Math.random() - 0.5);
+                questoesFinais.push(...poolTexto.slice(0, qtdTexto));
+            }
+
+            // --- PARTE B: QUESTÕES DE ANATOMIA (GERADAS NA HORA) ---
+            if (incluirAnato && qtdAnato > 0 && typeof bancoAnatomia !== 'undefined') {
+                showFeedback("🦴 O Preceptor está selecionando imagens...", true);
+                
+                let poolImagens = [];
+                const pastas = regiaoAnato ? [regiaoAnato] : Object.keys(bancoAnatomia);
+
+                pastas.forEach(p => {
+                    const d = bancoAnatomia[p];
+                    Object.keys(d.descriptions).forEach(f => {
+                        poolImagens.push({
+                            desc: d.descriptions[f],
+                            url: `https://brunooofernandesss.github.io/Anatomia/Michigan/${p}/${f}`
+                        });
+                    });
+                });
+
+                // Sorteia N imagens
+                poolImagens.sort(() => Math.random() - 0.5);
+                const selecionadas = poolImagens.slice(0, qtdAnato);
+
+                if (selecionadas.length > 0) {
+                    // Prepara payload pro Worker
+                    const payload = selecionadas.map((img, i) => ({ id: i, desc: img.desc }));
+                    
+                    const res = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ action: "gerar_prova_anatomia", listaImagens: payload })
+                    });
+
+                    if (res.ok) {
+                        const dadosAnato = await res.json();
+                        dadosAnato.forEach(q => {
+                            const imgOrig = selecionadas[q.id_imagem];
+                            const cardHTML = `
+                                <div class="quiz-card" style="border-left: 4px solid #8e44ad;">
+                                    <div style="text-align:center; background:#000; padding:10px; border-radius:8px; margin-bottom:15px;">
+                                        <img src="${imgOrig.url}" style="max-width:100%; max-height:350px; object-fit:contain;">
+                                    </div>
+                                    <div style="font-size:10px; color:#8e44ad; font-weight:700; margin-bottom:5px; text-transform:uppercase;">ANATOMIA PRÁTICA</div>
+                                    <p style="font-style:italic; font-size:14px; margin-bottom:10px;">"${q.clinical_case}"</p>
+                                    <h3 class="quiz-question" style="font-size:16px; margin-bottom:15px; font-weight:700;">${q.question}</h3>
+                                    <div class="quiz-options">
+                                        ${q.options.map((opt, i) => `
+                                            <div class="quiz-opt" onclick="window.checkAnswer(this, ${i === Number(q.correctIndex)})">${opt}</div>
+                                        `).join('')}
+                                    </div>
+                                    <div class="quiz-feedback" style="display:none;">
+                                        <strong>Gabarito:</strong><br>${q.explanation || "Verifique a imagem."}
+                                    </div>
+                                </div>
+                            `;
+                            questoesFinais.push(cardHTML);
+                        });
+                    }
+                }
+            }
+
+            // --- PARTE C: MISTURA FINAL E EXIBIÇÃO ---
+            if (questoesFinais.length === 0) throw new Error("Nenhuma questão encontrada ou gerada.");
+
+            questoesFinais.sort(() => Math.random() - 0.5); // Embaralha tudo
+
+            const htmlProva = `
+                <div style="max-width:800px; margin:0 auto;">
+                    <div style="text-align:center; margin-bottom:30px; border-bottom:1px solid #eee; padding-bottom:20px;">
+                        <h2 style="color:#333;">Simulado Geral R1</h2>
+                        <p style="color:#666;">
+                            <b>${questoesFinais.length} Questões</b> • Modo Aleatório
+                        </p>
+                    </div>
+                    ${questoesFinais.join('<hr style="border:0; border-top:1px dashed #ddd; margin:40px 0;">')}
+                    <div style="text-align:center; margin-top:50px; padding:30px; background:#f9f9f9; border-radius:8px;">
+                        <h3>Fim da Prova</h3>
+                        <button class="btn-action" onclick="window.fecharModalView()" style="background:#333; color:white; padding:10px 20px;">Encerrar Simulado</button>
+                    </div>
+                </div>
+            `;
+
+            window.abrirQuizPlayer("Simulado Geral Personalizado", htmlProva);
+            showFeedback("Prova Pronta!", false);
+
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao criar prova: " + e.message);
+            showFeedback("Erro.", false);
+        }
     };
 
 
