@@ -2800,11 +2800,15 @@
             tr.innerHTML = `
                 <td style="padding:12px; font-weight:500;">${data.titulo}</td>
                 <td style="padding:12px; color:#777;">${dataCriacao}</td>
-                <td style="padding:12px;">
+                <td style="padding:12px; display: flex; gap: 8px;">
                     <button class="btn-action" onclick="window.fetchAndPlayQuiz('${docSnap.id}')"><i class="fas fa-play"></i> Fazer</button>
+                    <button class="btn-action" onclick="window.excluirQuiz('${docSnap.id}')" title="Excluir Simulado" style="color:#d44c47; border-color:#ffe2dd; background:#fff5f5;">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </td>
             `;
             tbody.appendChild(tr);
+
         });
     }
 
@@ -2817,8 +2821,23 @@
         }
     };
 
+    // --- EXCLUIR SIMULADO SALVO (NOVO) ---
+    window.excluirQuiz = async (id) => {
+        if(!confirm("Tem certeza que deseja excluir este simulado permanentemente?")) return;
+        
+        try {
+            await deleteDoc(doc(db, "planners", currentUID, "quizzes", id));
+            showFeedback("🗑️ Simulado excluído.", false);
+            carregarAbaQuizzes(); // Atualiza a lista na hora
+        } catch(e) {
+            console.error(e);
+            alert("Erro ao excluir simulado.");
+        }
+    };
+
     // --- NAVEGAÇÃO PARA ABA QUIZZES ---
-    document.getElementById('navQuizzes').onclick = () => {
+    
+        document.getElementById('navQuizzes').onclick = () => {
         document.getElementById('secBoard').classList.add('hidden');
         document.getElementById('secLib').classList.add('hidden');
         document.getElementById('secAgenda').classList.add('hidden');
