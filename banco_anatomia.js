@@ -853,7 +853,7 @@
     'EmbeddedImage-8.jpg': 'Composição com duas fotos de peças isoladas. Quadrante Superior: Corte sagital da região da sínfise púbica e pênis. Mostra a uretra atravessando a próstata e o corpo esponjoso. Quadrante Inferior: Vista lateral da musculatura profunda da pelve, mostrando o bulbo do pênis e a musculatura associada.',
     'EmbeddedImage-9.jpg': 'Composição focada na face posterior e inferior do órgão genital. Quadrante Superior: Visão inferior. Seta amarela aponta para a pele lateral: "túnica dartos". Quadrante Inferior Esquerdo: Visão da rafe. Anotações em azul claro: "RAFE do escroto" e "RAFE do pênis". Quadrante Inferior Direito: Close-up da face posterior do pênis ("Visão posterior do pênis"). Uma linha azul marca a "RAFE do pênis" e um círculo indica o "Frenulo do prepúcio".'
                     }
-                    };
+                    },
                         
                 'Pharynx_and_Larynx': {
                     title_pt: 'Faringe e Laringe',
