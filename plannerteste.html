@@ -639,6 +639,82 @@
         </div>
     </div>
 
+        <div class="modal" id="modalConfigSimulado" style="z-index: 3600;">
+        <div class="modal-content" style="max-width: 900px; height: 90vh; display:flex; flex-direction:column; box-shadow: 0 0 50px rgba(0,0,0,0.5);">
+            
+            <div class="editor-header">
+                <h3 style="margin:0; color:#333;"><i class="fas fa-sliders-h"></i> Configurar Prova R1</h3>
+                <button class="btn-action" onclick="document.getElementById('modalConfigSimulado').style.display='none'" style="background:#f0f0f0; border:1px solid #ddd;">Fechar</button>
+            </div>
+
+            <div class="editor-body" style="padding: 25px; display: flex; gap: 30px; overflow-y: auto; background: #f8f9fa; flex-direction: column; md:flex-row;">
+                
+                <div style="flex: 1; background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; display: flex; flex-direction: column;">
+                    <div style="border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; display:flex; justify-content:space-between; align-items:center;">
+                        <h4 style="margin:0; color:#2c3e50;"><i class="fas fa-book"></i> Matérias (Banco de Questões)</h4>
+                        <label style="font-size:12px; cursor:pointer; user-select:none; font-weight:600;">
+                            <input type="checkbox" id="checkAllMaterias" onchange="window.toggleAllMaterias(this.checked)" checked> Selecionar Tudo
+                        </label>
+                    </div>
+                    
+                    <div style="flex:1; overflow-y:auto; min-height: 200px; max-height: 300px;" id="containerCheckboxesMaterias">
+                        <div style="color:#999; font-style:italic; padding:20px; text-align:center;">Carregando suas tags...</div>
+                    </div>
+
+                    <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
+                        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Quantidade de Questões de Texto:</label>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <input type="number" id="qtdQuestõesTexto" value="20" style="padding:8px; width:80px; border:1px solid #ccc; border-radius:4px;">
+                            <label style="font-size:13px; color:#555;">
+                                <input type="checkbox" id="checkUsarTodas" onchange="document.getElementById('qtdQuestõesTexto').disabled = this.checked"> 
+                                Usar TODAS disponíveis
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 15px;">
+                    
+                    <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; border-left: 5px solid #8e44ad;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <h4 style="margin:0; color:#8e44ad;"><i class="fas fa-bone"></i> Anatomia (Imagens)</h4>
+                            <label style="cursor:pointer;">
+                                <input type="checkbox" id="checkIncluirAnatomia" checked> Incluir
+                            </label>
+                        </div>
+                        <div style="display:flex; gap:10px; flex-direction:column;">
+                            <select id="selRegiaoSimulado" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+                                <option value="">Região: Aleatória (Geral)</option>
+                            </select>
+                            <div style="display:flex; align-items:center; gap:10px; font-size:13px;">
+                                <span>Questões:</span>
+                                <input type="number" id="qtdAnatomia" value="10" style="padding:6px; width:60px; border:1px solid #ccc; border-radius:4px;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: #f0f0f0; padding: 20px; border-radius: 8px; border: 1px solid #ddd; opacity: 0.6;">
+                        <h4 style="margin:0; color:#7f8c8d; margin-bottom:5px;"><i class="fas fa-microscope"></i> Histologia</h4>
+                        <p style="font-size:12px; margin:0;">Em breve...</p>
+                    </div>
+                    <div style="background: #f0f0f0; padding: 20px; border-radius: 8px; border: 1px solid #ddd; opacity: 0.6;">
+                        <h4 style="margin:0; color:#7f8c8d; margin-bottom:5px;"><i class="fas fa-user-md"></i> Semiologia</h4>
+                        <p style="font-size:12px; margin:0;">Em breve...</p>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="editor-footer">
+                <button class="btn-action" onclick="document.getElementById('modalConfigSimulado').style.display='none'">Cancelar</button>
+                <button class="btn-action btn-primary" onclick="window.iniciarSimuladoMisto()" style="padding: 10px 25px; font-size: 16px;">
+                    <i class="fas fa-play"></i> INICIAR PROVA
+                </button>
+            </div>
+        </div>
+    </div>
+
+    
     <div id="statusFeedback">Processando...</div>
 
     <aside class="sidebar">
@@ -770,11 +846,15 @@
                     </div>
             </section>
             
-                        <section id="secQuizzes" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+            <section id="secQuizzes" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
                 <div class="header-actions">
                     <h1 class="page-title">Meus Simulados</h1>
+                    <button class="btn-action btn-primary" onclick="window.abrirConfiguradorProva()">
+                        <i class="fas fa-cogs"></i> Montar Simulado R1
+                    </button>
                 </div>
                 <div style="background: white; border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden;">
+            
                     <table style="width:100%; border-collapse:collapse; font-size:14px;">
                         <thead style="background: #f9f9f9; border-bottom: 1px solid var(--border-color);">
                             <tr style="text-align:left; color: #777;">
@@ -804,16 +884,21 @@
             <section id="secAnatomia" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
     <div class="header-actions">
         <h1 class="page-title">Laboratório de Anatomia Clínica</h1>
-        <div style="display:flex; gap:10px;">
-            <select id="selRegiaoAnatomia" style="padding: 8px; border-radius: 6px; border: 1px solid #ddd; font-family:inherit; outline:none; cursor:pointer;">
+        <div style="display:flex; gap:10px; flex-wrap: wrap; align-items: center;">
+            <select id="selRegiaoAnatomia" style="padding: 10px; border-radius: 6px; border: 1px solid #ddd; font-family:inherit; outline:none; cursor:pointer; flex: 1; min-width: 150px;">
                 <option value="">🎲 Aleatório (Todas)</option>
                 </select>
             
-            <button class="btn-action btn-primary" onclick="window.gerarNovoDesafioAnatomia()">
+            <button class="btn-action btn-primary" onclick="window.gerarNovoDesafioAnatomia()" style="flex: 1; white-space: nowrap; justify-content: center;">
                 <i class="fas fa-sync-alt"></i> Próximo Caso
+            </button>
+
+            <button class="btn-action" onclick="window.gerarProvaAnatomiaLote()" style="background:#8e44ad; color:white; border:none; flex: 1; white-space: nowrap; justify-content: center;">
+                <i class="fas fa-layer-group"></i> Gerar Prova (20)
             </button>
         </div>
     </div>
+
 
 
     <div style="max-width: 900px; margin: 0 auto; width: 100%;">
@@ -3018,6 +3103,63 @@
             alert("Erro ao conectar com a IA.");
         }
     };
+    
+        // ============================================================
+    // ⚙️ CONFIGURADOR DO SIMULADO GERAL (Fase 1)
+    // ============================================================
+
+    window.abrirConfiguradorProva = () => {
+        const modal = document.getElementById('modalConfigSimulado');
+        const containerMaterias = document.getElementById('containerCheckboxesMaterias');
+        const selAnato = document.getElementById('selRegiaoSimulado');
+
+        modal.style.display = 'flex';
+        containerMaterias.innerHTML = '';
+
+        // 1. POPULAR MATÉRIAS (Tags das Tarefas)
+        const todasTags = allTasksCache
+            .map(t => t.tag ? t.tag.trim().toUpperCase() : "GERAL")
+            .filter(tag => tag !== "");
+        
+        const tagsUnicas = [...new Set(todasTags)].sort();
+
+        if (tagsUnicas.length === 0) {
+            containerMaterias.innerHTML = '<div style="padding:10px; color:#666;">Crie estudos primeiro para ter matérias.</div>';
+        } else {
+            tagsUnicas.forEach(tag => {
+                const div = document.createElement('div');
+                div.style.padding = "8px 0";
+                div.style.borderBottom = "1px dashed #eee";
+                div.innerHTML = `
+                    <label style="display:flex; align-items:center; cursor:pointer; font-size:14px; width:100%;">
+                        <input type="checkbox" class="chk-materia" value="${tag}" checked style="margin-right:10px; transform:scale(1.2);">
+                        ${tag}
+                    </label>
+                `;
+                containerMaterias.appendChild(div);
+            });
+        }
+
+        // 2. POPULAR REGIÕES DE ANATOMIA
+        if (selAnato.options.length <= 1 && typeof bancoAnatomia !== 'undefined') {
+            const chaves = Object.keys(bancoAnatomia).sort((a,b) => bancoAnatomia[a].title_pt.localeCompare(bancoAnatomia[b].title_pt));
+            chaves.forEach(key => {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.text = bancoAnatomia[key].title_pt;
+                selAnato.appendChild(opt);
+            });
+        }
+    };
+
+    window.toggleAllMaterias = (checked) => {
+        document.querySelectorAll('.chk-materia').forEach(chk => chk.checked = checked);
+    };
+
+    window.iniciarSimuladoMisto = async () => {
+        alert("Configuração pronta! Na próxima etapa, faremos o motor de mistura.");
+    };
+
 
     // ============================================================
     // 🔍 BUSCA GLOBAL INSTANTÂNEA
@@ -3599,6 +3741,123 @@
             btn.style.opacity = "1";
         }
     };
+    
+    
+        // ============================================================
+    // 💀 PROVA DE ANATOMIA EM LOTE (20 QUESTÕES)
+    // ============================================================
+
+    window.gerarProvaAnatomiaLote = async () => {
+        const filtro = document.getElementById('selRegiaoAnatomia').value;
+        const confirmacao = confirm(`Gerar uma prova de 20 questões sobre: ${filtro ? bancoAnatomia[filtro].title_pt : "Toda a Anatomia"}?\n\nIsso pode levar uns 15 segundos.`);
+        
+        if (!confirmacao) return;
+
+        showFeedback("🦴 Preceptor selecionando as peças anatômicas...", true);
+
+        // 1. Coletar todas as imagens possíveis
+        let poolImagens = [];
+        const pastasParaUsar = filtro ? [filtro] : Object.keys(bancoAnatomia);
+
+        pastasParaUsar.forEach(pasta => {
+            const dados = bancoAnatomia[pasta];
+            Object.keys(dados.descriptions).forEach(filename => {
+                poolImagens.push({
+                    pasta: pasta,
+                    arquivo: filename,
+                    descricao: dados.descriptions[filename],
+                    url: `https://brunooofernandesss.github.io/Anatomia/Michigan/${pasta}/${filename}`
+                });
+            });
+        });
+
+        // 2. Embaralhar e pegar 20
+        if (poolImagens.length < 5) return alert("Poucas imagens disponíveis nessa região.");
+        
+        // Fisher-Yates Shuffle
+        for (let i = poolImagens.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [poolImagens[i], poolImagens[j]] = [poolImagens[j], poolImagens[i]];
+        }
+
+        const selecionadas = poolImagens.slice(0, 20); // Pega as 20 primeiras
+
+        // 3. Preparar payload para o Worker (SÓ TEXTO para economizar banda)
+        const payload = selecionadas.map((img, index) => ({
+            id: index, // ID temporário para alinhar a resposta
+            desc: img.descricao
+        }));
+
+        try {
+            // 4. Chamar Worker
+            const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    action: "gerar_prova_anatomia", 
+                    listaImagens: payload 
+                })
+            });
+
+            if (!response.ok) throw new Error("Erro no Preceptor");
+
+            const questoesGeradas = await response.json(); // Array de 20 objetos
+
+            // 5. Montar o HTML do Simulado (Combinando a Imagem local com a Pergunta da IA)
+            let htmlProva = `<div style="max-width:800px; margin:0 auto;">
+                <div style="text-align:center; padding-bottom:20px; border-bottom:1px solid #eee; margin-bottom:20px;">
+                    <h2 style="color:#8e44ad;">Prova Prática de Anatomia</h2>
+                    <p>Região: ${filtro ? bancoAnatomia[filtro].title_pt : "Geral"}</p>
+                </div>`;
+
+            questoesGeradas.forEach((q, i) => {
+                // Recupera a imagem original usando o índice
+                const imgOriginal = selecionadas[q.id_imagem]; 
+                
+                // Gera o HTML da questão (reaproveitando estilos do quiz)
+                htmlProva += `
+                    <div class="quiz-card" style="margin-bottom: 40px; border-top: 4px solid #8e44ad;">
+                        <div style="text-align:center; background:#000; padding:10px; border-radius:8px; margin-bottom:15px;">
+                            <img src="${imgOriginal.url}" style="max-width:100%; max-height:400px; object-fit:contain;">
+                        </div>
+                        <div style="font-size:11px; color:#999; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px;">
+                            Questão ${i + 1}
+                        </div>
+                        <p style="font-style:italic; color:#555; margin-bottom:15px;">"${q.clinical_case}"</p>
+                        <h3 class="quiz-question" style="font-size:16px; margin-bottom:15px; font-weight:700;">${q.question}</h3>
+                        
+                        <div class="quiz-options">
+                            ${q.options.map((opt, idx) => `
+                                <div class="quiz-opt" onclick="window.checkAnswer(this, ${idx === Number(q.correctIndex)})">
+                                    ${opt}
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div class="quiz-feedback" style="display:none;">
+                            <strong>Gabarito:</strong><br>
+                            ${q.explanation && q.explanation.length > 5 ? q.explanation : "A estrutura correta é a indicada na opção selecionada. (IA não forneceu detalhes adicionais)."}
+                        </div>
+                    </div>
+                `;
+            });
+
+            htmlProva += `
+                <div style="text-align:center; padding:20px;">
+                    <button class="btn-action" onclick="window.fecharModalView()" style="background:#333; color:white;">Finalizar Prova</button>
+                </div></div>`;
+
+            // 6. Abrir no Visualizador
+            window.abrirQuizPlayer(`Prova Anatomia: ${filtro || "Geral"}`, htmlProva);
+            showFeedback("Prova gerada com sucesso!", false);
+
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao gerar a prova. Tente gerar menos questões ou verifique a conexão.");
+            showFeedback("Erro.", false);
+        }
+    };
+
 
     
     </script>
