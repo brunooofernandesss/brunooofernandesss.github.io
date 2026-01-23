@@ -804,10 +804,21 @@
             <section id="secAnatomia" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
     <div class="header-actions">
         <h1 class="page-title">Laboratório de Anatomia Clínica</h1>
-        <button class="btn-action btn-primary" onclick="window.gerarNovoDesafioAnatomia()">
-            <i class="fas fa-sync-alt"></i> Próximo Caso
-        </button>
+        <div style="display:flex; gap:10px;">
+            <select id="selRegiaoAnatomia" style="padding: 8px; border-radius: 6px; border: 1px solid #ddd; font-family:inherit; outline:none; cursor:pointer;">
+                <option value="">🎲 Aleatório (Todas)</option>
+                </select>
+            
+            <button class="btn-action btn-primary" onclick="window.gerarNovoDesafioAnatomia()">
+                <i class="fas fa-sync-alt"></i> Próximo Caso
+            </button>
+            <button class="btn-action" onclick="window.gerarProvaAnatomiaLote()" style="background:#8e44ad; color:white; border:none;">
+                <i class="fas fa-layer-group"></i> Gerar Prova (20)
+            </button>
+
+        </div>
     </div>
+
 
     <div style="max-width: 900px; margin: 0 auto; width: 100%;">
         <div style="background: white; border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
@@ -865,6 +876,24 @@
     import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc, getDoc, deleteDoc, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
     import { bancoAnatomia } from './banco_anatomia.js'; // <--- BANCO DE ANATOMIA
+        // --- POPULAR O FILTRO DE REGIÕES ---
+    setTimeout(() => {
+        const sel = document.getElementById('selRegiaoAnatomia');
+        if(sel && bancoAnatomia) {
+            // Ordena as chaves alfabeticamente pelo título em PT
+            const chavesOrdenadas = Object.keys(bancoAnatomia).sort((a,b) => {
+                return bancoAnatomia[a].title_pt.localeCompare(bancoAnatomia[b].title_pt);
+            });
+
+            chavesOrdenadas.forEach(key => {
+                const opt = document.createElement('option');
+                opt.value = key; // A chave do objeto (Ex: "Lower Limb")
+                opt.text = bancoAnatomia[key].title_pt; // O texto visível (Ex: "Membro Inferior")
+                sel.appendChild(opt);
+            });
+        }
+    }, 1000); // Pequeno delay para garantir que o DOM carregou
+
 
 
     const firebaseConfig = {
@@ -2759,16 +2788,26 @@
         loader.style.display = 'block';
         document.getElementById('anatFeedback').classList.add('hidden');
 
-        // 2.1 Escolher Imagem
-        const pastas = Object.keys(bancoAnatomia);
-        const pastaAleatoria = pastas[Math.floor(Math.random() * pastas.length)];
-        const dadosPasta = bancoAnatomia[pastaAleatoria];
+        // 2.1 Escolher Imagem (Filtrada ou Aleatória)
+        const filtro = document.getElementById('selRegiaoAnatomia').value;
+        let pastaEscolhida = "";
+
+        if (filtro && bancoAnatomia[filtro]) {
+            // Se o usuário selecionou uma região específica
+            pastaEscolhida = filtro;
+        } else {
+            // Se for aleatório ou vazio
+            const pastas = Object.keys(bancoAnatomia);
+            pastaEscolhida = pastas[Math.floor(Math.random() * pastas.length)];
+        }
+
+        const dadosPasta = bancoAnatomia[pastaEscolhida];
         const imagensNomes = Object.keys(dadosPasta.descriptions);
         const imagemNome = imagensNomes[Math.floor(Math.random() * imagensNomes.length)];
         const descricaoTecnica = dadosPasta.descriptions[imagemNome];
 
         // Monta URL
-        const imgUrl = `https://brunooofernandesss.github.io/Anatomia/Michigan/${pastaAleatoria}/${imagemNome}`;
+        const imgUrl = `https://brunooofernandesss.github.io/Anatomia/Michigan/${pastaEscolhida}/${imagemNome}`;
         
         imgEl.src = imgUrl;
         imgEl.onload = () => {
@@ -3564,6 +3603,122 @@
             btn.style.opacity = "1";
         }
     };
+    
+    
+        // ============================================================
+    // 💀 PROVA DE ANATOMIA EM LOTE (20 QUESTÕES)
+    // ============================================================
+
+    window.gerarProvaAnatomiaLote = async () => {
+        const filtro = document.getElementById('selRegiaoAnatomia').value;
+        const confirmacao = confirm(`Gerar uma prova de 20 questões sobre: ${filtro ? bancoAnatomia[filtro].title_pt : "Toda a Anatomia"}?\n\nIsso pode levar uns 15 segundos.`);
+        
+        if (!confirmacao) return;
+
+        showFeedback("🦴 Preceptor selecionando lâminas...", true);
+
+        // 1. Coletar todas as imagens possíveis
+        let poolImagens = [];
+        const pastasParaUsar = filtro ? [filtro] : Object.keys(bancoAnatomia);
+
+        pastasParaUsar.forEach(pasta => {
+            const dados = bancoAnatomia[pasta];
+            Object.keys(dados.descriptions).forEach(filename => {
+                poolImagens.push({
+                    pasta: pasta,
+                    arquivo: filename,
+                    descricao: dados.descriptions[filename],
+                    url: `https://brunooofernandesss.github.io/Anatomia/Michigan/${pasta}/${filename}`
+                });
+            });
+        });
+
+        // 2. Embaralhar e pegar 20
+        if (poolImagens.length < 5) return alert("Poucas imagens disponíveis nessa região.");
+        
+        // Fisher-Yates Shuffle
+        for (let i = poolImagens.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [poolImagens[i], poolImagens[j]] = [poolImagens[j], poolImagens[i]];
+        }
+
+        const selecionadas = poolImagens.slice(0, 20); // Pega as 20 primeiras
+
+        // 3. Preparar payload para o Worker (SÓ TEXTO para economizar banda)
+        const payload = selecionadas.map((img, index) => ({
+            id: index, // ID temporário para alinhar a resposta
+            desc: img.descricao
+        }));
+
+        try {
+            // 4. Chamar Worker
+            const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    action: "gerar_prova_anatomia", 
+                    listaImagens: payload 
+                })
+            });
+
+            if (!response.ok) throw new Error("Erro no Preceptor");
+
+            const questoesGeradas = await response.json(); // Array de 20 objetos
+
+            // 5. Montar o HTML do Simulado (Combinando a Imagem local com a Pergunta da IA)
+            let htmlProva = `<div style="max-width:800px; margin:0 auto;">
+                <div style="text-align:center; padding-bottom:20px; border-bottom:1px solid #eee; margin-bottom:20px;">
+                    <h2 style="color:#8e44ad;">Prova Prática de Anatomia</h2>
+                    <p>Região: ${filtro ? bancoAnatomia[filtro].title_pt : "Geral"}</p>
+                </div>`;
+
+            questoesGeradas.forEach((q, i) => {
+                // Recupera a imagem original usando o índice
+                const imgOriginal = selecionadas[q.id_imagem]; 
+                
+                // Gera o HTML da questão (reaproveitando estilos do quiz)
+                htmlProva += `
+                    <div class="quiz-card" style="margin-bottom: 40px; border-top: 4px solid #8e44ad;">
+                        <div style="text-align:center; background:#000; padding:10px; border-radius:8px; margin-bottom:15px;">
+                            <img src="${imgOriginal.url}" style="max-width:100%; max-height:400px; object-fit:contain;">
+                        </div>
+                        <div style="font-size:11px; color:#999; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px;">
+                            Questão ${i + 1}
+                        </div>
+                        <p style="font-style:italic; color:#555; margin-bottom:15px;">"${q.clinical_case}"</p>
+                        <h3 style="font-size:16px; margin-bottom:15px; font-weight:700;">${q.question}</h3>
+                        
+                        <div class="quiz-options">
+                            ${q.options.map((opt, idx) => `
+                                <div class="quiz-opt" onclick="window.checkAnswer(this, ${idx === Number(q.correctIndex)})">
+                                    ${opt}
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div class="quiz-feedback" style="display:none;">
+                            <strong>Gabarito:</strong><br>${q.explanation}
+                        </div>
+                    </div>
+                `;
+            });
+
+            htmlProva += `
+                <div style="text-align:center; padding:20px;">
+                    <button class="btn-action" onclick="window.fecharModalView()" style="background:#333; color:white;">Finalizar Prova</button>
+                </div></div>`;
+
+            // 6. Abrir no Visualizador
+            window.abrirQuizPlayer(`Prova Anatomia: ${filtro || "Geral"}`, htmlProva);
+            showFeedback("Prova gerada com sucesso!", false);
+
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao gerar a prova. Tente gerar menos questões ou verifique a conexão.");
+            showFeedback("Erro.", false);
+        }
+    };
+
 
     
     </script>
