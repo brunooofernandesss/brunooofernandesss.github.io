@@ -1232,12 +1232,51 @@
     }
 
 
-    // --- LÓGICA DE METAS (X/TOTAL) ---
+    // --- LÓGICA DE METAS (X/TOTAL) - CORRIGIDA ---
     function updateGoals() {
-        if (!allTasksCache.length) return;
+        // 1. Inicializa tudo como zero
+        let stats = {
+            daily: { total: 0, done: 0 },
+            weekly: { total: 0, done: 0 },
+            monthly: { total: 0, done: 0 }
+        };
 
-        const now = new Date();
-        const todayStr = now.toLocaleDateString('pt-BR');
+        // 2. Só calcula se houver tarefas (Se estiver vazio, pula para o passo 3 mantendo zeros)
+        if (allTasksCache.length > 0) {
+            const now = new Date();
+            const todayStr = now.toLocaleDateString('pt-BR');
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+
+            const currentWeekStart = getStartOfWeek(now);
+            const currentWeekEnd = new Date(currentWeekStart);
+            currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
+
+            allTasksCache.forEach(t => {
+                const tDate = new Date(t.targetDate);
+                // Diária (Hoje)
+                if (tDate.toLocaleDateString('pt-BR') === todayStr) {
+                    stats.daily.total++;
+                    if (t.concluido) stats.daily.done++;
+                }
+                // Semanal (Real)
+                if (tDate >= currentWeekStart && tDate <= currentWeekEnd) {
+                    stats.weekly.total++;
+                    if (t.concluido) stats.weekly.done++;
+                }
+                // Mensal
+                if (tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear) {
+                    stats.monthly.total++;
+                    if (t.concluido) stats.monthly.done++;
+                }
+            });
+        }
+
+        // 3. Atualiza a tela (Mesmo que seja 0/0)
+        updateProgressBar('Daily', stats.daily);
+        updateProgressBar('Weekly', stats.weekly);
+        updateProgressBar('Monthly', stats.monthly);
+    }
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
 
