@@ -826,7 +826,7 @@
                 },
 
                'Genital_Female': {
-                    title_pt: 'Genital Feminina',
+                    title_pt: 'Genital Feminina (Peças Plásticas)',
                     max_images: 5, 
                     descriptions: {
     'EmbeddedImage.jpg': 'Esta imagem foca na genitália externa e ligamentos de suporte em uma vista lateral e oblíqua. Quadrante Superior Esquerdo: Mostra o modelo de perfil. Há uma anotação em vermelho apontando para a região adiposa frontal: "Monte do púbis". Abaixo, em azul claro, aponta-se para o "lábio maior" e o "lábio menor". Quadrante Superior Direito: Zoom na região lateral. Em vermelho, destaca-se o "ligamento redondo" (indicando que ele se insere no lábio maior). Abaixo dele, em azul, a indicação do "lábio maior" e "lábio menor". As estruturas brancas lineares sobre a massa amarela representam fibras desse ligamento. Quadrante Inferior Central (Única imagem embaixo): Uma vista superior/oblíqua interna. Em azul turquesa, aponta para uma estrutura cilíndrica branca: "ligamento redondo". Vê-se também a bexiga (amarelo/laranja) e vasos sanguíneos (vermelho e azul).',
