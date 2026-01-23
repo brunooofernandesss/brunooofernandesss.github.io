@@ -1231,9 +1231,9 @@
         await loadAgenda(); // <--- ADICIONEI ESTA LINHA
     }
 
-    // --- LÓGICA DE METAS (X/TOTAL) - REFEITA E LIMPA ---
+    // --- LÓGICA DE METAS (X/TOTAL) - CORRIGIDA E LIMPA ---
     function updateGoals() {
-        // 1. Zera os contadores (Padrão 0/0)
+        // 1. Zera os contadores (Padrão 0/0) para limpar o visual
         let stats = {
             daily: { total: 0, done: 0 },
             weekly: { total: 0, done: 0 },
