@@ -541,9 +541,9 @@
         </div>
     </div>
 
-    <div class="modal" id="modalErros">
-        <div class="modal-content" style="max-width: 600px;">
-            <div class="editor-header">
+    <div class="modal" id="modalErros" style="z-index: 3100;">
+        <div class="modal-content" style="max-width: 600px; height: auto; max-height: 90vh; display: flex; flex-direction: column;">
+            <div class="editor-header" style="flex-shrink: 0;">
                 <h3 style="margin:0; color:#d44c47;"><i class="fas fa-exclamation-triangle"></i> Meus Pontos Cegos</h3>
                 <button class="btn-action" onclick="document.getElementById('modalErros').style.display='none'"><i class="fas fa-times"></i></button>
             </div>
@@ -694,7 +694,7 @@
 
     <main class="main-container">
         <div class="top-bar">
-            <div style="position: relative; margin-right: 20px; flex: 1; max-width: 400px;">
+            <div id="topBarSearch" style="position: relative; margin-right: 20px; flex: 1; max-width: 400px;">
                 <input type="text" id="globalSearch" placeholder="🔍 Buscar assunto..." 
                        onkeyup="window.realizarBusca(this.value)"
                        style="width: 100%; padding: 8px 35px 8px 15px; border-radius: 20px; border: 1px solid #e0e0e0; font-size: 13px; background: #f9f9f9; outline: none; transition: 0.2s;">
@@ -704,7 +704,7 @@
                 <div id="searchResults" style="display: none; position: absolute; top: 110%; left: 0; width: 100%; max-height: 400px; overflow-y: auto; background: white; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 5000;"></div>
             </div>
 
-            <div style="display:flex; align-items:center;">
+            <div id="topBarWeek" style="display:flex; align-items:center;">
                 <span style="margin-right: 8px;"><b>Semana:</b></span>
 
                 <div class="week-selector-wrapper">
@@ -2460,21 +2460,31 @@
         } catch(e) { alert("Erro ao deletar"); }
     };
 
+    // --- CONTROLE DA BARRA SUPERIOR ---
+    window.toggleTopBarElements = (show) => {
+        const search = document.getElementById('topBarSearch');
+        const week = document.getElementById('topBarWeek');
+        if (search) search.style.display = show ? 'block' : 'none';
+        if (week) week.style.display = show ? 'flex' : 'none';
+    };
+    
+    
         // --- NAVEGAÇÃO UNIFICADA DO MENU (Sidebar) ---
 
     // 1. Botão Cronograma
     document.getElementById('navBoard').onclick = () => {
-        // Esconde as outras telas
         document.getElementById('secLib').classList.add('hidden');
         document.getElementById('secAgenda').classList.add('hidden');
         document.getElementById('secQuizzes').classList.add('hidden');
+        document.getElementById('secAnatomia').classList.add('hidden');
+        document.getElementById('secSyllabus').classList.add('hidden');
         
-        // Mostra o Cronograma
         document.getElementById('secBoard').classList.remove('hidden');
 
-        // Atualiza estilo do menu
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('navBoard').classList.add('active');
+        
+        window.toggleTopBarElements(true); // MOSTRA BUSCA E SEMANA
     };
 
     // 2. Botão Biblioteca
@@ -2482,13 +2492,16 @@
         document.getElementById('secBoard').classList.add('hidden');
         document.getElementById('secAgenda').classList.add('hidden');
         document.getElementById('secQuizzes').classList.add('hidden');
+        document.getElementById('secAnatomia').classList.add('hidden');
+        document.getElementById('secSyllabus').classList.add('hidden');
         
         document.getElementById('secLib').classList.remove('hidden');
 
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('navLib').classList.add('active');
         
-        carregarBiblioteca(); // Garante que a lista esteja atualizada
+        carregarBiblioteca();
+        window.toggleTopBarElements(false); // ESCONDE PARA LIMPAR VISUAL
     };
 
     // 3. Botão Agenda
@@ -2496,31 +2509,35 @@
         document.getElementById('secBoard').classList.add('hidden');
         document.getElementById('secLib').classList.add('hidden');
         document.getElementById('secQuizzes').classList.add('hidden');
+        document.getElementById('secAnatomia').classList.add('hidden');
+        document.getElementById('secSyllabus').classList.add('hidden');
         
         document.getElementById('secAgenda').classList.remove('hidden');
         
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('navAgenda').classList.add('active');
         
-        renderAgendaBoard(); // Renderiza os cards da agenda
+        renderAgendaBoard();
+        window.toggleTopBarElements(true); // MOSTRA NA AGENDA TAMBÉM
     };
 
-    // 4. Botão Meus Simulados (Novo)
+    // 4. Botão Meus Simulados
     document.getElementById('navQuizzes').onclick = () => {
         document.getElementById('secBoard').classList.add('hidden');
         document.getElementById('secLib').classList.add('hidden');
         document.getElementById('secAgenda').classList.add('hidden');
+        document.getElementById('secAnatomia').classList.add('hidden');
+        document.getElementById('secSyllabus').classList.add('hidden');
         
         document.getElementById('secQuizzes').classList.remove('hidden');
         
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('navQuizzes').classList.add('active');
         
-        // Verifica se a função existe antes de chamar (segurança)
-        if (typeof carregarAbaQuizzes === "function") {
-            carregarAbaQuizzes();
-        }
+        if (typeof carregarAbaQuizzes === "function") carregarAbaQuizzes();
+        window.toggleTopBarElements(false); // ESCONDE
     };
+
 
 
   
@@ -2708,15 +2725,20 @@
     // 💀 MÓDULO ANATOMIA (INTEGRAÇÃO COM BANCO DE IMAGENS)
     // ============================================================
 
-    // 1. Navegação
+    // 1. Navegação Anatomia
     document.getElementById('navAnatomia').onclick = () => {
-        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes'].forEach(id => 
-            document.getElementById(id).classList.add('hidden')
-        );
+        // Esconde tudo explicitamente para garantir
+        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secSyllabus'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.classList.add('hidden');
+        });
+        
         document.getElementById('secAnatomia').classList.remove('hidden');
         
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('navAnatomia').classList.add('active');
+        
+        window.toggleTopBarElements(false); // ESCONDE TOPO
     };
 
     // 2. Lógica do Jogo (Versão Blindada v3)
@@ -3041,20 +3063,20 @@
     // 🎓 MÓDULO MATRIZ CURRICULAR (SYLLABUS) - LÓGICA
     // ============================================================
 
-    // 1. Navegação
+    // 1. Navegação Matriz
     document.getElementById('navSyllabus').onclick = () => {
-        // Esconde todas as outras seções
         ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia'].forEach(id => 
             document.getElementById(id).classList.add('hidden')
         );
         document.getElementById('secSyllabus').classList.remove('hidden');
         
-        // Atualiza menu
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('navSyllabus').classList.add('active');
         
         renderSyllabus();
+        window.toggleTopBarElements(false); // ESCONDE TOPO
     };
+
 
     // 2. Renderizar a Tabela Inteligente
     function renderSyllabus() {
