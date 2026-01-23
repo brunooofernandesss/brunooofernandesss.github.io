@@ -1231,7 +1231,6 @@
         await loadAgenda(); // <--- ADICIONEI ESTA LINHA
     }
 
-
     // --- LÓGICA DE METAS (X/TOTAL) - CORRIGIDA ---
     function updateGoals() {
         // 1. Inicializa tudo como zero
@@ -1241,7 +1240,7 @@
             monthly: { total: 0, done: 0 }
         };
 
-        // 2. Só calcula se houver tarefas (Se estiver vazio, pula para o passo 3 mantendo zeros)
+        // 2. Só calcula se houver tarefas
         if (allTasksCache.length > 0) {
             const now = new Date();
             const todayStr = now.toLocaleDateString('pt-BR');
@@ -1253,7 +1252,11 @@
             currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
 
             allTasksCache.forEach(t => {
+                // Proteção contra datas inválidas
+                if (!t.targetDate) return;
+                
                 const tDate = new Date(t.targetDate);
+                
                 // Diária (Hoje)
                 if (tDate.toLocaleDateString('pt-BR') === todayStr) {
                     stats.daily.total++;
@@ -1277,6 +1280,25 @@
         updateProgressBar('Weekly', stats.weekly);
         updateProgressBar('Monthly', stats.monthly);
     }
+
+    function updateProgressBar(type, data) {
+        const pct = data.total === 0 ? 0 : Math.round((data.done / data.total) * 100);
+        
+        const bar = document.getElementById(`goal${type}Bar`);
+        const text = document.getElementById(`goal${type}Text`);
+        
+        if (bar && text) {
+            bar.style.width = `${pct}%`;
+            text.textContent = `${data.done}/${data.total}`;
+            
+            if (pct === 100 && data.total > 0) {
+                bar.classList.add('complete');
+            } else {
+                bar.classList.remove('complete');
+            }
+        }
+    }
+
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
 
