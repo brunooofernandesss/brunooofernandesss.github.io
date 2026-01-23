@@ -1231,17 +1231,17 @@
         await loadAgenda(); // <--- ADICIONEI ESTA LINHA
     }
 
-    // --- LÓGICA DE METAS (X/TOTAL) - CORRIGIDA ---
+    // --- LÓGICA DE METAS (X/TOTAL) - REFEITA E LIMPA ---
     function updateGoals() {
-        // 1. Inicializa tudo como zero
+        // 1. Zera os contadores (Padrão 0/0)
         let stats = {
             daily: { total: 0, done: 0 },
             weekly: { total: 0, done: 0 },
             monthly: { total: 0, done: 0 }
         };
 
-        // 2. Só calcula se houver tarefas
-        if (allTasksCache.length > 0) {
+        // 2. Se houver tarefas, calcula. Se não, mantém zero.
+        if (allTasksCache && allTasksCache.length > 0) {
             const now = new Date();
             const todayStr = now.toLocaleDateString('pt-BR');
             const currentMonth = now.getMonth();
@@ -1252,11 +1252,9 @@
             currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
 
             allTasksCache.forEach(t => {
-                // Proteção contra datas inválidas
                 if (!t.targetDate) return;
-                
                 const tDate = new Date(t.targetDate);
-                
+
                 // Diária (Hoje)
                 if (tDate.toLocaleDateString('pt-BR') === todayStr) {
                     stats.daily.total++;
@@ -1275,7 +1273,7 @@
             });
         }
 
-        // 3. Atualiza a tela (Mesmo que seja 0/0)
+        // 3. Atualiza a tela (vai mostrar 0/0 se a lista estiver vazia)
         updateProgressBar('Daily', stats.daily);
         updateProgressBar('Weekly', stats.weekly);
         updateProgressBar('Monthly', stats.monthly);
@@ -1298,6 +1296,7 @@
             }
         }
     }
+
 
 
     // --- NAVEGAÇÃO BLINDADA (SUBSTITUA A FUNÇÃO ORIGINAL) ---
