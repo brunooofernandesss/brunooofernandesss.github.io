@@ -887,6 +887,8 @@
     let allTasksCache = []; 
     let allAgendaCache = [];
     let isUploadingImage = false; 
+    let viewingLibraryId = null; // <--- NOVA VARIÁVEL DE CONTROLE
+
 
     // --- CONFIGURAÇÃO QUILL ---
     const quill = new Quill('#quill-editor', {
@@ -1593,7 +1595,7 @@
         if (snap.empty) { tbody.innerHTML = '<tr><td colspan="4" style="padding:20px; text-align:center; color:#999;">Vazio.</td></tr>'; return; }
         
         snap.forEach(d => {
-            const f = d.data();
+            const f = { id: d.id, ...d.data() }; // <--- ADICIONA O ID AQUI
             const date = new Date(f.data).toLocaleDateString('pt-BR') + ' ' + new Date(f.data).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
             const icon = f.tipo === 'pdf' ? '<i class="far fa-file-pdf" style="color:#d44c47"></i>' : '<i class="far fa-file-alt" style="color:#2383e2"></i>';
             const tr = document.createElement('tr');
@@ -1718,11 +1720,14 @@
 
 
     window.abrirArquivoBiblioteca = (fileData) => {
+        viewingLibraryId = fileData.id; // <--- GUARDA O ID DO ARQUIVO
+        editingDocId = null; // GARANTE QUE NÃO É TAREFA
+
         const container = document.getElementById('viewContainer');
         const btnEdit = document.getElementById('btnEditarNota');
         const btnExcluir = document.getElementById('btnExcluirEstudo');
         
-            document.getElementById('viewTitle').textContent = fileData.nome;
+    document.getElementById('viewTitle').textContent = fileData.nome;
     document.getElementById('viewTagDisplay').textContent = fileData.tag;
     document.getElementById('modalView').style.display = 'flex';
 
@@ -1783,9 +1788,11 @@
         
         document.getElementById('modalView').style.display = 'flex';
         editingDocId = id; 
+        viewingLibraryId = null; // <--- LIMPA ID DA BIBLIOTECA
 
             document.getElementById('modalView').style.display = 'flex';
     editingDocId = id; 
+
 
     if (data.pdfUrl) {
         document.getElementById('viewTypeIcon').innerHTML = '<i class="far fa-file-pdf" style="color:#d44c47; font-size:20px;"></i>';
@@ -1845,56 +1852,90 @@
         setTimeout(() => quill.focus(), 100);
     };
 
-    // --- FUNÇÃO DO BOTÃO EXCLUIR ESTUDO ---
+    // --- FUNÇÃO DO BOTÃO EXCLUIR ESTUDO (VERSÃO HÍBRIDA: TAREFA + ARQUIVO) ---
     document.getElementById('btnExcluirEstudo').onclick = async () => {
-        if (!editingDocId) return;
-        const confirmacao = confirm("⚠️ Tem certeza?\n\nIsso excluirá o estudo e TODAS as revisões associadas (REC, D+1, D+7, etc).");
+        // Verifica se tem algo aberto (seja tarefa ou arquivo da lib)
+        if (!editingDocId && !viewingLibraryId) return;
+        
+        const confirmacao = confirm("⚠️ ATENÇÃO:\n\nIsso apagará este estudo da Biblioteca e TODAS as revisões do cronograma.\n\nTem certeza?");
         if (!confirmacao) return;
 
-        try {
-            showFeedback("Excluindo estudo...", true);
-            
-            const refDoc = doc(db, "planners", currentUID, "tasks", editingDocId);
-            const snap = await getDoc(refDoc);
-            if (!snap.exists()) throw "Documento não encontrado";
-            
-            const data = snap.data();
-            const baseTitle = data.titulo.replace(/\[.*?\]/, '').trim(); 
+        showFeedback("Excluindo tudo...", true);
 
-            const q = query(collection(db, "planners", currentUID, "tasks"));
-            const all = await getDocs(q);
+        try {
+            let nomeParaApagar = "";
+
+            // CENÁRIO A: Aberto pelo Cronograma (Tarefa)
+            if (editingDocId) {
+                const docRef = doc(db, "planners", currentUID, "tasks", editingDocId);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    // Limpa tags como [REC], [D+1] para pegar o nome base
+                    nomeParaApagar = data.titulo.replace(/\[.*?\]/, '').trim();
+                    await deleteDoc(docRef); // Apaga a tarefa que estava aberta
+                }
+            }
+            // CENÁRIO B: Aberto pela Biblioteca (Arquivo)
+            else if (viewingLibraryId) {
+                const libRef = doc(db, "planners", currentUID, "arquivos", viewingLibraryId);
+                const libSnap = await getDoc(libRef);
+                if (libSnap.exists()) {
+                    const data = libSnap.data();
+                    nomeParaApagar = data.nome.trim();
+                    await deleteDoc(libRef); // Apaga o arquivo da biblioteca
+                }
+            }
+
+            if (!nomeParaApagar) {
+                showFeedback("Erro ao identificar nome.", false);
+                return;
+            }
+
+            // AGORA: Varredura Geral para apagar "filhos" e duplicatas
             const deletions = [];
-            
-            all.forEach(d => {
-                const t = d.data();
-                const tBase = t.titulo.replace(/\[.*?\]/, '').trim();
-                if (tBase === baseTitle) {
+
+            // 1. Apaga todas as tarefas do cronograma com esse mesmo nome
+            const qTasks = query(collection(db, "planners", currentUID, "tasks"));
+            const allTasks = await getDocs(qTasks);
+            allTasks.forEach(d => {
+                const tTitle = d.data().titulo.replace(/\[.*?\]/, '').trim();
+                // Apaga se tiver o mesmo nome E não for o que a gente já apagou acima
+                if (tTitle === nomeParaApagar && d.id !== editingDocId) { 
                     deletions.push(deleteDoc(d.ref));
                 }
             });
-            await Promise.all(deletions);
 
+            // 2. Apaga da biblioteca (se viemos do cronograma, o arquivo original ainda existe)
             const qLib = query(collection(db, "planners", currentUID, "arquivos"));
-            const libSnap = await getDocs(qLib);
-            libSnap.forEach(d => {
-                if (d.data().nome === baseTitle) {
-                    deleteDoc(d.ref);
+            const allLib = await getDocs(qLib);
+            allLib.forEach(d => {
+                if (d.data().nome.trim() === nomeParaApagar && d.id !== viewingLibraryId) {
+                    deletions.push(deleteDoc(d.ref)); 
                 }
             });
 
-            showFeedback("Estudo excluído", false);
+            await Promise.all(deletions);
+
+            showFeedback("✅ Tudo excluído com sucesso!", false);
+            
+            // Reseta variáveis e fecha
             editingDocId = null;
+            viewingLibraryId = null;
             fecharModalView();
-            loadDataAndInit();
-            carregarBiblioteca();
+            
+            // Atualiza as duas telas para garantir
+            loadDataAndInit(); 
+            carregarBiblioteca(); 
 
         } catch (e) {
             console.error(e);
-            showFeedback("Erro ao excluir", false);
-            alert("Erro ao excluir o estudo.");
+            showFeedback("Erro ao excluir.", false);
+            alert("Erro ao processar exclusão.");
         }
     };
 
+    
         // --- LÓGICA DO PDF.JS (REFEITA PARA TEXTO SELECIONÁVEL & ZOOM) ---
     let pdfDoc = null;
     let pageNum = 1;
