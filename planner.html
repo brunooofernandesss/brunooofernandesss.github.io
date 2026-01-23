@@ -639,6 +639,82 @@
         </div>
     </div>
 
+        <div class="modal" id="modalConfigSimulado" style="z-index: 3600;">
+        <div class="modal-content" style="max-width: 900px; height: 90vh; display:flex; flex-direction:column; box-shadow: 0 0 50px rgba(0,0,0,0.5);">
+            
+            <div class="editor-header">
+                <h3 style="margin:0; color:#333;"><i class="fas fa-sliders-h"></i> Configurar Prova R1</h3>
+                <button class="btn-action" onclick="document.getElementById('modalConfigSimulado').style.display='none'" style="background:#f0f0f0; border:1px solid #ddd;">Fechar</button>
+            </div>
+
+            <div class="editor-body" style="padding: 25px; display: flex; gap: 30px; overflow-y: auto; background: #f8f9fa; flex-direction: column; md:flex-row;">
+                
+                <div style="flex: 1; background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; display: flex; flex-direction: column;">
+                    <div style="border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; display:flex; justify-content:space-between; align-items:center;">
+                        <h4 style="margin:0; color:#2c3e50;"><i class="fas fa-book"></i> Matérias (Banco de Questões)</h4>
+                        <label style="font-size:12px; cursor:pointer; user-select:none; font-weight:600;">
+                            <input type="checkbox" id="checkAllMaterias" onchange="window.toggleAllMaterias(this.checked)" checked> Selecionar Tudo
+                        </label>
+                    </div>
+                    
+                    <div style="flex:1; overflow-y:auto; min-height: 200px; max-height: 300px;" id="containerCheckboxesMaterias">
+                        <div style="color:#999; font-style:italic; padding:20px; text-align:center;">Carregando suas tags...</div>
+                    </div>
+
+                    <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
+                        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Quantidade de Questões de Texto:</label>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <input type="number" id="qtdQuestõesTexto" value="20" style="padding:8px; width:80px; border:1px solid #ccc; border-radius:4px;">
+                            <label style="font-size:13px; color:#555;">
+                                <input type="checkbox" id="checkUsarTodas" onchange="document.getElementById('qtdQuestõesTexto').disabled = this.checked"> 
+                                Usar TODAS disponíveis
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 15px;">
+                    
+                    <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; border-left: 5px solid #8e44ad;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <h4 style="margin:0; color:#8e44ad;"><i class="fas fa-bone"></i> Anatomia (Imagens)</h4>
+                            <label style="cursor:pointer;">
+                                <input type="checkbox" id="checkIncluirAnatomia" checked> Incluir
+                            </label>
+                        </div>
+                        <div style="display:flex; gap:10px; flex-direction:column;">
+                            <select id="selRegiaoSimulado" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+                                <option value="">Região: Aleatória (Geral)</option>
+                            </select>
+                            <div style="display:flex; align-items:center; gap:10px; font-size:13px;">
+                                <span>Questões:</span>
+                                <input type="number" id="qtdAnatomia" value="10" style="padding:6px; width:60px; border:1px solid #ccc; border-radius:4px;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: #f0f0f0; padding: 20px; border-radius: 8px; border: 1px solid #ddd; opacity: 0.6;">
+                        <h4 style="margin:0; color:#7f8c8d; margin-bottom:5px;"><i class="fas fa-microscope"></i> Histologia</h4>
+                        <p style="font-size:12px; margin:0;">Em breve...</p>
+                    </div>
+                    <div style="background: #f0f0f0; padding: 20px; border-radius: 8px; border: 1px solid #ddd; opacity: 0.6;">
+                        <h4 style="margin:0; color:#7f8c8d; margin-bottom:5px;"><i class="fas fa-user-md"></i> Semiologia</h4>
+                        <p style="font-size:12px; margin:0;">Em breve...</p>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="editor-footer">
+                <button class="btn-action" onclick="document.getElementById('modalConfigSimulado').style.display='none'">Cancelar</button>
+                <button class="btn-action btn-primary" onclick="window.iniciarSimuladoMisto()" style="padding: 10px 25px; font-size: 16px;">
+                    <i class="fas fa-play"></i> INICIAR PROVA
+                </button>
+            </div>
+        </div>
+    </div>
+
+    
     <div id="statusFeedback">Processando...</div>
 
     <aside class="sidebar">
@@ -770,11 +846,15 @@
                     </div>
             </section>
             
-                        <section id="secQuizzes" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+            <section id="secQuizzes" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
                 <div class="header-actions">
                     <h1 class="page-title">Meus Simulados</h1>
+                    <button class="btn-action btn-primary" onclick="window.abrirConfiguradorProva()">
+                        <i class="fas fa-cogs"></i> Montar Simulado R1
+                    </button>
                 </div>
                 <div style="background: white; border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden;">
+            
                     <table style="width:100%; border-collapse:collapse; font-size:14px;">
                         <thead style="background: #f9f9f9; border-bottom: 1px solid var(--border-color);">
                             <tr style="text-align:left; color: #777;">
@@ -2720,11 +2800,15 @@
             tr.innerHTML = `
                 <td style="padding:12px; font-weight:500;">${data.titulo}</td>
                 <td style="padding:12px; color:#777;">${dataCriacao}</td>
-                <td style="padding:12px;">
+                <td style="padding:12px; display: flex; gap: 8px;">
                     <button class="btn-action" onclick="window.fetchAndPlayQuiz('${docSnap.id}')"><i class="fas fa-play"></i> Fazer</button>
+                    <button class="btn-action" onclick="window.excluirQuiz('${docSnap.id}')" title="Excluir Simulado" style="color:#d44c47; border-color:#ffe2dd; background:#fff5f5;">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </td>
             `;
             tbody.appendChild(tr);
+
         });
     }
 
@@ -2737,8 +2821,23 @@
         }
     };
 
+    // --- EXCLUIR SIMULADO SALVO (NOVO) ---
+    window.excluirQuiz = async (id) => {
+        if(!confirm("Tem certeza que deseja excluir este simulado permanentemente?")) return;
+        
+        try {
+            await deleteDoc(doc(db, "planners", currentUID, "quizzes", id));
+            showFeedback("🗑️ Simulado excluído.", false);
+            carregarAbaQuizzes(); // Atualiza a lista na hora
+        } catch(e) {
+            console.error(e);
+            alert("Erro ao excluir simulado.");
+        }
+    };
+
     // --- NAVEGAÇÃO PARA ABA QUIZZES ---
-    document.getElementById('navQuizzes').onclick = () => {
+    
+        document.getElementById('navQuizzes').onclick = () => {
         document.getElementById('secBoard').classList.add('hidden');
         document.getElementById('secLib').classList.add('hidden');
         document.getElementById('secAgenda').classList.add('hidden');
@@ -3023,6 +3122,205 @@
             alert("Erro ao conectar com a IA.");
         }
     };
+    
+        // ============================================================
+    // ⚙️ CONFIGURADOR DO SIMULADO GERAL (Fase 1)
+    // ============================================================
+
+    window.abrirConfiguradorProva = () => {
+        const modal = document.getElementById('modalConfigSimulado');
+        const containerMaterias = document.getElementById('containerCheckboxesMaterias');
+        const selAnato = document.getElementById('selRegiaoSimulado');
+
+        modal.style.display = 'flex';
+        containerMaterias.innerHTML = '';
+
+        // 1. POPULAR MATÉRIAS (Tags das Tarefas)
+        const todasTags = allTasksCache
+            .map(t => t.tag ? t.tag.trim().toUpperCase() : "GERAL")
+            .filter(tag => tag !== "");
+        
+        const tagsUnicas = [...new Set(todasTags)].sort();
+
+        if (tagsUnicas.length === 0) {
+            containerMaterias.innerHTML = '<div style="padding:10px; color:#666;">Crie estudos primeiro para ter matérias.</div>';
+        } else {
+            tagsUnicas.forEach(tag => {
+                const div = document.createElement('div');
+                div.style.padding = "8px 0";
+                div.style.borderBottom = "1px dashed #eee";
+                div.innerHTML = `
+                    <label style="display:flex; align-items:center; cursor:pointer; font-size:14px; width:100%;">
+                        <input type="checkbox" class="chk-materia" value="${tag}" checked style="margin-right:10px; transform:scale(1.2);">
+                        ${tag}
+                    </label>
+                `;
+                containerMaterias.appendChild(div);
+            });
+        }
+
+        // 2. POPULAR REGIÕES DE ANATOMIA
+        if (selAnato.options.length <= 1 && typeof bancoAnatomia !== 'undefined') {
+            const chaves = Object.keys(bancoAnatomia).sort((a,b) => bancoAnatomia[a].title_pt.localeCompare(bancoAnatomia[b].title_pt));
+            chaves.forEach(key => {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.text = bancoAnatomia[key].title_pt;
+                selAnato.appendChild(opt);
+            });
+        }
+    };
+
+    window.toggleAllMaterias = (checked) => {
+        document.querySelectorAll('.chk-materia').forEach(chk => chk.checked = checked);
+    };
+
+    // ============================================================
+    // 🚀 MOTOR DO SIMULADO GERAL (FASE 2 - FINAL)
+    // ============================================================
+    window.iniciarSimuladoMisto = async () => {
+        // 1. CAPTURAR CONFIGURAÇÕES DO USUÁRIO
+        const chkMaterias = Array.from(document.querySelectorAll('.chk-materia:checked')).map(c => c.value);
+        const usarTodasTexto = document.getElementById('checkUsarTodas').checked;
+        const qtdTexto = usarTodasTexto ? 9999 : parseInt(document.getElementById('qtdQuestõesTexto').value);
+        
+        const incluirAnato = document.getElementById('checkIncluirAnatomia').checked;
+        const regiaoAnato = document.getElementById('selRegiaoSimulado').value;
+        const qtdAnato = parseInt(document.getElementById('qtdAnatomia').value);
+
+        if (chkMaterias.length === 0 && !incluirAnato) return alert("Selecione ao menos uma matéria ou inclua Anatomia.");
+
+        // Fecha modal e mostra loading
+        document.getElementById('modalConfigSimulado').style.display = 'none';
+        showFeedback("⚙️ Montando sua prova personalizada...", true);
+
+        let questoesFinais = [];
+
+        try {
+            // --- PARTE A: QUESTÕES DE TEXTO (DO FIRESTORE) ---
+            if (chkMaterias.length > 0) {
+                const q = query(collection(db, "planners", currentUID, "quizzes"));
+                const snap = await getDocs(q);
+                let poolTexto = [];
+
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    const titulo = (data.titulo || "").toUpperCase();
+                    // Filtro simples: Se "Selecionar Tudo" (lista cheia) ou se o título bate com alguma tag
+                    const ehRelevante = document.getElementById('checkAllMaterias').checked || 
+                                        chkMaterias.some(tag => titulo.includes(tag) || tag === "GERAL");
+
+                    if (ehRelevante) {
+                        const div = document.createElement('div');
+                        div.innerHTML = data.html;
+                        const cards = div.querySelectorAll('.quiz-card');
+                        
+                        cards.forEach(card => {
+                            // Adiciona etiqueta de origem para contexto
+                            const label = document.createElement('div');
+                            label.style.cssText = "font-size:10px; color:#aaa; margin-bottom:5px; text-transform:uppercase; letter-spacing:1px;";
+                            label.innerText = `Fonte: ${data.titulo}`;
+                            card.insertBefore(label, card.firstChild);
+                            poolTexto.push(card.outerHTML);
+                        });
+                    }
+                });
+
+                // Embaralha e corta
+                poolTexto.sort(() => Math.random() - 0.5);
+                questoesFinais.push(...poolTexto.slice(0, qtdTexto));
+            }
+
+            // --- PARTE B: QUESTÕES DE ANATOMIA (GERADAS NA HORA) ---
+            if (incluirAnato && qtdAnato > 0 && typeof bancoAnatomia !== 'undefined') {
+                showFeedback("🦴 O Preceptor está selecionando imagens...", true);
+                
+                let poolImagens = [];
+                const pastas = regiaoAnato ? [regiaoAnato] : Object.keys(bancoAnatomia);
+
+                pastas.forEach(p => {
+                    const d = bancoAnatomia[p];
+                    Object.keys(d.descriptions).forEach(f => {
+                        poolImagens.push({
+                            desc: d.descriptions[f],
+                            url: `https://brunooofernandesss.github.io/Anatomia/Michigan/${p}/${f}`
+                        });
+                    });
+                });
+
+                // Sorteia N imagens
+                poolImagens.sort(() => Math.random() - 0.5);
+                const selecionadas = poolImagens.slice(0, qtdAnato);
+
+                if (selecionadas.length > 0) {
+                    // Prepara payload pro Worker
+                    const payload = selecionadas.map((img, i) => ({ id: i, desc: img.desc }));
+                    
+                    const res = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ action: "gerar_prova_anatomia", listaImagens: payload })
+                    });
+
+                    if (res.ok) {
+                        const dadosAnato = await res.json();
+                        dadosAnato.forEach(q => {
+                            const imgOrig = selecionadas[q.id_imagem];
+                            const cardHTML = `
+                                <div class="quiz-card" style="border-left: 4px solid #8e44ad;">
+                                    <div style="text-align:center; background:#000; padding:10px; border-radius:8px; margin-bottom:15px;">
+                                        <img src="${imgOrig.url}" style="max-width:100%; max-height:350px; object-fit:contain;">
+                                    </div>
+                                    <div style="font-size:10px; color:#8e44ad; font-weight:700; margin-bottom:5px; text-transform:uppercase;">ANATOMIA PRÁTICA</div>
+                                    <p style="font-style:italic; font-size:14px; margin-bottom:10px;">"${q.clinical_case}"</p>
+                                    <h3 class="quiz-question" style="font-size:16px; margin-bottom:15px; font-weight:700;">${q.question}</h3>
+                                    <div class="quiz-options">
+                                        ${q.options.map((opt, i) => `
+                                            <div class="quiz-opt" onclick="window.checkAnswer(this, ${i === Number(q.correctIndex)})">${opt}</div>
+                                        `).join('')}
+                                    </div>
+                                    <div class="quiz-feedback" style="display:none;">
+                                        <strong>Gabarito:</strong><br>${q.explanation || "Verifique a imagem."}
+                                    </div>
+                                </div>
+                            `;
+                            questoesFinais.push(cardHTML);
+                        });
+                    }
+                }
+            }
+
+            // --- PARTE C: MISTURA FINAL E EXIBIÇÃO ---
+            if (questoesFinais.length === 0) throw new Error("Nenhuma questão encontrada ou gerada.");
+
+            questoesFinais.sort(() => Math.random() - 0.5); // Embaralha tudo
+
+            const htmlProva = `
+                <div style="max-width:800px; margin:0 auto;">
+                    <div style="text-align:center; margin-bottom:30px; border-bottom:1px solid #eee; padding-bottom:20px;">
+                        <h2 style="color:#333;">Simulado Geral R1</h2>
+                        <p style="color:#666;">
+                            <b>${questoesFinais.length} Questões</b> • Modo Aleatório
+                        </p>
+                    </div>
+                    ${questoesFinais.join('<hr style="border:0; border-top:1px dashed #ddd; margin:40px 0;">')}
+                    <div style="text-align:center; margin-top:50px; padding:30px; background:#f9f9f9; border-radius:8px;">
+                        <h3>Fim da Prova</h3>
+                        <button class="btn-action" onclick="window.fecharModalView()" style="background:#333; color:white; padding:10px 20px;">Encerrar Simulado</button>
+                    </div>
+                </div>
+            `;
+
+            window.abrirQuizPlayer("Simulado Geral Personalizado", htmlProva);
+            showFeedback("Prova Pronta!", false);
+
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao criar prova: " + e.message);
+            showFeedback("Erro.", false);
+        }
+    };
+
 
     // ============================================================
     // 🔍 BUSCA GLOBAL INSTANTÂNEA
