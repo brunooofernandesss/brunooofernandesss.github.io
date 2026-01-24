@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LavaJato Express - Agendamento Online</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #0056b3;
+            --background-light: #f4f4f9;
+            --text-dark: #333;
+            --white: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background-light);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        header {
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+        }
+
+        nav button {
+            background: none;
+            border: 1px solid var(--white);
+            color: var(--white);
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: 0.3s;
+        }
+
+        nav button:hover {
+            background-color: var(--white);
+            color: var(--primary-color);
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 3rem 1rem;
+            background: linear-gradient(135deg, #007bff 0%, #00c6ff 100%);
+            color: white;
+        }
+
+        .hero h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Container Principal */
+        .container {
+            max-width: 800px;
+            margin: -50px auto 2rem;
+            padding: 0 1rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--white);
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .card h3 {
+            margin-bottom: 1.5rem;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--background-light);
+            padding-bottom: 0.5rem;
+        }
+
+        /* Formulário de Agendamento */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .form-group input, 
+        .form-group select, 
+        .form-group textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        .vehicle-options {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .vehicle-option {
+            flex: 1;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .vehicle-option.selected {
+            border-color: var(--primary-color);
+            background-color: #e7f1ff;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 1rem;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-submit:hover {
+            background-color: #218838;
+        }
+
+        /* Área do Trabalhador */
+        .worker-section {
+            background-color: #343a40;
+            color: white;
+            text-align: center;
+            padding: 3rem 1rem;
+        }
+
+        .btn-worker {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            margin-top: 1rem;
+            cursor: pointer;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 1.5rem;
+            background-color: #ddd;
+            font-size: 0.9rem;
+        }
+
+        /* Responsividade */
+        @media (max-width: 600px) {
+            .hero h2 { font-size: 2rem; }
+            .container { margin-top: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>LavaJato Express</h1>
+        <nav>
+            <button onclick="document.getElementById('agendamento').scrollIntoView()">Agendar</button>
+            <button onclick="document.getElementById('trabalhar').scrollIntoView()">Sou Lavador</button>
+        </nav>
+    </header>
+
+    <div class="hero">
+        <h2>Seu veículo limpo sem sair de casa</h2>
+        <p>Conectamos você aos melhores lavadores da sua região.</p>
+    </div>
+
+    <div class="container">
+        
+        <div class="card" id="agendamento">
+            <h3>Agendar Lavagem</h3>
+            <form id="bookingForm">
+                
+                <div class="form-group">
+                    <label>Qual é o seu veículo?</label>
+                    <div class="vehicle-options">
+                        <div class="vehicle-option" onclick="selectVehicle('carro', this)">
+                            🚗 Carro
+                        </div>
+                        <div class="vehicle-option" onclick="selectVehicle('moto', this)">
+                            🏍️ Moto
+                        </div>
+                    </div>
+                    <input type="hidden" id="tipoVeiculo" name="tipoVeiculo" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="endereco">Endereço de Coleta/Lavagem:</label>
+                    <input type="text" id="endereco" placeholder="Rua, Número, Bairro" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="data">Data:</label>
+                    <input type="date" id="data" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="hora">Horário Preferido:</label>
+                    <input type="time" id="hora" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="obs">Observações (Opcional):</label>
+                    <textarea id="obs" rows="3" placeholder="Ex: Preciso de troco para 50, Cuidado com o retrovisor..."></textarea>
+                </div>
+
+                <button type="submit" class="btn-submit">Confirmar Agendamento</button>
+            </form>
+        </div>
+
+    </div>
+
+    <div class="worker-section" id="trabalhar">
+        <h3>Quer ganhar dinheiro extra?</h3>
+        <p>Cadastre-se como lavador parceiro e receba ofertas de trabalho perto de você.</p>
+        <button class="btn-worker" onclick="alert('Área de cadastro do lavador será aberta aqui!')">Quero ser um parceiro</button>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 LavaJato Express - Todos os direitos reservados.</p>
+    </footer>
+
+    <script>
+        // Função para selecionar visualmente o veículo
+        function selectVehicle(type, element) {
+            // Remove a classe 'selected' de todas as opções
+            document.querySelectorAll('.vehicle-option').forEach(el => el.classList.remove('selected'));
+            
+            // Adiciona na opção clicada
+            element.classList.add('selected');
+            
+            // Atualiza o input escondido
+            document.getElementById('tipoVeiculo').value = type;
+        }
+
+        // Lidar com o envio do formulário
+        document.getElementById('bookingForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const veiculo = document.getElementById('tipoVeiculo').value;
+            const endereco = document.getElementById('endereco').value;
+            const data = document.getElementById('data').value;
+            const hora = document.getElementById('hora').value;
+
+            if (!veiculo) {
+                alert("Por favor, selecione se é Carro ou Moto.");
+                return;
+            }
+
+            // Aqui você conectaria com o Backend/Banco de Dados
+            const mensagem = `
+                ✅ Agendamento Recebido!
+                
+                Veículo: ${veiculo.toUpperCase()}
+                Endereço: ${endereco}
+                Data: ${data}
+                Horário: ${hora}
+                
+                Nossos lavadores foram notificados!
+            `;
+
+            alert(mensagem);
+            
+            // Resetar formulário
+            this.reset();
+            document.querySelectorAll('.vehicle-option').forEach(el => el.classList.remove('selected'));
+        });
+    </script>
+
+</body>
+</html>
