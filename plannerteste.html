@@ -851,6 +851,11 @@
                         <button class="btn-action" style="background: #9065b0; color: white; border:none;" onclick="window.abrirModalAgendaIA()">
                             <i class="fas fa-magic"></i> Gerar Rotina IA
                         </button>
+                        
+                        <button class="btn-action" onclick="window.exportarAgendaICS()" title="Baixar para Google Calendar" style="border:1px solid #ddd;">
+                            <i class="fas fa-file-export" style="color:#2383e2;"></i> Exportar
+                        </button>
+
                         <button class="btn-action btn-primary" id="btnNovaAgenda"><i class="fas fa-plus"></i> Novo Horário</button>
                     </div>
                 </div>
@@ -2581,6 +2586,57 @@
             renderAgendaBoard(); // Atualiza tela
         } catch(e) { alert("Erro ao deletar"); }
     };
+    
+    
+    // --- EXPORTAR PARA GOOGLE CALENDAR (.ICS) ---
+    window.exportarAgendaICS = () => {
+        if (!allAgendaCache || allAgendaCache.length === 0) return alert("Sua agenda está vazia.");
+
+        let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//PlannerMed//R1//PT-BR\nCALSCALE:GREGORIAN\nMETHOD:PUBLISH\n";
+
+        allAgendaCache.forEach(item => {
+            if (!item.data || !item.inicio || !item.fim) return;
+
+            // Formatação de Datas para o padrão iCal (YYYYMMDDTHHmm00)
+            const diaLimpo = item.data.replace(/-/g, ''); // 2024-01-20 -> 20240120
+            const inicioLimpo = item.inicio.replace(/:/g, '') + '00'; // 14:30 -> 143000
+            const fimLimpo = item.fim.replace(/:/g, '') + '00';
+
+            const dtStart = `${diaLimpo}T${inicioLimpo}`;
+            const dtEnd = `${diaLimpo}T${fimLimpo}`;
+            const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+
+            icsContent += "BEGIN:VEVENT\n";
+            icsContent += `UID:${item.id || Date.now()}@plannermed.com\n`;
+            icsContent += `DTSTAMP:${now}\n`;
+            icsContent += `DTSTART:${dtStart}\n`;
+            icsContent += `DTEND:${dtEnd}\n`;
+            icsContent += `SUMMARY:${item.titulo}\n`;
+            icsContent += "DESCRIPTION:Sessão de estudo gerada pelo Planner R1.\n";
+            
+            // --- BLOCO DO ALARME (NOTIFICAÇÃO) ---
+            icsContent += "BEGIN:VALARM\n";
+            icsContent += "TRIGGER:-PT10M\n"; // Toca 10 minutos antes
+            icsContent += "ACTION:DISPLAY\n";
+            icsContent += "DESCRIPTION:Hora de Estudar!\n";
+            icsContent += "END:VALARM\n";
+            // -------------------------------------
+            
+            icsContent += "END:VEVENT\n";
+        });
+
+        icsContent += "END:VCALENDAR";
+
+        // Cria o arquivo e força o download
+        const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.setAttribute('download', 'minha_agenda_estudos.ics');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
 
     // --- CONTROLE DA BARRA SUPERIOR ---
     window.toggleTopBarElements = (show) => {
