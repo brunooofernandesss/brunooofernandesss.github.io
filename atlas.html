@@ -1,44 +1,99 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <title>SecondLook Atlas</title>
 <style>
-body { font-family: Arial; background:#111; color:#eee; }
-h2 { border-bottom:1px solid #444; }
-img { max-width:300px; margin:5px; border-radius:8px; }
-.card { display:inline-block; margin:10px; text-align:center; }
-.desc { font-size:12px; color:#aaa; max-width:300px; }
+body { 
+  font-family: Arial, sans-serif; 
+  background:#111; 
+  color:#eee; 
+}
+h1 { margin-bottom: 20px; }
+h2 { 
+  border-bottom:1px solid #444; 
+  margin-top: 40px;
+}
+img { 
+  max-width:300px; 
+  margin:5px; 
+  border-radius:8px; 
+  display:block;
+}
+.card { 
+  display:inline-block; 
+  margin:10px; 
+  text-align:center; 
+  vertical-align: top;
+}
+.desc { 
+  font-size:12px; 
+  color:#aaa; 
+  max-width:300px; 
+  line-height:1.4;
+}
+.type { 
+  font-weight: bold; 
+  color: #7dd3fc;
+}
 </style>
 </head>
 <body>
+
 <h1>SecondLook Histology Atlas</h1>
 <div id="atlas"></div>
+
 <script>
-fetch('atlas.json').then(r=>r.json()).then(data=>{
-  const root = document.getElementById("atlas");
-  const groups = {};
-  data.forEach(x=>{
-    if(!groups[x.system]) groups[x.system] = [];
-    groups[x.system].push(x);
-  });
+fetch('./atlas.json')
+  .then(r => {
+    if (!r.ok) throw new Error("Erro ao carregar atlas.json");
+    return r.json();
+  })
+  .then(data => {
 
-  for(const sys in groups){
-    const h = document.createElement("h2");
-    h.textContent = sys;
-    root.appendChild(h);
+    const root = document.getElementById("atlas");
+    const groups = {};
 
-    groups[sys].forEach(img=>{
-      const d = document.createElement("div");
-      d.className = "card";
-      d.innerHTML = `
-        <img src="${img.file}">
-        <div class="desc"><b>${img.type.toUpperCase()}</b><br>${img.question}</div>
-      `;
-      root.appendChild(d);
+    // Agrupar por sistema
+    data.forEach(x => {
+      if (!groups[x.system]) groups[x.system] = [];
+      groups[x.system].push(x);
     });
-  }
-});
+
+    for (const sys in groups) {
+
+      const h = document.createElement("h2");
+      h.textContent = sys;
+      root.appendChild(h);
+
+      groups[sys].forEach(img => {
+
+        const d = document.createElement("div");
+        d.className = "card";
+
+        d.innerHTML = `
+          <img 
+            src="./Histologia/Michigan/${img.file}" 
+            alt="${img.description || img.question}"
+            loading="lazy"
+          >
+          <div class="desc">
+            <span class="type">${img.type.toUpperCase()}</span><br>
+            ${img.question}
+          </div>
+        `;
+
+        root.appendChild(d);
+      });
+    }
+
+  })
+  .catch(err => {
+    document.getElementById("atlas").innerHTML =
+      "<p style='color:red'>Erro ao carregar atlas.json ou imagens.</p>";
+    console.error(err);
+  });
 </script>
+
 </body>
 </html>
