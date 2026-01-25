@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>SecondLook Histology Atlas</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background:#111;
+  color:#eee;
+  padding:20px;
+}
+h1 { margin-bottom:20px; }
+h2 {
+  border-bottom:1px solid #444;
+  margin-top:40px;
+}
+.group {
+  display:flex;
+  gap:20px;
+  margin-bottom:25px;
+  align-items:flex-start;
+  flex-wrap:wrap;
+}
+.card {
+  text-align:center;
+}
+.card img {
+  max-width:300px;
+  border-radius:8px;
+  display:block;
+}
+.label {
+  font-size:12px;
+  font-weight:bold;
+  margin-top:6px;
+}
+.question { color:#7dd3fc; }
+.answer { color:#86efac; }
+.desc {
+  font-size:12px;
+  color:#aaa;
+  max-width:300px;
+  line-height:1.4;
+}
+</style>
+</head>
+<body>
+
+<h1>SecondLook Histology Atlas</h1>
+<div id="atlas"></div>
+
+<script>
+fetch('./atlas.json')
+  .then(r => r.json())
+  .then(data => {
+
+    const root = document.getElementById("atlas");
+    const groups = {};
+
+    data.forEach(x => {
+      if (!groups[x.group]) groups[x.group] = [];
+      groups[x.group].push(x);
+    });
+
+    const bySystem = {};
+    Object.values(groups).forEach(items => {
+      const sys = items[0].system;
+      if (!bySystem[sys]) bySystem[sys] = [];
+      bySystem[sys].push(items);
+    });
+
+    for (const sys in bySystem) {
+
+      const h = document.createElement("h2");
+      h.textContent = sys;
+      root.appendChild(h);
+
+      bySystem[sys].forEach(pair => {
+
+        pair.sort((a,b) => a.index - b.index);
+
+        const wrap = document.createElement("div");
+        wrap.className = "group";
+
+        const q = pair.find(x => x.type === "question");
+        const answers = pair.filter(x => x.type === "answer");
+
+        if (q) {
+          const qDiv = document.createElement("div");
+          qDiv.className = "card";
+          qDiv.innerHTML = `
+            <img src="./images/${q.file}">
+            <div class="label question">PERGUNTA</div>
+            <div class="desc">${q.question}</div>
+          `;
+          wrap.appendChild(qDiv);
+        }
+
+        const aWrap = document.createElement("div");
+        aWrap.className = "card";
+
+        answers.forEach(a => {
+          const aDiv = document.createElement("div");
+          aDiv.innerHTML = `
+            <img src="./images/${a.file}">
+            <div class="label answer">RESPOSTA</div>
+          `;
+          aWrap.appendChild(aDiv);
+        });
+
+        wrap.appendChild(aWrap);
+        root.appendChild(wrap);
+      });
+    }
+
+  })
+  .catch(err => {
+    document.getElementById("atlas").innerHTML =
+      "<p style='color:red'>Erro ao carregar atlas.json ou imagens.</p>";
+    console.error(err);
+  });
+</script>
+
+</body>
+</html>
