@@ -58,6 +58,11 @@ h2 {
   margin-bottom: 10px;
 }
 
+.bad-pair {
+  border: 1px dashed #f87171;
+  background: #2a1212;
+}
+
 </style>
 </head>
 <body>
@@ -72,12 +77,16 @@ fetch('./atlas.json')
 
     const root = document.getElementById("atlas");
 
-    // 1) Agrupar por sistema
     const bySystem = {};
     data.forEach(x => {
       if (!bySystem[x.system]) bySystem[x.system] = [];
       bySystem[x.system].push(x);
     });
+
+    const extractNumber = file => {
+      const m = file.match(/\((\d+)\)\.webp$/i);
+      return m ? parseInt(m[1]) : 0;
+    };
 
     for (const sys in bySystem) {
 
@@ -85,12 +94,9 @@ fetch('./atlas.json')
       h.textContent = sys;
       root.appendChild(h);
 
-      // 2) Agrupar por prefixo do arquivo (sem (1).webp etc)
       const byBase = {};
 
       bySystem[sys].forEach(x => {
-
-        // remove " (1).webp", " (2).webp" etc
         const base = x.file
           .replace(/\s*\(\d+\)\.webp$/i, "")
           .trim();
@@ -101,42 +107,63 @@ fetch('./atlas.json')
 
       for (const base in byBase) {
 
-        // ordenar (1), (2), (3)...
-        const items = byBase[base].sort((a,b) => {
-          const na = parseInt(a.file.match(/\((\d+)\)\.webp$/i)?.[1] || 0);
-          const nb = parseInt(b.file.match(/\((\d+)\)\.webp$/i)?.[1] || 0);
-          return na - nb;
+        const items = byBase[base]
+          .map(x => ({...x, n: extractNumber(x.file)}))
+          .sort((a,b) => a.n - b.n);
+
+        if (items.length < 2) continue;
+
+        const question = items[0];
+
+        const answers = items.slice(1).filter(it => {
+          const qText = (question.question || "").toLowerCase();
+          const aText = (it.question || "").toLowerCase();
+
+          return (
+            it.n > question.n &&
+            (
+              aText.includes(" is ") ||
+              aText.includes(" are ") ||
+              aText.includes(" the cell") ||
+              aText.includes(" surrounded") ||
+              aText.includes(" consists") ||
+              aText.includes(" composed") ||
+              aText.length > qText.length
+            )
+          );
         });
 
         const row = document.createElement("div");
         row.className = "row";
 
-        // esquerda = pergunta (primeira imagem)
-        const qItem = items[0];
-
         const qCard = document.createElement("div");
         qCard.className = "card";
         qCard.innerHTML = `
           <div class="label q">PERGUNTA</div>
-          <img src="./Histologia/Michigan/${qItem.file}" loading="lazy">
-          <div class="desc">${qItem.question || base}</div>
+          <img src="./Histologia/Michigan/${question.file}" loading="lazy">
+          <div class="desc">${question.question || base}</div>
         `;
 
-        // direita = respostas (todas as outras)
         const aCard = document.createElement("div");
         aCard.className = "card";
 
         let answersHTML = "";
-        items.slice(1).forEach(it => {
+
+        answers.forEach(it => {
           answersHTML += `
             <img src="./Histologia/Michigan/${it.file}" loading="lazy">
           `;
         });
 
+        if (!answersHTML) {
+          aCard.classList.add("bad-pair");
+          answersHTML = `<div class="desc">⚠️ Resposta não detectada automaticamente</div>`;
+        }
+
         aCard.innerHTML = `
           <div class="label a">RESPOSTA</div>
           <div class="answer-stack">
-            ${answersHTML || "<div class='desc'>Resposta ausente</div>"}
+            ${answersHTML}
           </div>
         `;
 
