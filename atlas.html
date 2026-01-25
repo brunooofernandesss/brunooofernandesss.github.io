@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>SecondLook Atlas</title>
+
 <style>
 body { 
   font-family: Arial, sans-serif; 
@@ -57,13 +58,8 @@ h2 {
 .answer-stack img {
   margin-bottom: 10px;
 }
-
-.bad-pair {
-  border: 1px dashed #f87171;
-  background: #2a1212;
-}
-
 </style>
+
 </head>
 <body>
 
@@ -114,24 +110,7 @@ fetch('./atlas.json')
         if (items.length < 2) continue;
 
         const question = items[0];
-
-        const answers = items.slice(1).filter(it => {
-          const qText = (question.question || "").toLowerCase();
-          const aText = (it.question || "").toLowerCase();
-
-          return (
-            it.n > question.n &&
-            (
-              aText.includes(" is ") ||
-              aText.includes(" are ") ||
-              aText.includes(" the cell") ||
-              aText.includes(" surrounded") ||
-              aText.includes(" consists") ||
-              aText.includes(" composed") ||
-              aText.length > qText.length
-            )
-          );
-        });
+        const answers  = items.slice(1);
 
         const row = document.createElement("div");
         row.className = "row";
@@ -154,11 +133,6 @@ fetch('./atlas.json')
             <img src="./Histologia/Michigan/${it.file}" loading="lazy">
           `;
         });
-
-        if (!answersHTML) {
-          aCard.classList.add("bad-pair");
-          answersHTML = `<div class="desc">⚠️ Resposta não detectada automaticamente</div>`;
-        }
 
         aCard.innerHTML = `
           <div class="label a">RESPOSTA</div>
