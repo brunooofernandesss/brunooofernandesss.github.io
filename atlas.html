@@ -73,8 +73,14 @@ fetch('./atlas.json')
 
     const root = document.getElementById("atlas");
 
+    const seen = new Set();   // evita imagens duplicadas
+
     const bySystem = {};
     data.forEach(x => {
+
+      if (seen.has(x.file)) return;   // remove duplicatas duras
+      seen.add(x.file);
+
       if (!bySystem[x.system]) bySystem[x.system] = [];
       bySystem[x.system].push(x);
     });
@@ -93,6 +99,7 @@ fetch('./atlas.json')
       const byBase = {};
 
       bySystem[sys].forEach(x => {
+
         const base = x.file
           .replace(/\s*\(\d+\)\.webp$/i, "")
           .trim();
@@ -105,9 +112,10 @@ fetch('./atlas.json')
 
         const items = byBase[base]
           .map(x => ({...x, n: extractNumber(x.file)}))
+          .filter(x => x.n > 0)              // ignora lixo
           .sort((a,b) => a.n - b.n);
 
-        if (items.length < 2) continue;
+        if (items.length < 2) continue;     // precisa de pergunta + resposta
 
         const question = items[0];
         const answers  = items.slice(1);
@@ -126,13 +134,19 @@ fetch('./atlas.json')
         const aCard = document.createElement("div");
         aCard.className = "card";
 
+        const used = new Set();
         let answersHTML = "";
 
         answers.forEach(it => {
+          if (used.has(it.file)) return;
+          used.add(it.file);
+
           answersHTML += `
             <img src="./Histologia/Michigan/${it.file}" loading="lazy">
           `;
         });
+
+        if (!answersHTML) return;  // sem resposta válida → ignora
 
         aCard.innerHTML = `
           <div class="label a">RESPOSTA</div>
