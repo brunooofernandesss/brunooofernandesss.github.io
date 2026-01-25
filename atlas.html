@@ -32,7 +32,7 @@ fetch('atlas.json').then(r=>r.json()).then(data=>{
       const d = document.createElement("div");
       d.className = "card";
       d.innerHTML = `
-        <img src="images/${img.file}">
+        <img src="${img.file}">
         <div class="desc"><b>${img.type.toUpperCase()}</b><br>${img.question}</div>
       `;
       root.appendChild(d);
