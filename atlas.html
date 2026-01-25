@@ -9,33 +9,50 @@ body {
   background:#111; 
   color:#eee; 
 }
+
 h1 { margin-bottom: 20px; }
+
 h2 { 
   border-bottom:1px solid #444; 
   margin-top: 40px;
 }
-img { 
-  max-width:300px; 
-  margin:5px; 
-  border-radius:8px; 
-  display:block;
+
+.row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 25px;
+  align-items: flex-start;
 }
-.card { 
-  display:inline-block; 
-  margin:10px; 
-  text-align:center; 
-  vertical-align: top;
+
+.card {
+  background: #1b1b1b;
+  padding: 10px;
+  border-radius: 10px;
+  width: 48%;
+  text-align: center;
 }
-.desc { 
-  font-size:12px; 
-  color:#aaa; 
-  max-width:300px; 
-  line-height:1.4;
+
+.card img {
+  max-width: 100%;
+  border-radius: 8px;
 }
-.type { 
-  font-weight: bold; 
-  color: #7dd3fc;
+
+.label {
+  font-size: 13px;
+  font-weight: bold;
+  margin-bottom: 5px;
 }
+
+.label.q { color: #7dd3fc; }
+.label.a { color: #86efac; }
+
+.desc {
+  font-size: 12px;
+  color: #aaa;
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
 </style>
 </head>
 <body>
@@ -45,52 +62,73 @@ img {
 
 <script>
 fetch('./atlas.json')
-  .then(r => {
-    if (!r.ok) throw new Error("Erro ao carregar atlas.json");
-    return r.json();
-  })
+  .then(r => r.json())
   .then(data => {
 
     const root = document.getElementById("atlas");
-    const groups = {};
 
-    // Agrupar por sistema
+    // 1) Agrupar por sistema
+    const bySystem = {};
     data.forEach(x => {
-      if (!groups[x.system]) groups[x.system] = [];
-      groups[x.system].push(x);
+      if (!bySystem[x.system]) bySystem[x.system] = [];
+      bySystem[x.system].push(x);
     });
 
-    for (const sys in groups) {
+    for (const sys in bySystem) {
 
       const h = document.createElement("h2");
       h.textContent = sys;
       root.appendChild(h);
 
-      groups[sys].forEach(img => {
-
-        const d = document.createElement("div");
-        d.className = "card";
-
-        d.innerHTML = `
-          <img 
-            src="./Histologia/Michigan/${img.file}" 
-            alt="${img.description || img.question}"
-            loading="lazy"
-          >
-          <div class="desc">
-            <span class="type">${img.type.toUpperCase()}</span><br>
-            ${img.question}
-          </div>
-        `;
-
-        root.appendChild(d);
+      // 2) Agrupar por texto da pergunta
+      const byQuestion = {};
+      bySystem[sys].forEach(x => {
+        const key = x.question.trim();
+        if (!byQuestion[key]) byQuestion[key] = [];
+        byQuestion[key].push(x);
       });
+
+      for (const q in byQuestion) {
+
+        const row = document.createElement("div");
+        row.className = "row";
+
+        let qItem = null;
+        let aItem = null;
+
+        byQuestion[q].forEach(x => {
+          if (x.type === "question") qItem = x;
+          if (x.type === "answer") aItem = x;
+        });
+
+        // Card pergunta
+        const qCard = document.createElement("div");
+        qCard.className = "card";
+        qCard.innerHTML = qItem ? `
+          <div class="label q">PERGUNTA</div>
+          <img src="./Histologia/Michigan/${qItem.file}" loading="lazy">
+          <div class="desc">${qItem.question}</div>
+        ` : `<div class="desc">Pergunta ausente</div>`;
+
+        // Card resposta
+        const aCard = document.createElement("div");
+        aCard.className = "card";
+        aCard.innerHTML = aItem ? `
+          <div class="label a">RESPOSTA</div>
+          <img src="./Histologia/Michigan/${aItem.file}" loading="lazy">
+          <div class="desc">${aItem.question}</div>
+        ` : `<div class="desc">Resposta ausente</div>`;
+
+        row.appendChild(qCard);
+        row.appendChild(aCard);
+        root.appendChild(row);
+      }
     }
 
   })
   .catch(err => {
     document.getElementById("atlas").innerHTML =
-      "<p style='color:red'>Erro ao carregar atlas.json ou imagens.</p>";
+      "<p style='color:red'>Erro ao carregar atlas.json</p>";
     console.error(err);
   });
 </script>
