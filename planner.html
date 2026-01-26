@@ -530,6 +530,18 @@
                 <p style="font-size:13px; color:#666; margin-bottom:10px;">
                     Descreva sua semana. Ex: <em>"Tenho aula todo dia de manhã. Academia as 18h. Quero estudar Cardiologia nos horários livres."</em>
                 </p>
+                
+                 <div style="margin-bottom: 10px; background: #f9f9f9; padding: 10px; border-radius: 6px; border: 1px solid #eee;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 500; color: #333;">
+                        <input type="checkbox" id="checkExportarAgenda" checked style="transform: scale(1.2);">
+                        <i class="fas fa-upload" style="color: #9065b0;"></i> 
+                        Considerar meus horários já cadastrados?
+                    </label>
+                    <div style="font-size: 11px; color: #888; margin-top: 4px; margin-left: 24px;">
+                        A IA vai ler sua agenda atual para encontrar buracos livres e evitar conflitos.
+                    </div>
+                </div>
+
                 <textarea id="promptAgenda" style="width:100%; height:150px; padding:10px; border:1px solid #ddd; border-radius:6px; font-family:inherit;" placeholder="Digite sua rotina aqui..."></textarea>
             </div>
             <div class="editor-footer">
@@ -839,6 +851,11 @@
                         <button class="btn-action" style="background: #9065b0; color: white; border:none;" onclick="window.abrirModalAgendaIA()">
                             <i class="fas fa-magic"></i> Gerar Rotina IA
                         </button>
+                        
+                        <button class="btn-action" onclick="window.exportarAgendaICS()" title="Baixar para Google Calendar" style="border:1px solid #ddd;">
+                            <i class="fas fa-file-export" style="color:#2383e2;"></i> Exportar
+                        </button>
+
                         <button class="btn-action btn-primary" id="btnNovaAgenda"><i class="fas fa-plus"></i> Novo Horário</button>
                     </div>
                 </div>
@@ -2569,6 +2586,57 @@
             renderAgendaBoard(); // Atualiza tela
         } catch(e) { alert("Erro ao deletar"); }
     };
+    
+    
+    // --- EXPORTAR PARA GOOGLE CALENDAR (.ICS) ---
+    window.exportarAgendaICS = () => {
+        if (!allAgendaCache || allAgendaCache.length === 0) return alert("Sua agenda está vazia.");
+
+        let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//PlannerMed//R1//PT-BR\nCALSCALE:GREGORIAN\nMETHOD:PUBLISH\n";
+
+        allAgendaCache.forEach(item => {
+            if (!item.data || !item.inicio || !item.fim) return;
+
+            // Formatação de Datas para o padrão iCal (YYYYMMDDTHHmm00)
+            const diaLimpo = item.data.replace(/-/g, ''); // 2024-01-20 -> 20240120
+            const inicioLimpo = item.inicio.replace(/:/g, '') + '00'; // 14:30 -> 143000
+            const fimLimpo = item.fim.replace(/:/g, '') + '00';
+
+            const dtStart = `${diaLimpo}T${inicioLimpo}`;
+            const dtEnd = `${diaLimpo}T${fimLimpo}`;
+            const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+
+            icsContent += "BEGIN:VEVENT\n";
+            icsContent += `UID:${item.id || Date.now()}@plannermed.com\n`;
+            icsContent += `DTSTAMP:${now}\n`;
+            icsContent += `DTSTART:${dtStart}\n`;
+            icsContent += `DTEND:${dtEnd}\n`;
+            icsContent += `SUMMARY:${item.titulo}\n`;
+            icsContent += "DESCRIPTION:Sessão de estudo gerada pelo Planner R1.\n";
+            
+            // --- BLOCO DO ALARME (NOTIFICAÇÃO) ---
+            icsContent += "BEGIN:VALARM\n";
+            icsContent += "TRIGGER:-PT10M\n"; // Toca 10 minutos antes
+            icsContent += "ACTION:DISPLAY\n";
+            icsContent += "DESCRIPTION:Hora de Estudar!\n";
+            icsContent += "END:VALARM\n";
+            // -------------------------------------
+            
+            icsContent += "END:VEVENT\n";
+        });
+
+        icsContent += "END:VCALENDAR";
+
+        // Cria o arquivo e força o download
+        const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.setAttribute('download', 'minha_agenda_estudos.ics');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
 
     // --- CONTROLE DA BARRA SUPERIOR ---
     window.toggleTopBarElements = (show) => {
@@ -3062,14 +3130,27 @@
 
     window.processarAgendaIA = async () => {
         const texto = document.getElementById('promptAgenda').value;
+        const usarAgendaAtual = document.getElementById('checkExportarAgenda').checked;
+
         if (!texto.trim()) return alert("Digite sua rotina primeiro.");
 
         document.getElementById('modalAgendaIA').style.display = 'none';
-        showFeedback("🤖 Criando sua agenda...", true);
+        showFeedback("🤖 Analisando agenda e criando rotina...", true);
 
         try {
-            // Pega a data de hoje para a IA se localizar na semana
             const hojeISO = new Date().toISOString().split('T')[0];
+            
+            // PREPARAÇÃO DA AGENDA EXISTENTE
+            let agendaExistente = [];
+            if (usarAgendaAtual && typeof allAgendaCache !== 'undefined') {
+                // Mapeia apenas dados essenciais para economizar tokens
+                agendaExistente = allAgendaCache.map(a => ({
+                    titulo: a.titulo,
+                    data: a.data,
+                    inicio: a.inicio,
+                    fim: a.fim
+                }));
+            }
 
             const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
                 method: "POST",
@@ -3077,7 +3158,8 @@
                 body: JSON.stringify({ 
                     action: "gerar_agenda_ia", 
                     textoUsuario: texto,
-                    dataReferencia: hojeISO
+                    dataReferencia: hojeISO,
+                    agendaExistente: agendaExistente // <--- NOVO PARÂMETRO ENVIADO
                 })
             });
 
@@ -3086,11 +3168,10 @@
             const novosHorarios = await response.json();
             
             if (!novosHorarios || novosHorarios.length === 0) {
-                showFeedback("Nenhum horário gerado.", false);
+                showFeedback("Nenhum horário sugerido pela IA.", false);
                 return;
             }
 
-            // Salva cada horário gerado no banco de dados
             const promises = novosHorarios.map(item => {
                 return addDoc(collection(db, "planners", currentUID, "agenda"), {
                     titulo: item.titulo,
@@ -3107,12 +3188,9 @@
 
             showFeedback(`✅ ${novosHorarios.length} horários criados!`, false);
             
-            // Atualiza a tela (Recarrega a função loadAgenda que já existe no seu código)
-            // Precisamos garantir que loadAgenda esteja acessível ou recarregar a semana
             if (typeof loadAgenda === 'function') {
                 loadAgenda();
             } else {
-                // Fallback: recarrega a semana atual
                 window.changeWeek(currentBoardStart.getTime());
             }
 
@@ -3122,6 +3200,7 @@
             alert("Erro ao conectar com a IA.");
         }
     };
+
     
         // ============================================================
     // ⚙️ CONFIGURADOR DO SIMULADO GERAL (Fase 1)
