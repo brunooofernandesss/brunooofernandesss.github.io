@@ -2476,7 +2476,7 @@
 
     function renderAgendaBoard() {
         const board = document.getElementById('agendaBoard');
-        if (!board) return; // Segurança caso o elemento não exista
+        if (!board) return; 
         board.innerHTML = '';
         
         const daysOfWeek = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
@@ -2487,16 +2487,7 @@
             currentDay.setDate(currentBoardStart.getDate() + i);
             const isToday = isSameDay(today, currentDay);
 
-            // Filtra itens deste dia e ordena por hora de início
-            const itensDoDia = allAgendaCache.filter(item => {
-                if(!item.data) return false;
-                // Converte string "2024-05-20" para data local correta
-                const parts = item.data.split('-'); 
-                const itemDate = new Date(parts[0], parts[1]-1, parts[2]);
-                return isSameDay(itemDate, currentDay);
-            }).sort((a, b) => a.inicio.localeCompare(b.inicio));
-
-            // Cria a coluna do dia
+            // 1. Cria a Coluna
             const colDiv = document.createElement('div');
             colDiv.className = 'day-column';
             colDiv.innerHTML = `
@@ -2506,10 +2497,52 @@
                 </div>
                 <div class="drop-zone" style="padding-right:4px;"></div>
             `;
-            
             const container = colDiv.querySelector('.drop-zone');
-            
-            // Cria os cartões de horário
+
+            // ============================================================
+            // 🔗 SINCRONIZAÇÃO: Bloco de Revisões do Cronograma
+            // ============================================================
+            // Filtra tarefas do Cronograma que caem neste dia e NÃO estão concluídas
+            const revisoesDoDia = allTasksCache.filter(t => {
+                const tDate = new Date(t.targetDate);
+                return !t.concluido && isSameDay(tDate, currentDay);
+            });
+
+            if (revisoesDoDia.length > 0) {
+                const divAlert = document.createElement('div');
+                divAlert.style.cssText = "background:#fffbf0; border:1px dashed #f39c12; padding:10px; margin-bottom:12px; border-radius:6px;";
+                
+                divAlert.innerHTML = `<div style="font-size:11px; font-weight:700; color:#e67e22; margin-bottom:6px; text-transform:uppercase;">
+                    <i class="fas fa-exclamation-circle"></i> Pendências do Board (${revisoesDoDia.length})
+                </div>`;
+
+                revisoesDoDia.forEach(rev => {
+                    const item = document.createElement('div');
+                    item.style.cssText = "font-size:12px; color:#555; margin-bottom:6px; cursor:pointer; padding:4px; background:white; border-radius:4px; border:1px solid #eee; display:flex; align-items:center; gap:5px;";
+                    item.title = "Clique para agendar um horário";
+                    
+                    // Ícone baseado no tipo
+                    let icon = rev.tipo === 'quiz' ? '🧠' : '📄';
+                    
+                    item.innerHTML = `<span>${icon}</span> <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${rev.titulo}</span> <i class="fas fa-plus-circle" style="color:#2383e2;"></i>`;
+                    
+                    // Ação: Abre modal de agenda preenchido
+                    item.onclick = () => window.agendarRevisaoEspecifica(rev.titulo, currentDay);
+                    
+                    divAlert.appendChild(item);
+                });
+                container.appendChild(divAlert);
+            }
+            // ============================================================
+
+            // 2. Renderiza os Horários da Agenda (Normal)
+            const itensDoDia = allAgendaCache.filter(item => {
+                if(!item.data) return false;
+                const parts = item.data.split('-'); 
+                const itemDate = new Date(parts[0], parts[1]-1, parts[2]);
+                return isSameDay(itemDate, currentDay);
+            }).sort((a, b) => a.inicio.localeCompare(b.inicio));
+
             itensDoDia.forEach(item => {
                 const el = document.createElement('div');
                 el.className = `agenda-card ${item.concluido ? 'done' : ''}`;
@@ -2534,6 +2567,22 @@
         }
     }
 
+    // --- ATALHO: Transforma Revisão em Agenda ---
+    window.agendarRevisaoEspecifica = (titulo, dataObj) => {
+        document.getElementById('agendaTitle').value = `Estudar: ${titulo}`;
+        
+        // Formata data para o input YYYY-MM-DD
+        const ano = dataObj.getFullYear();
+        const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
+        const dia = String(dataObj.getDate()).padStart(2, '0');
+        document.getElementById('agendaDate').value = `${ano}-${mes}-${dia}`;
+        
+        document.getElementById('agendaStart').value = '';
+        document.getElementById('agendaEnd').value = '';
+        document.getElementById('modalAgenda').style.display = 'flex';
+    };
+
+    
     // --- ABRIR MODAL AGENDA ---
     document.getElementById('btnNovaAgenda').onclick = () => {
         document.getElementById('agendaTitle').value = '';
