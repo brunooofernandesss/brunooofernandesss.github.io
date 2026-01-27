@@ -2518,15 +2518,22 @@
 
                 revisoesDoDia.forEach(rev => {
                     const item = document.createElement('div');
-                    item.style.cssText = "font-size:12px; color:#555; margin-bottom:6px; cursor:pointer; padding:4px; background:white; border-radius:4px; border:1px solid #eee; display:flex; align-items:center; gap:5px;";
+                    // ALTERAÇÃO 1: Mais padding, bordas arredondadas iguais aos cards, align-items: flex-start para alinhar ícone no topo se quebrar linha
+                    item.style.cssText = "font-size:13px; color:#37352f; margin-bottom:8px; cursor:pointer; padding:10px; background:white; border-radius:6px; border:1px solid #e9e9e7; display:flex; align-items:flex-start; gap:8px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); transition:0.2s;";
+                    
+                    item.onmouseover = () => item.style.borderColor = "#2383e2";
+                    item.onmouseout = () => item.style.borderColor = "#e9e9e7";
                     item.title = "Clique para agendar um horário";
                     
-                    // Ícone baseado no tipo
-                    let icon = rev.tipo === 'quiz' ? '🧠' : '📄';
+                    let icon = rev.tipo === 'quiz' ? '<i class="fas fa-brain" style="color:#9065b0"></i>' : '<i class="far fa-file-alt" style="color:#2383e2"></i>';
                     
-                    item.innerHTML = `<span>${icon}</span> <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${rev.titulo}</span> <i class="fas fa-plus-circle" style="color:#2383e2;"></i>`;
+                    // ALTERAÇÃO 2: Removido 'white-space:nowrap', adicionado line-height para leitura confortável
+                    item.innerHTML = `
+                        <span style="margin-top:2px; font-size:12px;">${icon}</span> 
+                        <span style="flex:1; line-height:1.4; word-break: break-word;">${rev.titulo}</span> 
+                        <i class="fas fa-plus-circle" style="color:#2383e2; margin-top:3px; opacity:0.7;"></i>
+                    `;
                     
-                    // Ação: Abre modal de agenda preenchido
                     item.onclick = () => window.agendarRevisaoEspecifica(rev.titulo, currentDay);
                     
                     divAlert.appendChild(item);
