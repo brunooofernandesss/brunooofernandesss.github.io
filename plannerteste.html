@@ -3257,10 +3257,17 @@
                     })
                     .map(t => {
                         const d = new Date(t.targetDate);
-                        const dataFormatada = d.toISOString().split('T')[0];
+                        // CORREÇÃO DE FUSO: Ajusta a hora para garantir que a data seja a local, e não UTC
+                        // Se era 22h do dia 15 (Brasil) -> vira 01h do dia 16 (UTC).
+                        // Subtraindo o offset, forçamos voltar para dia 15 visualmente.
+                        const offset = d.getTimezoneOffset() * 60000; 
+                        const dataLocal = new Date(d.getTime() - offset);
+                        
+                        const dataFormatada = dataLocal.toISOString().split('T')[0];
                         return { titulo: t.titulo, vencimento: dataFormatada };
                     });
             }
+
 
             const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
                 method: "POST",
