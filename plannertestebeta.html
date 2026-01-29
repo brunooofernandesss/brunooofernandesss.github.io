@@ -7,22 +7,29 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     
-    <link href="https://cdn.jsdelivr.net/gh/attoae/quill-table-better@master/dist/quill-table-better.css" rel="stylesheet">
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
-    
+    <link href="quill-better-table.css" rel="stylesheet">
+
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
-    
-    <script src="https://cdn.jsdelivr.net/gh/attoae/quill-table-better@master/dist/quill-table-better.js"></script>
+    <script src="quill-better-table.js"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
+
 
     <style>
+        /* Ícone da Tabela Better Table */
+        .ql-snow .ql-picker.ql-table-picker .ql-picker-label::before,
+        .ql-snow .ql-table::before {
+            content: "\f0ce";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+        }
+
         :root {
             --bg-body: #f7f7f5;
             --text-primary: #37352f;
@@ -30,6 +37,7 @@
             --card-bg: #ffffff;
             --border-color: #e9e9e7;
             --accent-color: #2383e2;
+            
             
             /* Cores Tags */
             --tag-red: #ffe2dd; --text-red: #d44c47;
@@ -225,11 +233,6 @@
         .ql-align-right { text-align: right; }
         .ql-align-justify { text-align: justify; }
 
-        /* ICONE TABELA QUILL (Classe atualizada para table-better) */
-        .ql-snow .ql-picker.ql-table-better-picker .ql-picker-label::before,
-        .ql-snow .ql-table-better::before { content: "\f0ce"; font-family: "Font Awesome 6 Free"; font-weight: 900; }
-
-
         #statusFeedback { position: fixed; bottom: 30px; right: 30px; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; color: white; display: none; z-index: 9999; }
         .hidden { display: none !important; }
         #secBoard { overflow-x: auto; overflow-y: hidden; }
@@ -401,7 +404,6 @@
 
     </style>
 </head>
-
 <body>
 
     <div id="imageModal" class="modal" style="z-index:3000; background: rgba(0,0,0,0.9);">
@@ -1084,9 +1086,10 @@
     let isUploadingImage = false; 
     let viewingLibraryId = null; // <--- NOVA VARIÁVEL DE CONTROLE
 
-    // --- REGISTRO DO PLUGIN (ATTOAE/QUILL-TABLE-BETTER) ---
+
+    // --- REGISTRO DO PLUGIN (Modo Local) ---
     Quill.register({
-        'modules/table-better': QuillTableBetter
+        'modules/better-table': window.QuillBetterTable
     }, true);
 
     // --- CONFIGURAÇÃO QUILL ---
@@ -1094,14 +1097,17 @@
         theme: 'snow',
         placeholder: 'Cole seu conteúdo aqui...',
         modules: {
-            table: false, 
-            'table-better': { 
-                language: 'en', 
-                menus: ['column', 'row', 'merge', 'table', 'cell', 'wrap', 'delete'],
-                toolbarTable: true 
+            table: false, // Desativa tabela padrão
+            'better-table': { // Ativa better-table
+                operationMenu: {
+                    items: {
+                        unmergeCells: { text: 'Desfazer fusão' }
+                    },
+                    color: { text: 'Cor do Fundo' }
+                }
             },
             keyboard: {
-                bindings: QuillTableBetter.keyboardBindings
+                bindings: window.QuillBetterTable.keyboardBindings
             },
             toolbar: {
                 container: [
@@ -1111,13 +1117,13 @@
                     [{ 'list': 'ordered'}, { 'list': 'bullet' }], 
                     [{ 'align': [] }], 
                     ['blockquote', 'code-block'],
-                    ['image', 'video', 'table-better'], // Botão correto
+                    ['image', 'video', 'table'], // Botão de tabela adicionado
                     ['clean']
                 ],
                 handlers: {
                     'image': imageHandler,
-                    'table-better': function() {
-                        this.quill.getModule('table-better').insertTable(3, 3);
+                    'table': function() {
+                        this.quill.getModule('better-table').insertTable(3, 3);
                     }
                 }
             }
@@ -1125,7 +1131,6 @@
     });
 
     // Handler de vídeo
-    
     quill.getModule('toolbar').addHandler('video', () => {
         const url = prompt("Cole o link do YouTube:");
         if (!url) return;
@@ -1144,9 +1149,10 @@
         quill.setSelection(range.index + 3, 0);
     });
 
-        // --- MATCHER REVISADO: Limpa o |---| e evita picotamento no Editor ---
+               // --- VERSÃO 5.0: PROCESSAMENTO LINHA A LINHA (SEM CORTES) ---
     
-        quill.clipboard.addMatcher(Node.TEXT_NODE, function(node, delta) {
+        // --- MATCHER REVISADO: Limpa o |---| e evita picotamento no Editor ---
+    quill.clipboard.addMatcher(Node.TEXT_NODE, function(node, delta) {
         const text = node.data;
         
         // Se não tem pipe, deixa o Quill lidar com o texto normalmente
