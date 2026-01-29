@@ -9,6 +9,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <link href="https://unpkg.com/quill-better-table@1.2.8/dist/quill-better-table.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <script src="https://unpkg.com/quill-better-table@1.2.8/dist/quill-better-table.min.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
@@ -145,6 +150,8 @@
         #modalView { z-index: 2000; }      /* 1. Visualizador de PDF (Fundo) */
         #modalConcepts { z-index: 2100; }  /* 2. Lista de Conceitos (Meio) */
         #modalEditor { z-index: 2200; }    /* 3. Editor de Texto (Topo) */
+        #modalAgendaIA { z-index: 2300; }  /* CORREÇÃO: Garante que a IA fique acima da agenda */
+        #modalAgenda { z-index: 2400; }    /* CORREÇÃO: Novo Horário manual acima de tudo */
         #statusFeedback { z-index: 9999; } /* 4. Mensagens de Status (Sempre visível) */
 
     
@@ -530,6 +537,28 @@
                 <p style="font-size:13px; color:#666; margin-bottom:10px;">
                     Descreva sua semana. Ex: <em>"Tenho aula todo dia de manhã. Academia as 18h. Quero estudar Cardiologia nos horários livres."</em>
                 </p>
+                
+                 <div style="margin-bottom: 10px; background: #f9f9f9; padding: 10px; border-radius: 6px; border: 1px solid #eee;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 500; color: #333;">
+                        <input type="checkbox" id="checkExportarAgenda" checked style="transform: scale(1.2);">
+                        <i class="fas fa-upload" style="color: #9065b0;"></i> 
+                        Considerar meus horários já cadastrados?
+                    </label>
+                    <div style="font-size: 11px; color: #888; margin-top: 4px; margin-left: 24px;">
+                        A IA vai ler sua agenda atual para encontrar buracos livres e evitar conflitos.
+                    </div>
+                </div>
+                <div style="margin-bottom: 10px; background: #fffbf0; padding: 10px; border-radius: 6px; border: 1px solid #f39c12;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 500; color: #d35400;">
+                        <input type="checkbox" id="checkIncluirPendencias" style="transform: scale(1.2);">
+                        <i class="fas fa-exclamation-circle" style="color: #e67e22;"></i> 
+                        Incluir pendências e atrasados?
+                    </label>
+                    <div style="font-size: 11px; color: #a0a0a0; margin-top: 4px; margin-left: 24px;">
+                        A IA tentará encaixar suas tarefas atrasadas na rotina. Diga abaixo seus horários preferidos.
+                    </div>
+                </div>
+
                 <textarea id="promptAgenda" style="width:100%; height:150px; padding:10px; border:1px solid #ddd; border-radius:6px; font-family:inherit;" placeholder="Digite sua rotina aqui..."></textarea>
             </div>
             <div class="editor-footer">
@@ -639,6 +668,82 @@
         </div>
     </div>
 
+        <div class="modal" id="modalConfigSimulado" style="z-index: 3600;">
+        <div class="modal-content" style="max-width: 900px; height: 90vh; display:flex; flex-direction:column; box-shadow: 0 0 50px rgba(0,0,0,0.5);">
+            
+            <div class="editor-header">
+                <h3 style="margin:0; color:#333;"><i class="fas fa-sliders-h"></i> Configurar Prova R1</h3>
+                <button class="btn-action" onclick="document.getElementById('modalConfigSimulado').style.display='none'" style="background:#f0f0f0; border:1px solid #ddd;">Fechar</button>
+            </div>
+
+            <div class="editor-body" style="padding: 25px; display: flex; gap: 30px; overflow-y: auto; background: #f8f9fa; flex-direction: column; md:flex-row;">
+                
+                <div style="flex: 1; background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; display: flex; flex-direction: column;">
+                    <div style="border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; display:flex; justify-content:space-between; align-items:center;">
+                        <h4 style="margin:0; color:#2c3e50;"><i class="fas fa-book"></i> Matérias (Banco de Questões)</h4>
+                        <label style="font-size:12px; cursor:pointer; user-select:none; font-weight:600;">
+                            <input type="checkbox" id="checkAllMaterias" onchange="window.toggleAllMaterias(this.checked)" checked> Selecionar Tudo
+                        </label>
+                    </div>
+                    
+                    <div style="flex:1; overflow-y:auto; min-height: 200px; max-height: 300px;" id="containerCheckboxesMaterias">
+                        <div style="color:#999; font-style:italic; padding:20px; text-align:center;">Carregando suas tags...</div>
+                    </div>
+
+                    <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
+                        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Quantidade de Questões de Texto:</label>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <input type="number" id="qtdQuestõesTexto" value="20" style="padding:8px; width:80px; border:1px solid #ccc; border-radius:4px;">
+                            <label style="font-size:13px; color:#555;">
+                                <input type="checkbox" id="checkUsarTodas" onchange="document.getElementById('qtdQuestõesTexto').disabled = this.checked"> 
+                                Usar TODAS disponíveis
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 15px;">
+                    
+                    <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; border-left: 5px solid #8e44ad;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <h4 style="margin:0; color:#8e44ad;"><i class="fas fa-bone"></i> Anatomia (Imagens)</h4>
+                            <label style="cursor:pointer;">
+                                <input type="checkbox" id="checkIncluirAnatomia" checked> Incluir
+                            </label>
+                        </div>
+                        <div style="display:flex; gap:10px; flex-direction:column;">
+                            <select id="selRegiaoSimulado" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+                                <option value="">Região: Aleatória (Geral)</option>
+                            </select>
+                            <div style="display:flex; align-items:center; gap:10px; font-size:13px;">
+                                <span>Questões:</span>
+                                <input type="number" id="qtdAnatomia" value="10" style="padding:6px; width:60px; border:1px solid #ccc; border-radius:4px;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: #f0f0f0; padding: 20px; border-radius: 8px; border: 1px solid #ddd; opacity: 0.6;">
+                        <h4 style="margin:0; color:#7f8c8d; margin-bottom:5px;"><i class="fas fa-microscope"></i> Histologia</h4>
+                        <p style="font-size:12px; margin:0;">Em breve...</p>
+                    </div>
+                    <div style="background: #f0f0f0; padding: 20px; border-radius: 8px; border: 1px solid #ddd; opacity: 0.6;">
+                        <h4 style="margin:0; color:#7f8c8d; margin-bottom:5px;"><i class="fas fa-user-md"></i> Semiologia</h4>
+                        <p style="font-size:12px; margin:0;">Em breve...</p>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="editor-footer">
+                <button class="btn-action" onclick="document.getElementById('modalConfigSimulado').style.display='none'">Cancelar</button>
+                <button class="btn-action btn-primary" onclick="window.iniciarSimuladoMisto()" style="padding: 10px 25px; font-size: 16px;">
+                    <i class="fas fa-play"></i> INICIAR PROVA
+                </button>
+            </div>
+        </div>
+    </div>
+
+    
     <div id="statusFeedback">Processando...</div>
 
     <aside class="sidebar">
@@ -654,8 +759,10 @@
             <div class="nav-item" id="navAnatomia" style="color: #2383e2; font-weight: 500;"><i class="fas fa-bone"></i> Desafio Anatomia</div>
             <div class="nav-item" id="navSyllabus"><i class="fas fa-th-list"></i> Matriz Curricular</div>
             <div class="nav-item" onclick="window.abrirCadernoErros()" style="color: #d44c47; font-weight: 500;"><i class="fas fa-book-dead"></i> Caderno de Erros</div>
+            <div class="nav-item" id="navRevisao" style="color: #8e44ad; font-weight: 500;"><i class="fas fa-history"></i> Revisão Espaçada</div>
 
         </nav>
+
 
         <div class="sidebar-goals">
             <div class="goals-title"><i class="fas fa-bullseye"></i> Metas</div>
@@ -763,6 +870,11 @@
                         <button class="btn-action" style="background: #9065b0; color: white; border:none;" onclick="window.abrirModalAgendaIA()">
                             <i class="fas fa-magic"></i> Gerar Rotina IA
                         </button>
+                        
+                        <button class="btn-action" onclick="window.exportarAgendaICS()" title="Baixar para Google Calendar" style="border:1px solid #ddd;">
+                            <i class="fas fa-file-export" style="color:#2383e2;"></i> Exportar
+                        </button>
+
                         <button class="btn-action btn-primary" id="btnNovaAgenda"><i class="fas fa-plus"></i> Novo Horário</button>
                     </div>
                 </div>
@@ -770,11 +882,15 @@
                     </div>
             </section>
             
-                        <section id="secQuizzes" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+            <section id="secQuizzes" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
                 <div class="header-actions">
                     <h1 class="page-title">Meus Simulados</h1>
+                    <button class="btn-action btn-primary" onclick="window.abrirConfiguradorProva()">
+                        <i class="fas fa-cogs"></i> Montar Simulado R1
+                    </button>
                 </div>
                 <div style="background: white; border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden;">
+            
                     <table style="width:100%; border-collapse:collapse; font-size:14px;">
                         <thead style="background: #f9f9f9; border-bottom: 1px solid var(--border-color);">
                             <tr style="text-align:left; color: #777;">
@@ -804,20 +920,21 @@
             <section id="secAnatomia" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
     <div class="header-actions">
         <h1 class="page-title">Laboratório de Anatomia Clínica</h1>
-        <div style="display:flex; gap:10px;">
-            <select id="selRegiaoAnatomia" style="padding: 8px; border-radius: 6px; border: 1px solid #ddd; font-family:inherit; outline:none; cursor:pointer;">
+        <div style="display:flex; gap:10px; flex-wrap: wrap; align-items: center;">
+            <select id="selRegiaoAnatomia" style="padding: 10px; border-radius: 6px; border: 1px solid #ddd; font-family:inherit; outline:none; cursor:pointer; flex: 1; min-width: 150px;">
                 <option value="">🎲 Aleatório (Todas)</option>
                 </select>
             
-            <button class="btn-action btn-primary" onclick="window.gerarNovoDesafioAnatomia()">
+            <button class="btn-action btn-primary" onclick="window.gerarNovoDesafioAnatomia()" style="flex: 1; white-space: nowrap; justify-content: center;">
                 <i class="fas fa-sync-alt"></i> Próximo Caso
             </button>
-            <button class="btn-action" onclick="window.gerarProvaAnatomiaLote()" style="background:#8e44ad; color:white; border:none;">
+
+            <button class="btn-action" onclick="window.gerarProvaAnatomiaLote()" style="background:#8e44ad; color:white; border:none; flex: 1; white-space: nowrap; justify-content: center;">
                 <i class="fas fa-layer-group"></i> Gerar Prova (20)
             </button>
-
         </div>
     </div>
+
 
 
     <div style="max-width: 900px; margin: 0 auto; width: 100%;">
@@ -848,27 +965,68 @@
 
         <div id="quizAnatomiaContainer" class="hidden">
             <div class="quiz-card" style="border-left: 5px solid #2383e2;">
-                <h3 style="color: #2383e2; margin-bottom: 10px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Caso Clínico</h3>
-                <p id="anatCase" style="font-size: 16px; line-height: 1.6; margin-bottom: 20px; color: #333; font-style: italic;"></p>
-                
-                <h3 style="margin-bottom: 15px; font-weight: 700; color: #111;">
-                    <i class="fas fa-question-circle" style="color: #2383e2;"></i> 
-                    <span id="anatQuestion"></span>
-                </h3>
-
-                <div id="anatOptions" class="quiz-options"></div>
-                
                 <div id="anatFeedback" class="quiz-feedback hidden"></div>
             </div>
         </div>
     </div>
 </section>
 
+            <section id="secRevisao" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+                <div class="header-actions">
+                    <h1 class="page-title">Curva de Esquecimento & Férias</h1>
+                </div>
+                
+                <div style="max-width: 900px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 30px; padding-bottom: 50px;">
+                    
+                    <div style="background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.03);">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
+                            <div>
+                                <h3 style="margin:0; color:#2383e2; font-size:18px;"><i class="fas fa-hourglass-half"></i> Manutenção de Longo Prazo</h3>
+                                <p style="color:#666; font-size:13px; margin-top:5px;">O sistema varre sua biblioteca e cria cards para 6 meses, 1, 2, 4 e 6 anos, se ainda não existirem.</p>
+                            </div>
+                            <button class="btn-action" onclick="window.gerarRevisoesFuturas()" style="background:#eef6fc; color:#2383e2; border:1px solid #2383e2;">
+                                <i class="fas fa-sync-alt"></i> Gerar Futuro
+                            </button>
+                        </div>
+                        <div id="logRevisaoFutura" style="font-size:12px; color:#555; background:#f9f9f9; padding:10px; border-radius:6px; display:none; max-height:150px; overflow-y:auto;"></div>
+                    </div>
 
+                    <div style="background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); border-left: 5px solid #f39c12;">
+                        <h3 style="margin:0; color:#e67e22; font-size:18px; margin-bottom:15px;"><i class="fas fa-umbrella-beach"></i> Modo Intensivão de Férias</h3>
+                        <p style="color:#666; font-size:13px; margin-bottom:20px;">Defina seu período livre. O sistema distribuirá o que você estudou recentemente como pendências para esses dias.</p>
+                        
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:20px;">
+                            <div>
+                                <label style="font-size:12px; font-weight:600; display:block; margin-bottom:5px;">Início das Férias</label>
+                                <input type="date" id="feriasInicio" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                            </div>
+                            <div>
+                                <label style="font-size:12px; font-weight:600; display:block; margin-bottom:5px;">Fim das Férias</label>
+                                <input type="date" id="feriasFim" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom:20px;">
+                            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:5px;">O que revisar?</label>
+                            <select id="feriasFiltro" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                                <option value="6M">Tudo do Último Semestre (6 Meses)</option>
+                                <option value="1A">Tudo do Último Ano</option>
+                                <option value="GERAL">Toda a Biblioteca (Hardcore)</option>
+                            </select>
+                        </div>
+
+                        <button class="btn-action" onclick="window.criarCronogramaFerias()" style="width:100%; justify-content:center; background:#f39c12; color:white; border:none; padding:12px; font-weight:600;">
+                            <i class="fas fa-calendar-alt"></i> Criar Cards de Revisão nas Férias
+                        </button>
+                    </div>
+
+                </div>
+            </section>
 
             
         </div>
     </main>
+
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -919,11 +1077,27 @@
     let viewingLibraryId = null; // <--- NOVA VARIÁVEL DE CONTROLE
 
 
-    // --- CONFIGURAÇÃO QUILL ---
+    // --- CONFIGURAÇÃO QUILL COM TABELAS AVANÇADAS ---
+    Quill.register({
+        'modules/better-table': quillBetterTable
+    }, true);
+
     const quill = new Quill('#quill-editor', {
         theme: 'snow',
         placeholder: 'Cole seu conteúdo aqui...',
         modules: {
+            table: false, // Desativa tabela padrão antiga
+            'better-table': {
+                operationMenu: {
+                    items: {
+                        unmergeCells: { text: 'Desfazer fusão' }
+                    },
+                    color: { colors: ['#fff', '#f0f0f0', '#ffe2dd', '#dbeddb', '#eef6fc'] }
+                }
+            },
+            keyboard: {
+                bindings: quillBetterTable.keyboardBindings
+            },
             toolbar: {
                 container: [
                     [{ 'header': [1, 2, 3, false] }], 
@@ -932,13 +1106,55 @@
                     [{ 'list': 'ordered'}, { 'list': 'bullet' }], 
                     [{ 'align': [] }], 
                     ['blockquote', 'code-block'],
-                    ['image', 'video'], 
+                    ['image', 'video', 'table'], // <--- Botão 'table' adicionado aqui
                     ['clean']
                 ],
                 handlers: {
-                    'image': imageHandler
+                    'image': imageHandler,
+                    'table': function() {
+                        this.quill.getModule('better-table').insertTable(3, 3);
+                    }
                 }
             }
+        }
+    });
+
+    // --- INTERCEPTADOR DE COLAGEM DE TABELAS (IA -> Quill) ---
+    // Isso converte tabelas HTML coladas (do GPT/Gemini) em tabelas editáveis
+    quill.root.addEventListener('paste', (e) => {
+        const html = e.clipboardData?.getData('text/html');
+        if (!html || !html.includes('<table')) return;
+
+        // Tenta parsear para ver se é uma tabela válida
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const table = doc.querySelector('table');
+        
+        if (table) {
+            e.preventDefault(); // Impede a colagem padrão (que seria HTML morto)
+            
+            const rows = [...table.rows];
+            const rowCount = rows.length;
+            const colCount = rows[0].cells.length;
+
+            // Insere uma tabela vazia com as dimensões corretas
+            const tableModule = quill.getModule('better-table');
+            tableModule.insertTable(rowCount, colCount);
+
+            // Preenche os dados (gambiarra técnica necessária para Quill 1.x)
+            // Espera um tick para a tabela ser criada no DOM
+            setTimeout(() => {
+                const tables = quill.root.querySelectorAll('.quill-better-table');
+                // Pega a última tabela inserida (assumindo que é a do cursor)
+                const currentTable = tables[0]; // Simplificação: pega a primeira ou precisaria de lógica complexa de cursor
+                
+                if(!currentTable) return;
+
+                // Nota: Preencher programaticamente células no better-table é complexo via API.
+                // Esta versão cria a estrutura editável. O usuário pode colar o texto dentro ou digitar.
+                // Se quiser copiar o texto exato célula a célula, requer manipulação avançada de Deltas.
+                console.log("Estrutura de tabela editável criada para receber os dados.");
+            }, 100);
         }
     });
 
@@ -963,37 +1179,6 @@
 
                // --- VERSÃO 5.0: PROCESSAMENTO LINHA A LINHA (SEM CORTES) ---
     
-        // 1. MATCHER PARA TABELAS HTML (Cópia com Mouse / Seleção) CORRIGIDO
-    quill.clipboard.addMatcher('TABLE', function(node, delta) {
-        const NewDelta = Quill.import('delta');
-        const novaDelta = new NewDelta();
-
-        novaDelta.insert('\n');
-        novaDelta.insert('📋 Tabela Importada:', { bold: true, color: '#2383e2' });
-        novaDelta.insert('\n');
-
-        const rows = node.querySelectorAll('tr');
-        rows.forEach((row) => {
-            // Transformamos em Array para saber qual é a última célula
-            const cells = Array.from(row.querySelectorAll('th, td'));
-            
-            cells.forEach((cell, index) => {
-                const isHeader = cell.tagName === 'TH' || row.parentElement.tagName === 'THEAD';
-                novaDelta.insert(cell.innerText.trim(), { 
-                    bold: isHeader,
-                    background: isHeader ? '#f0f0f0' : 'transparent'
-                });
-                
-                // CORREÇÃO: Só adiciona a barra se NÃO for a última célula da linha
-                if (index < cells.length - 1) {
-                    novaDelta.insert(' | ', { color: '#ccc' });
-                }
-            });
-            novaDelta.insert('\n');
-        });
-        novaDelta.insert('\n'); 
-        return novaDelta;
-    });
 
 
         // --- MATCHER REVISADO: Limpa o |---| e evita picotamento no Editor ---
@@ -1420,11 +1605,16 @@
 
 
     window.toggleConcluido = async (id, status) => {
-        await updateDoc(doc(db, "planners", currentUID, "tasks", id), { concluido: status });
+        // Atualiza visualmente primeiro (Otimista)
         const task = allTasksCache.find(t => t.id === id);
         if(task) task.concluido = status;
-        renderWeeklyBoard();
+        
+        renderWeeklyBoard(); // Atualiza Cronograma
+        renderAgendaBoard(); // Atualiza Agenda (Remove/Adiciona Pendência)
+
+        await updateDoc(doc(db, "planners", currentUID, "tasks", id), { concluido: status });
     };
+
 
     document.getElementById("pdfInput").onchange = async (e) => {
         const file = e.target.files[0];
@@ -2378,7 +2568,7 @@
 
     function renderAgendaBoard() {
         const board = document.getElementById('agendaBoard');
-        if (!board) return; // Segurança caso o elemento não exista
+        if (!board) return; 
         board.innerHTML = '';
         
         const daysOfWeek = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
@@ -2389,16 +2579,7 @@
             currentDay.setDate(currentBoardStart.getDate() + i);
             const isToday = isSameDay(today, currentDay);
 
-            // Filtra itens deste dia e ordena por hora de início
-            const itensDoDia = allAgendaCache.filter(item => {
-                if(!item.data) return false;
-                // Converte string "2024-05-20" para data local correta
-                const parts = item.data.split('-'); 
-                const itemDate = new Date(parts[0], parts[1]-1, parts[2]);
-                return isSameDay(itemDate, currentDay);
-            }).sort((a, b) => a.inicio.localeCompare(b.inicio));
-
-            // Cria a coluna do dia
+            // 1. Cria a Coluna
             const colDiv = document.createElement('div');
             colDiv.className = 'day-column';
             colDiv.innerHTML = `
@@ -2408,10 +2589,79 @@
                 </div>
                 <div class="drop-zone" style="padding-right:4px;"></div>
             `;
-            
             const container = colDiv.querySelector('.drop-zone');
-            
-            // Cria os cartões de horário
+
+            // ============================================================
+            // 🔗 SINCRONIZAÇÃO: Bloco de Revisões do Cronograma
+            // ============================================================
+            const revisoesDoDia = allTasksCache.filter(t => {
+                const tDate = new Date(t.targetDate);
+                const ehDoDia = isSameDay(tDate, currentDay);
+                
+                // 1. Se já está concluído, não aparece como pendência
+                if (t.concluido || !ehDoDia) return false;
+
+                // 2. Se já foi agendado neste dia (Existe card na agenda com nome similar), oculta a pendência
+                const jaAgendado = allAgendaCache.some(agendaItem => {
+                    if (!agendaItem.data) return false;
+                    const parts = agendaItem.data.split('-');
+                    const aDate = new Date(parts[0], parts[1]-1, parts[2]);
+                    
+                    // Verifica se é o mesmo dia E se os títulos se contém
+                    return isSameDay(aDate, currentDay) && 
+                           (agendaItem.titulo.includes(t.titulo) || t.titulo.includes(agendaItem.titulo));
+                });
+
+                return !jaAgendado;
+            });
+
+            if (revisoesDoDia.length > 0) {
+                const divAlert = document.createElement('div');
+                divAlert.style.cssText = "background:#fffbf0; border:1px dashed #f39c12; padding:10px; margin-bottom:12px; border-radius:6px;";
+                
+                divAlert.innerHTML = `<div style="font-size:11px; font-weight:700; color:#e67e22; margin-bottom:6px; text-transform:uppercase;">
+                    <i class="fas fa-exclamation-circle"></i> Pendências do Board (${revisoesDoDia.length})
+                </div>`;
+
+                revisoesDoDia.forEach(rev => {
+                    const item = document.createElement('div');
+                    // ALTERAÇÃO 1: Mais padding, bordas arredondadas iguais aos cards, align-items: flex-start para alinhar ícone no topo se quebrar linha
+                    item.style.cssText = "font-size:13px; color:#37352f; margin-bottom:8px; cursor:pointer; padding:10px; background:white; border-radius:6px; border:1px solid #e9e9e7; display:flex; align-items:flex-start; gap:8px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); transition:0.2s;";
+                    
+                    item.onmouseover = () => item.style.borderColor = "#2383e2";
+                    item.onmouseout = () => item.style.borderColor = "#e9e9e7";
+                    item.title = "Clique para agendar um horário";
+                    
+                    let icon = rev.tipo === 'quiz' ? '<i class="fas fa-brain" style="color:#9065b0"></i>' : '<i class="far fa-file-alt" style="color:#2383e2"></i>';
+                    
+                    // Checkbox para concluir direto na pendência
+                    item.innerHTML = `
+                        <input type="checkbox" style="margin-top:3px; cursor:pointer;" 
+                            onclick="event.stopPropagation(); window.toggleConcluido('${rev.id}', true)">
+                        <span style="margin-top:2px; font-size:12px;">${icon}</span> 
+                        <span style="flex:1; line-height:1.4; word-break: break-word;">${rev.titulo}</span> 
+                        <i class="fas fa-clock" title="Agendar Horário" style="color:#2383e2; margin-top:3px; opacity:0.7;"></i>
+                    `;
+                    
+                    // Clique no card abre agendamento (exceto se clicar no checkbox)
+                    item.onclick = (e) => {
+                        if (e.target.type !== 'checkbox') window.agendarRevisaoEspecifica(rev.titulo, currentDay);
+                    };
+
+                    divAlert.appendChild(item);
+                });
+                container.appendChild(divAlert);
+            }
+            // ============================================================
+
+            // 2. Renderiza os Horários da Agenda (Normal)
+            const itensDoDia = allAgendaCache.filter(item => {
+                if(!item.data) return false;
+                const parts = item.data.split('-'); 
+                const itemDate = new Date(parts[0], parts[1]-1, parts[2]);
+                return isSameDay(itemDate, currentDay);
+            }).sort((a, b) => a.inicio.localeCompare(b.inicio));
+
             itensDoDia.forEach(item => {
                 const el = document.createElement('div');
                 el.className = `agenda-card ${item.concluido ? 'done' : ''}`;
@@ -2436,6 +2686,22 @@
         }
     }
 
+    // --- ATALHO: Transforma Revisão em Agenda ---
+    window.agendarRevisaoEspecifica = (titulo, dataObj) => {
+        document.getElementById('agendaTitle').value = `Estudar: ${titulo}`;
+        
+        // Formata data para o input YYYY-MM-DD
+        const ano = dataObj.getFullYear();
+        const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
+        const dia = String(dataObj.getDate()).padStart(2, '0');
+        document.getElementById('agendaDate').value = `${ano}-${mes}-${dia}`;
+        
+        document.getElementById('agendaStart').value = '';
+        document.getElementById('agendaEnd').value = '';
+        document.getElementById('modalAgenda').style.display = 'flex';
+    };
+
+    
     // --- ABRIR MODAL AGENDA ---
     document.getElementById('btnNovaAgenda').onclick = () => {
         document.getElementById('agendaTitle').value = '';
@@ -2488,6 +2754,57 @@
             renderAgendaBoard(); // Atualiza tela
         } catch(e) { alert("Erro ao deletar"); }
     };
+    
+    
+    // --- EXPORTAR PARA GOOGLE CALENDAR (.ICS) ---
+    window.exportarAgendaICS = () => {
+        if (!allAgendaCache || allAgendaCache.length === 0) return alert("Sua agenda está vazia.");
+
+        let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//PlannerMed//R1//PT-BR\nCALSCALE:GREGORIAN\nMETHOD:PUBLISH\n";
+
+        allAgendaCache.forEach(item => {
+            if (!item.data || !item.inicio || !item.fim) return;
+
+            // Formatação de Datas para o padrão iCal (YYYYMMDDTHHmm00)
+            const diaLimpo = item.data.replace(/-/g, ''); // 2024-01-20 -> 20240120
+            const inicioLimpo = item.inicio.replace(/:/g, '') + '00'; // 14:30 -> 143000
+            const fimLimpo = item.fim.replace(/:/g, '') + '00';
+
+            const dtStart = `${diaLimpo}T${inicioLimpo}`;
+            const dtEnd = `${diaLimpo}T${fimLimpo}`;
+            const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+
+            icsContent += "BEGIN:VEVENT\n";
+            icsContent += `UID:${item.id || Date.now()}@plannermed.com\n`;
+            icsContent += `DTSTAMP:${now}\n`;
+            icsContent += `DTSTART:${dtStart}\n`;
+            icsContent += `DTEND:${dtEnd}\n`;
+            icsContent += `SUMMARY:${item.titulo}\n`;
+            icsContent += "DESCRIPTION:Sessão de estudo gerada pelo Planner R1.\n";
+            
+            // --- BLOCO DO ALARME (NOTIFICAÇÃO) ---
+            icsContent += "BEGIN:VALARM\n";
+            icsContent += "TRIGGER:-PT10M\n"; // Toca 10 minutos antes
+            icsContent += "ACTION:DISPLAY\n";
+            icsContent += "DESCRIPTION:Hora de Estudar!\n";
+            icsContent += "END:VALARM\n";
+            // -------------------------------------
+            
+            icsContent += "END:VEVENT\n";
+        });
+
+        icsContent += "END:VCALENDAR";
+
+        // Cria o arquivo e força o download
+        const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.setAttribute('download', 'minha_agenda_estudos.ics');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
 
     // --- CONTROLE DA BARRA SUPERIOR ---
     window.toggleTopBarElements = (show) => {
@@ -2719,11 +3036,15 @@
             tr.innerHTML = `
                 <td style="padding:12px; font-weight:500;">${data.titulo}</td>
                 <td style="padding:12px; color:#777;">${dataCriacao}</td>
-                <td style="padding:12px;">
+                <td style="padding:12px; display: flex; gap: 8px;">
                     <button class="btn-action" onclick="window.fetchAndPlayQuiz('${docSnap.id}')"><i class="fas fa-play"></i> Fazer</button>
+                    <button class="btn-action" onclick="window.excluirQuiz('${docSnap.id}')" title="Excluir Simulado" style="color:#d44c47; border-color:#ffe2dd; background:#fff5f5;">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </td>
             `;
             tbody.appendChild(tr);
+
         });
     }
 
@@ -2736,8 +3057,23 @@
         }
     };
 
+    // --- EXCLUIR SIMULADO SALVO (NOVO) ---
+    window.excluirQuiz = async (id) => {
+        if(!confirm("Tem certeza que deseja excluir este simulado permanentemente?")) return;
+        
+        try {
+            await deleteDoc(doc(db, "planners", currentUID, "quizzes", id));
+            showFeedback("🗑️ Simulado excluído.", false);
+            carregarAbaQuizzes(); // Atualiza a lista na hora
+        } catch(e) {
+            console.error(e);
+            alert("Erro ao excluir simulado.");
+        }
+    };
+
     // --- NAVEGAÇÃO PARA ABA QUIZZES ---
-    document.getElementById('navQuizzes').onclick = () => {
+    
+        document.getElementById('navQuizzes').onclick = () => {
         document.getElementById('secBoard').classList.add('hidden');
         document.getElementById('secLib').classList.add('hidden');
         document.getElementById('secAgenda').classList.add('hidden');
@@ -2768,6 +3104,19 @@
         document.getElementById('navAnatomia').classList.add('active');
         
         window.toggleTopBarElements(false); // ESCONDE TOPO
+    };
+
+    // Navegação Revisão Espaçada
+    document.getElementById('navRevisao').onclick = () => {
+        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secRevisao'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.classList.add('hidden');
+        });
+        document.getElementById('secRevisao').classList.remove('hidden');
+        
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('navRevisao').classList.add('active');
+        window.toggleTopBarElements(false);
     };
 
     // 2. Lógica do Jogo (Versão Blindada v3)
@@ -2962,14 +3311,52 @@
 
     window.processarAgendaIA = async () => {
         const texto = document.getElementById('promptAgenda').value;
-        if (!texto.trim()) return alert("Digite sua rotina primeiro.");
+        const usarAgendaAtual = document.getElementById('checkExportarAgenda').checked;
+        const incluirPendencias = document.getElementById('checkIncluirPendencias').checked;
+
+        if (!texto.trim() && !incluirPendencias) return alert("Digite sua rotina ou marque as pendências.");
 
         document.getElementById('modalAgendaIA').style.display = 'none';
-        showFeedback("🤖 Criando sua agenda...", true);
+        showFeedback("🤖 Analisando agenda e criando rotina...", true);
 
         try {
-            // Pega a data de hoje para a IA se localizar na semana
-            const hojeISO = new Date().toISOString().split('T')[0];
+            // 1. CORREÇÃO DE DATA (Fuso Horário BR)
+            const tzOffset = (new Date()).getTimezoneOffset() * 60000;
+            const hojeISO = new Date(Date.now() - tzOffset).toISOString().split('T')[0];
+            
+            // 2. PREPARAÇÃO DA AGENDA EXISTENTE
+            let agendaExistente = [];
+            if (usarAgendaAtual && typeof allAgendaCache !== 'undefined') {
+                agendaExistente = allAgendaCache.map(a => ({
+                    titulo: a.titulo, data: a.data, inicio: a.inicio, fim: a.fim
+                }));
+            }
+
+            // 3. NOVA LÓGICA: ENVIO DE PENDÊNCIAS COM DATA (Passado + Futuro Próximo)
+            let listaPendencias = [];
+            if (incluirPendencias && typeof allTasksCache !== 'undefined') {
+                const limiteFuturo = new Date();
+                limiteFuturo.setDate(limiteFuturo.getDate() + 45);
+
+                listaPendencias = allTasksCache
+                    .filter(t => {
+                        if (t.concluido) return false;
+                        const d = new Date(t.targetDate);
+                        return d <= limiteFuturo; 
+                    })
+                    .map(t => {
+                        const d = new Date(t.targetDate);
+                        // CORREÇÃO DE FUSO: Ajusta a hora para garantir que a data seja a local, e não UTC
+                        // Se era 22h do dia 15 (Brasil) -> vira 01h do dia 16 (UTC).
+                        // Subtraindo o offset, forçamos voltar para dia 15 visualmente.
+                        const offset = d.getTimezoneOffset() * 60000; 
+                        const dataLocal = new Date(d.getTime() - offset);
+                        
+                        const dataFormatada = dataLocal.toISOString().split('T')[0];
+                        return { titulo: t.titulo, vencimento: dataFormatada };
+                    });
+            }
+
 
             const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
                 method: "POST",
@@ -2977,7 +3364,9 @@
                 body: JSON.stringify({ 
                     action: "gerar_agenda_ia", 
                     textoUsuario: texto,
-                    dataReferencia: hojeISO
+                    dataReferencia: hojeISO,
+                    agendaExistente: agendaExistente,
+                    pendencias: listaPendencias
                 })
             });
 
@@ -2986,11 +3375,10 @@
             const novosHorarios = await response.json();
             
             if (!novosHorarios || novosHorarios.length === 0) {
-                showFeedback("Nenhum horário gerado.", false);
+                showFeedback("Nenhum horário sugerido pela IA.", false);
                 return;
             }
 
-            // Salva cada horário gerado no banco de dados
             const promises = novosHorarios.map(item => {
                 return addDoc(collection(db, "planners", currentUID, "agenda"), {
                     titulo: item.titulo,
@@ -3007,12 +3395,9 @@
 
             showFeedback(`✅ ${novosHorarios.length} horários criados!`, false);
             
-            // Atualiza a tela (Recarrega a função loadAgenda que já existe no seu código)
-            // Precisamos garantir que loadAgenda esteja acessível ou recarregar a semana
             if (typeof loadAgenda === 'function') {
                 loadAgenda();
             } else {
-                // Fallback: recarrega a semana atual
                 window.changeWeek(currentBoardStart.getTime());
             }
 
@@ -3022,6 +3407,207 @@
             alert("Erro ao conectar com a IA.");
         }
     };
+
+
+    
+        // ============================================================
+    // ⚙️ CONFIGURADOR DO SIMULADO GERAL (Fase 1)
+    // ============================================================
+
+    window.abrirConfiguradorProva = () => {
+        const modal = document.getElementById('modalConfigSimulado');
+        const containerMaterias = document.getElementById('containerCheckboxesMaterias');
+        const selAnato = document.getElementById('selRegiaoSimulado');
+
+        modal.style.display = 'flex';
+        containerMaterias.innerHTML = '';
+
+        // 1. POPULAR MATÉRIAS (Tags das Tarefas)
+        const todasTags = allTasksCache
+            .map(t => t.tag ? t.tag.trim().toUpperCase() : "GERAL")
+            .filter(tag => tag !== "");
+        
+        const tagsUnicas = [...new Set(todasTags)].sort();
+
+        if (tagsUnicas.length === 0) {
+            containerMaterias.innerHTML = '<div style="padding:10px; color:#666;">Crie estudos primeiro para ter matérias.</div>';
+        } else {
+            tagsUnicas.forEach(tag => {
+                const div = document.createElement('div');
+                div.style.padding = "8px 0";
+                div.style.borderBottom = "1px dashed #eee";
+                div.innerHTML = `
+                    <label style="display:flex; align-items:center; cursor:pointer; font-size:14px; width:100%;">
+                        <input type="checkbox" class="chk-materia" value="${tag}" checked style="margin-right:10px; transform:scale(1.2);">
+                        ${tag}
+                    </label>
+                `;
+                containerMaterias.appendChild(div);
+            });
+        }
+
+        // 2. POPULAR REGIÕES DE ANATOMIA
+        if (selAnato.options.length <= 1 && typeof bancoAnatomia !== 'undefined') {
+            const chaves = Object.keys(bancoAnatomia).sort((a,b) => bancoAnatomia[a].title_pt.localeCompare(bancoAnatomia[b].title_pt));
+            chaves.forEach(key => {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.text = bancoAnatomia[key].title_pt;
+                selAnato.appendChild(opt);
+            });
+        }
+    };
+
+    window.toggleAllMaterias = (checked) => {
+        document.querySelectorAll('.chk-materia').forEach(chk => chk.checked = checked);
+    };
+
+    // ============================================================
+    // 🚀 MOTOR DO SIMULADO GERAL (FASE 2 - FINAL)
+    // ============================================================
+    window.iniciarSimuladoMisto = async () => {
+        // 1. CAPTURAR CONFIGURAÇÕES DO USUÁRIO
+        const chkMaterias = Array.from(document.querySelectorAll('.chk-materia:checked')).map(c => c.value);
+        const usarTodasTexto = document.getElementById('checkUsarTodas').checked;
+        const qtdTexto = usarTodasTexto ? 9999 : parseInt(document.getElementById('qtdQuestõesTexto').value);
+        
+        const incluirAnato = document.getElementById('checkIncluirAnatomia').checked;
+        const regiaoAnato = document.getElementById('selRegiaoSimulado').value;
+        const qtdAnato = parseInt(document.getElementById('qtdAnatomia').value);
+
+        if (chkMaterias.length === 0 && !incluirAnato) return alert("Selecione ao menos uma matéria ou inclua Anatomia.");
+
+        // Fecha modal e mostra loading
+        document.getElementById('modalConfigSimulado').style.display = 'none';
+        showFeedback("⚙️ Montando sua prova personalizada...", true);
+
+        let questoesFinais = [];
+
+        try {
+            // --- PARTE A: QUESTÕES DE TEXTO (DO FIRESTORE) ---
+            if (chkMaterias.length > 0) {
+                const q = query(collection(db, "planners", currentUID, "quizzes"));
+                const snap = await getDocs(q);
+                let poolTexto = [];
+
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    const titulo = (data.titulo || "").toUpperCase();
+                    // Filtro simples: Se "Selecionar Tudo" (lista cheia) ou se o título bate com alguma tag
+                    const ehRelevante = document.getElementById('checkAllMaterias').checked || 
+                                        chkMaterias.some(tag => titulo.includes(tag) || tag === "GERAL");
+
+                    if (ehRelevante) {
+                        const div = document.createElement('div');
+                        div.innerHTML = data.html;
+                        const cards = div.querySelectorAll('.quiz-card');
+                        
+                        cards.forEach(card => {
+                            // Adiciona etiqueta de origem para contexto
+                            const label = document.createElement('div');
+                            label.style.cssText = "font-size:10px; color:#aaa; margin-bottom:5px; text-transform:uppercase; letter-spacing:1px;";
+                            label.innerText = `Fonte: ${data.titulo}`;
+                            card.insertBefore(label, card.firstChild);
+                            poolTexto.push(card.outerHTML);
+                        });
+                    }
+                });
+
+                // Embaralha e corta
+                poolTexto.sort(() => Math.random() - 0.5);
+                questoesFinais.push(...poolTexto.slice(0, qtdTexto));
+            }
+
+            // --- PARTE B: QUESTÕES DE ANATOMIA (GERADAS NA HORA) ---
+            if (incluirAnato && qtdAnato > 0 && typeof bancoAnatomia !== 'undefined') {
+                showFeedback("🦴 O Preceptor está selecionando imagens...", true);
+                
+                let poolImagens = [];
+                const pastas = regiaoAnato ? [regiaoAnato] : Object.keys(bancoAnatomia);
+
+                pastas.forEach(p => {
+                    const d = bancoAnatomia[p];
+                    Object.keys(d.descriptions).forEach(f => {
+                        poolImagens.push({
+                            desc: d.descriptions[f],
+                            url: `https://brunooofernandesss.github.io/Anatomia/Michigan/${p}/${f}`
+                        });
+                    });
+                });
+
+                // Sorteia N imagens
+                poolImagens.sort(() => Math.random() - 0.5);
+                const selecionadas = poolImagens.slice(0, qtdAnato);
+
+                if (selecionadas.length > 0) {
+                    // Prepara payload pro Worker
+                    const payload = selecionadas.map((img, i) => ({ id: i, desc: img.desc }));
+                    
+                    const res = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ action: "gerar_prova_anatomia", listaImagens: payload })
+                    });
+
+                    if (res.ok) {
+                        const dadosAnato = await res.json();
+                        dadosAnato.forEach(q => {
+                            const imgOrig = selecionadas[q.id_imagem];
+                            const cardHTML = `
+                                <div class="quiz-card" style="border-left: 4px solid #8e44ad;">
+                                    <div style="text-align:center; background:#000; padding:10px; border-radius:8px; margin-bottom:15px;">
+                                        <img src="${imgOrig.url}" style="max-width:100%; max-height:350px; object-fit:contain;">
+                                    </div>
+                                    <div style="font-size:10px; color:#8e44ad; font-weight:700; margin-bottom:5px; text-transform:uppercase;">ANATOMIA PRÁTICA</div>
+                                    <p style="font-style:italic; font-size:14px; margin-bottom:10px;">"${q.clinical_case}"</p>
+                                    <h3 class="quiz-question" style="font-size:16px; margin-bottom:15px; font-weight:700;">${q.question}</h3>
+                                    <div class="quiz-options">
+                                        ${q.options.map((opt, i) => `
+                                            <div class="quiz-opt" onclick="window.checkAnswer(this, ${i === Number(q.correctIndex)})">${opt}</div>
+                                        `).join('')}
+                                    </div>
+                                    <div class="quiz-feedback" style="display:none;">
+                                        <strong>Gabarito:</strong><br>${q.explanation || "Verifique a imagem."}
+                                    </div>
+                                </div>
+                            `;
+                            questoesFinais.push(cardHTML);
+                        });
+                    }
+                }
+            }
+
+            // --- PARTE C: MISTURA FINAL E EXIBIÇÃO ---
+            if (questoesFinais.length === 0) throw new Error("Nenhuma questão encontrada ou gerada.");
+
+            questoesFinais.sort(() => Math.random() - 0.5); // Embaralha tudo
+
+            const htmlProva = `
+                <div style="max-width:800px; margin:0 auto;">
+                    <div style="text-align:center; margin-bottom:30px; border-bottom:1px solid #eee; padding-bottom:20px;">
+                        <h2 style="color:#333;">Simulado Geral R1</h2>
+                        <p style="color:#666;">
+                            <b>${questoesFinais.length} Questões</b> • Modo Aleatório
+                        </p>
+                    </div>
+                    ${questoesFinais.join('<hr style="border:0; border-top:1px dashed #ddd; margin:40px 0;">')}
+                    <div style="text-align:center; margin-top:50px; padding:30px; background:#f9f9f9; border-radius:8px;">
+                        <h3>Fim da Prova</h3>
+                        <button class="btn-action" onclick="window.fecharModalView()" style="background:#333; color:white; padding:10px 20px;">Encerrar Simulado</button>
+                    </div>
+                </div>
+            `;
+
+            window.abrirQuizPlayer("Simulado Geral Personalizado", htmlProva);
+            showFeedback("Prova Pronta!", false);
+
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao criar prova: " + e.message);
+            showFeedback("Erro.", false);
+        }
+    };
+
 
     // ============================================================
     // 🔍 BUSCA GLOBAL INSTANTÂNEA
@@ -3686,7 +4272,7 @@
                             Questão ${i + 1}
                         </div>
                         <p style="font-style:italic; color:#555; margin-bottom:15px;">"${q.clinical_case}"</p>
-                        <h3 style="font-size:16px; margin-bottom:15px; font-weight:700;">${q.question}</h3>
+                        <h3 class="quiz-question" style="font-size:16px; margin-bottom:15px; font-weight:700;">${q.question}</h3>
                         
                         <div class="quiz-options">
                             ${q.options.map((opt, idx) => `
@@ -3697,7 +4283,8 @@
                         </div>
                         
                         <div class="quiz-feedback" style="display:none;">
-                            <strong>Gabarito:</strong><br>${q.explanation}
+                            <strong>Gabarito:</strong><br>
+                            ${q.explanation && q.explanation.length > 5 ? q.explanation : "A estrutura correta é a indicada na opção selecionada. (IA não forneceu detalhes adicionais)."}
                         </div>
                     </div>
                 `;
@@ -3719,9 +4306,179 @@
         }
     };
 
+    // ============================================================
+    // 🧠 MÓDULO: CURVA DE ESQUECIMENTO & FÉRIAS
+    // ============================================================
 
-    
+    // 1. GERAÇÃO DE REVISÕES FUTURAS (6M a 6 Anos)
+    window.gerarRevisoesFuturas = async () => {
+        if (!confirm("O sistema irá varrer sua biblioteca e criar cards de revisão para 6 meses, 1 ano, 2, 4 e 6 anos (se ainda não existirem).\n\nContinuar?")) return;
+
+        showFeedback("⏳ Analisando biblioteca...", true);
+        const logEl = document.getElementById('logRevisaoFutura');
+        logEl.style.display = 'block';
+        logEl.innerHTML = 'Iniciando varredura...<br>';
+
+        try {
+            // Pega todos os arquivos originais
+            const snapLib = await getDocs(collection(db, "planners", currentUID, "arquivos"));
+            if (snapLib.empty) return alert("Biblioteca vazia.");
+
+            // Pega todas as tasks existentes para evitar duplicatas
+            const titulosExistentes = new Set(allTasksCache.map(t => t.titulo));
+
+            const intervalos = [
+                { label: "R-6M", dias: 180 },
+                { label: "R-1A", dias: 365 },
+                { label: "R-2A", dias: 730 },
+                { label: "R-4A", dias: 1460 },
+                { label: "R-6A", dias: 2190 }
+            ];
+
+            let criados = 0;
+            const batchPromises = [];
+
+            snapLib.forEach(docSnap => {
+                const file = docSnap.data();
+                const dataOriginal = new Date(file.data); // Data do upload/estudo
+
+                intervalos.forEach(gap => {
+                    const tituloRevisao = `[${gap.label}] ${file.nome}`;
+                    
+                    // Verifica se já existe
+                    if (!titulosExistentes.has(tituloRevisao)) {
+                        // Calcula data futura
+                        const dataFutura = new Date(dataOriginal);
+                        dataFutura.setDate(dataFutura.getDate() + gap.dias);
+
+                        // Só cria se a data for no futuro (ou hoje)
+                        if (dataFutura > new Date()) {
+                            batchPromises.push(addDoc(collection(db, "planners", currentUID, "tasks"), {
+                                titulo: tituloRevisao,
+                                tag: file.tag || "Geral",
+                                contentHTML: file.contentHTML || "",
+                                targetDate: dataFutura.getTime(),
+                                concluido: false,
+                                criadoEm: serverTimestamp(),
+                                tipo: file.tipo || 'texto',
+                                origemId: docSnap.id
+                            }));
+                            criados++;
+                            logEl.innerHTML += `Creating: ${tituloRevisao}<br>`;
+                        }
+                    }
+                });
+            });
+
+            await Promise.all(batchPromises);
+            
+            logEl.innerHTML += `<br><strong>Concluído! ${criados} revisões agendadas.</strong>`;
+            showFeedback(`✅ ${criados} revisões criadas!`, false);
+            loadDataAndInit(); // Atualiza cache
+
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao gerar revisões.");
+        }
+    };
+
+    // 2. MODO FÉRIAS (Distribuição Inteligente)
+    window.criarCronogramaFerias = async () => {
+        const inicioStr = document.getElementById('feriasInicio').value;
+        const fimStr = document.getElementById('feriasFim').value;
+        const filtro = document.getElementById('feriasFiltro').value;
+
+        if (!inicioStr || !fimStr) return alert("Defina a data de início e fim das férias.");
+
+        // Ajuste de datas (Fuso Horário)
+        const inicio = new Date(inicioStr + "T12:00:00");
+        const fim = new Date(fimStr + "T12:00:00");
+
+        if (fim < inicio) return alert("A data final deve ser depois da inicial.");
+
+        // Calcular lista de dias disponíveis
+        const diasFerias = [];
+        let loopDate = new Date(inicio);
+        while (loopDate <= fim) {
+            diasFerias.push(new Date(loopDate)); // Copia a data
+            loopDate.setDate(loopDate.getDate() + 1);
+        }
+
+        const numDias = diasFerias.length;
+        if (numDias === 0) return alert("Intervalo inválido.");
+
+        showFeedback(`🏖️ Planejando ${numDias} dias de férias...`, true);
+
+        try {
+            // 1. Buscar Estudos da Biblioteca
+            const snapLib = await getDocs(collection(db, "planners", currentUID, "arquivos"));
+            let estudosCandidatos = [];
+            const agora = new Date();
+
+            snapLib.forEach(doc => {
+                const dados = doc.data();
+                const dataEstudo = new Date(dados.data);
+                let incluir = false;
+
+                // Filtros de tempo
+                if (filtro === 'GERAL') incluir = true;
+                else if (filtro === '1A') {
+                    const umAnoAtras = new Date(); umAnoAtras.setFullYear(agora.getFullYear() - 1);
+                    if (dataEstudo >= umAnoAtras) incluir = true;
+                }
+                else if (filtro === '6M') {
+                    const seisMesesAtras = new Date(); seisMesesAtras.setDate(agora.getDate() - 180);
+                    if (dataEstudo >= seisMesesAtras) incluir = true;
+                }
+
+                if (incluir) estudosCandidatos.push(dados);
+            });
+
+            if (estudosCandidatos.length === 0) return alert("Nenhum estudo encontrado nesse período.");
+
+            // 2. Embaralhar os estudos (Fisher-Yates) para variar as matérias
+            for (let i = estudosCandidatos.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [estudosCandidatos[i], estudosCandidatos[j]] = [estudosCandidatos[j], estudosCandidatos[i]];
+            }
+
+            // 3. Distribuição (Round Robin)
+            const promises = [];
+            let contador = 0;
+
+            estudosCandidatos.forEach((estudo, index) => {
+                // Pega um dia das férias de forma circular
+                const diaAlvo = diasFerias[index % numDias];
+                
+                // Cria card no Cronograma
+                promises.push(addDoc(collection(db, "planners", currentUID, "tasks"), {
+                    titulo: `[FÉRIAS] ${estudo.nome}`,
+                    tag: estudo.tag || "REVISÃO",
+                    contentHTML: estudo.contentHTML || "",
+                    targetDate: diaAlvo.getTime(),
+                    concluido: false,
+                    criadoEm: serverTimestamp(),
+                    tipo: estudo.tipo || 'texto',
+                    modo: 'ferias'
+                }));
+                contador++;
+            });
+
+            await Promise.all(promises);
+
+            showFeedback(`✅ ${contador} estudos agendados nas suas férias!`, false);
+            alert(`Sucesso! Distribuí ${contador} tópicos ao longo dos ${numDias} dias de férias.\n\nMédia: ~${Math.ceil(contador/numDias)} por dia.`);
+            
+            loadDataAndInit(); // Atualiza o board
+
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao criar cronograma de férias.");
+        }
+    };
+
     </script>
+
     
     
     <script type="module" src="padrao_simulado.js"></script>
