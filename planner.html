@@ -754,8 +754,10 @@
             <div class="nav-item" id="navAnatomia" style="color: #2383e2; font-weight: 500;"><i class="fas fa-bone"></i> Desafio Anatomia</div>
             <div class="nav-item" id="navSyllabus"><i class="fas fa-th-list"></i> Matriz Curricular</div>
             <div class="nav-item" onclick="window.abrirCadernoErros()" style="color: #d44c47; font-weight: 500;"><i class="fas fa-book-dead"></i> Caderno de Erros</div>
+            <div class="nav-item" id="navRevisao" style="color: #8e44ad; font-weight: 500;"><i class="fas fa-history"></i> Revisão Espaçada</div>
 
         </nav>
+
 
         <div class="sidebar-goals">
             <div class="goals-title"><i class="fas fa-bullseye"></i> Metas</div>
@@ -958,27 +960,68 @@
 
         <div id="quizAnatomiaContainer" class="hidden">
             <div class="quiz-card" style="border-left: 5px solid #2383e2;">
-                <h3 style="color: #2383e2; margin-bottom: 10px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Caso Clínico</h3>
-                <p id="anatCase" style="font-size: 16px; line-height: 1.6; margin-bottom: 20px; color: #333; font-style: italic;"></p>
-                
-                <h3 style="margin-bottom: 15px; font-weight: 700; color: #111;">
-                    <i class="fas fa-question-circle" style="color: #2383e2;"></i> 
-                    <span id="anatQuestion"></span>
-                </h3>
-
-                <div id="anatOptions" class="quiz-options"></div>
-                
                 <div id="anatFeedback" class="quiz-feedback hidden"></div>
             </div>
         </div>
     </div>
 </section>
 
+            <section id="secRevisao" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+                <div class="header-actions">
+                    <h1 class="page-title">Curva de Esquecimento & Férias</h1>
+                </div>
+                
+                <div style="max-width: 900px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 30px; padding-bottom: 50px;">
+                    
+                    <div style="background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.03);">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
+                            <div>
+                                <h3 style="margin:0; color:#2383e2; font-size:18px;"><i class="fas fa-hourglass-half"></i> Manutenção de Longo Prazo</h3>
+                                <p style="color:#666; font-size:13px; margin-top:5px;">O sistema varre sua biblioteca e cria cards para 6 meses, 1, 2, 4 e 6 anos, se ainda não existirem.</p>
+                            </div>
+                            <button class="btn-action" onclick="window.gerarRevisoesFuturas()" style="background:#eef6fc; color:#2383e2; border:1px solid #2383e2;">
+                                <i class="fas fa-sync-alt"></i> Gerar Futuro
+                            </button>
+                        </div>
+                        <div id="logRevisaoFutura" style="font-size:12px; color:#555; background:#f9f9f9; padding:10px; border-radius:6px; display:none; max-height:150px; overflow-y:auto;"></div>
+                    </div>
 
+                    <div style="background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); border-left: 5px solid #f39c12;">
+                        <h3 style="margin:0; color:#e67e22; font-size:18px; margin-bottom:15px;"><i class="fas fa-umbrella-beach"></i> Modo Intensivão de Férias</h3>
+                        <p style="color:#666; font-size:13px; margin-bottom:20px;">Defina seu período livre. O sistema distribuirá o que você estudou recentemente como pendências para esses dias.</p>
+                        
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:20px;">
+                            <div>
+                                <label style="font-size:12px; font-weight:600; display:block; margin-bottom:5px;">Início das Férias</label>
+                                <input type="date" id="feriasInicio" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                            </div>
+                            <div>
+                                <label style="font-size:12px; font-weight:600; display:block; margin-bottom:5px;">Fim das Férias</label>
+                                <input type="date" id="feriasFim" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom:20px;">
+                            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:5px;">O que revisar?</label>
+                            <select id="feriasFiltro" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                                <option value="6M">Tudo do Último Semestre (6 Meses)</option>
+                                <option value="1A">Tudo do Último Ano</option>
+                                <option value="GERAL">Toda a Biblioteca (Hardcore)</option>
+                            </select>
+                        </div>
+
+                        <button class="btn-action" onclick="window.criarCronogramaFerias()" style="width:100%; justify-content:center; background:#f39c12; color:white; border:none; padding:12px; font-weight:600;">
+                            <i class="fas fa-calendar-alt"></i> Criar Cards de Revisão nas Férias
+                        </button>
+                    </div>
+
+                </div>
+            </section>
 
             
         </div>
     </main>
+
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -3031,6 +3074,19 @@
         window.toggleTopBarElements(false); // ESCONDE TOPO
     };
 
+    // Navegação Revisão Espaçada
+    document.getElementById('navRevisao').onclick = () => {
+        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secRevisao'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.classList.add('hidden');
+        });
+        document.getElementById('secRevisao').classList.remove('hidden');
+        
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('navRevisao').classList.add('active');
+        window.toggleTopBarElements(false);
+    };
+
     // 2. Lógica do Jogo (Versão Blindada v3)
     window.gerarNovoDesafioAnatomia = async () => {
         const imgEl = document.getElementById('imgAnatomia');
@@ -4218,9 +4274,179 @@
         }
     };
 
+    // ============================================================
+    // 🧠 MÓDULO: CURVA DE ESQUECIMENTO & FÉRIAS
+    // ============================================================
 
-    
+    // 1. GERAÇÃO DE REVISÕES FUTURAS (6M a 6 Anos)
+    window.gerarRevisoesFuturas = async () => {
+        if (!confirm("O sistema irá varrer sua biblioteca e criar cards de revisão para 6 meses, 1 ano, 2, 4 e 6 anos (se ainda não existirem).\n\nContinuar?")) return;
+
+        showFeedback("⏳ Analisando biblioteca...", true);
+        const logEl = document.getElementById('logRevisaoFutura');
+        logEl.style.display = 'block';
+        logEl.innerHTML = 'Iniciando varredura...<br>';
+
+        try {
+            // Pega todos os arquivos originais
+            const snapLib = await getDocs(collection(db, "planners", currentUID, "arquivos"));
+            if (snapLib.empty) return alert("Biblioteca vazia.");
+
+            // Pega todas as tasks existentes para evitar duplicatas
+            const titulosExistentes = new Set(allTasksCache.map(t => t.titulo));
+
+            const intervalos = [
+                { label: "R-6M", dias: 180 },
+                { label: "R-1A", dias: 365 },
+                { label: "R-2A", dias: 730 },
+                { label: "R-4A", dias: 1460 },
+                { label: "R-6A", dias: 2190 }
+            ];
+
+            let criados = 0;
+            const batchPromises = [];
+
+            snapLib.forEach(docSnap => {
+                const file = docSnap.data();
+                const dataOriginal = new Date(file.data); // Data do upload/estudo
+
+                intervalos.forEach(gap => {
+                    const tituloRevisao = `[${gap.label}] ${file.nome}`;
+                    
+                    // Verifica se já existe
+                    if (!titulosExistentes.has(tituloRevisao)) {
+                        // Calcula data futura
+                        const dataFutura = new Date(dataOriginal);
+                        dataFutura.setDate(dataFutura.getDate() + gap.dias);
+
+                        // Só cria se a data for no futuro (ou hoje)
+                        if (dataFutura > new Date()) {
+                            batchPromises.push(addDoc(collection(db, "planners", currentUID, "tasks"), {
+                                titulo: tituloRevisao,
+                                tag: file.tag || "Geral",
+                                contentHTML: file.contentHTML || "",
+                                targetDate: dataFutura.getTime(),
+                                concluido: false,
+                                criadoEm: serverTimestamp(),
+                                tipo: file.tipo || 'texto',
+                                origemId: docSnap.id
+                            }));
+                            criados++;
+                            logEl.innerHTML += `Creating: ${tituloRevisao}<br>`;
+                        }
+                    }
+                });
+            });
+
+            await Promise.all(batchPromises);
+            
+            logEl.innerHTML += `<br><strong>Concluído! ${criados} revisões agendadas.</strong>`;
+            showFeedback(`✅ ${criados} revisões criadas!`, false);
+            loadDataAndInit(); // Atualiza cache
+
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao gerar revisões.");
+        }
+    };
+
+    // 2. MODO FÉRIAS (Distribuição Inteligente)
+    window.criarCronogramaFerias = async () => {
+        const inicioStr = document.getElementById('feriasInicio').value;
+        const fimStr = document.getElementById('feriasFim').value;
+        const filtro = document.getElementById('feriasFiltro').value;
+
+        if (!inicioStr || !fimStr) return alert("Defina a data de início e fim das férias.");
+
+        // Ajuste de datas (Fuso Horário)
+        const inicio = new Date(inicioStr + "T12:00:00");
+        const fim = new Date(fimStr + "T12:00:00");
+
+        if (fim < inicio) return alert("A data final deve ser depois da inicial.");
+
+        // Calcular lista de dias disponíveis
+        const diasFerias = [];
+        let loopDate = new Date(inicio);
+        while (loopDate <= fim) {
+            diasFerias.push(new Date(loopDate)); // Copia a data
+            loopDate.setDate(loopDate.getDate() + 1);
+        }
+
+        const numDias = diasFerias.length;
+        if (numDias === 0) return alert("Intervalo inválido.");
+
+        showFeedback(`🏖️ Planejando ${numDias} dias de férias...`, true);
+
+        try {
+            // 1. Buscar Estudos da Biblioteca
+            const snapLib = await getDocs(collection(db, "planners", currentUID, "arquivos"));
+            let estudosCandidatos = [];
+            const agora = new Date();
+
+            snapLib.forEach(doc => {
+                const dados = doc.data();
+                const dataEstudo = new Date(dados.data);
+                let incluir = false;
+
+                // Filtros de tempo
+                if (filtro === 'GERAL') incluir = true;
+                else if (filtro === '1A') {
+                    const umAnoAtras = new Date(); umAnoAtras.setFullYear(agora.getFullYear() - 1);
+                    if (dataEstudo >= umAnoAtras) incluir = true;
+                }
+                else if (filtro === '6M') {
+                    const seisMesesAtras = new Date(); seisMesesAtras.setDate(agora.getDate() - 180);
+                    if (dataEstudo >= seisMesesAtras) incluir = true;
+                }
+
+                if (incluir) estudosCandidatos.push(dados);
+            });
+
+            if (estudosCandidatos.length === 0) return alert("Nenhum estudo encontrado nesse período.");
+
+            // 2. Embaralhar os estudos (Fisher-Yates) para variar as matérias
+            for (let i = estudosCandidatos.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [estudosCandidatos[i], estudosCandidatos[j]] = [estudosCandidatos[j], estudosCandidatos[i]];
+            }
+
+            // 3. Distribuição (Round Robin)
+            const promises = [];
+            let contador = 0;
+
+            estudosCandidatos.forEach((estudo, index) => {
+                // Pega um dia das férias de forma circular
+                const diaAlvo = diasFerias[index % numDias];
+                
+                // Cria card no Cronograma
+                promises.push(addDoc(collection(db, "planners", currentUID, "tasks"), {
+                    titulo: `[FÉRIAS] ${estudo.nome}`,
+                    tag: estudo.tag || "REVISÃO",
+                    contentHTML: estudo.contentHTML || "",
+                    targetDate: diaAlvo.getTime(),
+                    concluido: false,
+                    criadoEm: serverTimestamp(),
+                    tipo: estudo.tipo || 'texto',
+                    modo: 'ferias'
+                }));
+                contador++;
+            });
+
+            await Promise.all(promises);
+
+            showFeedback(`✅ ${contador} estudos agendados nas suas férias!`, false);
+            alert(`Sucesso! Distribuí ${contador} tópicos ao longo dos ${numDias} dias de férias.\n\nMédia: ~${Math.ceil(contador/numDias)} por dia.`);
+            
+            loadDataAndInit(); // Atualiza o board
+
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao criar cronograma de férias.");
+        }
+    };
+
     </script>
+
     
     
     <script type="module" src="padrao_simulado.js"></script>
