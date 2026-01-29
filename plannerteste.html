@@ -3230,7 +3230,9 @@
         showFeedback("🤖 Analisando agenda e criando rotina...", true);
 
         try {
-            const hojeISO = new Date().toISOString().split('T')[0];
+            // CORREÇÃO DE DATA: Usa o fuso horário local, não UTC
+            const tzOffset = (new Date()).getTimezoneOffset() * 60000;
+            const hojeISO = new Date(Date.now() - tzOffset).toISOString().split('T')[0];
             
             // PREPARAÇÃO DA AGENDA EXISTENTE
             let agendaExistente = [];
