@@ -1075,7 +1075,7 @@
     let allTasksCache = []; 
     let allAgendaCache = [];
     let isUploadingImage = false; 
-    let viewingLibraryId = null; 
+        let viewingLibraryId = null; // <--- NOVA VARIÁVEL DE CONTROLE
 
     // --- CONFIGURAÇÃO QUILL COM TABELAS AVANÇADAS (BLINDADA) ---
     try {
@@ -1146,6 +1146,9 @@
             setTimeout(() => console.log("Tabela da IA inserida (estrutura)."), 100);
         }
     });
+
+    // Handler de vídeo
+
 
 
     // Handler de vídeo
