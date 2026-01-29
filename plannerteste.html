@@ -3223,18 +3223,19 @@
     window.processarAgendaIA = async () => {
         const texto = document.getElementById('promptAgenda').value;
         const usarAgendaAtual = document.getElementById('checkExportarAgenda').checked;
+        const incluirPendencias = document.getElementById('checkIncluirPendencias').checked;
 
-        if (!texto.trim()) return alert("Digite sua rotina primeiro.");
+        if (!texto.trim() && !incluirPendencias) return alert("Digite sua rotina ou marque as pendências.");
 
         document.getElementById('modalAgendaIA').style.display = 'none';
         showFeedback("🤖 Analisando agenda e criando rotina...", true);
 
         try {
-            // CORREÇÃO DE DATA: Usa o fuso horário local, não UTC
+            // 1. CORREÇÃO DE DATA (Fuso Horário BR)
             const tzOffset = (new Date()).getTimezoneOffset() * 60000;
             const hojeISO = new Date(Date.now() - tzOffset).toISOString().split('T')[0];
             
-            // PREPARAÇÃO DA AGENDA EXISTENTE
+            // 2. PREPARAÇÃO DA AGENDA EXISTENTE
             let agendaExistente = [];
             if (usarAgendaAtual && typeof allAgendaCache !== 'undefined') {
                 agendaExistente = allAgendaCache.map(a => ({
@@ -3242,16 +3243,23 @@
                 }));
             }
 
-            // NOVA LÓGICA: CAPTURA DE PENDÊNCIAS
-            const incluirPendencias = document.getElementById('checkIncluirPendencias').checked;
+            // 3. NOVA LÓGICA: ENVIO DE PENDÊNCIAS COM DATA (Passado + Futuro Próximo)
             let listaPendencias = [];
-            
             if (incluirPendencias && typeof allTasksCache !== 'undefined') {
-                const hoje = new Date(); hoje.setHours(0,0,0,0);
-                // Pega tudo que não foi concluído e data é menor ou igual a hoje
+                const limiteFuturo = new Date();
+                limiteFuturo.setDate(limiteFuturo.getDate() + 45);
+
                 listaPendencias = allTasksCache
-                    .filter(t => !t.concluido && new Date(t.targetDate) <= hoje)
-                    .map(t => t.titulo);
+                    .filter(t => {
+                        if (t.concluido) return false;
+                        const d = new Date(t.targetDate);
+                        return d <= limiteFuturo; 
+                    })
+                    .map(t => {
+                        const d = new Date(t.targetDate);
+                        const dataFormatada = d.toISOString().split('T')[0];
+                        return { titulo: t.titulo, vencimento: dataFormatada };
+                    });
             }
 
             const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
@@ -3262,7 +3270,7 @@
                     textoUsuario: texto,
                     dataReferencia: hojeISO,
                     agendaExistente: agendaExistente,
-                    pendencias: listaPendencias // <--- ENVIA AS PENDÊNCIAS
+                    pendencias: listaPendencias
                 })
             });
 
@@ -3303,6 +3311,7 @@
             alert("Erro ao conectar com a IA.");
         }
     };
+
 
     
         // ============================================================
