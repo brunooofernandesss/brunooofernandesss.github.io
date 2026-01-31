@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão Barbearia | Admin</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;600&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --bg-card: #1e1e1e;
+            --bg-sidebar: #181818;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --gold: #d4af37;
+            --gold-hover: #b4941f;
+            --danger: #cf6679;
+            --success: #03dac6;
+            --border: #333;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Roboto', sans-serif; background: var(--bg-dark); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
+
+        /* --- SIDEBAR --- */
+        .sidebar { 
+            width: 260px; background: var(--bg-sidebar); border-right: 1px solid var(--border); 
+            display: flex; flex-direction: column; flex-shrink: 0; height: 100vh;
+        }
+        .sidebar-header { 
+            padding: 25px; border-bottom: 1px solid var(--border); text-align: center;
+        }
+        .logo-text { font-family: 'Oswald', sans-serif; font-size: 24px; color: var(--gold); text-transform: uppercase; letter-spacing: 2px; }
+        .user-info { font-size: 12px; color: var(--text-secondary); margin-top: 5px; }
+
+        .nav-item { 
+            padding: 15px 25px; cursor: pointer; display: flex; align-items: center; gap: 15px; 
+            color: var(--text-secondary); transition: 0.3s; font-size: 15px;
+        }
+        .nav-item:hover, .nav-item.active { background: #252525; color: var(--gold); border-left: 4px solid var(--gold); }
+        .nav-item i { width: 20px; text-align: center; }
+
+        /* --- MAIN CONTENT --- */
+        .main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg-dark); }
+        
+        .top-bar { 
+            height: 70px; padding: 0 30px; display: flex; align-items: center; justify-content: space-between; 
+            border-bottom: 1px solid var(--border); background: var(--bg-card); 
+        }
+
+        .page-title { font-family: 'Oswald', sans-serif; font-size: 28px; color: var(--text-primary); text-transform: uppercase; }
+
+        /* --- BOARD SEMANAL --- */
+        .content { flex: 1; overflow: hidden; padding: 20px; display: flex; flex-direction: column; }
+        
+        .week-controls { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; background: var(--bg-card); padding: 10px 20px; border-radius: 8px; border: 1px solid var(--border); }
+        .btn-nav { background: transparent; border: 1px solid var(--border); color: var(--text-primary); padding: 5px 12px; border-radius: 4px; cursor: pointer; }
+        .btn-nav:hover { border-color: var(--gold); color: var(--gold); }
+
+        .week-board { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; flex: 1; min-width: 1200px; overflow-y: hidden; padding-bottom: 10px; }
+        .day-column { background: #191919; display: flex; flex-direction: column; height: 100%; border: 1px solid var(--border); border-radius: 6px; }
+        
+        .day-header { 
+            padding: 15px; text-align: center; border-bottom: 1px solid var(--border); background: #222;
+            font-family: 'Oswald', sans-serif; letter-spacing: 1px;
+        }
+        .day-header.today { color: var(--gold); border-bottom: 2px solid var(--gold); }
+        
+        .drop-zone { flex: 1; overflow-y: auto; padding: 10px; scrollbar-width: thin; }
+        .drop-zone::-webkit-scrollbar { width: 5px; }
+        .drop-zone::-webkit-scrollbar-thumb { background-color: var(--border); }
+
+        /* --- CARDS DE AGENDAMENTO --- */
+        .card { 
+            background: var(--bg-card); border-left: 4px solid var(--gold); padding: 12px; margin-bottom: 10px; 
+            border-radius: 4px; cursor: pointer; transition: 0.2s; position: relative;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.4); background: #252525; }
+        .card.completed { opacity: 0.5; border-left-color: var(--text-secondary); filter: grayscale(100%); }
+
+        .card-time { font-size: 13px; font-weight: bold; color: var(--gold); margin-bottom: 4px; display: flex; justify-content: space-between; }
+        .card-client { font-size: 15px; font-weight: 500; color: white; margin-bottom: 2px; }
+        .card-service { font-size: 12px; color: var(--text-secondary); text-transform: uppercase; }
+        .card-actions { margin-top: 8px; display: flex; justify-content: flex-end; gap: 8px; }
+
+        .btn-icon { border: none; background: transparent; cursor: pointer; font-size: 14px; transition: 0.2s; }
+        .btn-whatsapp { color: #25D366; }
+        .btn-whatsapp:hover { color: #128C7E; transform: scale(1.1); }
+        .btn-trash { color: var(--danger); }
+
+        /* --- MODAL --- */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+        .modal-content { background: var(--bg-card); width: 400px; padding: 30px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 0 30px rgba(0,0,0,0.5); }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; }
+        .form-input, .form-select { 
+            width: 100%; padding: 10px; background: #121212; border: 1px solid var(--border); 
+            color: white; border-radius: 4px; font-family: 'Roboto', sans-serif;
+        }
+        .form-input:focus { border-color: var(--gold); outline: none; }
+
+        .btn-primary { 
+            background: var(--gold); color: #000; font-weight: bold; border: none; padding: 12px 20px; 
+            border-radius: 4px; cursor: pointer; width: 100%; text-transform: uppercase; letter-spacing: 1px;
+            font-family: 'Oswald', sans-serif; transition: 0.2s;
+        }
+        .btn-primary:hover { background: var(--gold-hover); }
+
+        .btn-cancel { background: transparent; color: var(--text-secondary); border: none; cursor: pointer; margin-top: 10px; width: 100%; text-decoration: underline; }
+
+        /* Status Feedback */
+        #feedback { position: fixed; bottom: 20px; right: 20px; background: var(--gold); color: black; padding: 10px 20px; border-radius: 4px; font-weight: bold; display: none; z-index: 3000; }
+    </style>
+</head>
+<body>
+
+    <div id="feedback">Processando...</div>
+
+    <div id="modalAgendamento" class="modal">
+        <div class="modal-content">
+            <h2 style="font-family:'Oswald'; color:var(--gold); margin-bottom:20px; text-align:center;">NOVO CORTE</h2>
+            
+            <div class="form-group">
+                <label class="form-label">Nome do Cliente</label>
+                <input type="text" id="inpCliente" class="form-input" placeholder="Ex: João da Silva">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Serviço</label>
+                <select id="inpServico" class="form-select" onchange="atualizarDuracao()">
+                    <option value="cabelo" data-price="40" data-time="40">Corte Cabelo (40min) - R$40</option>
+                    <option value="barba" data-price="30" data-time="30">Barba/Sobrancelha (30min) - R$30</option>
+                    <option value="completo" data-price="60" data-time="60">Completo (Cabelo+Barba) - R$60</option>
+                    <option value="pigmentacao" data-price="50" data-time="45">Pigmentação (45min) - R$50</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="display:flex; gap:10px;">
+                <div style="flex:1">
+                    <label class="form-label">Data</label>
+                    <input type="date" id="inpData" class="form-input">
+                </div>
+                <div style="flex:1">
+                    <label class="form-label">Horário</label>
+                    <input type="time" id="inpHora" class="form-input">
+                </div>
+            </div>
+
+            <button class="btn-primary" id="btnSalvar">Confirmar Agendamento</button>
+            <button class="btn-cancel" onclick="fecharModal()">Cancelar</button>
+        </div>
+    </div>
+
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-text"><i class="fas fa-cut"></i> THE BARBER</div>
+            <div class="user-info" id="userEmail">Carregando...</div>
+        </div>
+        <nav style="flex:1; padding-top:20px;">
+            <div class="nav-item active"><i class="far fa-calendar-alt"></i> Agenda Semanal</div>
+            <div class="nav-item"><i class="fas fa-users"></i> Clientes</div>
+            <div class="nav-item"><i class="fas fa-coins"></i> Financeiro</div>
+        </nav>
+        <div style="padding:20px;">
+            <div style="font-size:11px; color:#555; text-align:center;">Sistema v1.0</div>
+        </div>
+    </aside>
+
+    <main class="main-container">
+        <div class="top-bar">
+            <h1 class="page-title">Agenda</h1>
+            <button class="btn-primary" style="width:auto; padding: 10px 30px;" onclick="abrirModal()">
+                <i class="fas fa-plus"></i> Novo Horário
+            </button>
+        </div>
+
+        <div class="content">
+            <div class="week-controls">
+                <button class="btn-nav" onclick="mudarSemana(-7)"><i class="fas fa-chevron-left"></i> Semana Anterior</button>
+                <span id="labelSemana" style="font-weight:bold; color:var(--gold); min-width:200px; text-align:center;">...</span>
+                <button class="btn-nav" onclick="mudarSemana(7)">Próxima Semana <i class="fas fa-chevron-right"></i></button>
+                <button class="btn-nav" onclick="irParaHoje()" style="margin-left:auto;">Hoje</button>
+            </div>
+
+            <div class="week-board" id="boardSemanal">
+                </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, query, deleteDoc, doc, updateDoc, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // CONFIGURAÇÃO DO SEU FIREBASE (MANTIDA DO ORIGINAL)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDj-c4uArNjAr7cSg396yfQR6xuyumh5_M",
+            authDomain: "simuladosmedicina-6a01b.firebaseapp.com",
+            projectId: "simuladosmedicina-6a01b",
+            storageBucket: "simuladosmedicina-6a01b.firebasestorage.app",
+            messagingSenderId: "577452734306",
+            appId: "1:577452734306:web:5926d087a27a216a97de3b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUID = null;
+        let dataInicioSemana = new Date();
+        let cacheAgendamentos = [];
+
+        // Inicialização
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUID = user.uid;
+                document.getElementById('userEmail').textContent = user.email;
+                irParaHoje();
+                carregarAgendamentos();
+            } else {
+                // Se não estiver logado, redireciona ou pede login (usando alert simples por enquanto)
+                window.location.href = "login.html"; 
+                // Para testes, se não tiver login.html, descomente abaixo:
+                // alert("Usuário não logado. Algumas funções não funcionarão.");
+            }
+        });
+
+        // --- LÓGICA DE DATA ---
+        window.irParaHoje = () => {
+            dataInicioSemana = getStartOfWeek(new Date());
+            renderizarBoard();
+            filtrarAgendamentosNaTela();
+        };
+
+        window.mudarSemana = (dias) => {
+            dataInicioSemana.setDate(dataInicioSemana.getDate() + dias);
+            renderizarBoard();
+            filtrarAgendamentosNaTela();
+        };
+
+        function getStartOfWeek(date) {
+            const d = new Date(date);
+            const day = d.getDay(); 
+            const diff = d.getDate() - day; // Ajusta para Domingo
+            const r = new Date(d.setDate(diff));
+            r.setHours(0,0,0,0);
+            return r;
+        }
+
+        function formatarDataBR(date) {
+            return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        }
+
+        // --- RENDERIZAÇÃO DO BOARD ---
+        function renderizarBoard() {
+            const board = document.getElementById('boardSemanal');
+            board.innerHTML = '';
+            
+            const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+            const fimSemana = new Date(dataInicioSemana);
+            fimSemana.setDate(fimSemana.getDate() + 6);
+
+            document.getElementById('labelSemana').textContent = 
+                `${formatarDataBR(dataInicioSemana)} - ${formatarDataBR(fimSemana)}`;
+
+            const hoje = new Date();
+            hoje.setHours(0,0,0,0);
+
+            for(let i=0; i<7; i++) {
+                const diaAtual = new Date(dataInicioSemana);
+                diaAtual.setDate(dataInicioSemana.getDate() + i);
+                
+                const ehHoje = diaAtual.getTime() === hoje.getTime();
+
+                const col = document.createElement('div');
+                col.className = 'day-column';
+                col.innerHTML = `
+                    <div class="day-header ${ehHoje ? 'today' : ''}">
+                        ${diasSemana[i]} <br>
+                        <span style="font-size:12px; color:#777">${formatarDataBR(diaAtual)}</span>
+                    </div>
+                    <div class="drop-zone" id="dia-${diaAtual.toISOString().split('T')[0]}">
+                        </div>
+                `;
+                board.appendChild(col);
+            }
+        }
+
+        // --- FIREBASE: LEITURA E ESCRITA ---
+        async function carregarAgendamentos() {
+            if(!currentUID) return;
+            showFeedback("Carregando agenda...");
+            
+            // Usamos uma coleção separada 'barber_appointments' para não misturar com o planner de estudo
+            const q = query(collection(db, "planners", currentUID, "barber_appointments"));
+            const snapshot = await getDocs(q);
+            
+            cacheAgendamentos = [];
+            snapshot.forEach(doc => {
+                cacheAgendamentos.push({ id: doc.id, ...doc.data() });
+            });
+            
+            filtrarAgendamentosNaTela();
+            showFeedback("Agenda atualizada!", false);
+        }
+
+        function filtrarAgendamentosNaTela() {
+            // Limpa as colunas primeiro (mas mantém o header)
+            document.querySelectorAll('.drop-zone').forEach(dz => dz.innerHTML = '');
+
+            cacheAgendamentos.forEach(item => {
+                // item.data deve ser YYYY-MM-DD
+                const coluna = document.getElementById(`dia-${item.data}`);
+                if(coluna) {
+                    criarCardHTML(coluna, item);
+                }
+            });
+        }
+
+        function criarCardHTML(container, item) {
+            const card = document.createElement('div');
+            card.className = `card ${item.concluido ? 'completed' : ''}`;
+            
+            // Tenta pegar o nome legível do serviço
+            const nomeServico = getNomeServico(item.servico);
+            
+            card.innerHTML = `
+                <div class="card-time">
+                    <span><i class="far fa-clock"></i> ${item.hora}</span>
+                    <span style="color:#fff;">R$ ${item.preco}</span>
+                </div>
+                <div class="card-client">${item.cliente}</div>
+                <div class="card-service">${nomeServico}</div>
+                
+                <div class="card-actions">
+                    <button class="btn-icon btn-whatsapp" onclick="enviarWhatsApp('${item.cliente}', '${nomeServico}', '${item.data}', '${item.hora}')" title="Confirmar no Zap">
+                        <i class="fab fa-whatsapp"></i>
+                    </button>
+                    <button class="btn-icon btn-trash" onclick="excluirAgendamento('${item.id}')" title="Cancelar">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <input type="checkbox" ${item.concluido ? 'checked' : ''} onclick="toggleConcluido('${item.id}', this.checked)" title="Concluir Atendimento" style="margin-left:5px; transform:scale(1.2); cursor:pointer;">
+                </div>
+            `;
+            
+            // Ordena por horário (inserção simples)
+            let inseriu = false;
+            for(let child of container.children) {
+                const horaChild = child.querySelector('.card-time span').innerText.trim();
+                if(item.hora < horaChild) {
+                    container.insertBefore(card, child);
+                    inseriu = true;
+                    break;
+                }
+            }
+            if(!inseriu) container.appendChild(card);
+        }
+
+        // --- AÇÕES DO USUÁRIO ---
+        
+        // 1. Salvar
+        document.getElementById('btnSalvar').onclick = async () => {
+            const cliente = document.getElementById('inpCliente').value;
+            const servico = document.getElementById('inpServico').value;
+            const data = document.getElementById('inpData').value;
+            const hora = document.getElementById('inpHora').value;
+            
+            // Pega dados do select (preço e duração)
+            const opt = document.getElementById('inpServico').options[document.getElementById('inpServico').selectedIndex];
+            const preco = opt.getAttribute('data-price');
+
+            if(!cliente || !data || !hora) return alert("Preencha todos os campos!");
+
+            showFeedback("Agendando...");
+            
+            try {
+                const docRef = await addDoc(collection(db, "planners", currentUID, "barber_appointments"), {
+                    cliente, servico, data, hora, preco,
+                    concluido: false,
+                    criadoEm: new Date()
+                });
+
+                // Atualiza localmente
+                const novoItem = { id: docRef.id, cliente, servico, data, hora, preco, concluido: false };
+                cacheAgendamentos.push(novoItem);
+                
+                // Renderiza se estiver na semana visível
+                const coluna = document.getElementById(`dia-${data}`);
+                if(coluna) criarCardHTML(coluna, novoItem);
+
+                // Pergunta se quer mandar zap
+                if(confirm("Agendado! Deseja enviar confirmação no WhatsApp agora?")) {
+                    enviarWhatsApp(cliente, getNomeServico(servico), data, hora);
+                }
+
+                fecharModal();
+                showFeedback("Sucesso!", false);
+
+            } catch(e) {
+                console.error(e);
+                alert("Erro ao salvar.");
+            }
+        };
+
+        // 2. Excluir e Concluir (Expostos ao Window)
+        window.excluirAgendamento = async (id) => {
+            if(!confirm("Cancelar este corte?")) return;
+            await deleteDoc(doc(db, "planners", currentUID, "barber_appointments", id));
+            cacheAgendamentos = cacheAgendamentos.filter(a => a.id !== id);
+            filtrarAgendamentosNaTela();
+        };
+
+        window.toggleConcluido = async (id, status) => {
+            await updateDoc(doc(db, "planners", currentUID, "barber_appointments", id), { concluido: status });
+            const item = cacheAgendamentos.find(a => a.id === id);
+            if(item) item.concluido = status;
+            filtrarAgendamentosNaTela();
+        };
+
+        // 3. WHATSAPP INTEGRATION (Número Fixo: +55 71 8849-5205)
+        window.enviarWhatsApp = (cliente, servico, dataISO, hora) => {
+            // Formata data para PT-BR
+            const partes = dataISO.split('-');
+            const dataF = `${partes[2]}/${partes[1]}`;
+            
+            const msg = `Olá, aqui é da Barbearia! ✂️💈\n\nConfirmando seu agendamento:\n👤 *${cliente}*\n💇‍♂️ *${servico}*\n📅 *${dataF}* às *${hora}*\n\nEstamos te aguardando!`;
+            
+            // Codifica para URL
+            const textoCodificado = encodeURIComponent(msg);
+            
+            // Link direto para o número fixo (Como se a barbearia estivesse mandando para si mesma ou para controle, 
+            // mas o ideal num sistema real é mandar para o telefone do cliente.
+            // Como o prompt pediu "chame para o whatsapp +55...", vou usar esse número como destino).
+            const url = `https://wa.me/557188495205?text=${textoCodificado}`;
+            
+            window.open(url, '_blank');
+        };
+
+        // --- UI HELPERS ---
+        window.abrirModal = () => {
+            document.getElementById('inpCliente').value = '';
+            document.getElementById('inpHora').value = '';
+            document.getElementById('inpData').valueAsDate = new Date();
+            document.getElementById('modalAgendamento').style.display = 'flex';
+        };
+
+        window.fecharModal = () => {
+            document.getElementById('modalAgendamento').style.display = 'none';
+        };
+
+        function getNomeServico(val) {
+            const map = {
+                'cabelo': 'Corte Cabelo',
+                'barba': 'Barba/Sobrancelha',
+                'completo': 'Cabelo + Barba',
+                'pigmentacao': 'Pigmentação'
+            };
+            return map[val] || val;
+        }
+
+        window.showFeedback = (msg, persist) => {
+            const el = document.getElementById('feedback');
+            el.textContent = msg;
+            el.style.display = 'block';
+            if(!persist) setTimeout(() => el.style.display = 'none', 3000);
+        };
+
+    </script>
+</body>
+</html>
