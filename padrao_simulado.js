@@ -1,5 +1,5 @@
 import { auth } from './firebase.js';
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
 // --- 1. CSS ---
 const style = document.createElement('style');
@@ -106,6 +106,35 @@ style.textContent = `
         .navbar { padding: 0 16px !important; }
         .user-info-text { display: none; }
     }
+
+    /* DROPDOWN MENU */
+    .user-dropdown {
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        width: 160px;
+        display: none; /* Escondido por padrão */
+        flex-direction: column;
+        z-index: 2000;
+        overflow: hidden;
+    }
+    .user-dropdown.active { display: flex; }
+    
+    .dropdown-item {
+        padding: 12px 16px;
+        font-size: 0.9rem;
+        color: #d44c47; /* Vermelho para sair */
+        cursor: pointer;
+        display: flex; align-items: center; gap: 8px;
+        font-weight: 500;
+        transition: background 0.2s;
+        text-decoration: none;
+    }
+    .dropdown-item:hover { background-color: #fef2f2; }
 `;
 document.head.appendChild(style);
 
@@ -125,16 +154,55 @@ document.addEventListener("DOMContentLoaded", () => {
             <a href="index.html" class="navbar-brand">
                 <i class="fas fa-graduation-cap"></i> Medicina UNIP
             </a>
-            <div class="user-profile">
+            <div class="user-profile" id="btnProfileTrigger" style="cursor: pointer;">
                 <div class="user-info-text">
                     <span class="user-name" id="displayUser">Carregando...</span>
                     <div class="user-meta"><span id="displayIp">...</span></div>
                 </div>
                 <div class="user-avatar" id="userAvatar"><i class="fas fa-user"></i></div>
             </div>
+            
+            <div class="user-dropdown" id="userDropdownMenu">
+                <div class="dropdown-item" id="btnAppLogout">
+                    <i class="fas fa-sign-out-alt"></i> Sair do Sistema
+                </div>
+            </div>
         </nav>
     `;
     document.body.insertAdjacentHTML('afterbegin', navbarHTML);
+
+    // --- LÓGICA DO MENU DROPDOWN ---
+    const btnProfile = document.getElementById('btnProfileTrigger');
+    const dropdown = document.getElementById('userDropdownMenu');
+    const btnLogout = document.getElementById('btnAppLogout');
+
+    // 1. Abrir/Fechar ao clicar no perfil
+    if (btnProfile && dropdown) {
+        btnProfile.addEventListener('click', (e) => {
+            e.stopPropagation(); // Evita fechar imediatamente
+            dropdown.classList.toggle('active');
+        });
+
+        // 2. Fechar se clicar fora
+        document.addEventListener('click', (e) => {
+            if (!btnProfile.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
+    }
+
+    // 3. Função de Logout
+    if (btnLogout) {
+        btnLogout.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                window.location.href = "login.html";
+            } catch (error) {
+                console.error("Erro ao sair: ", error);
+                alert("Erro ao tentar sair.");
+            }
+        });
+    }
 
     // Tags
     const quizContainer = document.querySelector('.quiz-container');
