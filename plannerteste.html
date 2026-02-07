@@ -120,6 +120,17 @@
         .tag-pill { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: var(--tag-blue); color: var(--text-blue); display: inline-flex; align-items: center; }
         .card-meta { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 11px; color: var(--text-secondary); flex-wrap: wrap;}
 
+        /* --- ESTILO GRID TUTORIAS (NOVO) --- */
+        .tutorias-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; padding-bottom: 50px; }
+        .tutoria-card {
+            background: white; border: 1px solid #e9e9e7; border-radius: 8px; padding: 20px;
+            display: flex; flex-direction: column; gap: 10px; transition: 0.2s; position: relative;
+            border-left: 5px solid #2383e2; /* Azul da Tutoria */
+        }
+        .tutoria-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
+        .tutoria-header { font-weight: 700; font-size: 16px; color: #333; margin-bottom: 5px; }
+        .tutoria-tag { align-self: flex-start; background: #eef6fc; color: #18507a; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+
         /* ESTILO DA BUSCA (NOVO) */
         .search-item { padding: 10px 15px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; flex-direction: column; gap: 4px; }
         .search-item:hover { background: #f5f5f5; }
@@ -284,9 +295,6 @@
     
     .agenda-card.done { opacity: 0.6; background: #f9f9f9; }
     .agenda-card.done .agenda-text { text-decoration: line-through; color: #aaa; }
-
-    /* --- ESTILO GRID TUTORIAS --- */
-    .tutorias-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; padding: 10px; }
     
     .btn-delete-agenda { 
         border: none; background: transparent; color: #ddd; 
@@ -751,10 +759,10 @@
         </div>
         
         <nav style="flex: 1 0 auto;"> <div class="nav-item active" id="navBoard"><i class="far fa-calendar-alt"></i> Cronograma Semanal</div>
-            <div class="nav-item" id="navTutorias"><i class="fas fa-graduation-cap"></i> Tutorias</div>
             <div class="nav-item" id="navLib"><i class="fas fa-folder-open"></i> Biblioteca de Aulas</div>
             <div class="nav-item" id="navAgenda"><i class="far fa-clock"></i> Agenda Diária</div>
             <div class="nav-item" id="navQuizzes"><i class="fas fa-brain"></i> Meus Simulados</div>
+            <div class="nav-item" id="navTutorias" style="color: #d35400; font-weight: 500;"><i class="fas fa-chalkboard-teacher"></i> Tutorias PBL</div>
             <div class="nav-item" id="navAnatomia" style="color: #2383e2; font-weight: 500;"><i class="fas fa-bone"></i> Desafio Anatomia</div>
             <div class="nav-item" id="navSyllabus"><i class="fas fa-th-list"></i> Matriz Curricular</div>
             <div class="nav-item" onclick="window.abrirCadernoErros()" style="color: #d44c47; font-weight: 500;"><i class="fas fa-book-dead"></i> Caderno de Erros</div>
@@ -844,15 +852,6 @@
                     </div>
             </section>
 
-            <section id="secTutorias" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
-                <div class="header-actions">
-                    <h1 class="page-title">Minhas Tutorias (PBL)</h1>
-                    <button class="btn-action btn-primary" id="btnNovaTutoria"><i class="fas fa-plus"></i> Nova Tutoria</button>
-                </div>
-                <div class="tutorias-grid" id="tutoriasContainer">
-                    </div>
-            </section>
-
             <section id="secLib" class="hidden">
                 <h1 class="page-title" style="margin-bottom: 20px;">Biblioteca de Materiais</h1>
                 <div style="background: white; border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden;">
@@ -911,6 +910,17 @@
                             </tbody>
                     </table>
                 </div>
+            </section>
+
+            <section id="secTutorias" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+                <div class="header-actions">
+                    <h1 class="page-title">Casos de Tutoria (PBL)</h1>
+                    <button class="btn-action btn-primary" id="btnNovaTutoria" style="background: #d35400;">
+                        <i class="fas fa-plus-circle"></i> Nova Tutoria
+                    </button>
+                </div>
+                <div id="tutoriasGrid" class="tutorias-grid">
+                    </div>
             </section>
             
                         <section id="secSyllabus" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
@@ -1078,12 +1088,14 @@
 
     let currentUID = null;
     let editingDocId = null;
+    let isTutoriaMode = false; // <--- NOVA VARIÁVEL
     let currentBoardStart = new Date(); 
     let allTasksCache = []; 
     let allAgendaCache = [];
     let isUploadingImage = false; 
     let viewingLibraryId = null; // <--- NOVA VARIÁVEL DE CONTROLE
-    let isTutoriaMode = false;   // <--- CONTROLE DE MODO TUTORIA
+    let isTutoriaMode = false; // <--- ADICIONE ISSO
+
 
 
     // --- CONFIGURAÇÃO QUILL ---
@@ -1312,7 +1324,6 @@
         snap.forEach(d => allTasksCache.push({ id: d.id, ...d.data() }));
         setupWeekNavigator();
         renderWeeklyBoard();
-        renderTutoriasBoard(); // <--- RENDERIZA AS TUTORIAS
         updateGoals(); 
         
         await loadAgenda(); // <--- ADICIONEI ESTA LINHA
@@ -1519,7 +1530,8 @@
         }
 
         allTasksCache.forEach(t => {
-            if (t.titulo && t.titulo.includes('[Tutoria]')) return; // <--- FILTRA TUTORIAS FORA DO BOARD
+            // FILTRO DE TUTORIA: Se for tutoria, PULA e não mostra no board semanal
+            if (t.titulo && t.titulo.startsWith('[Tutoria]')) return;
 
             const taskDate = new Date(t.targetDate);
             const colIndex = columns.findIndex(col => isSameDay(col.date, taskDate));
@@ -1587,69 +1599,61 @@
         });
         updateGoals();
     }
+    
+        updateGoals();
+    } // <--- Este é o fechamento da renderWeeklyBoard
 
-    // --- RENDERIZADOR DE TUTORIAS (GRID) ---
+    // --- NOVO RENDERIZADOR DE TUTORIAS (COLE AQUI) ---
     function renderTutoriasBoard() {
-        const container = document.getElementById('tutoriasContainer');
-        if(!container) return;
-        container.innerHTML = '';
+        const grid = document.getElementById('tutoriasGrid');
+        if (!grid) return; // Segurança caso o elemento não exista
+        grid.innerHTML = '';
+        
+        // Filtra apenas o que começa com [Tutoria]
+        // Usa "t.titulo &&" para evitar erro se titulo for undefined
+        const tutorias = allTasksCache.filter(t => t.titulo && t.titulo.startsWith('[Tutoria]'));
 
-        // Filtra apenas as tutorias
-        const tutorias = allTasksCache.filter(t => t.titulo && t.titulo.includes('[Tutoria]'));
-
-        if(tutorias.length === 0) {
-            container.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:40px; color:#999;">Nenhuma tutoria cadastrada.</div>';
+        if (tutorias.length === 0) {
+            grid.innerHTML = '<div style="color:#999; grid-column: 1/-1; text-align:center; padding:40px;">Nenhuma tutoria cadastrada.</div>';
             return;
         }
 
-        tutorias.sort((a,b) => b.targetDate - a.targetDate); // Mais recentes primeiro
-
         tutorias.forEach(t => {
+            const tituloLimpo = t.titulo.replace('[Tutoria]', '').trim();
+            const dataCriacao = t.criadoEm ? new Date(t.criadoEm.seconds * 1000).toLocaleDateString('pt-BR') : 'Data desc.';
+
             const card = document.createElement('div');
-            card.className = 'card';
-            card.style.height = 'auto'; // Ajuste para grid
+            card.className = 'tutoria-card';
+            card.onclick = () => window.abrirItem(t.id); // Reusa a função de abrir existente
             
-            const cleanTitle = t.titulo.replace('[Tutoria]', '').trim();
-            const dateStr = new Date(t.targetDate).toLocaleDateString('pt-BR');
+            // Lógica visual do botão de concluído
+            const btnStyle = t.concluido 
+                ? 'background:#dbeddb; color:#448361; border:1px solid #448361;' 
+                : 'background:white; color:#555; border:1px solid #ddd;';
+
+            const btnIcon = t.concluido 
+                ? '<i class="fas fa-check"></i> Concluído' 
+                : '<i class="far fa-square"></i> Aberto';
 
             card.innerHTML = `
-                <div class="card-top">
-                    <div>
-                        <div class="card-title" style="font-size:15px; font-weight:600;">${cleanTitle}</div>
-                        <div class="card-tags">
-                            <span class="tag-pill" style="background:var(--tag-purple); color:var(--text-purple)">Tutoria</span>
-                            <span class="tag-pill" style="background:#f0f0f0; color:#666">${t.tag}</span>
-                        </div>
-                    </div>
+                <div class="tutoria-tag">${t.tag || 'Geral'}</div>
+                <div class="tutoria-header">${tituloLimpo}</div>
+                <div style="font-size:12px; color:#777; margin-top:auto; display:flex; align-items:center; gap:5px;">
+                    <i class="far fa-calendar-alt"></i> Criado em: ${dataCriacao}
                 </div>
-                <div class="card-meta" style="justify-content: space-between; margin-top:15px;">
-                    <span class="meta-item"><i class="far fa-calendar"></i> ${dateStr}</span>
-                    <button class="btn-action" style="padding:2px 6px; font-size:11px;" onclick="event.stopPropagation(); window.abrirItem('${t.id}')">Ler Texto</button>
+                <div style="margin-top:15px; border-top:1px solid #eee; padding-top:10px; display:flex; justify-content:flex-end;">
+                    <button class="btn-action" onclick="event.stopPropagation(); window.toggleConcluido('${t.id}', !${t.concluido})" 
+                        style="padding:5px 12px; font-size:12px; border-radius:20px; ${btnStyle}">
+                        ${btnIcon}
+                    </button>
                 </div>
             `;
-            
-            card.onclick = () => window.abrirItem(t.id);
-            container.appendChild(card);
+            grid.appendChild(card);
         });
     }
+    // --- FIM DA NOVA FUNÇÃO ---
 
-    // --- BOTÃO NOVA TUTORIA ---
-    document.getElementById('btnNovaTutoria').onclick = () => {
-        isTutoriaMode = true; // ATIVA O MODO TUTORIA
-        editingDocId = null;
-        document.getElementById('subjectTitle').value = '';
-        document.getElementById('subjectTag').value = '';
-        quill.setText('');
-        document.getElementById('btnSalvar').textContent = "Salvar Tutoria";
-        
-        // Visual indicativo no modal
-        document.querySelector('#modalEditor .editor-header h3').innerHTML = '<i class="fas fa-graduation-cap" style="color:#9065b0"></i> Nova Tutoria';
-        
-        document.getElementById('modalEditor').style.display = 'flex';
-        setTimeout(() => quill.focus(), 100);
-    };
-
-
+    
     window.toggleConcluido = async (id, status) => {
         // Atualiza visualmente primeiro (Otimista)
         const task = allTasksCache.find(t => t.id === id);
@@ -1802,49 +1806,37 @@
                 fecharModal();
                 loadDataAndInit(); 
             } else {
-                // --- MODO NOVO (Cria Hoje + IA ou Tutoria) ---
+                // --- MODO NOVO (Criação) ---
                 const now = new Date();
                 const d0 = now.getTime();
 
+                // 1. Salva na Biblioteca (Comum a ambos)
+                await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
+                    nome: title,
+                    contentHTML: contentHTML,
+                    tag: tag.toUpperCase(),
+                    data: d0,
+                    tipo: 'texto'
+                });
+
                 if (isTutoriaMode) {
-                    // --- FLUXO DE TUTORIA (SEM REVISÃO IA) ---
-                    const tituloTutoria = `[Tutoria] ${title}`;
-
-                    // 1. Salva na Biblioteca
-                    await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
-                        nome: tituloTutoria,
-                        contentHTML: contentHTML,
-                        tag: tag.toUpperCase(),
-                        data: d0,
-                        tipo: 'texto'
-                    });
-
-                    // 2. Salva na lista de Tasks (para aparecer no Board de Tutorias)
+                    // === CAMINHO A: TUTORIA ===
+                    // Salva apenas o registro estático. SEM IA. SEM REVISÕES.
                     await addDoc(collection(db, "planners", currentUID, "tasks"), {
-                        titulo: tituloTutoria,
+                        titulo: `[Tutoria] ${title}`, // Prefixo Diferente
                         tag: tag.toUpperCase(),
                         contentHTML: contentHTML, 
                         targetDate: d0,
                         concluido: false,
                         criadoEm: serverTimestamp(),
-                        tipo: 'texto'
+                        tipo: 'texto',
+                        isTutoria: true
                     });
-
-                    showFeedback("Tutoria Salva!", false);
+                    showFeedback("✅ Tutoria salva!", false);
 
                 } else {
-                    // --- FLUXO NORMAL (ESTUDO + IA) ---
-
-                    // 1. Salva na Biblioteca (Backup do original)
-                    await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
-                        nome: title,
-                        contentHTML: contentHTML,
-                        tag: tag.toUpperCase(),
-                        data: d0,
-                        tipo: 'texto'
-                    });
-
-                    // 2. Cria a tarefa de HOJE [REC]
+                    // === CAMINHO B: ESTUDO NORMAL (Original) ===
+                    // Cria a tarefa de HOJE [REC]
                     await addDoc(collection(db, "planners", currentUID, "tasks"), {
                         titulo: `[REC] ${title}`,
                         tag: tag.toUpperCase(),
@@ -1855,21 +1847,23 @@
                         tipo: 'texto'
                     });
 
-                    // 3. CHAMA A IA EM SEGUNDO PLANO
+                    // CHAMA A IA PARA D+1, D+7, D+21 (Apenas aqui)
                     criarRevisoesComIA(title, tag.toUpperCase(), contentHTML);
                 }
 
-                // Fecha o modal e limpa estado
+                // --- LIMPEZA DE UI (Comum) ---
                 modalEditorContent.classList.remove('editor-max');
                 if(btnCompress) btnCompress.style.display = 'none';
                 if(btnExpand) btnExpand.style.display = 'inline-flex';
                 fecharModal(); 
-                
-                isTutoriaMode = false; // Reseta o modo
 
-                // Atualiza a tela imediatamente
                 loadDataAndInit(); 
                 carregarBiblioteca();
+                
+                // Se a aba de tutorias estiver visível, atualiza ela
+                if(!document.getElementById('secTutorias').classList.contains('hidden')) {
+                    if(typeof renderTutoriasBoard === 'function') renderTutoriasBoard();
+                }
             }
 
         } catch (e) {
@@ -2613,51 +2607,35 @@
     window.fecharModal = () => document.getElementById('modalEditor').style.display = 'none';
     window.fecharModalView = () => document.getElementById('modalView').style.display = 'none';
     
-    // --- RESET NOVO ESTUDO (NORMAL) ---
+    // --- RESET NOVO ESTUDO (MODO NORMAL) ---
     document.getElementById('btnNovoAssunto').onclick = () => { 
-        isTutoriaMode = false; // GARANTE QUE NÃO É TUTORIA
+        isTutoriaMode = false; // Garante que é estudo normal
         editingDocId = null; 
         document.getElementById('subjectTitle').value = '';
         document.getElementById('subjectTag').value = '';
         quill.setText(''); 
         document.getElementById('btnSalvar').textContent = "Criar Cronograma";
-        document.querySelector('#modalEditor .editor-header h3').textContent = "Novo Estudo"; // Reseta titulo modal
         
         document.getElementById('modalEditor').style.display = 'flex';
         setTimeout(() => quill.focus(), 100); 
     };
+
+
+    // --- RESET NOVA TUTORIA (NOVO) ---
+    document.getElementById('btnNovaTutoria').onclick = () => {
+        isTutoriaMode = true; // <--- Ativa modo tutoria
+        editingDocId = null;
+        document.getElementById('subjectTitle').value = '';
+        document.getElementById('subjectTag').value = 'TUTORIA'; // Tag padrão sugestiva
+        quill.setText('');
+        document.getElementById('btnSalvar').textContent = "Salvar Tutoria"; // Texto diferente
+        
+        document.getElementById('modalEditor').style.display = 'flex';
+        setTimeout(() => quill.focus(), 100);
+    };
     
-    // --- NAVEGAÇÃO UNIFICADA (ATUALIZADA) ---
-    function hideAllSections() {
-        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secRevisao', 'secTutorias'].forEach(id => {
-            const el = document.getElementById(id);
-            if(el) el.classList.add('hidden');
-        });
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    }
-
-    document.getElementById('navBoard').onclick = () => { 
-        hideAllSections();
-        document.getElementById('secBoard').classList.remove('hidden'); 
-        document.getElementById('navBoard').classList.add('active'); 
-        window.toggleTopBarElements(true);
-    };
-
-    document.getElementById('navTutorias').onclick = () => { 
-        hideAllSections();
-        document.getElementById('secTutorias').classList.remove('hidden'); 
-        document.getElementById('navTutorias').classList.add('active'); 
-        renderTutoriasBoard();
-        window.toggleTopBarElements(false);
-    };
-
-    document.getElementById('navLib').onclick = () => { 
-        hideAllSections();
-        document.getElementById('secLib').classList.remove('hidden'); 
-        document.getElementById('navLib').classList.add('active'); 
-        carregarBiblioteca(); 
-        window.toggleTopBarElements(false);
-    };
+    document.getElementById('navBoard').onclick = () => { document.getElementById('secBoard').classList.remove('hidden'); document.getElementById('secLib').classList.add('hidden'); document.getElementById('navBoard').classList.add('active'); document.getElementById('navLib').classList.remove('active'); };
+    document.getElementById('navLib').onclick = () => { document.getElementById('secBoard').classList.add('hidden'); document.getElementById('secLib').classList.remove('hidden'); document.getElementById('navBoard').classList.remove('active'); document.getElementById('navLib').classList.add('active'); carregarBiblioteca(); };
 
         // ============================================================
     // 🕒 LÓGICA DA AGENDA (Adicione no final do Script)
@@ -2922,13 +2900,19 @@
     };
     
     
-    // --- NAVEGAÇÃO UNIFICADA DO MENU (Sidebar) ---
+        // --- NAVEGAÇÃO UNIFICADA DO MENU (Sidebar) ---
 
     // 1. Botão Cronograma
     document.getElementById('navBoard').onclick = () => {
-        hideAllSections(); // Usa a função que já esconde TUDO (inclusive Tutorias e Revisão)
+        document.getElementById('secLib').classList.add('hidden');
+        document.getElementById('secAgenda').classList.add('hidden');
+        document.getElementById('secQuizzes').classList.add('hidden');
+        document.getElementById('secAnatomia').classList.add('hidden');
+        document.getElementById('secSyllabus').classList.add('hidden');
         
         document.getElementById('secBoard').classList.remove('hidden');
+
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('navBoard').classList.add('active');
         
         window.toggleTopBarElements(true); // MOSTRA BUSCA E SEMANA
@@ -2936,9 +2920,15 @@
 
     // 2. Botão Biblioteca
     document.getElementById('navLib').onclick = () => {
-        hideAllSections();
-
+        document.getElementById('secBoard').classList.add('hidden');
+        document.getElementById('secAgenda').classList.add('hidden');
+        document.getElementById('secQuizzes').classList.add('hidden');
+        document.getElementById('secAnatomia').classList.add('hidden');
+        document.getElementById('secSyllabus').classList.add('hidden');
+        
         document.getElementById('secLib').classList.remove('hidden');
+
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('navLib').classList.add('active');
         
         carregarBiblioteca();
@@ -2947,28 +2937,37 @@
 
     // 3. Botão Agenda
     document.getElementById('navAgenda').onclick = () => {
-        hideAllSections();
+        document.getElementById('secBoard').classList.add('hidden');
+        document.getElementById('secLib').classList.add('hidden');
+        document.getElementById('secQuizzes').classList.add('hidden');
+        document.getElementById('secAnatomia').classList.add('hidden');
+        document.getElementById('secSyllabus').classList.add('hidden');
         
         document.getElementById('secAgenda').classList.remove('hidden');
+        
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('navAgenda').classList.add('active');
         
         renderAgendaBoard();
         window.toggleTopBarElements(true); // MOSTRA NA AGENDA TAMBÉM
     };
 
-    // 4. Botão Meus Simulados (Redirecionamento principal)
-    // Nota: Existe outro handler para navQuizzes mais abaixo, unifique se necessário,
-    // mas este garante o funcionamento básico no menu.
+    // 4. Botão Meus Simulados
     document.getElementById('navQuizzes').onclick = () => {
-        hideAllSections();
+        document.getElementById('secBoard').classList.add('hidden');
+        document.getElementById('secLib').classList.add('hidden');
+        document.getElementById('secAgenda').classList.add('hidden');
+        document.getElementById('secAnatomia').classList.add('hidden');
+        document.getElementById('secSyllabus').classList.add('hidden');
         
         document.getElementById('secQuizzes').classList.remove('hidden');
+        
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('navQuizzes').classList.add('active');
         
         if (typeof carregarAbaQuizzes === "function") carregarAbaQuizzes();
-        window.toggleTopBarElements(false); 
+        window.toggleTopBarElements(false); // ESCONDE
     };
-
 
 
 
@@ -3159,27 +3158,53 @@
 
     // --- NAVEGAÇÃO PARA ABA QUIZZES ---
     
-    document.getElementById('navQuizzes').onclick = () => {
-        hideAllSections(); // Garante que fecha Board, Anatomia, Tutorias, etc.
-        
+        document.getElementById('navQuizzes').onclick = () => {
+        document.getElementById('secBoard').classList.add('hidden');
+        document.getElementById('secLib').classList.add('hidden');
+        document.getElementById('secAgenda').classList.add('hidden');
         document.getElementById('secQuizzes').classList.remove('hidden');
+        
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('navQuizzes').classList.add('active');
         
         carregarAbaQuizzes();
-        window.toggleTopBarElements(false);
     };
 
-
-    
+    // --- NAVEGAÇÃO TUTORIAS (NOVO) ---
+    document.getElementById('navTutorias').onclick = () => {
+        // Esconde todas as outras seções
+        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secRevisao'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.classList.add('hidden');
+        });
+        
+        // Mostra a seção de tutorias
+        document.getElementById('secTutorias').classList.remove('hidden');
+        
+        // Ajusta classe active do menu
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('navTutorias').classList.add('active');
+        
+        // Renderiza e esconde barra superior
+        renderTutoriasBoard();
+        window.toggleTopBarElements(false);
+    };
+   
         // ============================================================
     // 💀 MÓDULO ANATOMIA (INTEGRAÇÃO COM BANCO DE IMAGENS)
     // ============================================================
 
     // 1. Navegação Anatomia
     document.getElementById('navAnatomia').onclick = () => {
-        hideAllSections(); // Substitui a lista manual que estava incompleta
+        // Esconde tudo explicitamente para garantir
+        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secSyllabus'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.classList.add('hidden');
+        });
         
         document.getElementById('secAnatomia').classList.remove('hidden');
+        
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('navAnatomia').classList.add('active');
         
         window.toggleTopBarElements(false); // ESCONDE TOPO
@@ -3187,14 +3212,16 @@
 
     // Navegação Revisão Espaçada
     document.getElementById('navRevisao').onclick = () => {
-        hideAllSections(); // Substitui a lista manual
-
+        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secRevisao'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.classList.add('hidden');
+        });
         document.getElementById('secRevisao').classList.remove('hidden');
-        document.getElementById('navRevisao').classList.add('active');
         
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('navRevisao').classList.add('active');
         window.toggleTopBarElements(false);
     };
-
 
     // 2. Lógica do Jogo (Versão Blindada v3)
     window.gerarNovoDesafioAnatomia = async () => {
@@ -3767,9 +3794,12 @@
 
     // 1. Navegação Matriz
     document.getElementById('navSyllabus').onclick = () => {
-        hideAllSections(); // Garante fechamento de todas as outras abas
-
+        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia'].forEach(id => 
+            document.getElementById(id).classList.add('hidden')
+        );
         document.getElementById('secSyllabus').classList.remove('hidden');
+        
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('navSyllabus').classList.add('active');
         
         renderSyllabus();
