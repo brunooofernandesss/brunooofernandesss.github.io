@@ -284,6 +284,9 @@
     
     .agenda-card.done { opacity: 0.6; background: #f9f9f9; }
     .agenda-card.done .agenda-text { text-decoration: line-through; color: #aaa; }
+
+    /* --- ESTILO GRID TUTORIAS --- */
+    .tutorias-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; padding: 10px; }
     
     .btn-delete-agenda { 
         border: none; background: transparent; color: #ddd; 
@@ -748,6 +751,7 @@
         </div>
         
         <nav style="flex: 1 0 auto;"> <div class="nav-item active" id="navBoard"><i class="far fa-calendar-alt"></i> Cronograma Semanal</div>
+            <div class="nav-item" id="navTutorias"><i class="fas fa-graduation-cap"></i> Tutorias</div>
             <div class="nav-item" id="navLib"><i class="fas fa-folder-open"></i> Biblioteca de Aulas</div>
             <div class="nav-item" id="navAgenda"><i class="far fa-clock"></i> Agenda Diária</div>
             <div class="nav-item" id="navQuizzes"><i class="fas fa-brain"></i> Meus Simulados</div>
@@ -837,6 +841,15 @@
                 </div>
                 
                 <div class="week-board" id="weeklyBoard">
+                    </div>
+            </section>
+
+            <section id="secTutorias" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+                <div class="header-actions">
+                    <h1 class="page-title">Minhas Tutorias (PBL)</h1>
+                    <button class="btn-action btn-primary" id="btnNovaTutoria"><i class="fas fa-plus"></i> Nova Tutoria</button>
+                </div>
+                <div class="tutorias-grid" id="tutoriasContainer">
                     </div>
             </section>
 
@@ -1070,6 +1083,7 @@
     let allAgendaCache = [];
     let isUploadingImage = false; 
     let viewingLibraryId = null; // <--- NOVA VARIÁVEL DE CONTROLE
+    let isTutoriaMode = false;   // <--- CONTROLE DE MODO TUTORIA
 
 
     // --- CONFIGURAÇÃO QUILL ---
@@ -1298,6 +1312,7 @@
         snap.forEach(d => allTasksCache.push({ id: d.id, ...d.data() }));
         setupWeekNavigator();
         renderWeeklyBoard();
+        renderTutoriasBoard(); // <--- RENDERIZA AS TUTORIAS
         updateGoals(); 
         
         await loadAgenda(); // <--- ADICIONEI ESTA LINHA
@@ -1504,6 +1519,8 @@
         }
 
         allTasksCache.forEach(t => {
+            if (t.titulo && t.titulo.includes('[Tutoria]')) return; // <--- FILTRA TUTORIAS FORA DO BOARD
+
             const taskDate = new Date(t.targetDate);
             const colIndex = columns.findIndex(col => isSameDay(col.date, taskDate));
             
@@ -1570,6 +1587,67 @@
         });
         updateGoals();
     }
+
+    // --- RENDERIZADOR DE TUTORIAS (GRID) ---
+    function renderTutoriasBoard() {
+        const container = document.getElementById('tutoriasContainer');
+        if(!container) return;
+        container.innerHTML = '';
+
+        // Filtra apenas as tutorias
+        const tutorias = allTasksCache.filter(t => t.titulo && t.titulo.includes('[Tutoria]'));
+
+        if(tutorias.length === 0) {
+            container.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:40px; color:#999;">Nenhuma tutoria cadastrada.</div>';
+            return;
+        }
+
+        tutorias.sort((a,b) => b.targetDate - a.targetDate); // Mais recentes primeiro
+
+        tutorias.forEach(t => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.style.height = 'auto'; // Ajuste para grid
+            
+            const cleanTitle = t.titulo.replace('[Tutoria]', '').trim();
+            const dateStr = new Date(t.targetDate).toLocaleDateString('pt-BR');
+
+            card.innerHTML = `
+                <div class="card-top">
+                    <div>
+                        <div class="card-title" style="font-size:15px; font-weight:600;">${cleanTitle}</div>
+                        <div class="card-tags">
+                            <span class="tag-pill" style="background:var(--tag-purple); color:var(--text-purple)">Tutoria</span>
+                            <span class="tag-pill" style="background:#f0f0f0; color:#666">${t.tag}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-meta" style="justify-content: space-between; margin-top:15px;">
+                    <span class="meta-item"><i class="far fa-calendar"></i> ${dateStr}</span>
+                    <button class="btn-action" style="padding:2px 6px; font-size:11px;" onclick="event.stopPropagation(); window.abrirItem('${t.id}')">Ler Texto</button>
+                </div>
+            `;
+            
+            card.onclick = () => window.abrirItem(t.id);
+            container.appendChild(card);
+        });
+    }
+
+    // --- BOTÃO NOVA TUTORIA ---
+    document.getElementById('btnNovaTutoria').onclick = () => {
+        isTutoriaMode = true; // ATIVA O MODO TUTORIA
+        editingDocId = null;
+        document.getElementById('subjectTitle').value = '';
+        document.getElementById('subjectTag').value = '';
+        quill.setText('');
+        document.getElementById('btnSalvar').textContent = "Salvar Tutoria";
+        
+        // Visual indicativo no modal
+        document.querySelector('#modalEditor .editor-header h3').innerHTML = '<i class="fas fa-graduation-cap" style="color:#9065b0"></i> Nova Tutoria';
+        
+        document.getElementById('modalEditor').style.display = 'flex';
+        setTimeout(() => quill.focus(), 100);
+    };
 
 
     window.toggleConcluido = async (id, status) => {
@@ -1724,44 +1802,74 @@
                 fecharModal();
                 loadDataAndInit(); 
             } else {
-                // --- MODO NOVO (Cria Hoje + Chama IA) ---
-                
+                // --- MODO NOVO (Cria Hoje + IA ou Tutoria) ---
                 const now = new Date();
                 const d0 = now.getTime();
 
-                // 1. Salva na Biblioteca (Backup do original)
-                await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
-                    nome: title,
-                    contentHTML: contentHTML,
-                    tag: tag.toUpperCase(),
-                    data: d0,
-                    tipo: 'texto'
-                });
+                if (isTutoriaMode) {
+                    // --- FLUXO DE TUTORIA (SEM REVISÃO IA) ---
+                    const tituloTutoria = `[Tutoria] ${title}`;
 
-                // 2. Cria a tarefa de HOJE [REC] (Texto Original Completo)
-                await addDoc(collection(db, "planners", currentUID, "tasks"), {
-                    titulo: `[REC] ${title}`,
-                    tag: tag.toUpperCase(),
-                    contentHTML: contentHTML, 
-                    targetDate: d0,
-                    concluido: false,
-                    criadoEm: serverTimestamp(),
-                    tipo: 'texto'
-                });
+                    // 1. Salva na Biblioteca
+                    await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
+                        nome: tituloTutoria,
+                        contentHTML: contentHTML,
+                        tag: tag.toUpperCase(),
+                        data: d0,
+                        tipo: 'texto'
+                    });
 
-                // Fecha o modal para liberar o usuário
+                    // 2. Salva na lista de Tasks (para aparecer no Board de Tutorias)
+                    await addDoc(collection(db, "planners", currentUID, "tasks"), {
+                        titulo: tituloTutoria,
+                        tag: tag.toUpperCase(),
+                        contentHTML: contentHTML, 
+                        targetDate: d0,
+                        concluido: false,
+                        criadoEm: serverTimestamp(),
+                        tipo: 'texto'
+                    });
+
+                    showFeedback("Tutoria Salva!", false);
+
+                } else {
+                    // --- FLUXO NORMAL (ESTUDO + IA) ---
+
+                    // 1. Salva na Biblioteca (Backup do original)
+                    await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
+                        nome: title,
+                        contentHTML: contentHTML,
+                        tag: tag.toUpperCase(),
+                        data: d0,
+                        tipo: 'texto'
+                    });
+
+                    // 2. Cria a tarefa de HOJE [REC]
+                    await addDoc(collection(db, "planners", currentUID, "tasks"), {
+                        titulo: `[REC] ${title}`,
+                        tag: tag.toUpperCase(),
+                        contentHTML: contentHTML, 
+                        targetDate: d0,
+                        concluido: false,
+                        criadoEm: serverTimestamp(),
+                        tipo: 'texto'
+                    });
+
+                    // 3. CHAMA A IA EM SEGUNDO PLANO
+                    criarRevisoesComIA(title, tag.toUpperCase(), contentHTML);
+                }
+
+                // Fecha o modal e limpa estado
                 modalEditorContent.classList.remove('editor-max');
                 if(btnCompress) btnCompress.style.display = 'none';
                 if(btnExpand) btnExpand.style.display = 'inline-flex';
                 fecharModal(); 
+                
+                isTutoriaMode = false; // Reseta o modo
 
-                // Atualiza a tela imediatamente com o card de hoje
+                // Atualiza a tela imediatamente
                 loadDataAndInit(); 
                 carregarBiblioteca();
-
-                // 3. CHAMA A IA EM SEGUNDO PLANO PARA D+1, D+7, D+21
-                // A função cuidará de atualizar o feedback na tela
-                criarRevisoesComIA(title, tag.toUpperCase(), contentHTML);
             }
 
         } catch (e) {
@@ -2505,20 +2613,51 @@
     window.fecharModal = () => document.getElementById('modalEditor').style.display = 'none';
     window.fecharModalView = () => document.getElementById('modalView').style.display = 'none';
     
-    // --- RESET NOVO ESTUDO ---
+    // --- RESET NOVO ESTUDO (NORMAL) ---
     document.getElementById('btnNovoAssunto').onclick = () => { 
+        isTutoriaMode = false; // GARANTE QUE NÃO É TUTORIA
         editingDocId = null; 
         document.getElementById('subjectTitle').value = '';
         document.getElementById('subjectTag').value = '';
         quill.setText(''); 
         document.getElementById('btnSalvar').textContent = "Criar Cronograma";
+        document.querySelector('#modalEditor .editor-header h3').textContent = "Novo Estudo"; // Reseta titulo modal
         
         document.getElementById('modalEditor').style.display = 'flex';
         setTimeout(() => quill.focus(), 100); 
     };
     
-    document.getElementById('navBoard').onclick = () => { document.getElementById('secBoard').classList.remove('hidden'); document.getElementById('secLib').classList.add('hidden'); document.getElementById('navBoard').classList.add('active'); document.getElementById('navLib').classList.remove('active'); };
-    document.getElementById('navLib').onclick = () => { document.getElementById('secBoard').classList.add('hidden'); document.getElementById('secLib').classList.remove('hidden'); document.getElementById('navBoard').classList.remove('active'); document.getElementById('navLib').classList.add('active'); carregarBiblioteca(); };
+    // --- NAVEGAÇÃO UNIFICADA (ATUALIZADA) ---
+    function hideAllSections() {
+        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secRevisao', 'secTutorias'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.classList.add('hidden');
+        });
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    }
+
+    document.getElementById('navBoard').onclick = () => { 
+        hideAllSections();
+        document.getElementById('secBoard').classList.remove('hidden'); 
+        document.getElementById('navBoard').classList.add('active'); 
+        window.toggleTopBarElements(true);
+    };
+
+    document.getElementById('navTutorias').onclick = () => { 
+        hideAllSections();
+        document.getElementById('secTutorias').classList.remove('hidden'); 
+        document.getElementById('navTutorias').classList.add('active'); 
+        renderTutoriasBoard();
+        window.toggleTopBarElements(false);
+    };
+
+    document.getElementById('navLib').onclick = () => { 
+        hideAllSections();
+        document.getElementById('secLib').classList.remove('hidden'); 
+        document.getElementById('navLib').classList.add('active'); 
+        carregarBiblioteca(); 
+        window.toggleTopBarElements(false);
+    };
 
         // ============================================================
     // 🕒 LÓGICA DA AGENDA (Adicione no final do Script)
