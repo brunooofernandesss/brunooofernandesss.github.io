@@ -2922,19 +2922,13 @@
     };
     
     
-        // --- NAVEGAÇÃO UNIFICADA DO MENU (Sidebar) ---
+    // --- NAVEGAÇÃO UNIFICADA DO MENU (Sidebar) ---
 
     // 1. Botão Cronograma
     document.getElementById('navBoard').onclick = () => {
-        document.getElementById('secLib').classList.add('hidden');
-        document.getElementById('secAgenda').classList.add('hidden');
-        document.getElementById('secQuizzes').classList.add('hidden');
-        document.getElementById('secAnatomia').classList.add('hidden');
-        document.getElementById('secSyllabus').classList.add('hidden');
+        hideAllSections(); // Usa a função que já esconde TUDO (inclusive Tutorias e Revisão)
         
         document.getElementById('secBoard').classList.remove('hidden');
-
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('navBoard').classList.add('active');
         
         window.toggleTopBarElements(true); // MOSTRA BUSCA E SEMANA
@@ -2942,15 +2936,9 @@
 
     // 2. Botão Biblioteca
     document.getElementById('navLib').onclick = () => {
-        document.getElementById('secBoard').classList.add('hidden');
-        document.getElementById('secAgenda').classList.add('hidden');
-        document.getElementById('secQuizzes').classList.add('hidden');
-        document.getElementById('secAnatomia').classList.add('hidden');
-        document.getElementById('secSyllabus').classList.add('hidden');
-        
-        document.getElementById('secLib').classList.remove('hidden');
+        hideAllSections();
 
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('secLib').classList.remove('hidden');
         document.getElementById('navLib').classList.add('active');
         
         carregarBiblioteca();
@@ -2959,37 +2947,28 @@
 
     // 3. Botão Agenda
     document.getElementById('navAgenda').onclick = () => {
-        document.getElementById('secBoard').classList.add('hidden');
-        document.getElementById('secLib').classList.add('hidden');
-        document.getElementById('secQuizzes').classList.add('hidden');
-        document.getElementById('secAnatomia').classList.add('hidden');
-        document.getElementById('secSyllabus').classList.add('hidden');
+        hideAllSections();
         
         document.getElementById('secAgenda').classList.remove('hidden');
-        
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('navAgenda').classList.add('active');
         
         renderAgendaBoard();
         window.toggleTopBarElements(true); // MOSTRA NA AGENDA TAMBÉM
     };
 
-    // 4. Botão Meus Simulados
+    // 4. Botão Meus Simulados (Redirecionamento principal)
+    // Nota: Existe outro handler para navQuizzes mais abaixo, unifique se necessário,
+    // mas este garante o funcionamento básico no menu.
     document.getElementById('navQuizzes').onclick = () => {
-        document.getElementById('secBoard').classList.add('hidden');
-        document.getElementById('secLib').classList.add('hidden');
-        document.getElementById('secAgenda').classList.add('hidden');
-        document.getElementById('secAnatomia').classList.add('hidden');
-        document.getElementById('secSyllabus').classList.add('hidden');
+        hideAllSections();
         
         document.getElementById('secQuizzes').classList.remove('hidden');
-        
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('navQuizzes').classList.add('active');
         
         if (typeof carregarAbaQuizzes === "function") carregarAbaQuizzes();
-        window.toggleTopBarElements(false); // ESCONDE
+        window.toggleTopBarElements(false); 
     };
+
 
 
 
@@ -3180,17 +3159,16 @@
 
     // --- NAVEGAÇÃO PARA ABA QUIZZES ---
     
-        document.getElementById('navQuizzes').onclick = () => {
-        document.getElementById('secBoard').classList.add('hidden');
-        document.getElementById('secLib').classList.add('hidden');
-        document.getElementById('secAgenda').classList.add('hidden');
-        document.getElementById('secQuizzes').classList.remove('hidden');
+    document.getElementById('navQuizzes').onclick = () => {
+        hideAllSections(); // Garante que fecha Board, Anatomia, Tutorias, etc.
         
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('secQuizzes').classList.remove('hidden');
         document.getElementById('navQuizzes').classList.add('active');
         
         carregarAbaQuizzes();
+        window.toggleTopBarElements(false);
     };
+
 
     
         // ============================================================
@@ -3199,15 +3177,9 @@
 
     // 1. Navegação Anatomia
     document.getElementById('navAnatomia').onclick = () => {
-        // Esconde tudo explicitamente para garantir
-        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secSyllabus'].forEach(id => {
-            const el = document.getElementById(id);
-            if(el) el.classList.add('hidden');
-        });
+        hideAllSections(); // Substitui a lista manual que estava incompleta
         
         document.getElementById('secAnatomia').classList.remove('hidden');
-        
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('navAnatomia').classList.add('active');
         
         window.toggleTopBarElements(false); // ESCONDE TOPO
@@ -3215,16 +3187,14 @@
 
     // Navegação Revisão Espaçada
     document.getElementById('navRevisao').onclick = () => {
-        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secRevisao'].forEach(id => {
-            const el = document.getElementById(id);
-            if(el) el.classList.add('hidden');
-        });
+        hideAllSections(); // Substitui a lista manual
+
         document.getElementById('secRevisao').classList.remove('hidden');
-        
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('navRevisao').classList.add('active');
+        
         window.toggleTopBarElements(false);
     };
+
 
     // 2. Lógica do Jogo (Versão Blindada v3)
     window.gerarNovoDesafioAnatomia = async () => {
@@ -3797,12 +3767,9 @@
 
     // 1. Navegação Matriz
     document.getElementById('navSyllabus').onclick = () => {
-        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia'].forEach(id => 
-            document.getElementById(id).classList.add('hidden')
-        );
+        hideAllSections(); // Garante fechamento de todas as outras abas
+
         document.getElementById('secSyllabus').classList.remove('hidden');
-        
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('navSyllabus').classList.add('active');
         
         renderSyllabus();
