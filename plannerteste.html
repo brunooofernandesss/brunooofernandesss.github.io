@@ -1529,8 +1529,8 @@
         }
 
         allTasksCache.forEach(t => {
-            // FILTRO DE TUTORIA: Se for tutoria, PULA e não mostra no board semanal
-            if (t.titulo && t.titulo.startsWith('[Tutoria]')) return;
+            // FILTRO DE TUTORIA: Usa a propriedade do banco, não o nome
+            if (t.isTutoria === true) return; 
 
             const taskDate = new Date(t.targetDate);
             const colIndex = columns.findIndex(col => isSameDay(col.date, taskDate));
@@ -1606,9 +1606,8 @@
         if (!grid) return; // Segurança caso o elemento não exista
         grid.innerHTML = '';
         
-        // Filtra apenas o que começa com [Tutoria]
-        // Usa "t.titulo &&" para evitar erro se titulo for undefined
-        const tutorias = allTasksCache.filter(t => t.titulo && t.titulo.startsWith('[Tutoria]'));
+        // Filtra pela propriedade isTutoria (independente do nome)
+        const tutorias = allTasksCache.filter(t => t.isTutoria === true);
 
         if (tutorias.length === 0) {
             grid.innerHTML = '<div style="color:#999; grid-column: 1/-1; text-align:center; padding:40px;">Nenhuma tutoria cadastrada.</div>';
@@ -1616,7 +1615,8 @@
         }
 
         tutorias.forEach(t => {
-            const tituloLimpo = t.titulo.replace('[Tutoria]', '').trim();
+            // Mostra o título exatamente como você escreveu (sem tentar limpar prefixo)
+            const tituloLimpo = t.titulo; 
             const dataCriacao = t.criadoEm ? new Date(t.criadoEm.seconds * 1000).toLocaleDateString('pt-BR') : 'Data desc.';
 
             const card = document.createElement('div');
@@ -1792,12 +1792,20 @@
             showFeedback("Salvando...", true); 
 
             if (isEditing) {
-                // --- MODO EDIÇÃO (Só atualiza o card atual) ---
-                await updateDoc(doc(db, "planners", currentUID, "tasks", editingDocId), {
-                    titulo: title,
+                // --- MODO EDIÇÃO ---
+                // Prepara objeto de atualização
+                const updateData = {
+                    titulo: title, // Salva exatamente o que você escreveu (Ex: "Módulo 1")
                     tag: tag.toUpperCase(),
                     contentHTML: contentHTML
-                });
+                };
+                
+                // Se estiver no modo tutoria, garante que a flag continue lá (segurança)
+                if (isTutoriaMode) {
+                    updateData.isTutoria = true;
+                }
+
+                await updateDoc(doc(db, "planners", currentUID, "tasks", editingDocId), updateData);
                 showFeedback("Atualizado!", false);
                 modalEditorContent.classList.remove('editor-max'); // reseta tamanho
                 fecharModal();
@@ -2129,7 +2137,20 @@
         if (!snap.exists()) return alert("Documento não encontrado");
         
         const data = snap.data();
-        document.getElementById('subjectTitle').value = data.titulo.replace(/\[.*?\]/, '').trim();
+        
+        // Detecta se é tutoria pela flag no banco
+        if (data.isTutoria === true) {
+            isTutoriaMode = true;
+            document.getElementById('btnSalvar').textContent = "Salvar Tutoria";
+            // Se for tutoria, carrega o título puro (Ex: "Módulo 1")
+            document.getElementById('subjectTitle').value = data.titulo;
+        } else {
+            isTutoriaMode = false;
+            document.getElementById('btnSalvar').textContent = "Salvar Alterações";
+            // Se for estudo normal, remove o [REC] visualmente
+            document.getElementById('subjectTitle').value = data.titulo.replace(/\[.*?\]/, '').trim();
+        }
+
         document.getElementById('subjectTag').value = data.tag || '';
         quill.clipboard.dangerouslyPasteHTML(data.contentHTML || '');
         document.getElementById('btnSalvar').textContent = "Salvar Alterações";
