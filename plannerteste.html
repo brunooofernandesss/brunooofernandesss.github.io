@@ -4239,15 +4239,22 @@
     // ============================================================
     window.exportarParaPDF = () => {
         const title = document.getElementById('viewTitle').textContent || 'Resumo';
-        const element = document.getElementById('viewContainer');
         
-        // Configurações avançadas do PDF para manter a qualidade das imagens e estilo
+        // Aponta direto para o conteúdo interno para driblar o overflow:hidden do layout
+        const element = document.querySelector('#viewContainer .ql-editor');
+        
+        if (!element) {
+            return window.showFeedback("Nenhum texto encontrado para exportar.", false);
+        }
+        
+        // Configurações avançadas com correção de quebra de página
         const opt = {
-            margin:       10,
+            margin:       15,
             filename:     `${title}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true }, // useCORS permite renderizar imagens carregadas externamente
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            html2canvas:  { scale: 2, useCORS: true, scrollY: 0 }, 
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } // Força a quebra inteligente de páginas
         };
 
         window.showFeedback("Gerando arquivo PDF...", true);
