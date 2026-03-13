@@ -4309,19 +4309,19 @@
                 return window.showFeedback("Nenhum resumo de texto encontrado.", false);
             }
 
-            // 1. Cria o container no canto superior esquerdo (visível para a engine ler)
+            // 1. Cria o container no canto superior esquerdo
             const tempContainer = document.createElement('div');
             tempContainer.id = "tempPdfContainer";
             tempContainer.style.width = '800px'; 
             tempContainer.style.backgroundColor = 'white';
             tempContainer.style.color = 'black';
-            tempContainer.style.padding = '20px';
+            tempContainer.style.padding = '40px';
             tempContainer.style.position = 'absolute';
             tempContainer.style.top = '0';
             tempContainer.style.left = '0';
             tempContainer.style.zIndex = '9998'; 
 
-            // 2. Cria uma "cortina" de carregamento por cima de tudo para esconder a tela
+            // 2. Cria a cortina de carregamento
             const loadingOverlay = document.createElement('div');
             loadingOverlay.id = "pdfLoadingOverlay";
             loadingOverlay.style.position = 'fixed';
@@ -4354,7 +4354,16 @@
             document.body.appendChild(tempContainer);
             document.body.appendChild(loadingOverlay);
 
-            window.scrollTo(0, 0); // Garante que a câmera vai começar a fotografar do topo
+            // ============================================================
+            // 🚨 A GRANDE SACADA 🚨
+            // Desativa o overflow:hidden e height:100vh do body para a câmera ver tudo
+            // ============================================================
+            const originalOverflow = document.body.style.overflow;
+            const originalHeight = document.body.style.height;
+            document.body.style.overflow = 'visible';
+            document.body.style.height = 'auto';
+
+            window.scrollTo(0, 0); 
 
             const opt = {
                 margin:       15,
@@ -4362,17 +4371,21 @@
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true, scrollY: 0, windowWidth: 800 }, 
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+                pagebreak:    { mode: ['css', 'legacy'] } // Retirado avoid-all para evitar bugs em massa
             };
 
-            // 3. Dá 1 segundo para o navegador desenhar o texto antes de acionar o html2pdf
+            // 3. Roda a exportação e depois limpa tudo, voltando o sistema ao normal
             setTimeout(() => {
                 html2pdf().set(opt).from(tempContainer).save().then(() => {
+                    document.body.style.overflow = originalOverflow;
+                    document.body.style.height = originalHeight;
                     document.body.removeChild(tempContainer); 
                     document.body.removeChild(loadingOverlay);
                     window.showFeedback("PDF completo baixado com sucesso!", false);
                 }).catch(err => {
                     console.error("Erro ao gerar PDF:", err);
+                    document.body.style.overflow = originalOverflow;
+                    document.body.style.height = originalHeight;
                     document.body.removeChild(tempContainer);
                     document.body.removeChild(loadingOverlay);
                     window.showFeedback("Erro ao exportar PDF.", false);
