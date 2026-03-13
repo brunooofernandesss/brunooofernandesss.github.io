@@ -4274,12 +4274,12 @@
     };
 
     // ============================================================
-    // 🖨️ EXPORTAR TODA A BIBLIOTECA PARA PDF
+    // 🖨️ EXPORTAR TODA A BIBLIOTECA PARA PDF (NOVA GUIA)
     // ============================================================
     window.exportarTodaBibliotecaPDF = async () => {
         if (!currentUID) return alert("Usuário não autenticado.");
         
-        window.showFeedback("Montando apostila... Isso pode levar alguns segundos.", true);
+        window.showFeedback("Preparando caderno completo...", true);
 
         try {
             const snap = await getDocs(query(collection(db, "planners", currentUID, "arquivos"), orderBy("data", "asc")));
@@ -4292,12 +4292,14 @@
                 if (file.tipo === 'texto' && file.contentHTML) {
                     const conteudoLimpo = file.contentHTML.replace(/<img[^>]+src="data:image[^">]+"[^>]*>/gi, '');
                     
+                    // Envolvemos no ql-snow e ql-editor para puxar a formatação perfeita do Quill
                     conteudoTotal += `
-                        <div class="html2pdf__page-break"></div>
-                        <div style="padding-top: 20px; page-break-inside: avoid;">
-                            <h2 style="text-align: center; margin-bottom: 25px; color: #333; border-bottom: 2px solid #2383e2; padding-bottom: 10px;">${file.nome}</h2>
-                            <div class="ql-editor" style="padding: 0; min-height: auto;">
-                                ${conteudoLimpo}
+                        <div class="aula-container">
+                            <h2 class="aula-titulo">${file.nome}</h2>
+                            <div class="ql-snow" style="border: none;">
+                                <div class="ql-editor" style="padding: 0;">
+                                    ${conteudoLimpo}
+                                </div>
                             </div>
                         </div>
                     `;
@@ -4305,92 +4307,107 @@
                 }
             });
 
-            if (contador === 0) {
-                return window.showFeedback("Nenhum resumo de texto encontrado.", false);
+            if (contador === 0) return window.showFeedback("Nenhum resumo de texto encontrado.", false);
+
+            // Abre uma aba limpa para montar o PDF
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) {
+                alert("⚠️ O navegador bloqueou o pop-up. Por favor, permita pop-ups para este site para gerar o PDF.");
+                return window.showFeedback("Erro: Pop-up bloqueado.", false);
             }
 
-            // 1. Cria o container no canto superior esquerdo
-            const tempContainer = document.createElement('div');
-            tempContainer.id = "tempPdfContainer";
-            tempContainer.style.width = '800px'; 
-            tempContainer.style.backgroundColor = 'white';
-            tempContainer.style.color = 'black';
-            tempContainer.style.padding = '40px';
-            tempContainer.style.position = 'absolute';
-            tempContainer.style.top = '0';
-            tempContainer.style.left = '0';
-            tempContainer.style.zIndex = '9998'; 
+            // Escreve o documento HTML perfeitamente formatado para impressão
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html lang="pt-br">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Caderno de Resumos - UNIP</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+                    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+                    
+                    <style>
+                        /* Regras Mágicas de Impressão */
+                        body {
+                            font-family: 'Inter', sans-serif;
+                            background: white;
+                            color: #333;
+                            margin: 0;
+                            padding: 0;
+                        }
+                        
+                        .capa {
+                            height: 100vh;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                            text-align: center;
+                            page-break-after: always;
+                        }
+                        
+                        .aula-container {
+                            page-break-before: always;
+                            padding-top: 20px;
+                        }
+                        
+                        .aula-titulo {
+                            text-align: center;
+                            margin-bottom: 20px;
+                            color: #2383e2;
+                            border-bottom: 2px solid #eee;
+                            padding-bottom: 10px;
+                            font-size: 24px;
+                        }
 
-            // 2. Cria a cortina de carregamento
-            const loadingOverlay = document.createElement('div');
-            loadingOverlay.id = "pdfLoadingOverlay";
-            loadingOverlay.style.position = 'fixed';
-            loadingOverlay.style.top = '0';
-            loadingOverlay.style.left = '0';
-            loadingOverlay.style.width = '100vw';
-            loadingOverlay.style.height = '100vh';
-            loadingOverlay.style.backgroundColor = 'rgba(255,255,255,0.95)';
-            loadingOverlay.style.zIndex = '9999'; 
-            loadingOverlay.style.display = 'flex';
-            loadingOverlay.style.flexDirection = 'column';
-            loadingOverlay.style.alignItems = 'center';
-            loadingOverlay.style.justifyContent = 'center';
-            loadingOverlay.innerHTML = `
-                <i class="fas fa-cog fa-spin" style="font-size: 40px; color: #d44c47; margin-bottom: 15px;"></i>
-                <h2 style="color:#333; margin: 0;">Compilando ${contador} aulas...</h2>
-                <p style="color:#666; font-size: 14px;">Isso pode demorar um pouco. Não feche a página.</p>
-            `;
+                        /* Blindagem contra distorção de imagens e tabelas */
+                        .ql-editor img {
+                            max-width: 100% !important;
+                            height: auto !important;
+                            page-break-inside: avoid;
+                            display: block;
+                            margin: 15px auto;
+                            border-radius: 8px;
+                        }
+                        
+                        table, .table-wrapper { page-break-inside: avoid; width: 100%; border-collapse: collapse; }
+                        tr { page-break-inside: avoid; page-break-after: auto; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        
+                        /* Limpa as URLs que os navegadores colocam do lado dos links na impressão */
+                        a[href]:after { content: none !important; }
 
-            tempContainer.innerHTML = `
-                <div style="height: 1050px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Inter', sans-serif;">
-                    <h1 style="text-align:center; font-size: 45px; color: #2383e2; margin-bottom: 10px;">Caderno de Resumos</h1>
-                    <h2 style="text-align:center; font-size: 24px; color: #555;">Medicina UNIP</h2>
-                    <p style="text-align:center; color: #888; margin-top: 30px;">Total de Assuntos: ${contador}</p>
-                    <p style="text-align:center; color: #888;">Gerado em: ${new Date().toLocaleDateString('pt-BR')}</p>
-                </div>
-                ${conteudoTotal}
-            `;
+                        @media print {
+                            @page { margin: 20mm; }
+                            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                            .capa { height: 100vh !important; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="capa">
+                        <h1 style="font-size: 45px; color: #2383e2; margin-bottom: 10px;">Caderno de Resumos</h1>
+                        <h2 style="font-size: 24px; color: #555;">Medicina UNIP</h2>
+                        <p style="color: #888; margin-top: 30px; font-weight: bold;">Total de Assuntos: ${contador}</p>
+                        <p style="color: #888; font-size: 14px;">Gerado em: ${new Date().toLocaleDateString('pt-BR')}</p>
+                    </div>
+                    
+                    ${conteudoTotal}
 
-            document.body.appendChild(tempContainer);
-            document.body.appendChild(loadingOverlay);
-
-            // ============================================================
-            // 🚨 A GRANDE SACADA 🚨
-            // Desativa o overflow:hidden e height:100vh do body para a câmera ver tudo
-            // ============================================================
-            const originalOverflow = document.body.style.overflow;
-            const originalHeight = document.body.style.height;
-            document.body.style.overflow = 'visible';
-            document.body.style.height = 'auto';
-
-            window.scrollTo(0, 0); 
-
-            const opt = {
-                margin:       15,
-                filename:     'Caderno_Completo_UNIP.pdf',
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, scrollY: 0, windowWidth: 800 }, 
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak:    { mode: ['css', 'legacy'] } // Retirado avoid-all para evitar bugs em massa
-            };
-
-            // 3. Roda a exportação e depois limpa tudo, voltando o sistema ao normal
-            setTimeout(() => {
-                html2pdf().set(opt).from(tempContainer).save().then(() => {
-                    document.body.style.overflow = originalOverflow;
-                    document.body.style.height = originalHeight;
-                    document.body.removeChild(tempContainer); 
-                    document.body.removeChild(loadingOverlay);
-                    window.showFeedback("PDF completo baixado com sucesso!", false);
-                }).catch(err => {
-                    console.error("Erro ao gerar PDF:", err);
-                    document.body.style.overflow = originalOverflow;
-                    document.body.style.height = originalHeight;
-                    document.body.removeChild(tempContainer);
-                    document.body.removeChild(loadingOverlay);
-                    window.showFeedback("Erro ao exportar PDF.", false);
-                });
-            }, 1000);
+                    <script>
+                        // Aguarda 1.5s para garantir que o CSS e as imagens da nuvem carregaram
+                        window.onload = () => {
+                            setTimeout(() => {
+                                window.print();
+                            }, 1500);
+                        };
+                    </script>
+                </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+            window.showFeedback("Documento aberto em nova aba!", false);
 
         } catch (e) {
             console.error("Erro ao gerar PDF completo:", e);
