@@ -857,7 +857,12 @@
             </section>
 
             <section id="secLib" class="hidden">
-                <h1 class="page-title" style="margin-bottom: 20px;">Biblioteca de Materiais</h1>
+                <div class="header-actions">
+                    <h1 class="page-title">Biblioteca de Materiais</h1>
+                    <button class="btn-action" style="background:#d44c47; color:white; border:none;" onclick="window.exportarTodaBibliotecaPDF()">
+                        <i class="fas fa-file-pdf"></i> Exportar Tudo para PDF
+                    </button>
+                </div>
                 <div style="background: white; border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden;">
                     <table style="width:100%; border-collapse:collapse; font-size:14px;">
                         <thead style="background: #f9f9f9; border-bottom: 1px solid var(--border-color);">
@@ -4266,6 +4271,107 @@
             console.error("Erro ao gerar PDF:", err);
             window.showFeedback("Erro ao exportar PDF.", false);
         });
+    };
+
+    // ============================================================
+    // 🖨️ EXPORTAR TODA A BIBLIOTECA PARA PDF
+    // ============================================================
+    window.exportarTodaBibliotecaPDF = async () => {
+        if (!currentUID) return alert("Usuário não autenticado.");
+        
+        window.showFeedback("Processando todas as aulas... Isso pode levar alguns segundos.", true);
+
+        try {
+            // Busca todos os arquivos ordenando pela data de criação
+            const snap = await getDocs(query(collection(db, "planners", currentUID, "arquivos"), orderBy("data", "asc")));
+            
+            let conteudoTotal = "";
+            let contador = 0;
+
+            snap.forEach(doc => {
+                const file = doc.data();
+                // Filtra apenas os resumos de texto (ignora uploads de PDF)
+                if (file.tipo === 'texto' && file.contentHTML) {
+                    // Limpeza básica contra imagens encavaladas que quebram o html
+                    const conteudoLimpo = file.contentHTML.replace(/<img[^>]+src="data:image[^">]+"[^>]*>/gi, '');
+                    
+                    conteudoTotal += `
+                        <div class="aula-container" style="page-break-before: always; padding-top: 20px;">
+                            <h2 style="text-align: center; margin-bottom: 25px; color: #333; border-bottom: 2px solid #2383e2; padding-bottom: 10px;">${file.nome}</h2>
+                            <div class="ql-editor" style="padding: 0;">
+                                ${conteudoLimpo}
+                            </div>
+                        </div>
+                    `;
+                    contador++;
+                }
+            });
+
+            if (contador === 0) {
+                return window.showFeedback("Nenhum resumo de texto encontrado.", false);
+            }
+
+            // 1. Cria um iframe invisível
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+
+            // 2. Copia todos os estilos do planner
+            let stylesHtml = '';
+            document.querySelectorAll('style, link[rel="stylesheet"]').forEach(node => {
+                stylesHtml += node.outerHTML;
+            });
+
+            // 3. Monta o HTML do iframe injetando todos os resumos
+            const docIframe = iframe.contentWindow.document;
+            docIframe.open();
+            docIframe.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Caderno Completo - UNIP</title>
+                    ${stylesHtml}
+                    <style>
+                        @media print {
+                            body { background: white !important; padding: 20mm; color: #000 !important; }
+                            img, table, .table-wrapper { page-break-inside: avoid; max-width: 100%; }
+                            h1, h2, h3, h4 { page-break-after: avoid; }
+                            .aula-container { page-break-before: always; }
+                            @page { margin: 15mm; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div style="height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <h1 style="text-align:center; font-size: 45px; color: #2383e2; margin-bottom: 10px;">Caderno de Resumos</h1>
+                        <h2 style="text-align:center; font-size: 24px; color: #555;">Medicina UNIP</h2>
+                        <p style="text-align:center; color: #888; margin-top: 30px;">Total de Assuntos: ${contador}</p>
+                        <p style="text-align:center; color: #888;">Gerado em: ${new Date().toLocaleDateString('pt-BR')}</p>
+                    </div>
+                    ${conteudoTotal}
+                </body>
+                </html>
+            `);
+            docIframe.close();
+
+            // 4. Aguarda os recursos carregarem (delay maior por causa de múltiplas imagens)
+            iframe.onload = () => {
+                setTimeout(() => {
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                    
+                    // Remove o iframe fantasma após a impressão
+                    setTimeout(() => {
+                        document.body.removeChild(iframe);
+                        window.showFeedback("PDF completo pronto!", false);
+                    }, 1000);
+                }, 1500); 
+            };
+
+        } catch (e) {
+            console.error("Erro ao gerar PDF completo:", e);
+            window.showFeedback("Erro ao processar as aulas.", false);
+        }
     };
 
     // ============================================================
