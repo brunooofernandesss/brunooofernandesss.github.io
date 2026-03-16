@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Simulado de Farmacocinética</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      background-color: #f4f4f4;
+    }
+
+    .quiz-container {
+      max-width: 800px;
+      width: 100%;
+    }
+
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .question {
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .options {
+      margin-top: 15px;
+    }
+
+    /* Estilos unificados para todas as opções (estáticas e dinâmicas) */
+    .option, label.option, label, #newQuestionsContent label {
+      display: flex; /* Para alinhar imagem e texto */
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      position: relative; /* Para posicionar a tesoura */
+    }
+
+    /* FORÇA a remoção de inputs de radio em QUALQUER lugar */
+    .option input[type="radio"], 
+    label input[type="radio"],
+    #newQuestionsContent input[type="radio"],
+    #newQuestionsContent label input[type="radio"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
+    }
+
+    .option:hover, 
+    label.option:hover, 
+    label:hover,
+    #newQuestionsContent label:hover {
+      background-color: #e9e9e9;
+    }
+
+    .option.selected, 
+    label.option.selected, 
+    label.selected,
+    #newQuestionsContent label.selected {
+      background-color: #d1e7dd;
+      border-color: #28a745;
+    }
+
+    .option.correct, 
+    label.option.correct, 
+    label.correct,
+    #newQuestionsContent label.correct {
+      background-color: #d4edda;
+      border-color: #28a745;
+    }
+
+    .option.incorrect, 
+    label.option.incorrect, 
+    label.incorrect,
+    #newQuestionsContent label.incorrect {
+      background-color: #f8d7da;
+      border-color: #dc3545;
+    }
+
+    .submit-btn {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 30px;
+    }
+
+    .submit-btn:hover {
+      background-color: #0056b3;
+    }
+
+    .results {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .scissor-icon {
+      margin-right: 10px; /* Espaço entre a tesoura e o texto da opção */
+      width: 20px; /* Ajuste conforme o tamanho da sua imagem */
+      height: 20px; /* Ajuste conforme o tamanho da sua imagem */
+      opacity: 0.5; /* Transparência como no original */
+      cursor: pointer;
+    }
+
+    .scissor-icon.hidden {
+      display: none;
+    }
+
+    .struck-through {
+      text-decoration: line-through;
+      color: #888;
+    }
+
+    .comment {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f0f0f0;
+      border-left: 4px solid #007bff;
+      font-style: italic;
+      color: #555;
+      display: none; /* Escondido por padrão */
+    }
+    .comment.show {
+      display: block; /* Mostrado quando ativado */
+    }
+
+    /* Estilos para o botão de navegação de erro / diagnóstico */
+    .error-nav-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #dc3545; /* Vermelho para erro */
+      color: white;
+      border: none;
+      border-radius: 50%; /* Torna o botão redondo */
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      display: none; /* Escondido por padrão */
+      flex-direction: column; /* Para empilhar o ícone e o contador */
+      padding: 5px; /* Ajuste o padding para acomodar texto maior */
+      box-sizing: border-box; /* Garante que padding não aumente o tamanho total */
+      text-align: center;
+    }
+
+    .error-nav-btn:hover {
+      background-color: #c82333;
+    }
+
+    .error-nav-btn .arrow-icon {
+      font-size: 30px; /* Tamanho da seta */
+      line-height: 1; /* Ajuste para centralizar */
+    }
+
+    .error-nav-btn .button-text {
+      font-size: 12px; /* Tamanho do texto abaixo da seta */
+      line-height: 1;
+      margin-top: 2px; /* Espaço entre a seta e o texto */
+    }
+
+    /* Estilos para a seção de diagnóstico de erros */
+    .error-diagnosis-section {
+        margin-top: 50px;
+        padding: 30px;
+        background-color: #ffe0b2; /* Um laranja claro ou similar */
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        display: none; /* Escondido por padrão */
+        text-align: center;
+        font-size: 1.1em;
+        color: #333;
+    }
+
+    .error-diagnosis-section h2 {
+        color: #e65100; /* Laranja mais escuro */
+        margin-bottom: 20px;
+        font-size: 1.8em;
+    }
+
+    .error-diagnosis-section ul {
+        list-style: none; /* Remove marcadores de lista */
+        padding: 0;
+        margin: 0;
+    }
+
+    .error-diagnosis-section li {
+        background-color: #ff9800; /* Laranja */
+        color: white;
+        padding: 8px 15px;
+        margin: 8px 0;
+        border-radius: 5px;
+        display: inline-block; /* Para que os itens fiquem lado a lado */
+        margin-right: 10px;
+        font-weight: bold;
+    }
+    .error-diagnosis-section li:last-child {
+        margin-right: 0;
+    }
+ .card-bloco {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+      background: #fff;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="quiz-container">
+    <h1 style="text-align:center; margin-bottom: 30px;">Simulado de Farmacocinética</h1>
+    <div class="card-bloco" id="quiz"></div>
+    <button class="submit-btn" id="verifyAnswersBtn">Verificar Respostas</button>
+
+    <button class="generate-questions-btn submit-btn" id="generateNewQuestionsBtn" style="display:none;">
+      Gerar Novas Perguntas
+    </button>
+
+    <div class="results card-bloco" id="results"></div>
+    <div id="statusMessage" style="text-align: center; margin-top: 10px; font-weight: bold; color: #007bff;"></div>
+
+    <div class="error-diagnosis-section card-bloco" id="errorDiagnosis">
+      <h2>Diagnóstico de Erros</h2>
+      <p>Parece que você precisa revisar os seguintes assuntos:</p>
+      <ul id="topicsToReview"></ul>
+    </div>
+
+    <div class="generated-questions-section card-bloco" id="generatedQuestionsSection" style="display:none;">
+      <h2>Novas Perguntas Geradas</h2>
+      <div id="newQuestionsContent"></div>
+    </div>
+  </div>
+  
+  <button class="error-nav-btn" id="errorNavBtn" style="display:none;">
+    <span class="arrow-icon"></span>
+    <span class="button-text"></span>
+  </button>
+
+  <script>
+    const quizContainer = document.getElementById("quiz");
+    const resultsContainer = document.getElementById("results");
+    const errorNavBtn = document.getElementById("errorNavBtn");
+    const arrowIcon = errorNavBtn.querySelector(".arrow-icon");
+    const buttonText = errorNavBtn.querySelector(".button-text");
+    const errorDiagnosisSection = document.getElementById("errorDiagnosis");
+    const topicsToReviewList = document.getElementById("topicsToReview");
+    const generateNewQuestionsBtn = document.getElementById("generateNewQuestionsBtn");
+    const generatedQuestionsSection = document.getElementById("generatedQuestionsSection");
+    const newQuestionsContent = document.getElementById("newQuestionsContent");
+    const statusMessage = document.getElementById("statusMessage");
+
+    let wrongQuestionIndices = [];
+    let errorCountByTopic = {};
+    let totalAnsweredQuestionsByTopic = {};
+    let currentWrongQuestionIndex = -1;
+    let hasErrors = false;
+    let isShowingErrors = false;
+    let isShowingDiagnosis = false;
+
+    // Inicializa a visibilidade das seções no carregamento
+    errorDiagnosisSection.style.display = 'none';
+    topicsToReviewList.innerHTML = '';
+    statusMessage.textContent = '';
+
+    const questions = [       {         question: "1. Qual dos seguintes fatores pode influenciar a absorção de um fármaco?",         options: [           "A) pH do meio",           "B) Peso do paciente",           "C) Idade do médico",           "D) Tempo de espera na farmácia",         ],         correctAnswer: "A) pH do meio",         comment: "O pH do meio pode alterar a ionização do fármaco, influenciando sua absorção.",         topic: "Fatores Físico-Químicos na Absorção de Fármacos",       },       {         question: "2. O que é biodisponibilidade?",         options: [           "A) A quantidade de fármaco que chega à circulação sistêmica.",           "B) A velocidade com que o fármaco é absorvido.",           "C) A proporção de fármaco que é eliminada.",           "D) A concentração máxima do fármaco no sangue.",         ],         correctAnswer: "A) A quantidade de fármaco que chega à circulação sistêmica.",         comment: "Biodisponibilidade é a fração do fármaco administrado que alcança a circulação sistêmica em forma inalterada.",         topic: "Conceito de Biodisponibilidade",       },       {         question: "3. Um fármaco que é administrado por via oral apresenta menor biodisponibilidade em relação à via intravenosa. Qual é a principal razão para isso?",         options: [           "A) Metabolismo de primeira passagem.",           "B) Ação direta dos alimentos.",           "C) Outras interações medicamentosas.",           "D) Influência do peso do paciente.",         ],         correctAnswer: "A) Metabolismo de primeira passagem.",         comment: "O metabolismo de primeira passagem ocorre no fígado antes do fármaco entrar na circulação, reduzindo sua biodisponibilidade.",         topic: "Metabolismo de Primeira Passagem",       },       {         question: "4. Qual dos seguintes fatores não afeta a absorção oral de um fármaco?",         options: [           "A) Viscosidade do conteúdo gástrico.",           "B) Forma farmacêutica.",           "C) Presença de refluxo gastroesofágico.",           "D) Altura do paciente.",         ],         correctAnswer: "D) Altura do paciente.",         comment: "A altura do paciente não influencia a absorção de fármacos, ao contrário dos outros fatores listados.",         topic: "Fatores Fisiológicos e Absorção Oral",       },       {         question: "5. A administração de um fármaco em jejum geralmente resulta em:",         options: [           "A) Aumento da absorção.",           "B) Diminuição da absorção.",           "C) Nenhum efeito na absorção.",           "D) Ação imediata.",         ],         correctAnswer: "A) Aumento da absorção.",         comment: "A administração em jejum geralmente aumenta a taxa de absorção, já que não há alimentos competindo pela absorção.",         topic: "Interação Alimento-Fármaco na Absorção",       },       {         question: "6. Qual é o principal local de absorção de fármacos na via oral?",         options: [           "A) Estômago.",           "B) Intestino delgado.",           "C) Fígado.",           "D) Intestino grosso.",         ],         correctAnswer: "B) Intestino delgado.",         comment: "O intestino delgado é o principal local de absorção, devido à sua extensa superfície e vascularização.",         topic: "Anatomia do Trato Gastrointestinal e Absorção",       },       {         question: "7. Qual é o efeito do pH gástrico na absorção de fármacos ácidos?",         options: [           "A) Aumenta a absorção.",           "B) Diminui a absorção.",           "C) Não afeta a absorção.",           "D) Converte o fármaco em inativo.",         ],         correctAnswer: "A) Aumenta a absorção.",         comment: "Fármacos ácidos são mais bem absorvidos em ambientes ácidos, como o estômago.",         topic: "Influência do pH e pKa na Absorção",       },       {         question: "8. Os fármacos lipossolúveis são geralmente absorvidos de forma mais eficiente do que os hidrossolúveis. Qual é a razão para isso?",         options: [           "A) Maior solubilidade em água.",           "B) Menor capacidade de difusão.",           "C) Alta permeabilidade das membranas celulares.",           "D) Menor volume de distribuição.",         ],         correctAnswer: "C) Alta permeabilidade das membranas celulares.",         comment: "Fármacos lipossolúveis atravessam facilmente as membranas celulares, que são compostas principalmente de lipídios.",         topic: "Lipossolubilidade e Transporte Transmembrana",       },       {         question: "9. Qual é a principal desvantagem da administração intramuscular de fármacos?",         options: [           "A) Velocidade de absorção lenta.",           "B) Risco de reação anafilática.",           "C) Invasividade do procedimento.",           "D) Dificuldade de administração.",         ],         correctAnswer: "C) Invasividade do procedimento.",         comment: "A injeção intramuscular é considerada invasiva e pode causar desconforto ao paciente.",         topic: "Vias de Administração: Vantagens e Desvantagens",       },       {         question: "10. Quando um fármaco é administrado por via sublingual, ele evita:",         options: [           "A) O efeito do metabolismo de primeira passagem.",           "B) O efeito de primeira absorção.",           "C) Efeitos adversos.",           "D) Dificuldades de administração.",         ],         correctAnswer: "A) O efeito do metabolismo de primeira passagem.",         comment: "A via sublingual permite que o fármaco entre diretamente na circulação sistêmica, evitando o metabolismo inicial pelo fígado.",         topic: "Via Sublingual e Circulação Sistêmica",       },       {         question: "11. O volume de distribuição (Vd) é importante para determinar:",         options: [           "A) A dose coletiva necessária.",           "B) A meia-vida do fármaco.",           "C) A eficácia do tratamento.",           "D) A quantidade do fármaco no sangue.",         ],         correctAnswer: "B) A meia-vida do fármaco.",         comment: "O volume de distribuição é fundamental na farmacocinética, ajudando a determinar a concentração do fármaco no sangue e sua meia-vida de eliminação.",         topic: "Volume de Distribuição (Vd)",       },       {         question: "12. Qual dos seguintes fatores afeta a distribuição de fármacos no organismo?",         options: [           "A) Idade do paciente.",           "B) Pressão arterial.",           "C) Peso corporal.",           "D) Todos os anteriores.",         ],         correctAnswer: "D) Todos os anteriores.",         comment: "Idade, pressão arterial e peso corporal são entre outros fatores que podem influenciar a distribuição dos fármacos.",         topic: "Fatores que Alteram a Distribuição",       },       {         question: "13. Um fármaco capaz de se ligar a proteínas plasmáticas tem maior probabilidade de:",         options: [           "A) Ser excretado rapidamente.",           "B) Ter um volume de distribuição alto.",           "C) Ser distribuído amplamente nos tecidos.",           "D) Permanecer na corrente sanguínea por mais tempo.",         ],         correctAnswer: "D) Permanecer na corrente sanguínea por mais tempo.",         comment: "O cálculo da fração livre do fármaco é crucial e aqueles que se ligam fortemente às proteínas tendem a ter uma meia-vida mais longa.",         topic: "Ligação a Proteínas Plasmáticas",       },       {         question: "14. Qual é a principal barreira à distribuição de fármacos no sistema nervoso central?",         options: [           "A) Membranas celulares.",           "B) Barreira hematoencefálica.",           "C) Membranas sinoviais.",           "D) Espécies reativas de oxigênio.",         ],         correctAnswer: "B) Barreira hematoencefálica.",         comment: "A barreira hematoencefálica é uma camada de proteção que impede a passagem de muitos fármacos e substâncias para o cérebro.",         topic: "Barreiras Fisiológicas: Barreira Hematoencefálica",       },       {         question: "15. Os fármacos hidrossolúveis geralmente têm um volume de distribuição:",         options: [           "A) Alto.",           "B) Baixo.",           "C) Variável.",           "D) Infinito.",         ],         correctAnswer: "B) Baixo.",         comment: "Fármacos hidrossolúveis tendem a permanecer no espaço intravascular, resultando em um volume de distribuição menor.",         topic: "Solubilidade e Volume de Distribuição",       },       {         question: "16. Qual fármaco tende a ter um volume de distribuição maior?",         options: [           "A) Fármacos com alta afinidade por proteínas plasmáticas.",           "B) Fármacos lipofílicos.",           "C) Fármacos que são excretados rapidamente.",           "D) Fármacos altamente polares.",         ],         correctAnswer: "B) Fármacos lipofílicos.",         comment: "Fármacos lipofílicos são mais facilmente distribuídos nos tecidos, resultando em um maior volume de distribuição.",         topic: "Lipofilicidade e Penetração Tecidual",       },       {         question: "17. A troca de fármacos entre o espaço intravascular e o espaço intersticial é facilitada pela:",         options: [           "A) Difusão passiva.",           "B) Filtração.",           "C) Transporte ativo.",           "D) Exocitose.",         ],         correctAnswer: "A) Difusão passiva.",         comment: "A difusão passiva permite que os fármacos atravessam as membranas celulares e se distribuam para os tecidos.",         topic: "Mecanismos de Transporte na Distribuição",       },       {         question: "18. Qual é a principal consequência da competição entre fármacos pela ligação às proteínas plasmáticas?",         options: [           "A) Alteração da farmacodinâmica.",           "B) Aumento da eficácia.",           "C) Aumento dos efeitos adversos.",           "D) Redução da toxicidade.",         ],         correctAnswer: "C) Aumento dos efeitos adversos.",         comment: "A competição pela ligação às proteínas pode levar a um aumento dos níveis de fármacos livres no sangue, elevando o risco de toxicidade e efeitos adversos.",         topic: "Interações Medicamentosas na Distribuição",       },       {         question: "19. A administração intravenosa proporciona a distribuição imediata do fármaco. Qual é uma desvantagem dessa via?",         options: [           "A) Risco de infecção.",           "B) Dificuldade de controle da dose.",           "C) Menor biodisponibilidade.",           "D) Menor velocidade de ação.",         ],         correctAnswer: "A) Risco de infecção.",         comment: "A via intravenosa está associada a um risco maior de infecções, devido à invasividade do método.",         topic: "Via Intravenosa: Riscos Associados",       },       {         question: "20. A perfusão sanguínea de um tecido influencia a distribuição de fármacos. Qual tecido geralmente recebe a menor perfusão?",         options: [           "A) Coração.",           "B) Fígado.",           "C) Músculos esqueléticos.",           "D) Tecido adiposo.",         ],         correctAnswer: "D) Tecido adiposo.",         comment: "O tecido adiposo, embora volumoso, geralmente tem uma perfusão sanguínea menor em comparação com órgãos altamente vascularizados como o coração e o fígado.",         topic: "Perfusão Tecidual e Distribuição",       },       {         question: "21. A metabolização de fármacos é predominantemente realizada pelo:",         options: [           "A) Coração.",           "B) Fígado.",           "C) Rim.",           "D) Pulmão.",         ],         correctAnswer: "B) Fígado.",         comment: "O fígado é o principal órgão responsável pela metabolização de fármacos, utilizando enzimas para transformá-los em formas mais hidrossolúveis.",         topic: "Órgãos Envolvidos na Biotransformação",       },       {         question: "22. Qual é o principal objetivo da metabolização de fármacos?",         options: [           "A) Aumentar a potência do fármaco.",           "B) Tornar o fármaco mais hidrossolúvel para excreção.",           "C) Diminuir a absorção.",           "D) Prolongar a ação do fármaco.",         ],         correctAnswer: "B) Tornar o fármaco mais hidrossolúvel para excreção.",         comment: "O principal objetivo é tornar os fármacos mais hidrossolúveis para facilitar a excreção renal.",         topic: "Finalidade da Metabolização",       },       {         question: "23. Os processos de metabolização podem ser divididos em duas fases. Na fase I, ocorre:",         options: [           "A) Conjugação de substâncias.",           "B) Oxidação, redução ou hidrólise.",           "C) Excreção do fármaco.",           "D) Reabsorção no rim.",         ],         correctAnswer: "B) Oxidação, redução ou hidrólise.",         comment: "A fase I envolve reações químicas como oxidação, que tornam os fármacos mais reativos.",         topic: "Reações de Fase I",       },       {         question: "24. Um fármaco que apresenta um alto metabolismo de primeira passagem provavelmente:",         options: [           "A) Terá uma alta biodisponibilidade.",           "B) Deverá ser administrado por via intravenosa.",           "C) Será excretado sem ser metabolizado.",           "D) Não será eficaz.",         ],         correctAnswer: "B) Deverá ser administrado por via intravenosa.",         comment: "O alto metabolismo de primeira passagem pode diminuir a eficácia de fármacos administrados por via oral, tornando a via intravenosa mais eficaz.",         topic: "Metabolismo de Primeira Passagem e Vias Alternativas",       },       {         question: "25. Qual das seguintes enzimas é um sistema importante na metabolização de fármacos?",         options: [           "A) Rifampicina.",           "B) Citocromo P450.",           "C) Hemoglobina.",           "D) Acetilcolinesterase.",         ],         correctAnswer: "B) Citocromo P450.",         comment: "O sistema do citocromo P450 é crucial na metabolização, participando de diversas reações de oxidação.",         topic: "Sistema Citocromo P450 (CYP)",       },       {         question: "26. A metabolização de um fármaco pode ser afetada por outros fármacos que inibem ou induzem enzimas. Isso é chamado de:",         options: [           "A) Interação farmacológica.",           "B) Efeito sinérgico.",           "C) Efeito antagonista.",           "D) Farmacodinâmica.",         ],         correctAnswer: "A) Interação farmacológica.",         comment: "As interações entre fármacos podem afetar a atividade das enzimas metabolizadoras, alterando os níveis do fármaco no organismo.",         topic: "Indução e Inibição Enzimática",       },       {         question: "27. A metabolização pode resultar em um metabólito ativo. Um exemplo clássico é:",         options: [           "A) Propranolol.",           "B) Morfina.",           "C) Codeína.",           "D) Acetaminofen.",         ],         correctAnswer: "C) Codeína.",         comment: "A codeína é metabolizada em morfina, que é um metabólito ativo, responsável por sua ação analgésica.",         topic: "Pró-fármacos e Metabólitos Ativos",       },       {         question: "28. A prescrição de múltiplos fármacos pode aumentar a chance de reações adversas devido à metabolização. Isso ocorre porque:",         options: [           "A) Fármacos se acumulam no organismo.",           "B) Há competição pelas mesmas enzimas.",           "C) O fígado se torna mais eficiente.",           "D) Os fármacos se eliminam mais rapidamente.",         ],         correctAnswer: "B) Há competição pelas mesmas enzimas.",         comment: "A competição entre fármacos para as mesmas enzimas pode levar a níveis alterados e reações adversas.",         topic: "Polifarmácia e Interações Metabólicas",       },       {         question: "29. Os polimorfismos genéticos podem influenciar a metabolização de fármacos. Isso é conhecido como:",         options: [           "A) Farmacogenética.",           "B) Farmacodinâmica.",           "C) Interação medicamentosa.",           "D) Tolerância.",         ],         correctAnswer: "A) Farmacogenética.",         comment: "A farmacogenética estuda como as diferenças genéticas influenciam a resposta individual a medicamentos, incluindo a metabolização.",         topic: "Farmacogenética e Variação Metabólica",       },       {         question: "30. Fármacos que são metabolizados pelo fígado geralmente são priorizados para a excreção renal. Isso significa que:",         options: [           "A) São eliminados sem serem modificados.",           "B) Têm uma baixa biodisponibilidade.",           "C) São menos tóxicos.",           "D) Precisam ser transformados para serem excretados.",         ],         correctAnswer: "D) Precisam ser transformados para serem excretados.",         comment: "A maioria dos fármacos precisa ser metabolizada para formas mais hidrossolúveis para serem efetivamente excretadas.",         topic: "Relação entre Biotransformação e Excreção",       },       {         question: "31. A eliminação de um fármaco do organismo pode ocorrer por:",         options: [           "A) Metabolização e excreção.",           "B) Somente excreção.",           "C) Somente metabolização.",           "D) Transporte ativo apenas.",         ],         correctAnswer: "A) Metabolização e excreção.",         comment: "A eliminação envolve a biotransformação (metabolização) e a excreção dos fármacos.",         topic: "Processos de Eliminação de Fármacos",       },       {         question: "32. Qual dos seguintes órgãos é responsável pela excreção principal de fármacos?",         options: [           "A) Coração.",           "B) Pulmões.",           "C) Rim.",           "D) Fígado.",         ],         correctAnswer: "C) Rim.",         comment: "Os rins são os principais órgãos responsáveis pela excreção de fármacos e seus metabolitos.",         topic: "Excreção Renal",       },       {         question: "33. A clearance (depuração) é definida como:",         options: [           "A) O tempo necessário para a eliminação do fármaco.",           "B) A taxa de excreção de um fármaco do organismo.",           "C) A fração do fármaco que permanece no corpo.",           "D) O volume de sangue que é completamente limpo de um fármaco por unidade de tempo.",         ],         correctAnswer: "D) O volume de sangue que é completamente limpo de um fármaco por unidade de tempo.",         comment: "Clearance é uma medida que expressa a eficiência de um órgão em eliminar um fármaco do sangue.",         topic: "Clearance (Depuração) Sistêmica",       },       {         question: "34. A eliminação de um fármaco segue frequentemente uma cinética de primeira ordem. Isso significa que:",         options: [           "A) A quantidade de fármaco eliminado é constante ao longo do tempo.",           "B) A fração do fármaco restante no organismo diminui a uma taxa proporcional.",           "C) A eliminação não depende da concentração do fármaco.",           "D) A taxa de excreção não é afetada por outros fatores.",         ],         correctAnswer: "B) A fração do fármaco restante no organismo diminui a uma taxa proporcional.",         comment: "Na cinética de primeira ordem, a taxa de eliminação é proporcional à concentração do fármaco.",         topic: "Cinética de Eliminação de Primeira Ordem",       },       {         question: "35. A meia-vida (t½) de um fármaco é o tempo necessário para:",         options: [           "A) O fármaco atingir a concentração máxima.",           "B) A concentração do fármaco diminuir pela metade.",           "C) O fármaco ser excretado completamente.",           "D) A biodisponibilidade do fármaco ser alcançada.",         ],         correctAnswer: "B) A concentração do fármaco diminuir pela metade.",         comment: "A meia-vida é importante para determinar a frequência de administração do fármaco.",         topic: "Tempo de Meia-Vida (t½)",       },       {         question: "36. Um aumento da taxa de filtração glomerular pode resultar em:",         options: [           "A) Aumento da eliminação do fármaco.",           "B) Redução da eliminação do fármaco.",           "C) Maior risco de toxicidade.",           "D) Nenhum efeito na eliminação do fármaco.",         ],         correctAnswer: "A) Aumento da eliminação do fármaco.",         comment: "Aumento da filtração glomerular resulta geralmente em maior eliminação dos fármacos pelos rins.",         topic: "Filtração Glomerular",       },       {         question: "37. Nos pacientes com insuficiência renal, a eliminação de fármacos pode ser:",         options: [           "A) Aumentada.",           "B) Diminuta.",           "C) Inalterada.",           "D) Acelerada.",         ],         correctAnswer: "B) Diminuta.",         comment: "Pacientes com insuficiência renal tendem a apresentar uma redução na eliminação de fármacos, aumentando o risco de toxicidade.",         topic: "Insuficiência Renal e Ajuste Posológico",       },       {         question: "38. A excreção biliar é especialmente relevante para fármacos que são:",         options: [           "A) Solúveis em água.",           "B) Metabolizados em formas ativas.",           "C) Lipofílicos e altamente metabolizados.",           "D) Administrados via oral.",         ],         correctAnswer: "C) Lipofílicos e altamente metabolizados.",         comment: "Fármacos lipofílicos podem ser excretados na bile após serem metabolizados em formas mais polares.",         topic: "Excreção Biliar e Circulação Êntero-hepática",       },       {         question: "39. A eliminação de um fármaco é considerada completa quando:",         options: [           "A) O fármaco não é mais detectável no sangue.",           "B) A concentração do fármaco chega à concentração mínima eficaz.",           "C) O fármaco é excretado a uma taxa constante.",           "D) A meia-vida do fármaco é alcançada.",         ],         correctAnswer: "A) O fármaco não é mais detectável no sangue.",         comment: "A eliminação é considerada completa quando o fármaco não é mais detectável na circulação sanguínea.",         topic: "Depuração Total do Organismo",       },       {         question: "40. Um uso prolongado de um fármaco pode levar ao aumento da eliminação. Isso é conhecido como:",         options: [           "A) Tolerância.",           "B) Resistência.",           "C) Aumento da metabolização.",           "D) Efeito sinérgico.",         ],         correctAnswer: "A) Tolerância.",         comment: "A tolerância ocorre quando o organismo se adapta à presença contínua do fármaco, resultando em uma alteração na sua eliminação e metabolização.",         topic: "Tolerância Farmacocinética",       }     ];
+
+    function buildQuiz() {
+      const output = [];
+
+      questions.forEach((currentQuestion, questionNumber) => {
+        const options = [];
+        for (let i = 0; i < currentQuestion.options.length; i++) {
+          options.push(
+            `<label class="option" data-question="${questionNumber}" data-value="${currentQuestion.options[i]}">
+              <img src="tesouras.png" class="scissor-icon" onclick="event.stopPropagation(); this.parentNode.classList.toggle('struck-through');">
+              ${currentQuestion.options[i]}
+            </label>`
+          );
+        }
+
+        output.push(
+          `<div class="card" id="question-${questionNumber}" data-topic="${currentQuestion.topic}">
+            <div class="question">${currentQuestion.question}</div>
+            <div class="options">${options.join("")}</div>
+            <div class="comment" id="comment-${questionNumber}"></div>
+          </div>`
+        );
+      });
+
+      quizContainer.innerHTML = output.join("");
+    }
+
+    function showResults() {
+      wrongQuestionIndices = [];
+      errorCountByTopic = {};
+      totalAnsweredQuestionsByTopic = {};
+      currentWrongQuestionIndex = -1;
+      hasErrors = false;
+      isShowingErrors = false;
+      isShowingDiagnosis = false;
+
+      errorDiagnosisSection.style.display = 'none';
+      topicsToReviewList.innerHTML = '';
+      statusMessage.textContent = '';
+
+      // Busca por todas as perguntas: estáticas e dinâmicas
+      const allQuestionCards = document.querySelectorAll('.quiz-container .card, #newQuestionsContent .card');
+      let correctAnswersCount = 0;
+      let totalQuestionsAnswered = 0;
+
+      console.log('🔍 Verificando', allQuestionCards.length, 'perguntas...');
+
+      allQuestionCards.forEach((card, index) => {
+        const questionEl = card.querySelector('.question') || card.querySelector('p');
+        if (!questionEl) return;
+
+        const questionText = questionEl.textContent.trim();
+        const optionsContainer = card.querySelector('.options') || card;
+        const allOptions = optionsContainer.querySelectorAll('.option, label.option, label');
+        const userAnswerElement = optionsContainer.querySelector('.option.selected, label.selected');
+        const commentDiv = card.querySelector('.comment');
+
+        const questionTopic = card.dataset.topic || "Tópico não informado";
+        
+        console.log(`📝 Pergunta ${index + 1}: Tópico = "${questionTopic}"`);
+        console.log(`🔍 Encontradas ${allOptions.length} alternativas`);
+        
+        // Remove classes anteriores
+        allOptions.forEach(option => {
+          option.classList.remove('correct', 'incorrect', 'selected');
+        });
+        if (commentDiv) commentDiv.classList.remove('show');
+
+        let correctAnswerValue = null;
+        let questionComment = null;
+
+        // Verifica se é pergunta estática ou dinâmica
+        const isStatic = card.id && card.id.startsWith('question-');
+        if (isStatic) {
+          // Pergunta estática - busca nos dados originais
+          const questionData = questions.find(q => q.question.trim() === questionText);
+          if (questionData) {
+            correctAnswerValue = questionData.correctAnswer.trim();
+            questionComment = questionData.comment;
+          }
+        } else {
+          // Pergunta dinâmica - busca pela opção marcada como correta
+          const correctOpt = optionsContainer.querySelector('.option[data-answer="true"], label[data-answer="true"]');
+          if (correctOpt) {
+            correctAnswerValue = correctOpt.dataset.value?.trim() || correctOpt.textContent.trim();
+            console.log(`✅ Resposta correta encontrada: "${correctAnswerValue}"`);
+          } else {
+            console.log('❌ Nenhuma resposta correta encontrada para pergunta dinâmica');
+          }
+          
+          // Busca comentário no próprio card ou no div comment
+          const commentElement = card.querySelector('.comment');
+          if (commentElement && commentElement.textContent.trim()) {
+            questionComment = commentElement.textContent.trim();
+          }
+        }
+
+        // Processa resposta do usuário e aplica coloração
+        let userAnswer = null;
+        if (userAnswerElement) {
+          userAnswerElement.classList.add('selected');
+          userAnswer = userAnswerElement.dataset.value?.trim() || userAnswerElement.textContent.trim();
+          totalQuestionsAnswered++;
+          totalAnsweredQuestionsByTopic[questionTopic] = (totalAnsweredQuestionsByTopic[questionTopic] || 0) + 1;
+
+          console.log(`👤 Resposta do usuário: "${userAnswer}"`);
+          console.log(`🎯 Resposta correta: "${correctAnswerValue}"`);
+
+          // Verifica se a resposta está correta
+          if (userAnswer === correctAnswerValue) {
+            correctAnswersCount++;
+            console.log(`✅ Resposta correta!`);
+          } else {
+            hasErrors = true;
+            errorCountByTopic[questionTopic] = (errorCountByTopic[questionTopic] || 0) + 1;
+            console.log(`❌ Resposta incorreta para tópico: ${questionTopic}`);
+          }
+        }
+
+        // Aplica coloração: SEMPRE marca a correta de verde, e a errada de vermelho se foi marcada
+        allOptions.forEach(option => {
+          const optionValue = option.dataset.value?.trim() || option.textContent.trim();
+          
+          // Marca a resposta correta de verde SEMPRE
+          if (optionValue === correctAnswerValue) {
+            option.classList.add('correct');
+            console.log(`🟢 Marcando como correta: "${optionValue}"`);
+          }
+          
+          // Se o usuário marcou uma resposta E ela está errada, marca de vermelho
+          if (userAnswer && optionValue === userAnswer && userAnswer !== correctAnswerValue) {
+            option.classList.add('incorrect');
+            console.log(`🔴 Marcando como incorreta: "${optionValue}"`);
+          }
+        });
+
+        // Mostra comentário se disponível
+        if (commentDiv && questionComment) {
+          commentDiv.textContent = questionComment;
+          commentDiv.classList.add('show');
+        }
+      });
+
+      // Exibe resultados
+      resultsContainer.textContent = `Você acertou ${correctAnswersCount} de ${totalQuestionsAnswered} questões respondidas.`;
+
+      console.log('📊 Erros por tópico:', errorCountByTopic);
+      console.log('📊 Total por tópico:', totalAnsweredQuestionsByTopic);
+
+      // Gera diagnóstico de erros
+      if (hasErrors) {
+        for (const topic in errorCountByTopic) {
+          const errors = errorCountByTopic[topic];
+          const total = totalAnsweredQuestionsByTopic[topic] || 0;
+          if (total > 0) {
+            const percent = ((errors / total) * 100).toFixed(1);
+            const li = document.createElement('li');
+            li.textContent = `${topic}: ${percent}% de erros (${errors} de ${total} questões respondidas)`;
+            topicsToReviewList.appendChild(li);
+          }
+        }
+      } else {
+        const li = document.createElement('li');
+        li.textContent = "🥳 Parabéns! Você não teve erros nas questões respondidas.";
+        topicsToReviewList.appendChild(li);
+      }
+
+      errorDiagnosisSection.style.display = 'block';
+      generatedQuestionsSection.style.display = 'block';
+      generateNewQuestionsBtn.style.display = 'block';
+      scrollToDiagnosis();
+    }
+
+    function scrollToQuestion(index) {
+      const questionCard = document.getElementById(`question-${index}`);
+      if (questionCard) {
+        questionCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    function scrollToDiagnosis() {
+        errorDiagnosisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function scrollToGeneratedQuestions() {
+        generatedQuestionsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Event listener para seleção de opções (funciona para estáticas e dinâmicas)
+    document.addEventListener("click", function (event) {
+      const clickedElement = event.target;
+      const optionElement = clickedElement.closest('.option');
+
+      if (optionElement) {
+          if (clickedElement.classList.contains("scissor-icon")) {
+              event.stopPropagation();
+              optionElement.classList.toggle("struck-through");
+          }
+          else {
+              const parentCard = optionElement.closest('.card');
+              const currentQuestionOptions = parentCard.querySelectorAll('.option');
+
+              currentQuestionOptions.forEach(opt => opt.classList.remove("selected"));
+              optionElement.classList.add("selected");
+          }
+      }
+    });
+
+    generateNewQuestionsBtn.addEventListener("click", async function() {
+        statusMessage.textContent = '⏳ Gerando novas perguntas...';
+        generateNewQuestionsBtn.disabled = true;
+
+        const topics = Object.keys(errorCountByTopic).filter(topic => {
+            const errorsInTopic = errorCountByTopic[topic] || 0;
+            const totalAnsweredInTopic = totalAnsweredQuestionsByTopic[topic] || 0;
+            return errorsInTopic > 0 && totalAnsweredInTopic > 0;
+        });
+
+        const topicsToSend = topics.length > 0 ? topics : ["fisiologia celular", "biologia"];
+
+        try {
+            const response = await fetch('https://www.quizia.xyz/quiz', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ topicos: topicsToSend }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            newQuestionsContent.innerHTML = '';
+            if (data && data.html) {
+                console.log('📥 HTML recebido do Flask:', data.html);
+                
+                // Insere o HTML diretamente sem reconstrução complexa
+                newQuestionsContent.innerHTML = data.html.replace(/```html|```/g, '');
+                
+                // Adiciona tesouras e ajusta formatação apenas se necessário
+                newQuestionsContent.querySelectorAll('.card').forEach((card, cardIndex) => {
+                    // Garante que o elemento de pergunta tenha a classe correta
+                    const questionElement = card.querySelector('p');
+                    if (questionElement && !questionElement.classList.contains('question')) {
+                       questionElement.classList.add('question');
+                    }
+
+                    // Remove qualquer input de radio que possa existir e adiciona tesouras
+                    card.querySelectorAll('label').forEach((label) => {
+                        // Remove inputs de radio MAS preserva o atributo data-answer
+                        const radioInput = label.querySelector('input[type="radio"]');
+                        if (radioInput) {
+                            // PRESERVA o atributo data-answer do input no label
+                            if (radioInput.hasAttribute('data-answer')) {
+                                label.setAttribute('data-answer', radioInput.getAttribute('data-answer'));
+                            }
+                            radioInput.remove();
+                        }
+                        
+                        // Garante que tenha a classe option
+                        if (!label.classList.contains('option')) {
+                            label.classList.add('option');
+                        }
+
+                        // Garante que tenha data-value
+                        if (!label.dataset.value) {
+                            label.dataset.value = label.textContent.trim();
+                        }
+
+                        // Adiciona tesoura se não existir
+                        if (!label.querySelector('.scissor-icon')) {
+                            const scissorIcon = document.createElement('img');
+                            scissorIcon.src = 'tesouras.png';
+                            scissorIcon.className = 'scissor-icon';
+                            scissorIcon.onclick = function(e) {
+                                e.stopPropagation();
+                                label.classList.toggle('struck-through');
+                            };
+                            label.insertBefore(scissorIcon, label.firstChild);
+                        }
+                    });
+
+                    console.log(`🏷️ Card ${cardIndex}: data-topic = "${card.dataset.topic}"`);
+                    
+                    // Verifica se há opção correta marcada
+                    const correctOption = card.querySelector('label[data-answer="true"]');
+                    if (correctOption) {
+                        console.log(`✅ Opção correta encontrada: "${correctOption.dataset.value}"`);
+                    } else {
+                        console.log('❌ Nenhuma opção correta encontrada');
+                    }
+                });
+            } else {
+                newQuestionsContent.innerHTML = "<p>Não foi possível gerar novas perguntas para os tópicos selecionados.</p>";
+            }
+            
+            generatedQuestionsSection.style.display = 'block';
+            scrollToGeneratedQuestions();
+            statusMessage.textContent = '✅ Perguntas geradas com sucesso!';
+            setTimeout(() => { statusMessage.textContent = '' }, 3000);
+
+        } catch (error) {
+            console.error('Erro ao gerar novas perguntas:', error);
+            newQuestionsContent.innerHTML = `<p>Erro ao carregar novas perguntas: ${error.message}. Por favor, tente novamente.</p>`;
+            generatedQuestionsSection.style.display = 'block';
+            scrollToGeneratedQuestions();
+            statusMessage.textContent = '❌ Erro na requisição: ' + error.message;
+            setTimeout(() => { statusMessage.textContent = '' }, 5000);
+        } finally {
+            generateNewQuestionsBtn.disabled = false;
+        }
+    });
+
+    // Inicialização
+    buildQuiz();
+    errorDiagnosisSection.style.display = 'none';
+    generatedQuestionsSection.style.display = 'none';
+    generateNewQuestionsBtn.style.display = 'none';
+
+    // Event listener para o botão de verificar respostas
+    document.getElementById("verifyAnswersBtn").addEventListener("click", showResults);
+  </script>
+  <script src="conexao_firebase.js"></script><script src="navegacao.js"></script><script type="module" src="padrao_simulado.js"></script>
+
+</body>
+</html>
