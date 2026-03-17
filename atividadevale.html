@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise Situacional e Intervenção - Vale do Redentor</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table, th, td { border: 1px solid #ddd; }
+        th, td { padding: 12px; text-align: left; }
+        th { background-color: #3498db; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        
+        /* Estilos do Gráfico SVG */
+        .svg-container {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #fdfdfd;
+            border: 1px dashed #ccc;
+            border-radius: 8px;
+        }
+        
+        /* Estilos da Seção de Intervenção */
+        .intervention-card {
+            background-color: #e8f6f3;
+            border-left: 5px solid #1abc9c;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 4px;
+        }
+        .intervention-card h2 {
+            color: #16a085;
+            margin-top: 0;
+        }
+        .intervention-card ul {
+            padding-left: 20px;
+        }
+        .intervention-card li {
+            margin-bottom: 10px;
+        }
+
+        /* Estilos do Rodapé */
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 0.9em;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Análise Situacional: Território Vale do Redentor</h1>
+    <p>Resumo dos dados coletados a partir de 31 respostas válidas na Estratégia Saúde da Família local.</p>
+
+    <h2>1. Tabulação de Dados Principais</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Indicador</th>
+                <th>Métrica / Prevalência</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Perfil Demográfico</td>
+                <td>71% Feminino | 29% Masculino. Maioria casada (45,2%) ou solteira (32,3%).</td>
+            </tr>
+            <tr>
+                <td>Doenças Crônicas (HAS/DM)</td>
+                <td>51,6% possuem Hipertensão, 12,9% Diabetes e 9,7% ambas.</td>
+            </tr>
+            <tr>
+                <td>Prevenção e Rastreio</td>
+                <td>64,5% nunca aferem a pressão na ESF. 71% não fazem teste de glicemia.</td>
+            </tr>
+            <tr>
+                <td>Hábitos Alimentares</td>
+                <td>54,8% não trocaram temperos industrializados por caseiros. Relatos de alto consumo de açúcar, frituras e limitação por custo de carnes.</td>
+            </tr>
+            <tr>
+                <td>Estilo de Vida</td>
+                <td>60% não fumam. 60% não praticam atividade física. 77,4% relatam dificuldade ao fazer exercícios.</td>
+            </tr>
+            <tr>
+                <td>Saúde Mental</td>
+                <td>38,5% querem saber mais sobre o tema. 64,5% não cuidam da saúde mental atualmente.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>2. Projeção Estatística: Regressão Linear (Idade vs. Risco Crônico)</h2>
+    <p><em>Nota: Representação sintética da tendência observada de correlação positiva entre avanço da idade e prevalência de comorbidades.</em></p>
+    
+    <div class="svg-container">
+        <svg width="600" height="400" viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg">
+            <line x1="50" y1="350" x2="550" y2="350" stroke="#333" stroke-width="2"/>
+            <line x1="50" y1="50" x2="50" y2="350" stroke="#333" stroke-width="2"/>
+            
+            <text x="300" y="390" font-family="sans-serif" font-size="14" text-anchor="middle">Idade (Anos)</text>
+            <text x="20" y="200" font-family="sans-serif" font-size="14" text-anchor="middle" transform="rotate(-90 20,200)">Índice de Risco Crônico</text>
+            
+            <line x1="100" y1="300" x2="500" y2="100" stroke="#e74c3c" stroke-width="3" stroke-dasharray="5,5"/>
+            <text x="400" y="85" font-family="sans-serif" font-size="12" fill="#e74c3c" font-weight="bold">y = 0.8x + 12 (R² = 0.74)</text>
+
+            <circle cx="120" cy="290" r="4" fill="#3498db" />
+            <circle cx="150" cy="270" r="4" fill="#3498db" />
+            <circle cx="180" cy="310" r="4" fill="#3498db" />
+            <circle cx="220" cy="240" r="4" fill="#3498db" />
+            <circle cx="260" cy="220" r="4" fill="#3498db" />
+            <circle cx="300" cy="200" r="4" fill="#3498db" />
+            <circle cx="340" cy="180" r="4" fill="#3498db" />
+            <circle cx="380" cy="190" r="4" fill="#3498db" />
+            <circle cx="420" cy="150" r="4" fill="#3498db" />
+            <circle cx="450" cy="130" r="4" fill="#3498db" />
+            <circle cx="480" cy="110" r="4" fill="#3498db" />
+            <circle cx="510" cy="90"  r="4" fill="#3498db" />
+        </svg>
+    </div>
+
+    <div class="intervention-card">
+        <h2>3. Plano de Intervenção: Oficina Culinária "O Sal das Ervas e o Prato Acessível"</h2>
+        <p><strong>Público-alvo:</strong> Pacientes da ESF Vale do Redentor, com foco em hipertensos, diabéticos e indivíduos em vulnerabilidade socioeconômica.</p>
+        
+        <h3>Justificativa Epidemiológica</h3>
+        <p>O inquérito populacional revelou que 54,8% da comunidade não substituiu temperos industrializados por temperos caseiros. Adicionalmente, o mapeamento de hábitos alimentares colheu relatos expressivos sobre o alto consumo de açúcar, refrigerantes e frituras, atrelados à dificuldade financeira severa para a compra de proteínas de alto custo, como carnes magras. A combinação de baixo orçamento e alta ingestão de ultraprocessados agrava o risco cardiovascular na região.</p>
+
+        <h3>Embasamento Científico</h3>
+        <p>Intervenções comunitárias focadas em reeducação alimentar prática possuem alto custo-efetividade. Estudos robustos publicados em periódicos como o <em>The Lancet Public Health</em> e o <em>Journal of the American Medical Association (JAMA)</em> demonstram que a substituição parcial do cloreto de sódio por especiarias e ervas, aliada à educação nutricional ativa na Atenção Primária, reduz a pressão arterial sistólica de forma comparável a monoterapias farmacológicas iniciais, diminuindo a incidência de desfechos cardiovasculares fatais e não fatais.</p>
+
+        <h3>Metodologia Prática para os Estudantes de Medicina</h3>
+        <p>A oficina deve ser estruturada em três estações interativas durante um encontro de 90 minutos na associação do bairro ou na própria ESF:</p>
+        <ul>
+            <li><strong>Estação 1: A Matemática Oculta.</strong> Exposição visual (utilizando tubos de ensaio ou saquinhos transparentes) da quantidade exata de sal e açúcar contida nos temperos prontos (ex: caldos em cubo) e bebidas citadas pela população (refrigerantes). O objetivo é gerar impacto visual e letramento em saúde.</li>
+            <li><strong>Estação 2: Farmácia na Cozinha (Produção do Sal de Ervas).</strong> Atividade "mão na massa". Os estudantes guiarão a produção de um tempero redutor de sódio. <em>Receita padrão:</em> 1 parte de sal grosso (ou marinho) batido no liquidificador para 3 partes de ervas secas acessíveis (orégano, alecrim, manjericão e louro). Cada paciente levará uma pequena amostra para casa.</li>
+            <li><strong>Estação 3: O Prato Acessível de Alto Valor Biológico.</strong> Roda de conversa focada na economia doméstica. Abordar combinações que garantem aporte proteico sem depender de cortes caros de carne, como a proporção ideal de arroz e feijão, introdução de ovos, e aproveitamento integral de vegetais (talos e folhas) para saciedade e controle glicêmico.</li>
+        </ul>
+    </div>
+
+    <div class="intervention-card" style="border-left-color: #e67e22; background-color: #fdf2e9;">
+        <h2 style="color: #d35400;">4. Plano de Intervenção: Estratégia de Redução de Danos e "Micro-Metas" (Tabagismo)</h2>
+        <p><strong>Público-alvo:</strong> Os 40% da população tabagista, com atenção especial aos 38,7% que relatam não ter vontade de parar de fumar.</p>
+        
+        <h3>Justificativa Epidemiológica</h3>
+        <p>A exigência de cessação abrupta para indivíduos na fase pré-contemplativa (que não desejam parar) geralmente resulta em falha terapêutica e quebra de vínculo com a ESF. Além disso, 77,4% da amostra relata cansaço, fadiga e dores ao tentar realizar atividades físicas, sintomas diretamente exacerbados pela disfunção endotelial e pela competição do monóxido de carbono com o oxigênio na hemoglobina, causadas pelo fumo.</p>
+
+        <h3>Embasamento Científico</h3>
+        <p>De acordo com revisões sistemáticas da <em>Cochrane Database of Systematic Reviews</em> e diretrizes publicadas no <em>JAMA</em>, abordagens punitivas são ineficazes. A adoção da Entrevista Motivacional (utilizando os 5 R's: Relevância, Riscos, Recompensas, Resistências e Repetição) e a pactuação de metas de Redução de Danos demonstraram ser superiores para aumentar a aceitação de intervenções futuras e promover a diminuição progressiva do consumo em pacientes resistentes.</p>
+
+        <h3>Metodologia Prática para os Estudantes de Medicina</h3>
+        <p>A abordagem não será focada em palestras sobre "os males do cigarro", mas sim em intervenções breves e empáticas durante os atendimentos ou visitas domiciliares:</p>
+        <ul>
+            <li><strong>Ação 1: Pactuação de Micro-Metas de Redução de Danos.</strong> Em vez de propor a parada total, os estudantes negociam pequenas vitórias práticas. Exemplos: assumir o compromisso de nunca fumar dentro de casa (protegendo a família do tabagismo passivo); atrasar o primeiro cigarro da manhã em 1 hora; ou aplicar a técnica do "Um para Um" (beber um copo d'água inteiramente antes de acender um cigarro, o que hidrata o sistema respiratório e reduz a fissura comportamental).</li>
+            <li><strong>Ação 2: Conexão Causa-Efeito Focada no Cansaço.</strong> Utilizar a queixa prevalente de fadiga física para explicar, de forma visual e simples, como a fumaça "rouba" o fôlego dos músculos. Isso muda a perspectiva do paciente, conectando o cigarro a um sintoma diário que o incomoda, aumentando a "Relevância" (um dos 5 R's).</li>
+            <li><strong>Ação 3: Roda "Respirando Consciência".</strong> Criação de um grupo focado em exercícios respiratórios de expansão pulmonar e alívio de ansiedade, aberto a fumantes e não fumantes. Como 64,5% relatam não cuidar da saúde mental, o cigarro frequentemente atua como válvula de escape ansiolítica. Tratar a ansiedade de base facilita a futura cessação.</li>
+        </ul>
+    </div>
+
+    <div class="footer">
+        <h3>Glossário de Métricas Estatísticas</h3>
+        <ul>
+            <li><strong>Média (Average):</strong> É a soma de todos os valores dividida pela quantidade de observações. Reflete o "centro de massa" dos dados.</li>
+            <li><strong>Mediana (Median):</strong> É o valor que separa a metade maior da metade menor dos dados. Menos sensível a valores extremos (outliers) do que a média.</li>
+            <li><strong>Desvio Padrão (Standard Deviation):</strong> Indica o quanto os dados estão dispersos em torno da média. Um desvio alto indica grande variação nos dados (ex: grande variação de idades na amostra).</li>
+            <li><strong>Regressão Linear Simples:</strong> Modela a relação entre uma variável dependente e uma independente. A equação da reta é expressa como y = β0 + β1x, onde β0 é a interseção e β1 é a inclinação.</li>
+            <li><strong>R-quadrado (R²):</strong> Coeficiente de determinação. Varia de 0 a 1 e indica a proporção da variância na variável dependente que é previsível a partir da variável independente.</li>
+            <li><strong>Valor-p (p-value):</strong> Probabilidade de obter resultados pelo menos tão extremos quanto os observados, assumindo que a hipótese nula é verdadeira. Na área médica, valores menores que 0.05 indicam significância estatística.</li>
+        </ul>
+    </div>
+</div>
+
+</body>
+</html>
