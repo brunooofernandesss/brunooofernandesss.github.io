@@ -58,6 +58,7 @@
   </div>
   
   <button id="btnLogin">Entrar</button>
+  <button id="btnCadastrar" style="width: 100%; padding: 12px; background-color: #27ae60; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 500; cursor: pointer; transition: background-color 0.3s; margin-top: 10px;">Criar Conta Gratuita</button>
 
   <div class="divider">
     <span>ou continue com</span>
@@ -114,7 +115,7 @@
 
 <script type="module">
 import { auth, db, loginGoogle, loginGitHub } from './firebase.js';
-import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 
 const status = document.getElementById("status");
@@ -228,6 +229,23 @@ document.getElementById("btnLogin").addEventListener("click", async () => {
     // O onAuthStateChanged vai capturar o sucesso e verificar o pagamento
   } catch (e) {
     showStatus("❌ Dados inválidos.", "error");
+  }
+});
+
+// FUNÇÃO NOVA: CRIAR CONTA
+document.getElementById("btnCadastrar").addEventListener("click", async () => {
+  const email = document.getElementById("email").value;
+  const senha = document.getElementById("senha").value;
+  if (!email || !senha) return showStatus("Preencha todos os campos para criar conta.", "error");
+  
+  if (senha.length < 6) return showStatus("A senha deve ter pelo menos 6 caracteres.", "error");
+
+  try {
+    showStatus("Criando conta...", "success");
+    await createUserWithEmailAndPassword(auth, email, senha);
+    // Após criar, o onAuthStateChanged entra em ação automaticamente e exibe o Modal!
+  } catch (e) {
+    showStatus("❌ Erro ao criar conta. O e-mail pode já estar em uso.", "error");
   }
 });
 
