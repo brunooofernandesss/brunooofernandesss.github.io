@@ -1327,23 +1327,42 @@
     onAuthStateChanged(auth, async (user) => {
         if (!user) { window.location.href = "login.html"; return; }
         currentUID = user.uid;
-        document.getElementById("headerUserName").textContent = user.email;
+        
+        const emailSeguro = user.email ? user.email.toLowerCase() : "usuario@gratuito.com";
+        const headerName = document.getElementById("headerUserName");
+        if (headerName) headerName.textContent = user.email || "Estudante";
+
         fetch('https://api.ipify.org?format=json')
             .then(r => r.json())
-            .then(d => document.getElementById('headerUserIP').textContent = "IP: " + d.ip)
-            .catch(() => document.getElementById('headerUserIP').textContent = "IP: Detectando...");
+            .then(d => { 
+                const ipEl = document.getElementById('headerUserIP');
+                if (ipEl) ipEl.textContent = "IP: " + d.ip; 
+            })
+            .catch(() => { 
+                const ipEl = document.getElementById('headerUserIP');
+                if (ipEl) ipEl.textContent = "IP: Detectando..."; 
+            });
 
-        const userRef = doc(db, "usuarios", user.email.toLowerCase());
+        const urlParams = new URLSearchParams(window.location.search);
+        const isModoGratis = urlParams.get('modo') === 'gratis';
+
+        const userRef = doc(db, "usuarios", emailSeguro);
         const snap = await getDoc(userRef);
         const isAutorizado = snap.exists() && snap.data().autorizado === true;
 
-        if (!isAutorizado) {
+        if (!isAutorizado || isModoGratis) {
             document.querySelectorAll('.nav-item').forEach(item => {
                 if (item.id !== 'navSimuladosGratuitos') item.style.display = 'none';
             });
-            document.querySelector('.sidebar-goals').style.display = 'none';
-            document.querySelector('.top-bar').style.display = 'none';
-            document.getElementById('navSimuladosGratuitos').click();
+            
+            const metasEl = document.querySelector('.sidebar-goals');
+            if (metasEl) metasEl.style.display = 'none';
+            
+            const topBarEl = document.querySelector('.top-bar');
+            if (topBarEl) topBarEl.style.display = 'none';
+            
+            const btnGratis = document.getElementById('navSimuladosGratuitos');
+            if (btnGratis) btnGratis.click();
         } else {
             loadDataAndInit();
             carregarBiblioteca();
