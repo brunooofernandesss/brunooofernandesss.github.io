@@ -2958,11 +2958,7 @@
 
     // 1. Botão Cronograma
     document.getElementById('navBoard').onclick = () => {
-        document.getElementById('secLib').classList.add('hidden');
-        document.getElementById('secAgenda').classList.add('hidden');
-        document.getElementById('secQuizzes').classList.add('hidden');
-        document.getElementById('secAnatomia').classList.add('hidden');
-        document.getElementById('secSyllabus').classList.add('hidden');
+        ['secLib', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secTutorias', 'secRevisao', 'secSimuladosGratuitos'].forEach(id => { const el = document.getElementById(id); if(el) el.classList.add('hidden'); });
         
         document.getElementById('secBoard').classList.remove('hidden');
 
@@ -2974,11 +2970,7 @@
 
     // 2. Botão Biblioteca
     document.getElementById('navLib').onclick = () => {
-        document.getElementById('secBoard').classList.add('hidden');
-        document.getElementById('secAgenda').classList.add('hidden');
-        document.getElementById('secQuizzes').classList.add('hidden');
-        document.getElementById('secAnatomia').classList.add('hidden');
-        document.getElementById('secSyllabus').classList.add('hidden');
+        ['secBoard', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secTutorias', 'secRevisao', 'secSimuladosGratuitos'].forEach(id => { const el = document.getElementById(id); if(el) el.classList.add('hidden'); });
         
         document.getElementById('secLib').classList.remove('hidden');
 
@@ -2991,11 +2983,7 @@
 
     // 3. Botão Agenda
     document.getElementById('navAgenda').onclick = () => {
-        document.getElementById('secBoard').classList.add('hidden');
-        document.getElementById('secLib').classList.add('hidden');
-        document.getElementById('secQuizzes').classList.add('hidden');
-        document.getElementById('secAnatomia').classList.add('hidden');
-        document.getElementById('secSyllabus').classList.add('hidden');
+        ['secBoard', 'secLib', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secTutorias', 'secRevisao', 'secSimuladosGratuitos'].forEach(id => { const el = document.getElementById(id); if(el) el.classList.add('hidden'); });
         
         document.getElementById('secAgenda').classList.remove('hidden');
         
@@ -3008,11 +2996,7 @@
 
     // 4. Botão Meus Simulados
     document.getElementById('navQuizzes').onclick = () => {
-        document.getElementById('secBoard').classList.add('hidden');
-        document.getElementById('secLib').classList.add('hidden');
-        document.getElementById('secAgenda').classList.add('hidden');
-        document.getElementById('secAnatomia').classList.add('hidden');
-        document.getElementById('secSyllabus').classList.add('hidden');
+        ['secBoard', 'secLib', 'secAgenda', 'secAnatomia', 'secSyllabus', 'secTutorias', 'secRevisao', 'secSimuladosGratuitos'].forEach(id => { const el = document.getElementById(id); if(el) el.classList.add('hidden'); });
         
         document.getElementById('secQuizzes').classList.remove('hidden');
         
@@ -3213,9 +3197,8 @@
     // --- NAVEGAÇÃO PARA ABA QUIZZES ---
     
         document.getElementById('navQuizzes').onclick = () => {
-        document.getElementById('secBoard').classList.add('hidden');
-        document.getElementById('secLib').classList.add('hidden');
-        document.getElementById('secAgenda').classList.add('hidden');
+        ['secBoard', 'secLib', 'secAgenda', 'secAnatomia', 'secSyllabus', 'secTutorias', 'secRevisao', 'secSimuladosGratuitos'].forEach(id => { const el = document.getElementById(id); if(el) el.classList.add('hidden'); });
+        
         document.getElementById('secQuizzes').classList.remove('hidden');
         
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -3227,7 +3210,7 @@
     // --- NAVEGAÇÃO TUTORIAS (NOVO) ---
     document.getElementById('navTutorias').onclick = () => {
         // Esconde todas as outras seções
-        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secRevisao'].forEach(id => {
+        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secRevisao', 'secSimuladosGratuitos'].forEach(id => {
             const el = document.getElementById(id);
             if(el) el.classList.add('hidden');
         });
@@ -3251,7 +3234,7 @@
     // 1. Navegação Anatomia
     document.getElementById('navAnatomia').onclick = () => {
         // Esconde tudo explicitamente para garantir
-        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secSyllabus'].forEach(id => {
+        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secSyllabus', 'secTutorias', 'secRevisao', 'secSimuladosGratuitos'].forEach(id => {
             const el = document.getElementById(id);
             if(el) el.classList.add('hidden');
         });
@@ -3266,7 +3249,7 @@
 
     // Navegação Revisão Espaçada
     document.getElementById('navRevisao').onclick = () => {
-        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secRevisao', 'secSimuladosGratuitos'].forEach(id => {
+        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secTutorias', 'secSimuladosGratuitos'].forEach(id => {
             const el = document.getElementById(id);
             if(el) el.classList.add('hidden');
         });
@@ -3279,7 +3262,7 @@
 
     // Navegação Simulados Gratuitos
     document.getElementById('navSimuladosGratuitos').onclick = () => {
-        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secRevisao', 'secSimuladosGratuitos'].forEach(id => {
+        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secTutorias', 'secRevisao'].forEach(id => {
             const el = document.getElementById(id);
             if(el) el.classList.add('hidden');
         });
@@ -3294,7 +3277,8 @@
         const container = document.getElementById('listaSimuladosGratuitos');
         container.innerHTML = '<div style="padding:20px; color:#666;"><i class="fas fa-spinner fa-spin"></i> Carregando simulados...</div>';
         try {
-            const q = query(collection(db, "simulados_gratuitos"));
+            const adminUID = "7MYF7qB7hCWDlk3BTJV0Acnnwfr1"; 
+            const q = query(collection(db, "planners", adminUID, "quizzes"));
             const snap = await getDocs(q);
             container.innerHTML = '';
             
@@ -3898,9 +3882,10 @@
 
     // 1. Navegação Matriz
     document.getElementById('navSyllabus').onclick = () => {
-        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia'].forEach(id => 
-            document.getElementById(id).classList.add('hidden')
-        );
+        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secTutorias', 'secRevisao', 'secSimuladosGratuitos'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.classList.add('hidden');
+        });
         document.getElementById('secSyllabus').classList.remove('hidden');
         
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
