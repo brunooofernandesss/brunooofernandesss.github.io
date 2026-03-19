@@ -148,9 +148,8 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById('modalAssinatura').style.display = 'flex';
 
 // 🔥 LIBERA ACESSO GRATUITO AUTOMÁTICO
-setTimeout(() => {
-    window.location.href = "planner.html?modo=gratis";
-}, 1500);
+// apenas mostra o modal
+document.getElementById('modalAssinatura').style.display = 'flex';
       }
     } catch (error) {
       console.warn("Forçando modo gratuito após erro.");
