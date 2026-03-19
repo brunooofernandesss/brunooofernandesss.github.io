@@ -224,38 +224,8 @@ window.sairDaConta = async () => {
 };
 
 // ============================================
-// 3. LOGIN BOTÕES (PADRÃO)
+// 3. LOGIN BOTÕES (GOOGLE E GITHUB)
 // ============================================
-document.getElementById("btnLogin").addEventListener("click", async () => {
-  const email = document.getElementById("email").value;
-  const senha = document.getElementById("senha").value;
-  if (!email || !senha) return showStatus("Preencha todos os campos.", "error");
-  
-  try {
-    showStatus("Autenticando...", "success");
-    await signInWithEmailAndPassword(auth, email, senha);
-    // O onAuthStateChanged vai capturar o sucesso e verificar o pagamento
-  } catch (e) {
-    showStatus("❌ Dados inválidos.", "error");
-  }
-});
-
-// FUNÇÃO NOVA: CRIAR CONTA
-document.getElementById("btnCadastrar").addEventListener("click", async () => {
-  const email = document.getElementById("email").value;
-  const senha = document.getElementById("senha").value;
-  if (!email || !senha) return showStatus("Preencha todos os campos para criar conta.", "error");
-  
-  if (senha.length < 6) return showStatus("A senha deve ter pelo menos 6 caracteres.", "error");
-
-  try {
-    showStatus("Criando conta...", "success");
-    await createUserWithEmailAndPassword(auth, email, senha);
-    // Após criar, o onAuthStateChanged entra em ação automaticamente e exibe o Modal!
-  } catch (e) {
-    showStatus("❌ Erro ao criar conta. O e-mail pode já estar em uso.", "error");
-  }
-});
 
 document.getElementById("btnGoogle").addEventListener("click", async () => {
   try {
