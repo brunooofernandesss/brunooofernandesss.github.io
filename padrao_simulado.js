@@ -208,7 +208,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const quizContainer = document.querySelector('.quiz-container');
     const title = quizContainer ? quizContainer.querySelector('h1') : null;
     
-    /* if (quizContainer) {
+    /* COMENTADO PARA NÃO HAVER FUGA DO USUÁRIO GRATUITO
+    if (quizContainer) {
         const tagsHTML = `
             <div class="nav-tags">
                 <a href="index.html" class="nav-tag active">Simulados</a>
