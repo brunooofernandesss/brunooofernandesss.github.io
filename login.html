@@ -130,8 +130,8 @@ function showStatus(message, type) {
 // ============================================
 onAuthStateChanged(auth, async (user) => {
   if (user) {
-    currentUserEmail = user.email; // Guarda email para o pagamento
-    document.getElementById("modalUserEmail").textContent = user.displayName || user.email;
+    currentUserEmail = user.email || "anonimo@gratuito.com";
+    document.getElementById("modalUserEmail").textContent = user.displayName || user.email || "Estudante";
     
     try {
       showStatus("Verificando assinatura...", "success");
@@ -148,8 +148,9 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById('modalAssinatura').style.display = 'flex';
       }
     } catch (error) {
-      console.error(error);
-      showStatus("Erro ao verificar conta.", "error");
+      console.warn("Forçando modo gratuito após erro.");
+      // Se a verificação falhar, assume gratuito e mostra o modal
+      document.getElementById('modalAssinatura').style.display = 'flex';
     }
   }
 });
@@ -157,24 +158,25 @@ onAuthStateChanged(auth, async (user) => {
 async function checkFirestorePermission(user) {
   if (!user || !user.email) return false; 
 
-  const email = user.email.toLowerCase();
-  const userRef = doc(db, "usuarios", email);
-  const snap = await getDoc(userRef);
+  try {
+    const email = user.email.toLowerCase();
+    const userRef = doc(db, "usuarios", email);
+    const snap = await getDoc(userRef);
 
-  // Se o documento NÃO existe (é a primeira vez da pessoa logando com Google)
-  if (!snap.exists()) {
-    // Ela entra no sistema (foi cadastrada no Auth), mas não tem acesso pago.
-    // Retornamos false para que o Modal de Assinatura/Acesso Gratuito apareça.
-    return false; 
+    if (!snap.exists()) {
+      return false; 
+    }
+
+    if (snap.data().autorizado === true) {
+      return true;
+    }
+
+    return false;
+  } catch (e) {
+    // Evita que o erro de permissão do Firebase trave a tela
+    console.warn("Acesso ao banco negado. Tratando como perfil gratuito.");
+    return false;
   }
-
-  // Se o documento existe, verifica se a pessoa está marcada como autorizada (pagou)
-  if (snap.data().autorizado === true) {
-    return true;
-  }
-
-  // Se o documento existe mas 'autorizado' for false ou não existir
-  return false;
 }
 
 // ============================================
