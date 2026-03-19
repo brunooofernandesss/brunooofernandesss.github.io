@@ -146,6 +146,11 @@ onAuthStateChanged(auth, async (user) => {
         // Não fazemos mais signOut automático. Mostramos o Modal.
         showStatus("⚠️ Assinatura pendente.", "error");
         document.getElementById('modalAssinatura').style.display = 'flex';
+
+// 🔥 LIBERA ACESSO GRATUITO AUTOMÁTICO
+setTimeout(() => {
+    window.location.href = "planner.html?modo=gratis";
+}, 1500);
       }
     } catch (error) {
       console.warn("Forçando modo gratuito após erro.");
