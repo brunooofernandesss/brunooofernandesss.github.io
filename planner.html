@@ -12,6 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
 
 
@@ -461,11 +462,14 @@
             <div style="padding: 15px; border-top: 1px solid #eee; display:flex; justify-content: space-between;">
                  <div style="display:flex; gap:10px;">
                      <button class="btn-action" id="btnEditarNota">Editar Texto</button>
-                     <button class="btn-action" onclick="window.abrirCorretor()" style="color:#e67e22; border-color:#fadbd8; background:#fffbf0;">
-                        <i class="fas fa-highlighter"></i> Corretor Feynman
-                     </button>
-                 </div>
-                 <button class="btn-action" id="btnExcluirEstudo" style="color:#d44c47; border-color: #ffe2dd; background: #fff5f5;">
+                 <button class="btn-action" onclick="window.abrirCorretor()" style="color:#e67e22; border-color:#fadbd8; background:#fffbf0;">
+                    <i class="fas fa-highlighter"></i> Corretor Feynman
+                 </button>
+                 <button class="btn-action" onclick="window.exportarParaPDF()" style="color:#d44c47; border-color:#ffe2dd; background:#fff5f5;" title="Salvar como Arquivo PDF">
+                    <i class="fas fa-file-pdf"></i> Exportar PDF
+                 </button>
+             </div>
+             <button class="btn-action" id="btnExcluirEstudo" style="color:#d44c47; border-color: #ffe2dd; background: #fff5f5;">
                     <i class="fas fa-trash"></i> Excluir Estudo
                  </button>
             </div>
@@ -767,6 +771,7 @@
             <div class="nav-item" id="navSyllabus"><i class="fas fa-th-list"></i> Matriz Curricular</div>
             <div class="nav-item" onclick="window.abrirCadernoErros()" style="color: #d44c47; font-weight: 500;"><i class="fas fa-book-dead"></i> Caderno de Erros</div>
             <div class="nav-item" id="navRevisao" style="color: #8e44ad; font-weight: 500;"><i class="fas fa-history"></i> Revisão Espaçada</div>
+            <div class="nav-item" id="navSimuladosGratuitos" style="color: #27ae60; font-weight: 500;"><i class="fas fa-gift"></i> Simulados Gratuitos</div>
 
         </nav>
 
@@ -853,7 +858,12 @@
             </section>
 
             <section id="secLib" class="hidden">
-                <h1 class="page-title" style="margin-bottom: 20px;">Biblioteca de Materiais</h1>
+                <div class="header-actions">
+                    <h1 class="page-title">Biblioteca de Materiais</h1>
+                    <button class="btn-action" style="background:#d44c47; color:white; border:none;" onclick="window.exportarTodaBibliotecaPDF()">
+                        <i class="fas fa-file-pdf"></i> Exportar Tudo para PDF
+                    </button>
+                </div>
                 <div style="background: white; border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden;">
                     <table style="width:100%; border-collapse:collapse; font-size:14px;">
                         <thead style="background: #f9f9f9; border-bottom: 1px solid var(--border-color);">
@@ -1041,6 +1051,17 @@
                 </div>
             </section>
 
+            <section id="secSimuladosGratuitos" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+                <div class="header-actions">
+                    <h1 class="page-title">Simulados Gratuitos</h1>
+                </div>
+                <div style="background: white; border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden; padding: 30px; text-align: center;">
+                    <h3 style="color: #27ae60; margin-bottom: 15px; font-size: 24px;"><i class="fas fa-gift"></i> Área Gratuita</h3>
+                    <p style="color: #666; margin-bottom: 30px;">Aqui você tem acesso a simulados liberados gratuitamente para todos os usuários.</p>
+                    <div id="listaSimuladosGratuitos" style="display: flex; flex-direction: column; gap: 15px; max-width: 700px; margin: 0 auto;">
+                    </div>
+                </div>
+            </section>
             
         </div>
     </main>
@@ -1303,7 +1324,7 @@
     }
     // ------------------------------------------------
 
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
         if (!user) { window.location.href = "login.html"; return; }
         currentUID = user.uid;
         document.getElementById("headerUserName").textContent = user.email;
@@ -1312,8 +1333,23 @@
             .then(d => document.getElementById('headerUserIP').textContent = "IP: " + d.ip)
             .catch(() => document.getElementById('headerUserIP').textContent = "IP: Detectando...");
 
-        loadDataAndInit();
-        carregarBiblioteca();
+        const userRef = doc(db, "usuarios", user.email.toLowerCase());
+        const snap = await getDoc(userRef);
+        const isAutorizado = snap.exists() && snap.data().autorizado === true;
+
+        if (!isAutorizado) {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                if (item.id !== 'navSimuladosGratuitos') item.style.display = 'none';
+            });
+            document.querySelector('.sidebar-goals').style.display = 'none';
+            document.querySelector('.top-bar').style.display = 'none';
+            document.getElementById('navSimuladosGratuitos').click();
+        } else {
+            loadDataAndInit();
+            carregarBiblioteca();
+        }
+        
+        carregarSimuladosGratuitos();
     });
 
         async function loadDataAndInit() {
@@ -3230,7 +3266,7 @@
 
     // Navegação Revisão Espaçada
     document.getElementById('navRevisao').onclick = () => {
-        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secRevisao'].forEach(id => {
+        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secRevisao', 'secSimuladosGratuitos'].forEach(id => {
             const el = document.getElementById(id);
             if(el) el.classList.add('hidden');
         });
@@ -3240,6 +3276,56 @@
         document.getElementById('navRevisao').classList.add('active');
         window.toggleTopBarElements(false);
     };
+
+    // Navegação Simulados Gratuitos
+    document.getElementById('navSimuladosGratuitos').onclick = () => {
+        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secRevisao', 'secSimuladosGratuitos'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.classList.add('hidden');
+        });
+        document.getElementById('secSimuladosGratuitos').classList.remove('hidden');
+        
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('navSimuladosGratuitos').classList.add('active');
+        window.toggleTopBarElements(false);
+    };
+
+    async function carregarSimuladosGratuitos() {
+        const container = document.getElementById('listaSimuladosGratuitos');
+        container.innerHTML = '<div style="padding:20px; color:#666;"><i class="fas fa-spinner fa-spin"></i> Carregando simulados...</div>';
+        try {
+            const q = query(collection(db, "simulados_gratuitos"));
+            const snap = await getDocs(q);
+            container.innerHTML = '';
+            
+            if (snap.empty) {
+                container.innerHTML = '<p style="color: #999;">Nenhum simulado gratuito disponível no momento.</p>';
+                return;
+            }
+            
+            snap.forEach(docSnap => {
+                const data = docSnap.data();
+                const div = document.createElement('div');
+                div.style.cssText = "padding: 15px 25px; border: 1px solid #ddd; border-left: 5px solid #27ae60; border-radius: 8px; background: #fdfdfd; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: 0.2s;";
+                div.onmouseover = () => div.style.boxShadow = "0 4px 8px rgba(0,0,0,0.05)";
+                div.onmouseout = () => div.style.boxShadow = "0 2px 4px rgba(0,0,0,0.02)";
+                
+                div.innerHTML = `
+                    <div style="display: flex; flex-direction: column; text-align: left;">
+                        <span style="font-weight: 700; color: #333; font-size: 15px;">${data.titulo}</span>
+                        <span style="font-size: 11px; color: #888; margin-top: 4px;"><i class="fas fa-lock-open"></i> Acesso Liberado</span>
+                    </div>
+                    <button class="btn-action btn-primary" style="background: #27ae60; border: none; padding: 10px 20px;" onclick="window.abrirQuizPlayer('${data.titulo.replace(/'/g, "\\'")}', '${data.html.replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, '')}')">
+                        <i class="fas fa-play"></i> Fazer Simulado
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+        } catch (e) {
+            console.error(e);
+            container.innerHTML = '<p style="color: #d44c47;">Erro ao carregar simulados.</p>';
+        }
+    }
 
     // 2. Lógica do Jogo (Versão Blindada v3)
     window.gerarNovoDesafioAnatomia = async () => {
@@ -4230,6 +4316,181 @@
     };
 
   
+    // ============================================================
+    // 🖨️ EXPORTAR PARA PDF
+    // ============================================================
+    window.exportarParaPDF = () => {
+        const title = document.getElementById('viewTitle').textContent || 'Resumo';
+        
+        // Aponta direto para o conteúdo interno para driblar o overflow:hidden do layout
+        const element = document.querySelector('#viewContainer .ql-editor');
+        
+        if (!element) {
+            return window.showFeedback("Nenhum texto encontrado para exportar.", false);
+        }
+        
+        // Configurações avançadas com correção de quebra de página
+        const opt = {
+            margin:       15,
+            filename:     `${title}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true, scrollY: 0 }, 
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } // Força a quebra inteligente de páginas
+        };
+
+        window.showFeedback("Gerando arquivo PDF...", true);
+        
+        // Gera o PDF e faz o download
+        html2pdf().set(opt).from(element).save().then(() => {
+            window.showFeedback("PDF gerado com sucesso!", false);
+        }).catch(err => {
+            console.error("Erro ao gerar PDF:", err);
+            window.showFeedback("Erro ao exportar PDF.", false);
+        });
+    };
+
+    // ============================================================
+    // 🖨️ EXPORTAR TODA A BIBLIOTECA PARA PDF (NOVA GUIA)
+    // ============================================================
+    window.exportarTodaBibliotecaPDF = async () => {
+        if (!currentUID) return alert("Usuário não autenticado.");
+        
+        window.showFeedback("Preparando caderno completo...", true);
+
+        try {
+            const snap = await getDocs(query(collection(db, "planners", currentUID, "arquivos"), orderBy("data", "asc")));
+            
+            let conteudoTotal = "";
+            let contador = 0;
+
+            snap.forEach(doc => {
+                const file = doc.data();
+                if (file.tipo === 'texto' && file.contentHTML) {
+                    const conteudoLimpo = file.contentHTML.replace(/<img[^>]+src="data:image[^">]+"[^>]*>/gi, '');
+                    
+                    // Envolvemos no ql-snow e ql-editor para puxar a formatação perfeita do Quill
+                    conteudoTotal += `
+                        <div class="aula-container">
+                            <h2 class="aula-titulo">${file.nome}</h2>
+                            <div class="ql-snow" style="border: none;">
+                                <div class="ql-editor" style="padding: 0;">
+                                    ${conteudoLimpo}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    contador++;
+                }
+            });
+
+            if (contador === 0) return window.showFeedback("Nenhum resumo de texto encontrado.", false);
+
+            // Abre uma aba limpa para montar o PDF
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) {
+                alert("⚠️ O navegador bloqueou o pop-up. Por favor, permita pop-ups para este site para gerar o PDF.");
+                return window.showFeedback("Erro: Pop-up bloqueado.", false);
+            }
+
+            // Escreve o documento HTML perfeitamente formatado para impressão
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html lang="pt-br">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Caderno de Resumos - UNIP</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+                    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+                    
+                    <style>
+                        /* Regras Mágicas de Impressão */
+                        body {
+                            font-family: 'Inter', sans-serif;
+                            background: white;
+                            color: #333;
+                            margin: 0;
+                            padding: 0;
+                        }
+                        
+                        .capa {
+                            height: 100vh;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                            text-align: center;
+                            page-break-after: always;
+                        }
+                        
+                        .aula-container {
+                            page-break-before: always;
+                            padding-top: 20px;
+                        }
+                        
+                        .aula-titulo {
+                            text-align: center;
+                            margin-bottom: 20px;
+                            color: #2383e2;
+                            border-bottom: 2px solid #eee;
+                            padding-bottom: 10px;
+                            font-size: 24px;
+                        }
+
+                        /* Blindagem contra distorção de imagens e tabelas */
+                        .ql-editor img {
+                            max-width: 100% !important;
+                            height: auto !important;
+                            page-break-inside: avoid;
+                            display: block;
+                            margin: 15px auto;
+                            border-radius: 8px;
+                        }
+                        
+                        table, .table-wrapper { page-break-inside: avoid; width: 100%; border-collapse: collapse; }
+                        tr { page-break-inside: avoid; page-break-after: auto; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        
+                        /* Limpa as URLs que os navegadores colocam do lado dos links na impressão */
+                        a[href]:after { content: none !important; }
+
+                        @media print {
+                            @page { margin: 20mm; }
+                            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                            .capa { height: 100vh !important; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="capa">
+                        <h1 style="font-size: 45px; color: #2383e2; margin-bottom: 10px;">Caderno de Resumos</h1>
+                        <h2 style="font-size: 24px; color: #555;">Medicina UNIP</h2>
+                        <p style="color: #888; margin-top: 30px; font-weight: bold;">Total de Assuntos: ${contador}</p>
+                        <p style="color: #888; font-size: 14px;">Gerado em: ${new Date().toLocaleDateString('pt-BR')}</p>
+                    </div>
+                    
+                    ${conteudoTotal}
+
+                    <script>
+                        // Aguarda 1.5s para garantir que o CSS e as imagens da nuvem carregaram
+                        window.onload = () => {
+                            setTimeout(() => {
+                                window.print();
+                            }, 1500);
+                        };
+                    <\\/script> </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+            window.showFeedback("Documento aberto em nova aba!", false);
+
+        } catch (e) {
+            console.error("Erro ao gerar PDF completo:", e);
+            window.showFeedback("Erro ao processar as aulas.", false);
+        }
+    };
+
     // ============================================================
     // 📝 CORRETOR DE RESUMOS (FEYNMAN)
     // ============================================================
