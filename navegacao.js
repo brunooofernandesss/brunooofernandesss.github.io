@@ -3,6 +3,56 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 🛑 1. PROTEÇÃO DA HOME (Não roda no index)
     if (document.getElementById('cardsContainer')) return;
 
+    // 🔒 ================= PROTEÇÃO DE ACESSO =================
+    
+    // 🔒 ================= PROTEÇÃO DE ACESSO =================
+const paginaAtual = window.location.pathname.split('/').pop();
+
+// 🎁 páginas que gratuito pode acessar
+const paginasGratuitas = [
+    "planner.html",
+    "simulados-gratis.html"
+];
+
+import { auth, db } from './firebase.js';
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+
+onAuthStateChanged(auth, async (user) => {
+
+    if (!user) {
+        window.location.replace("login.html");
+        return;
+    }
+
+    try {
+        const email = user.email.toLowerCase();
+        const userRef = doc(db, "usuarios", email);
+        const snap = await getDoc(userRef);
+
+        const isPremium = snap.exists() && snap.data().autorizado === true;
+        const isFreePage = paginasGratuitas.includes(paginaAtual);
+
+        // 🎁 GRATUITO pode acessar páginas gratuitas
+        if (!isPremium && isFreePage) {
+            console.log("Modo gratuito liberado");
+            return;
+        }
+
+        // 🔒 GRATUITO tentando acessar premium → BLOQUEIA
+        if (!isPremium && !isFreePage) {
+            window.location.replace("login.html");
+            return;
+        }
+
+        // ✅ PREMIUM → segue normal
+
+    } catch (e) {
+        console.error(e);
+        window.location.replace("login.html");
+    }
+});
+
     // --- VARIÁVEIS GERAIS ---
     const pathAtual = decodeURIComponent(window.location.pathname.split('/').pop());
     const storageKey = 'progresso_maximo_' + pathAtual;
