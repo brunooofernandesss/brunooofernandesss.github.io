@@ -1346,9 +1346,16 @@
         const urlParams = new URLSearchParams(window.location.search);
         const isModoGratis = urlParams.get('modo') === 'gratis';
 
-        const userRef = doc(db, "usuarios", emailSeguro);
-        const snap = await getDoc(userRef);
-        const isAutorizado = snap.exists() && snap.data().autorizado === true;
+        let isAutorizado = false;
+        try {
+            // Se o Firebase bloquear a leitura por falta de permissão, o "catch" assume.
+            const userRef = doc(db, "usuarios", emailSeguro);
+            const snap = await getDoc(userRef);
+            isAutorizado = snap.exists() && snap.data().autorizado === true;
+        } catch (errorDb) {
+            console.warn("Perfil sem acesso de leitura no Firebase. Forçando visualização restrita.");
+            isAutorizado = false;
+        }
 
         if (!isAutorizado || isModoGratis) {
             document.querySelectorAll('.nav-item').forEach(item => {
@@ -1368,6 +1375,7 @@
             carregarBiblioteca();
         }
         
+        // Esta linha é quem efetivamente busca e desenha os simulados:
         carregarSimuladosGratuitos();
     });
 
