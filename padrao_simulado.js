@@ -204,11 +204,11 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Tags
+    // Tags (DESATIVADO PARA EVITAR CONFLITO NO PLANNER)
     const quizContainer = document.querySelector('.quiz-container');
     const title = quizContainer ? quizContainer.querySelector('h1') : null;
     
-    if (quizContainer) {
+    /* if (quizContainer) {
         const tagsHTML = `
             <div class="nav-tags">
                 <a href="index.html" class="nav-tag active">Simulados</a>
@@ -219,6 +219,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (title) title.insertAdjacentHTML('beforebegin', tagsHTML);
         else quizContainer.insertAdjacentHTML('afterbegin', tagsHTML);
     }
+    */
 });
 
 // 4. AUTH
