@@ -50,18 +50,17 @@
     <p>Bem-vindo de volta! Acesse sua conta.</p>
   </div>
   
-  <div class="input-group">
+  <div class="input-group" style="display:none;">
     <input id="email" placeholder="Seu email" type="email">
   </div>
-  <div class="input-group">
+  <div class="input-group" style="display:none;">
     <input id="senha" placeholder="Sua senha" type="password">
   </div>
   
-  <button id="btnLogin">Entrar</button>
-  <button id="btnCadastrar" style="width: 100%; padding: 12px; background-color: #27ae60; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 500; cursor: pointer; transition: background-color 0.3s; margin-top: 10px;">Criar Conta Gratuita</button>
+  <button id="btnLogin" style="display:none;">Entrar</button>
 
-  <div class="divider">
-    <span>ou continue com</span>
+  <div class="divider" style="margin-top: 0;">
+    <span>Acesse usando sua conta</span>
   </div>
   
   <div class="social-login">
@@ -160,11 +159,20 @@ async function checkFirestorePermission(user) {
   const userRef = doc(db, "usuarios", email);
   const snap = await getDoc(userRef);
 
-  // Verifica se o documento existe E se autorizado é true
-  if (!snap.exists() || snap.data().autorizado !== true) {
-    return false;
+  // Se o documento NÃO existe (é a primeira vez da pessoa logando com Google)
+  if (!snap.exists()) {
+    // Ela entra no sistema (foi cadastrada no Auth), mas não tem acesso pago.
+    // Retornamos false para que o Modal de Assinatura/Acesso Gratuito apareça.
+    return false; 
   }
-  return true;
+
+  // Se o documento existe, verifica se a pessoa está marcada como autorizada (pagou)
+  if (snap.data().autorizado === true) {
+    return true;
+  }
+
+  // Se o documento existe mas 'autorizado' for false ou não existir
+  return false;
 }
 
 // ============================================
