@@ -861,13 +861,15 @@
                 <div class="header-actions">
                     <h1 class="page-title">Biblioteca de Materiais</h1>
                     <button class="btn-action" style="background:#d44c47; color:white; border:none;" onclick="window.exportarTodaBibliotecaPDF()">
-                        <i class="fas fa-file-pdf"></i> Exportar Tudo para PDF
+                        <i class="fas fa-file-pdf"></i> Exportar Selecionados
                     </button>
+
                 </div>
                 <div style="background: white; border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden;">
                     <table style="width:100%; border-collapse:collapse; font-size:14px;">
                         <thead style="background: #f9f9f9; border-bottom: 1px solid var(--border-color);">
                             <tr style="text-align:left; color: #777;">
+                                <th style="padding:12px; width: 40px;"><input type="checkbox" id="checkAllLib" onclick="window.toggleAllLib(this.checked)" style="transform: scale(1.2); cursor: pointer;"></th>
                                 <th style="padding:12px;">Arquivo / Assunto</th>
                                 <th style="padding:12px;">Matéria</th>
                                 <th style="padding:12px;">Data Upload</th>
@@ -1962,6 +1964,7 @@
             const conteudoLimpo = f.tipo === 'texto' ? (f.contentHTML || '').replace(/'/g, '').replace(/"/g, '').replace(/\n/g, ' ') : '';
             
             tr.innerHTML = `
+                <td style="padding:12px;"><input type="checkbox" class="chk-lib-item" value="${d.id}" style="transform: scale(1.2); cursor: pointer;"></td>
                 <td style="padding:12px;">${icon} ${f.nome}</td>
                 <td style="padding:12px;"><span class="tag-pill" style="background:#f0f0f0; color:#555">${f.tag}</span></td>
                 <td style="padding:12px; color:#999;">${date}</td>
@@ -1974,6 +1977,8 @@
                     </button>
                 </td>
             `;
+
+
             tbody.appendChild(tr);
             document.getElementById(`btn-view-${d.id}`).onclick = () => abrirArquivoBiblioteca(f);
         });
@@ -4365,10 +4370,17 @@
     // ============================================================
     // 🖨️ EXPORTAR TODA A BIBLIOTECA PARA PDF (NOVA GUIA)
     // ============================================================
+    window.toggleAllLib = (checked) => {
+        document.querySelectorAll('.chk-lib-item').forEach(chk => chk.checked = checked);
+    };
+
     window.exportarTodaBibliotecaPDF = async () => {
         if (!currentUID) return alert("Usuário não autenticado.");
         
-        window.showFeedback("Preparando caderno completo...", true);
+        const selecionados = Array.from(document.querySelectorAll('.chk-lib-item:checked')).map(c => c.value);
+        if (selecionados.length === 0) return alert("Por favor, selecione pelo menos uma aula para exportar.");
+
+        window.showFeedback("Preparando caderno selecionado...", true);
 
         try {
             const snap = await getDocs(query(collection(db, "planners", currentUID, "arquivos"), orderBy("data", "asc")));
@@ -4378,7 +4390,7 @@
 
             snap.forEach(doc => {
                 const file = doc.data();
-                if (file.tipo === 'texto' && file.contentHTML) {
+                if (selecionados.includes(doc.id) && file.tipo === 'texto' && file.contentHTML) {
                     const conteudoLimpo = file.contentHTML.replace(/<img[^>]+src="data:image[^">]+"[^>]*>/gi, '');
                     
                     // Envolvemos no ql-snow e ql-editor para puxar a formatação perfeita do Quill
