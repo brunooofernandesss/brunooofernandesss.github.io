@@ -1638,35 +1638,61 @@
     
         
     // --- NOVO RENDERIZADOR DE TUTORIAS (COLE AQUI) ---
-    function renderTutoriasBoard() {
+    // --- LÓGICA ATUALIZADA DE TUTORIAS (LAZY LOADING) ---
+    async function carregarTutorias() {
+        if (!currentUID) return;
         const grid = document.getElementById('tutoriasGrid');
-        if (!grid) return; // Segurança caso o elemento não exista
-        grid.innerHTML = '';
-        
-        // Filtra pela propriedade isTutoria (independente do nome)
-        const tutorias = allTasksCache.filter(t => t.isTutoria === true);
+        if (!grid) return;
+        grid.innerHTML = '<div style="color:#999; grid-column: 1/-1; text-align:center; padding:40px;"><i class="fas fa-spinner fa-spin"></i> Buscando tutorias...</div>';
 
-        if (tutorias.length === 0) {
+        try {
+            const q = query(collection(db, "planners", currentUID, "tasks"), where("isTutoria", "==", true));
+            const snap = await getDocs(q);
+            let tutorias = [];
+            snap.forEach(d => tutorias.push({ id: d.id, ...d.data() }));
+
+            tutorias.sort((a, b) => {
+                const tA = a.criadoEm ? a.criadoEm.seconds : 0;
+                const tB = b.criadoEm ? b.criadoEm.seconds : 0;
+                return tB - tA; // Mais recentes primeiro
+            });
+
+            renderTutoriasBoard(tutorias);
+        } catch (e) {
+            console.error(e);
+            grid.innerHTML = '<div style="color:#d44c47; grid-column: 1/-1; text-align:center; padding:40px;">Erro ao carregar tutorias.</div>';
+        }
+    }
+
+    window.toggleConcluidoTutoria = async (id, status) => {
+        await updateDoc(doc(db, "planners", currentUID, "tasks", id), { concluido: status });
+        carregarTutorias(); // Atualiza a tela após marcar
+    };
+
+    function renderTutoriasBoard(tutorias) {
+        const grid = document.getElementById('tutoriasGrid');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        if (!tutorias || tutorias.length === 0) {
             grid.innerHTML = '<div style="color:#999; grid-column: 1/-1; text-align:center; padding:40px;">Nenhuma tutoria cadastrada.</div>';
             return;
         }
 
         tutorias.forEach(t => {
-            // Mostra o título exatamente como você escreveu (sem tentar limpar prefixo)
-            const tituloLimpo = t.titulo; 
+            const tituloLimpo = t.titulo;
             const dataCriacao = t.criadoEm ? new Date(t.criadoEm.seconds * 1000).toLocaleDateString('pt-BR') : 'Data desc.';
 
             const card = document.createElement('div');
             card.className = 'tutoria-card';
-            card.onclick = () => window.abrirItem(t.id); // Reusa a função de abrir existente
-            
-            // Lógica visual do botão de concluído
-            const btnStyle = t.concluido 
-                ? 'background:#dbeddb; color:#448361; border:1px solid #448361;' 
+            card.onclick = () => window.abrirItem(t.id);
+
+            const btnStyle = t.concluido
+                ? 'background:#dbeddb; color:#448361; border:1px solid #448361;'
                 : 'background:white; color:#555; border:1px solid #ddd;';
 
-            const btnIcon = t.concluido 
-                ? '<i class="fas fa-check"></i> Concluído' 
+            const btnIcon = t.concluido
+                ? '<i class="fas fa-check"></i> Concluído'
                 : '<i class="far fa-square"></i> Aberto';
 
             card.innerHTML = `
@@ -1676,7 +1702,7 @@
                     <i class="far fa-calendar-alt"></i> Criado em: ${dataCriacao}
                 </div>
                 <div style="margin-top:15px; border-top:1px solid #eee; padding-top:10px; display:flex; justify-content:flex-end;">
-                    <button class="btn-action" onclick="event.stopPropagation(); window.toggleConcluido('${t.id}', !${t.concluido})" 
+                    <button class="btn-action" onclick="event.stopPropagation(); window.toggleConcluidoTutoria('${t.id}', !${t.concluido})"
                         style="padding:5px 12px; font-size:12px; border-radius:20px; ${btnStyle}">
                         ${btnIcon}
                     </button>
@@ -1904,7 +1930,7 @@
                 
                 // Se a aba de tutorias estiver visível, atualiza ela
                 if(!document.getElementById('secTutorias').classList.contains('hidden')) {
-                    if(typeof renderTutoriasBoard === 'function') renderTutoriasBoard();
+                    if(typeof carregarTutorias === 'function') carregarTutorias();
                 }
             }
 
@@ -3227,7 +3253,7 @@
         document.getElementById('navTutorias').classList.add('active');
         
         // Renderiza e esconde barra superior
-        renderTutoriasBoard();
+        carregarTutorias();
         window.toggleTopBarElements(false);
     };
    
@@ -3901,54 +3927,63 @@
 
 
     // 2. Renderizar a Tabela Inteligente
-    function renderSyllabus() {
+    async function renderSyllabus() {
         const container = document.getElementById('syllabusContainer');
-        container.innerHTML = '<div style="padding:20px; color:#666;"><i class="fas fa-spinner fa-spin"></i> Analisando seu progresso...</div>';
+        container.innerHTML = '<div style="padding:20px; color:#666;"><i class="fas fa-spinner fa-spin"></i> Analisando seu progresso global...</div>';
 
-        // 1. Agrupar tarefas por MATÉRIA (Tag)
-        const tasksPorMateria = {};
-        
-        // Filtra apenas os estudos originais ([REC]) para saber quais assuntos existem
-        const assuntosOriginais = allTasksCache.filter(t => t.titulo.includes('[REC]'));
+        if (!currentUID) return;
 
-        if (assuntosOriginais.length === 0) {
-            container.innerHTML = `
-                <div style="text-align:center; padding: 40px; color: #888;">
-                    <i class="far fa-folder-open" style="font-size: 40px; margin-bottom:10px;"></i>
-                    <p>Nenhuma matéria cadastrada ainda.<br>Crie um "Novo Estudo" para começar.</p>
-                </div>`;
-            return;
-        }
+        try {
+            // Lazy Loading: Baixa todas as tasks só na hora de montar a matriz
+            const q = query(collection(db, "planners", currentUID, "tasks"));
+            const snap = await getDocs(q);
+            const todasTasksSyllabus = [];
+            snap.forEach(d => todasTasksSyllabus.push({ id: d.id, ...d.data() }));
 
-        // Organiza o dicionário: { "CARDIOLOGIA": [tarefa1, tarefa2], ... }
-        assuntosOriginais.forEach(t => {
-            const materia = t.tag || "Geral"; 
-            if (!tasksPorMateria[materia]) tasksPorMateria[materia] = [];
-            tasksPorMateria[materia].push(t);
-        });
+            // 1. Agrupar tarefas por MATÉRIA (Tag)
+            const tasksPorMateria = {};
 
-        container.innerHTML = '';
+            // Filtra apenas os estudos originais ([REC]) para saber quais assuntos existem
+            const assuntosOriginais = todasTasksSyllabus.filter(t => t.titulo.includes('[REC]'));
 
-        // 2. Criar uma tabela para cada Matéria
-        const materiasOrdenadas = Object.keys(tasksPorMateria).sort();
+            if (assuntosOriginais.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding: 40px; color: #888;">
+                        <i class="far fa-folder-open" style="font-size: 40px; margin-bottom:10px;"></i>
+                        <p>Nenhuma matéria cadastrada ainda.<br>Crie um "Novo Estudo" para começar.</p>
+                    </div>`;
+                return;
+            }
 
-        materiasOrdenadas.forEach(materia => {
-            const assuntos = tasksPorMateria[materia];
-            
-            let totalChecks = assuntos.length * 4; // REC + D1 + D7 + D21
-            let feitos = 0;
-            let linhasHTML = '';
-            
-            assuntos.forEach(assunto => {
-                // Nome limpo (remove o [REC])
-                const nomeTopico = assunto.titulo.replace('[REC]', '').trim();
-                
-                // --- LÓGICA DE VERIFICAÇÃO ---
-                const checkStatus = (label) => {
-                    // Procura a tarefa de revisão correspondente no banco
-                    const tarefa = allTasksCache.find(t => 
-                        t.titulo.includes(nomeTopico) && t.titulo.includes(label)
-                    );
+            // Organiza o dicionário: { "CARDIOLOGIA": [tarefa1, tarefa2], ... }
+            assuntosOriginais.forEach(t => {
+                const materia = t.tag || "Geral";
+                if (!tasksPorMateria[materia]) tasksPorMateria[materia] = [];
+                tasksPorMateria[materia].push(t);
+            });
+
+            container.innerHTML = '';
+
+            // 2. Criar uma tabela para cada Matéria
+            const materiasOrdenadas = Object.keys(tasksPorMateria).sort();
+
+            materiasOrdenadas.forEach(materia => {
+                const assuntos = tasksPorMateria[materia];
+
+                let totalChecks = assuntos.length * 4; // REC + D1 + D7 + D21
+                let feitos = 0;
+                let linhasHTML = '';
+
+                assuntos.forEach(assunto => {
+                    // Nome limpo (remove o [REC])
+                    const nomeTopico = assunto.titulo.replace('[REC]', '').trim();
+
+                    // --- LÓGICA DE VERIFICAÇÃO ---
+                    const checkStatus = (label) => {
+                        // Usa a array local do Syllabus em vez do cache da semana
+                        const tarefa = todasTasksSyllabus.find(t =>
+                            t.titulo.includes(nomeTopico) && t.titulo.includes(label)
+                        );
                     
                     // Se não existe (ainda não foi gerada)
                     if (!tarefa) return '<span style="color:#eee; font-size:12px;">—</span>'; 
