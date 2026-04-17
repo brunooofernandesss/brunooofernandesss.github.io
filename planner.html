@@ -1474,11 +1474,16 @@
         select.innerHTML = '';
         
         const hoje = new Date();
-        let loopDate = getStartOfWeek(new Date(hoje.setFullYear(hoje.getFullYear() - 1)));
-        const futureEnd = new Date();
-        futureEnd.setFullYear(futureEnd.getFullYear() + 2);
+        const todayStart = getStartOfWeek(hoje).getTime();
+        const dHoje = new Date(todayStart);
         
-        const todayStart = getStartOfWeek(new Date()).getTime();
+        // Subtraímos exatamente 52 semanas (364 dias) para manter a sincronia de dias da semana
+        let loopDate = new Date(todayStart);
+        loopDate.setDate(loopDate.getDate() - 364); 
+        
+        // Vai até 104 semanas no futuro (2 anos)
+        const futureEnd = new Date(todayStart);
+        futureEnd.setDate(futureEnd.getDate() + (104 * 7));
         
         while (loopDate <= futureEnd) {
             const endOfWeek = new Date(loopDate);
@@ -1491,12 +1496,14 @@
             option.value = value;
             option.text = label;
             
-            if (value === todayStart) {
+            const dLoop = new Date(value);
+            // Compara dia, mês e ano isoladamente para evitar bugs de fuso horário
+            if (dLoop.getDate() === dHoje.getDate() && dLoop.getMonth() === dHoje.getMonth() && dLoop.getFullYear() === dHoje.getFullYear()) {
                 option.selected = true;
                 currentBoardStart = new Date(loopDate);
             }
-            select.appendChild(option);
             
+            select.appendChild(option);
             loopDate.setDate(loopDate.getDate() + 7);
         }
         updateWeekLabel();
@@ -4063,6 +4070,11 @@
             `;
             container.appendChild(card);
         });
+        
+        } catch (e) {
+            console.error("Erro na Matriz:", e);
+            container.innerHTML = '<div style="color:#d44c47; padding: 20px;">Erro ao carregar o progresso.</div>';
+        }
     }
 
 
