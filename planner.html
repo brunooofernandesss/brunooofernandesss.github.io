@@ -871,7 +871,7 @@
                             <tr style="text-align:left; color: #777;">
                                 <th style="padding:12px; width: 40px;"><input type="checkbox" id="checkAllLib" onclick="window.toggleAllLib(this.checked)" style="transform: scale(1.2); cursor: pointer;"></th>
                                 <th style="padding:12px;">Arquivo / Assunto</th>
-                                <th style="padding:12px;">Matéria</th>
+                                <th style="padding:12px; cursor:pointer;" onclick="window.toggleOrdemMateria()" title="Clique para ordenar por Matéria ou Data">Matéria <i class="fas fa-sort" style="font-size: 10px; margin-left: 4px;"></i></th>
                                 <th style="padding:12px;">Data Upload</th>
                                 <th style="padding:12px;">Ação</th>
                             </tr>
@@ -1117,6 +1117,8 @@
     let allAgendaCache = [];
     let isUploadingImage = false; 
     let viewingLibraryId = null; // <--- NOVA VARIÁVEL DE CONTROLE
+    let bibliotecaCache = [];
+    let ordemMateriaAtiva = false;
     
 
 
@@ -1954,12 +1956,37 @@
         async function carregarBiblioteca() {
         if(!currentUID) return;
         const snap = await getDocs(query(collection(db, "planners", currentUID, "arquivos"), orderBy("data", "desc"), limit(50)));
+        
+        bibliotecaCache = [];
+        if (!snap.empty) {
+            snap.forEach(d => {
+                bibliotecaCache.push({ id: d.id, ...d.data() });
+            });
+        }
+        renderizarBibliotecaCache();
+    }
+
+    window.toggleOrdemMateria = () => {
+        ordemMateriaAtiva = !ordemMateriaAtiva;
+        renderizarBibliotecaCache();
+    };
+
+    function renderizarBibliotecaCache() {
         const tbody = document.getElementById('listaBiblioteca');
         tbody.innerHTML = '';
-        if (snap.empty) { tbody.innerHTML = '<tr><td colspan="4" style="padding:20px; text-align:center; color:#999;">Vazio.</td></tr>'; return; }
         
-        snap.forEach(d => {
-            const f = { id: d.id, ...d.data() }; // <--- ADICIONA O ID AQUI
+        if (bibliotecaCache.length === 0) { 
+            tbody.innerHTML = '<tr><td colspan="5" style="padding:20px; text-align:center; color:#999;">Vazio.</td></tr>'; 
+            return; 
+        }
+
+        let listaParaRenderizar = [...bibliotecaCache];
+        
+        if (ordemMateriaAtiva) {
+            listaParaRenderizar.sort((a, b) => (a.tag || '').localeCompare(b.tag || ''));
+        }
+
+        listaParaRenderizar.forEach(f => {
             const date = new Date(f.data).toLocaleDateString('pt-BR') + ' ' + new Date(f.data).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
             const icon = f.tipo === 'pdf' ? '<i class="far fa-file-pdf" style="color:#d44c47"></i>' : '<i class="far fa-file-alt" style="color:#2383e2"></i>';
             const tr = document.createElement('tr');
@@ -1969,23 +1996,22 @@
             const conteudoLimpo = f.tipo === 'texto' ? (f.contentHTML || '').replace(/'/g, '').replace(/"/g, '').replace(/\n/g, ' ') : '';
             
             tr.innerHTML = `
-                <td style="padding:12px;"><input type="checkbox" class="chk-lib-item" value="${d.id}" style="transform: scale(1.2); cursor: pointer;"></td>
+                <td style="padding:12px;"><input type="checkbox" class="chk-lib-item" value="${f.id}" style="transform: scale(1.2); cursor: pointer;"></td>
                 <td style="padding:12px;">${icon} ${f.nome}</td>
                 <td style="padding:12px;"><span class="tag-pill" style="background:#f0f0f0; color:#555">${f.tag}</span></td>
                 <td style="padding:12px; color:#999;">${date}</td>
                 <td style="padding:12px; display:flex; gap:8px;">
-                    <button class="btn-action" style="padding:4px 10px;" id="btn-view-${d.id}">Ver</button>
+                    <button class="btn-action" style="padding:4px 10px;" id="btn-view-${f.id}">Ver</button>
                     <button class="btn-action" style="padding:4px 10px;" 
-                        onclick="window.gerarQuiz('${d.id}', '${f.nome.replace(/'/g, "")}', '${conteudoLimpo}', '${f.tipo}')"
+                        onclick="window.gerarQuiz('${f.id}', '${f.nome.replace(/'/g, "")}', '${conteudoLimpo}', '${f.tipo}')"
                         title="Gerar Simulado IA">
                         <i class="fas fa-brain"></i>
                     </button>
                 </td>
             `;
 
-
             tbody.appendChild(tr);
-            document.getElementById(`btn-view-${d.id}`).onclick = () => abrirArquivoBiblioteca(f);
+            document.getElementById(`btn-view-${f.id}`).onclick = () => abrirArquivoBiblioteca(f);
         });
     }
 
