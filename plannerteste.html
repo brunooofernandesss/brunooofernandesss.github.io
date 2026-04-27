@@ -1911,9 +1911,21 @@
                 })
             });
 
-            if (!response.ok) throw new Error("Falha no servidor da IA.");
+            if (!response.ok) {
+                const errText = await response.text();
+                let errMsg = errText;
+                try {
+                    // Tenta ler o JSON de erro (se vier do Google)
+                    const errJson = JSON.parse(errText);
+                    errMsg = errJson.error || errText;
+                } catch(e) {
+                    // Se não for JSON, é erro do Cloudflare (ex: Timeout HTML)
+                    errMsg = errText.substring(0, 150) + "..."; 
+                }
+                throw new Error(errMsg);
+            }
             const aiData = await response.json();
-            
+           
             const tituloGerado = aiData.titulo_sugerido || "Aula Sem Título";
             const markdownGerado = aiData.resumo_md || "";
 
