@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Mental: Nervos Cranianos V e VII</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --line-color: #999;
+            --v-color: #0277bd;
+            --v1-color: #4fc3f7;
+            --v2-color: #29b6f6;
+            --v3-color: #039be5;
+            --vii-color: #ef6c00;
+            --vii-int-color: #ff9800;
+            --vii-ext-color: #fb8c00;
+            --ganglio-color: #673ab7;
+            --motor-color: #c62828;
+            --sensi-color: #2e7d32;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh; /* Ocupa 100% da tela */
+            overflow: hidden; /* Trava o scroll no body para deixar apenas na área do mapa */
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.5em;
+            color: #333;
+        }
+
+        .btn-export {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .btn-export:hover {
+            background-color: #45a049;
+        }
+
+        /* Área com scroll horizontal e vertical */
+        .tree-wrapper {
+            flex: 1;
+            overflow: auto; /* Habilita rolagem nas duas direções */
+            padding: 40px;
+            position: relative;
+            /* Estilo da barra de rolagem */
+            scrollbar-width: thin;
+            scrollbar-color: #bbb var(--bg-color);
+        }
+
+        .tree-wrapper::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+        .tree-wrapper::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+        .tree-wrapper::-webkit-scrollbar-thumb {
+            background-color: #bbb;
+            border-radius: 10px;
+            border: 3px solid var(--bg-color);
+        }
+
+        .tree {
+            display: inline-block; /* Permite que cresça além do wrapper */
+            min-width: max-content; /* Força o tamanho baseado no conteúdo para ativar scroll lateral */
+            padding-bottom: 50px;
+            padding-right: 50px;
+        }
+
+        /* Estrutura da Árvore */
+        .tree ul {
+            padding-top: 20px; 
+            position: relative;
+            transition: all 0.5s;
+            display: flex;
+            justify-content: center;
+            padding-left: 0;
+        }
+
+        .tree li {
+            text-align: center;
+            list-style-type: none;
+            position: relative;
+            padding: 20px 10px 0 10px; /* Aumentado espaçamento entre blocos */
+            transition: all 0.5s;
+        }
+
+        /* Conectores SVG-like com CSS */
+        .tree li::before, .tree li::after {
+            content: '';
+            position: absolute; 
+            top: 0; 
+            right: 50%;
+            border-top: 2px solid var(--line-color);
+            width: 50%; 
+            height: 20px;
+        }
+        .tree li::after {
+            right: auto; 
+            left: 50%;
+            border-left: 2px solid var(--line-color);
+        }
+
+        .tree li:only-child::after, .tree li:only-child::before {
+            display: none;
+        }
+
+        .tree li:only-child { padding-top: 0; }
+
+        .tree li:first-child::before, .tree li:last-child::after {
+            border: 0 none;
+        }
+
+        .tree li:last-child::before {
+            border-right: 2px solid var(--line-color);
+            border-radius: 0 5px 0 0;
+        }
+        .tree li:first-child::after {
+            border-radius: 5px 0 0 0;
+        }
+
+        .tree ul ul::before {
+            content: '';
+            position: absolute; 
+            top: 0; 
+            left: 50%;
+            border-left: 2px solid var(--line-color);
+            width: 0; 
+            height: 20px;
+        }
+
+        /* Estilo dos Nodes */
+        .node {
+            border: 2px solid var(--line-color);
+            padding: 10px 15px;
+            text-decoration: none;
+            color: #333;
+            display: inline-block;
+            border-radius: 8px;
+            background: white;
+            transition: all 0.3s;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: relative;
+            white-space: nowrap; /* Evita quebra de linha indesejada nos títulos */
+        }
+
+        .node:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+
+        /* Cores Específicas */
+        .root-node { background-color: #333; color: white; font-size: 1.3em; border: none; padding: 15px 25px; }
+        
+        .v-node { border-color: var(--v-color); color: var(--v-color); border-width: 3px; font-size: 1.1em; }
+        .v1-node { background-color: var(--v1-color); }
+        .v2-node { background-color: var(--v2-color); }
+        .v3-node { background-color: var(--v3-color); border-color: var(--v-color); color: white; }
+        
+        .vii-node { border-color: var(--vii-color); color: var(--vii-color); border-width: 3px; font-size: 1.1em;}
+        .vii-branch { background-color: var(--vii-int-color); color: white; }
+        
+        .ganglio { background-color: var(--ganglio-color); color: white; border-radius: 20px; font-style: italic; }
+        
+        .sub-node { font-weight: normal; font-size: 0.9em; padding: 8px 12px; border-style: dashed; white-space: normal; width: max-content; max-width: 250px; }
+        
+        .tag {
+            font-size: 0.75em;
+            padding: 3px 6px;
+            border-radius: 4px;
+            margin-left: 5px;
+            vertical-align: middle;
+            text-transform: uppercase;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .tag-motor { background: var(--motor-color); color: white; border: 1px solid darkred; }
+        .tag-sensi { background: var(--sensi-color); color: white; border: 1px solid darkgreen; }
+
+        .details {
+            font-weight: normal;
+            font-size: 0.85em;
+            display: block;
+            color: #555;
+            margin-top: 6px;
+            line-height: 1.3;
+        }
+
+        .footer {
+            padding: 15px;
+            background: white;
+            text-align: center;
+            font-size: 0.8em;
+            color: #666;
+            border-top: 1px solid #ddd;
+            z-index: 100;
+        }
+        
+        .legenda {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 1px solid #ddd;
+            z-index: 50;
+        }
+
+        .legenda h3 { margin-top: 0; font-size: 1em; margin-bottom: 10px; }
+        .legenda p { margin: 5px 0; font-size: 0.9em; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Nervos Cranianos V e VII</h1>
+        <button class="btn-export" id="btn-export">Exportar como Imagem (PNG)</button>
+    </div>
+
+    <div class="tree-wrapper" id="scroll-area">
+        
+        <div class="legenda" data-html2canvas-ignore>
+            <h3>Legenda de Estudo:</h3>
+            <p><span class="tag tag-motor">M</span> Fibra Motora (Eferente)</p>
+            <p><span class="tag tag-sensi">S</span> Fibra Sensitiva (Aferente)</p>
+            <p><span class="node ganglio" style="padding: 2px 10px; font-size: 0.8em;">Cor</span> Gânglios (Corpos neuronais)</p>
+            <p style="max-width: 250px; font-size: 0.8em; color: #555; margin-top: 10px;"><i>O Nervo Intermédio carrega fibras parassimpáticas e de gustação do NC VII.</i></p>
+        </div>
+
+        <div class="tree" id="capture-area">
+            <ul>
+                <li>
+                    <div class="node root-node">NERVOS CRANIANOS</div>
+                    <ul>
+                        <li>
+                            <div class="node v-node">NC V - TRIGÊMEO <span class="tag tag-sensi">Misto</span></div>
+                            <ul>
+                                <li>
+                                    <div class="node ganglio">Gânglio Trigeminal (Gasser)<br><small>Cavo de Meckel</small></div>
+                                    <ul>
+                                        <li>
+                                            <div class="node v1-node">V1 - OFTÁLMICO <span class="tag tag-sensi">S</span></div>
+                                            <ul>
+                                                <li><div class="node sub-node">N. Frontal <span class="details">Supraorbital, Supratroclear</span></div></li>
+                                                <li><div class="node sub-node">N. Nasociliar <span class="details">Etmoidais, Infratroclear, Ciliares Longos</span></div></li>
+                                                <li><div class="node sub-node">N. Lacrimal <span class="details">Glândula lacrimal</span></div></li>
+                                            </ul>
+                                        </li>
+                                        <li>
+                                            <div class="node v2-node">V2 - MAXILAR <span class="tag tag-sensi">S</span></div>
+                                            <ul>
+                                                <li><div class="node sub-node">N. Zigomático <span class="details">Zigomaticofacial e temporal</span></div></li>
+                                                <li><div class="node sub-node">N. Pterigopalatinos <span class="details">Palatinos Maior/Menor, Nasopalatino</span></div></li>
+                                                <li><div class="node sub-node">N. Infraorbital <span class="details">Alveolares Sup. Médio/Anterior</span></div></li>
+                                                <li><div class="node sub-node">N. Alveolares Sup. Post.</div></li>
+                                            </ul>
+                                        </li>
+                                        <li>
+                                            <div class="node v3-node">V3 - MANDIBULAR <span class="tag tag-sensi">Misto</span></div>
+                                            <ul>
+                                                <li>
+                                                    <div class="node sub-node" style="border-color: var(--motor-color);">MOTORES <span class="tag tag-motor">M</span></div>
+                                                    <ul>
+                                                        <li><div class="node sub-node">Mastigatórios <span class="details">Massetérico, Temporais, Pterigóideos</span></div></li>
+                                                        <li><div class="node sub-node">Tensores <span class="details">Tímpano e Véu Palatino</span></div></li>
+                                                    </ul>
+                                                </li>
+                                                <li>
+                                                    <div class="node sub-node" style="border-color: var(--sensi-color);">SENSITIVOS <span class="tag tag-sensi">S</span></div>
+                                                    <ul>
+                                                        <li><div class="node sub-node">N. Auriculotemporal <span class="details">ATM, Parótida</span></div></li>
+                                                        <li><div class="node sub-node">N. Bucal <span class="details">Mucosa bochecha</span></div></li>
+                                                        <li><div class="node sub-node">N. Lingual <span class="details">2/3 ant. língua (geral)</span></div></li>
+                                                        <li><div class="node sub-node">N. Alveolar Inferior <span class="details">N. Milo-hióideo (M), Mentual, Incisivo</span></div></li>
+                                                    </ul>
+                                                </li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <li>
+                            <div class="node vii-node">NC VII - FACIAL <span class="tag tag-sensi">Misto</span></div>
+                            <ul>
+                                <li>
+                                    <div class="node ganglio">Gânglio Geniculado <br><small>Gustação</small></div>
+                                    <ul>
+                                        <li>
+                                            <div class="node vii-branch">Ramos Intrapetrosos</div>
+                                            <ul>
+                                                <li><div class="node sub-node">N. Petroso Maior <span class="details">Gânglio Pterigopalatino &rarr; Lacrimal</span></div></li>
+                                                <li><div class="node sub-node">N. p/ m. Estapédio <span class="details">Reflexo Acústico</span></div></li>
+                                                <li><div class="node sub-node">N. Corda do Tímpano <span class="details">Gustação 2/3 ant. + Submandibular/Sublingual</span></div></li>
+                                            </ul>
+                                        </li>
+                                        <li>
+                                            <div class="node vii-branch">Forame Estilomastoideo</div>
+                                            <ul>
+                                                <li><div class="node sub-node">Motores Extra <span class="details">Estilo-hióideo, Digástrico (V. Post), Auricular Post.</span></div></li>
+                                                <li>
+                                                    <div class="node vii-branch" style="background-color: #ffb74d; color: #333;">Ramos Terminais (Parótida)</div>
+                                                    <ul>
+                                                        <li><div class="node sub-node">Temporais</div></li>
+                                                        <li><div class="node sub-node">Zigomáticos</div></li>
+                                                        <li><div class="node sub-node">Bucais</div></li>
+                                                        <li><div class="node sub-node">Marginal da Mandíbula</div></li>
+                                                        <li><div class="node sub-node">Cervical <span class="details">Platisma</span></div></li>
+                                                    </ul>
+                                                </li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="footer">
+        Referência Base: Machado, A. B. M. (2006). Neuroanatomia Funcional (3ª ed.). São Paulo: Atheneu. | Moore, K.L., Dalley, A.F., & Agur, A.M.R. (2014). Clinically Oriented Anatomy (7th ed.).
+    </div>
+
+    <script>
+        // Função para exportar a árvore em PNG
+        document.getElementById('btn-export').addEventListener('click', function() {
+            const elementToCapture = document.getElementById('capture-area');
+            const originalScrollLeft = document.getElementById('scroll-area').scrollLeft;
+            const originalScrollTop = document.getElementById('scroll-area').scrollTop;
+            
+            // Muda a cor do botão para mostrar carregamento
+            const btn = document.getElementById('btn-export');
+            const btnOriginalText = btn.innerText;
+            btn.innerText = "Gerando imagem...";
+            btn.style.backgroundColor = "#ff9800";
+
+            html2canvas(elementToCapture, {
+                backgroundColor: "#f4f7f6", // Garante o fundo na imagem salva
+                scale: 2 // Aumenta a resolução da imagem final
+            }).then(canvas => {
+                let link = document.createElement('a');
+                link.download = 'Mapa_Mental_NC_V_VII.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                // Restaura o botão
+                btn.innerText = btnOriginalText;
+                btn.style.backgroundColor = "#4CAF50";
+            }).catch(err => {
+                console.error("Erro ao gerar imagem: ", err);
+                alert("Ocorreu um erro ao exportar a imagem.");
+                btn.innerText = btnOriginalText;
+                btn.style.backgroundColor = "#4CAF50";
+            });
+        });
+    </script>
+</body>
+</html>
+
