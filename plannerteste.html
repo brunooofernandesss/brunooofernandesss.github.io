@@ -1389,7 +1389,10 @@
         const hoje = new Date();
         const start = dataInicio ? new Date(dataInicio) : getStartOfWeek(hoje);
         const end = dataFim ? new Date(dataFim) : new Date(start);
-        if(!dataFim) end.setDate(end.getDate() + 6);
+        if(!dataFim) {
+            end.setDate(end.getDate() + 6);
+            end.setHours(23, 59, 59, 999);
+        }
 
         const q = query(
             collection(db, "planners", currentUID, "tasks"),
@@ -1518,6 +1521,7 @@
         
         const endOfWeek = new Date(currentBoardStart);
         endOfWeek.setDate(currentBoardStart.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
         
         await loadDataAndInit(currentBoardStart, endOfWeek); 
         renderAgendaBoard(); 
@@ -1932,7 +1936,7 @@
                     });
 
                     if (criarRevisoesEspacadas) {
-                        criarRevisoesComIA(title, tag.toUpperCase(), contentHTML);
+                        await criarRevisoesComIA(title, tag.toUpperCase(), contentHTML);
                     } else {
                         showFeedback("✅ Estudo salvo sem revisões!", false);
                     }
