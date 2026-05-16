@@ -440,6 +440,7 @@
 
             <div class="editor-footer">
                 <button class="btn-action" onclick="fecharModal()">Cancelar</button>
+                <button class="btn-action btn-primary" id="btnApenasSalvar" style="background: #27ae60; border: none; display: none;">Apenas Salvar</button>
                 <button class="btn-action btn-primary" id="btnSalvar">Criar Cronograma</button>
             </div>
 
@@ -753,48 +754,6 @@
         </div>
     </div>
 
-    <div class="modal" id="modalAulasGravadas" style="z-index: 3700;">
-        <div class="modal-content" style="max-width: 500px; height: auto;">
-            <div class="editor-header">
-                <h3 style="margin:0; color:#8e44ad;"><i class="fas fa-closed-captioning"></i> Processar Aulas (.VTT)</h3>
-                <button class="btn-action" onclick="window.fecharModalAulasGravadas()"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="editor-body" style="padding: 25px; background: #fdfdfd;">
-                
-                <div style="margin-bottom: 20px;">
-                    <label style="font-size:12px; font-weight:700; color:#666; display:block; margin-bottom:8px;">1. MATÉRIA E MÓDULO (TAG)</label>
-                    <input type="text" id="vttMateria" placeholder="Ex: Farmacologia, Módulo 07" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
-                    <p style="font-size:11px; color:#999; margin-top:6px;">* Esta será a categoria na Biblioteca. O título específico da aula a IA vai gerar sozinha lendo o vídeo.</p>
-                </div>
-
-                <div style="margin-bottom: 10px;">
-                    <label style="font-size:12px; font-weight:700; color:#666; display:block; margin-bottom:8px;">2. LEGENDA DA AULA (MÁX 5)</label>
-                    
-                    <div id="listaVtts" style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;">
-                    </div>
-
-                    <input type="file" id="vttInputFile" accept=".vtt,.txt" style="display:none;" multiple>
-                    <button class="btn-action" id="btnAdicionarVtt" onclick="document.getElementById('vttInputFile').click()" style="width:100%; justify-content:center; border: 1px dashed #8e44ad; color: #8e44ad; background: #faf5ff;">
-                        <i class="fas fa-plus"></i> Adicionar Arquivo .VTT
-                    </button>
-                </div>
-
-                <div id="painelFeedbackVtt" style="display:none; margin-top:20px; padding:15px; background:#eef6fc; border-left:4px solid #2383e2; border-radius:6px;">
-                    <h4 style="margin:0 0 10px 0; font-size:13px; color:#18507a;"><i class="fas fa-cogs"></i> Status do Processamento:</h4>
-                    <div id="textoFeedbackVtt" style="font-size:12px; color:#333; line-height:1.6;">
-                        Iniciando...
-                    </div>
-                </div>
-
-            </div>
-            <div class="editor-footer">
-                <button class="btn-action" onclick="window.fecharModalAulasGravadas()">Cancelar</button>
-                <button class="btn-action" id="btnEnviarVtt" onclick="window.processarFilaVtts()" style="background:#8e44ad; color:white; border:none; padding:10px 20px;">
-                    <i class="fas fa-brain"></i> Gerar Aula e Revisões
-                </button>
-            </div>
-        </div>
-    </div>
     
     <div id="statusFeedback">Processando...</div>
 
@@ -879,9 +838,6 @@
             </div>
 
             <div style="display:flex; gap: 10px;">
-                <button class="btn-action" onclick="window.abrirModalAulasGravadas()" style="background:#8e44ad; color:white; border:none; box-shadow: 0 2px 5px rgba(142, 68, 173, 0.3);">
-                    <i class="fas fa-video"></i> Aulas Gravadas
-                </button>
                 <button class="btn-action" id="btnNovoAssunto"><i class="fas fa-plus"></i> Novo Estudo</button>
                 <input type="file" id="pdfInput" hidden accept="application/pdf">
                 <label for="pdfInput" class="btn-action btn-primary"><i class="fas fa-cloud-upload-alt"></i> Upload PDF</label>
@@ -1817,176 +1773,6 @@
         } catch (err) { console.error(err); showFeedback("Erro.", false); }
     };
 
-    // =================================================================
-    // 🎥 LÓGICA: MÓDULO DE AULAS GRAVADAS (.VTT)
-    // =================================================================
-    let filaArquivosVtt = [];
-
-    window.abrirModalAulasGravadas = () => {
-        document.getElementById('vttMateria').value = '';
-        filaArquivosVtt = [];
-        window.atualizarListaVttUI();
-        document.getElementById('painelFeedbackVtt').style.display = 'none';
-        document.getElementById('btnEnviarVtt').disabled = false;
-        document.getElementById('modalAulasGravadas').style.display = 'flex';
-    };
-
-    window.fecharModalAulasGravadas = () => {
-        document.getElementById('modalAulasGravadas').style.display = 'none';
-    };
-
-    document.getElementById('vttInputFile').onchange = (e) => {
-        const files = Array.from(e.target.files);
-        let adicionados = 0;
-        
-        files.forEach(file => {
-            if (filaArquivosVtt.length < 5) {
-                filaArquivosVtt.push(file);
-                adicionados++;
-            }
-        });
-
-        if (files.length > adicionados) {
-            alert("Limite máximo de 5 arquivos por vez alcançado.");
-        }
-
-        window.atualizarListaVttUI();
-        e.target.value = ''; 
-    };
-
-    window.atualizarListaVttUI = () => {
-        const container = document.getElementById('listaVtts');
-        const btnAdd = document.getElementById('btnAdicionarVtt');
-        container.innerHTML = '';
-
-        filaArquivosVtt.forEach((file, index) => {
-            const div = document.createElement('div');
-            div.style.cssText = "display:flex; justify-content:space-between; align-items:center; background:white; padding:8px 12px; border:1px solid #eee; border-radius:4px; font-size:12px;";
-            div.innerHTML = `
-                <span style="color:#555; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:80%;"><i class="fas fa-file-audio" style="color:#8e44ad; margin-right:5px;"></i> ${file.name}</span>
-                <i class="fas fa-times" style="color:#d44c47; cursor:pointer;" onclick="window.removerVttFila(${index})"></i>
-            `;
-            container.appendChild(div);
-        });
-
-        if (filaArquivosVtt.length >= 5) {
-            btnAdd.style.display = 'none';
-        } else {
-            btnAdd.style.display = 'flex';
-        }
-    };
-
-    window.removerVttFila = (index) => {
-        filaArquivosVtt.splice(index, 1);
-        window.atualizarListaVttUI();
-    };
-
-    window.processarFilaVtts = async () => {
-        const materia = document.getElementById('vttMateria').value.trim();
-        if (!materia) return alert("Por favor, digite a Matéria/Módulo.");
-        if (filaArquivosVtt.length === 0) return alert("Adicione pelo menos um arquivo .vtt");
-
-        document.getElementById('btnEnviarVtt').disabled = true;
-        const painel = document.getElementById('painelFeedbackVtt');
-        const txtFeedback = document.getElementById('textoFeedbackVtt');
-        painel.style.display = 'block';
-
-        try {
-            txtFeedback.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Lendo transcrições locais...`;
-            
-            let textoCombinado = "";
-            for (const file of filaArquivosVtt) {
-                const text = await file.text();
-                textoCombinado += `\n\n--- INÍCIO DA PARTE: ${file.name} ---\n` + text;
-            }
-
-            txtFeedback.innerHTML = `<i class="fas fa-brain fa-spin"></i> Professor IA estruturando a aula (Isso pode levar alguns segundos)...`;
-            
-            const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "x-auth": "planner_2026_super_private_token_847362" },
-                body: JSON.stringify({ 
-                    action: "resumir_vtt", 
-                    textoAula: textoCombinado
-                })
-            });
-
-            if (!response.ok) {
-                const errText = await response.text();
-                let errMsg = errText;
-                try {
-                    // Tenta ler o JSON de erro (se vier do Google)
-                    const errJson = JSON.parse(errText);
-                    errMsg = errJson.error || errText;
-                } catch(e) {
-                    // Se não for JSON, é erro do Cloudflare (ex: Timeout HTML)
-                    errMsg = errText.substring(0, 150) + "..."; 
-                }
-                throw new Error(errMsg);
-            }
-            const aiData = await response.json();
-           
-            const tituloGerado = aiData.titulo_sugerido || "Aula Sem Título";
-            const markdownGerado = aiData.resumo_md || "";
-
-            txtFeedback.innerHTML = `✅ Resumo concluído!<br><strong style="color:#27ae60;">Título Definido: ${tituloGerado}</strong><br><br><i class="fas fa-spinner fa-spin"></i> Salvando [REC] no banco de dados...`;
-
-            const now = new Date().getTime();
-            
-            await addDoc(collection(db, "planners", currentUID, "arquivos"), { 
-                nome: tituloGerado, contentHTML: markdownGerado, tag: materia, data: now, tipo: 'texto' 
-            });
-
-            await addDoc(collection(db, "planners", currentUID, "tasks"), {
-                titulo: `[REC] ${tituloGerado}`, tag: materia, contentHTML: markdownGerado, 
-                targetDate: now, concluido: false, criadoEm: serverTimestamp(), tipo: 'texto'
-            });
-
-            txtFeedback.innerHTML = `✅ Assunto Principal Salvo.<br><br><strong>Iniciando Máquina de Repetição Espaçada:</strong><br><ul style="padding-left:15px; margin-top:5px; color:#555;" id="listaRepeticaoDisplay"></ul>`;
-            
-            const listaRep = document.getElementById('listaRepeticaoDisplay');
-            const cronograma = [{ label: "D+1", days: 1 }, { label: "D+7", days: 7 }, { label: "D+21", days: 21 }];
-
-            for (const item of cronograma) {
-                const li = document.createElement('li');
-                li.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processando aula de fixação <strong>${item.label}</strong>...`;
-                listaRep.appendChild(li);
-
-                const conteudoIA = await gerarConteudoIA(markdownGerado, item.label);
-                
-                const targetDate = new Date();
-                targetDate.setDate(targetDate.getDate() + item.days);
-
-                await addDoc(collection(db, "planners", currentUID, "tasks"), {
-                    titulo: `[${item.label}] ${tituloGerado}`,
-                    tag: materia,
-                    contentHTML: conteudoIA,
-                    targetDate: targetDate.getTime(),
-                    createdAt: serverTimestamp(),
-                    concluido: false,
-                    label: item.label,
-                    tipo: 'texto',
-                    geradoPorIA: true
-                });
-
-                li.innerHTML = `<i class="fas fa-check" style="color:#27ae60;"></i> ${item.label} agendado com sucesso!`;
-            }
-
-            txtFeedback.innerHTML += `<br><strong style="color:#27ae60;"><i class="fas fa-check-double"></i> Pipeline 100% Concluído!</strong>`;
-            
-            setTimeout(() => {
-                window.fecharModalAulasGravadas();
-                loadDataAndInit();
-                carregarBiblioteca();
-            }, 3000);
-
-        } catch (e) {
-            console.error(e);
-            txtFeedback.innerHTML = `<strong style="color:#d44c47;"><i class="fas fa-exclamation-triangle"></i> Erro: ${e.message}</strong>`;
-            document.getElementById('btnEnviarVtt').disabled = false;
-        }
-    };
-
         // =================================================================
     // 🤖 FUNÇÕES DE INTELIGÊNCIA ARTIFICIAL (Worker + Firestore)
     // =================================================================
@@ -2060,7 +1846,7 @@
         // =================================================================
     // 💾 BOTÃO SALVAR (Cria Hoje + Chama IA para Futuro)
     // =================================================================
-    document.getElementById('btnSalvar').onclick = async () => {
+    const executarSalvamento = async (criarRevisoesEspacadas) => {
         const title = document.getElementById('subjectTitle').value;
         const tag = document.getElementById('subjectTag').value || "Geral";
         const isEditing = editingDocId !== null; 
@@ -2093,7 +1879,13 @@
                 }
 
                 await updateDoc(doc(db, "planners", currentUID, "tasks", editingDocId), updateData);
-                showFeedback("Atualizado!", false);
+                
+                if (criarRevisoesEspacadas && !isTutoriaMode) {
+                    await criarRevisoesComIA(title, tag.toUpperCase(), contentHTML);
+                } else {
+                    showFeedback("Atualizado!", false);
+                }
+                
                 modalEditorContent.classList.remove('editor-max'); // reseta tamanho
                 fecharModal();
                 loadDataAndInit(); 
@@ -2139,8 +1931,11 @@
                         tipo: 'texto'
                     });
 
-                    // CHAMA A IA PARA D+1, D+7, D+21 (Apenas aqui)
-                    criarRevisoesComIA(title, tag.toUpperCase(), contentHTML);
+                    if (criarRevisoesEspacadas) {
+                        criarRevisoesComIA(title, tag.toUpperCase(), contentHTML);
+                    } else {
+                        showFeedback("✅ Estudo salvo sem revisões!", false);
+                    }
                 }
 
                 // --- LIMPEZA DE UI (Comum) ---
@@ -2165,7 +1960,12 @@
         }
     };
 
-    
+    // Vincular as ações aos botões correspondentes
+    document.getElementById('btnSalvar').onclick = () => executarSalvamento(true);
+    if (document.getElementById('btnApenasSalvar')) {
+        document.getElementById('btnApenasSalvar').onclick = () => executarSalvamento(false);
+    }
+
     
 
         async function carregarBiblioteca() {
@@ -2467,7 +2267,16 @@
 
         document.getElementById('subjectTag').value = data.tag || '';
         quill.clipboard.dangerouslyPasteHTML(data.contentHTML || '');
-        document.getElementById('btnSalvar').textContent = "Salvar Alterações";
+        if (isTutoriaMode) {
+            document.getElementById('btnSalvar').textContent = "Salvar Tutoria";
+            if (document.getElementById('btnApenasSalvar')) document.getElementById('btnApenasSalvar').style.display = 'none';
+        } else {
+            document.getElementById('btnSalvar').textContent = "Criar Cronograma";
+            if (document.getElementById('btnApenasSalvar')) {
+                document.getElementById('btnApenasSalvar').textContent = "Apenas Salvar";
+                document.getElementById('btnApenasSalvar').style.display = 'inline-flex';
+            }
+        }
         document.getElementById('modalView').style.display = 'none';
         document.getElementById('modalEditor').style.display = 'flex';
         setTimeout(() => quill.focus(), 100);
@@ -2804,7 +2613,11 @@
         quill.clipboard.dangerouslyPasteHTML(html);
         
         editingDocId = null; // Garante criação de novo card
-        document.getElementById('btnSalvar').textContent = "Salvar Estudo e Criar Revisões";
+        document.getElementById('btnSalvar').textContent = "Criar Cronograma";
+        if (document.getElementById('btnApenasSalvar')) {
+            document.getElementById('btnApenasSalvar').textContent = "Apenas Salvar";
+            document.getElementById('btnApenasSalvar').style.display = 'inline-flex';
+        }
         
         // Abre o editor (O CSS do Passo 1 garante que ele fique por cima)
         document.getElementById('modalEditor').style.display = 'flex';
@@ -2947,6 +2760,10 @@
         document.getElementById('subjectTag').value = '';
         quill.setText(''); 
         document.getElementById('btnSalvar').textContent = "Criar Cronograma";
+        if (document.getElementById('btnApenasSalvar')) {
+            document.getElementById('btnApenasSalvar').textContent = "Apenas Salvar";
+            document.getElementById('btnApenasSalvar').style.display = 'inline-flex';
+        }
         
         document.getElementById('modalEditor').style.display = 'flex';
         setTimeout(() => quill.focus(), 100); 
@@ -2961,6 +2778,9 @@
         document.getElementById('subjectTag').value = 'TUTORIA'; // Tag padrão sugestiva
         quill.setText('');
         document.getElementById('btnSalvar').textContent = "Salvar Tutoria"; // Texto diferente
+        if (document.getElementById('btnApenasSalvar')) {
+            document.getElementById('btnApenasSalvar').style.display = 'none';
+        }
         
         document.getElementById('modalEditor').style.display = 'flex';
         setTimeout(() => quill.focus(), 100);
