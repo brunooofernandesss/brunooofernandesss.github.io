@@ -440,6 +440,7 @@
 
             <div class="editor-footer">
                 <button class="btn-action" onclick="fecharModal()">Cancelar</button>
+                <button class="btn-action btn-primary" id="btnApenasSalvar" style="background: #27ae60; border: none; display: none;">Apenas Salvar</button>
                 <button class="btn-action btn-primary" id="btnSalvar">Criar Cronograma</button>
             </div>
 
@@ -1388,7 +1389,10 @@
         const hoje = new Date();
         const start = dataInicio ? new Date(dataInicio) : getStartOfWeek(hoje);
         const end = dataFim ? new Date(dataFim) : new Date(start);
-        if(!dataFim) end.setDate(end.getDate() + 6);
+        if(!dataFim) {
+            end.setDate(end.getDate() + 6);
+            end.setHours(23, 59, 59, 999);
+        }
 
         const q = query(
             collection(db, "planners", currentUID, "tasks"),
@@ -1517,6 +1521,7 @@
         
         const endOfWeek = new Date(currentBoardStart);
         endOfWeek.setDate(currentBoardStart.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
         
         await loadDataAndInit(currentBoardStart, endOfWeek); 
         renderAgendaBoard(); 
@@ -1845,7 +1850,7 @@
         // =================================================================
     // 💾 BOTÃO SALVAR (Cria Hoje + Chama IA para Futuro)
     // =================================================================
-    document.getElementById('btnSalvar').onclick = async () => {
+    const executarSalvamento = async (criarRevisoesEspacadas) => {
         const title = document.getElementById('subjectTitle').value;
         const tag = document.getElementById('subjectTag').value || "Geral";
         const isEditing = editingDocId !== null; 
@@ -1878,7 +1883,13 @@
                 }
 
                 await updateDoc(doc(db, "planners", currentUID, "tasks", editingDocId), updateData);
-                showFeedback("Atualizado!", false);
+                
+                if (criarRevisoesEspacadas && !isTutoriaMode) {
+                    await criarRevisoesComIA(title, tag.toUpperCase(), contentHTML);
+                } else {
+                    showFeedback("Atualizado!", false);
+                }
+                
                 modalEditorContent.classList.remove('editor-max'); // reseta tamanho
                 fecharModal();
                 loadDataAndInit(); 
@@ -1924,8 +1935,11 @@
                         tipo: 'texto'
                     });
 
-                    // CHAMA A IA PARA D+1, D+7, D+21 (Apenas aqui)
-                    criarRevisoesComIA(title, tag.toUpperCase(), contentHTML);
+                    if (criarRevisoesEspacadas) {
+                        await criarRevisoesComIA(title, tag.toUpperCase(), contentHTML);
+                    } else {
+                        showFeedback("✅ Estudo salvo sem revisões!", false);
+                    }
                 }
 
                 // --- LIMPEZA DE UI (Comum) ---
@@ -1950,12 +1964,17 @@
         }
     };
 
-    
+    // Vincular as ações aos botões correspondentes
+    document.getElementById('btnSalvar').onclick = () => executarSalvamento(true);
+    if (document.getElementById('btnApenasSalvar')) {
+        document.getElementById('btnApenasSalvar').onclick = () => executarSalvamento(false);
+    }
+
     
 
         async function carregarBiblioteca() {
         if(!currentUID) return;
-        const snap = await getDocs(query(collection(db, "planners", currentUID, "arquivos"), orderBy("data", "desc"), limit(50)));
+        const snap = await getDocs(query(collection(db, "planners", currentUID, "arquivos"), orderBy("data", "desc")));
         
         bibliotecaCache = [];
         if (!snap.empty) {
@@ -2252,7 +2271,16 @@
 
         document.getElementById('subjectTag').value = data.tag || '';
         quill.clipboard.dangerouslyPasteHTML(data.contentHTML || '');
-        document.getElementById('btnSalvar').textContent = "Salvar Alterações";
+        if (isTutoriaMode) {
+            document.getElementById('btnSalvar').textContent = "Salvar Tutoria";
+            if (document.getElementById('btnApenasSalvar')) document.getElementById('btnApenasSalvar').style.display = 'none';
+        } else {
+            document.getElementById('btnSalvar').textContent = "Criar Cronograma";
+            if (document.getElementById('btnApenasSalvar')) {
+                document.getElementById('btnApenasSalvar').textContent = "Apenas Salvar";
+                document.getElementById('btnApenasSalvar').style.display = 'inline-flex';
+            }
+        }
         document.getElementById('modalView').style.display = 'none';
         document.getElementById('modalEditor').style.display = 'flex';
         setTimeout(() => quill.focus(), 100);
@@ -2589,7 +2617,11 @@
         quill.clipboard.dangerouslyPasteHTML(html);
         
         editingDocId = null; // Garante criação de novo card
-        document.getElementById('btnSalvar').textContent = "Salvar Estudo e Criar Revisões";
+        document.getElementById('btnSalvar').textContent = "Criar Cronograma";
+        if (document.getElementById('btnApenasSalvar')) {
+            document.getElementById('btnApenasSalvar').textContent = "Apenas Salvar";
+            document.getElementById('btnApenasSalvar').style.display = 'inline-flex';
+        }
         
         // Abre o editor (O CSS do Passo 1 garante que ele fique por cima)
         document.getElementById('modalEditor').style.display = 'flex';
@@ -2732,6 +2764,10 @@
         document.getElementById('subjectTag').value = '';
         quill.setText(''); 
         document.getElementById('btnSalvar').textContent = "Criar Cronograma";
+        if (document.getElementById('btnApenasSalvar')) {
+            document.getElementById('btnApenasSalvar').textContent = "Apenas Salvar";
+            document.getElementById('btnApenasSalvar').style.display = 'inline-flex';
+        }
         
         document.getElementById('modalEditor').style.display = 'flex';
         setTimeout(() => quill.focus(), 100); 
@@ -2746,6 +2782,9 @@
         document.getElementById('subjectTag').value = 'TUTORIA'; // Tag padrão sugestiva
         quill.setText('');
         document.getElementById('btnSalvar').textContent = "Salvar Tutoria"; // Texto diferente
+        if (document.getElementById('btnApenasSalvar')) {
+            document.getElementById('btnApenasSalvar').style.display = 'none';
+        }
         
         document.getElementById('modalEditor').style.display = 'flex';
         setTimeout(() => quill.focus(), 100);
