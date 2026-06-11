@@ -1974,7 +1974,7 @@
 
         async function carregarBiblioteca() {
         if(!currentUID) return;
-        const snap = await getDocs(query(collection(db, "planners", currentUID, "arquivos"), orderBy("data", "desc"), limit(50)));
+        const snap = await getDocs(query(collection(db, "planners", currentUID, "arquivos"), orderBy("data", "desc")));
         
         bibliotecaCache = [];
         if (!snap.empty) {
@@ -4743,7 +4743,11 @@
                 })
             });
 
-            if (!response.ok) throw new Error("Erro no Preceptor");
+            if (!response.ok) {
+                const erroMisterioso = await response.json();
+                throw new Error(erroMisterioso.error || "Falha na API.");
+            }
+
 
             const questoesGeradas = await response.json(); // Array de 20 objetos
 
@@ -4797,9 +4801,10 @@
 
         } catch (e) {
             console.error(e);
-            alert("Erro ao gerar a prova. Tente gerar menos questões ou verifique a conexão.");
+            alert("Motivo real do erro retornado pelo Google: " + e.message);
             showFeedback("Erro.", false);
         }
+
     };
 
     // ============================================================
