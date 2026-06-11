@@ -961,7 +961,7 @@
             </button>
 
             <button class="btn-action" onclick="window.gerarProvaAnatomiaLote()" style="background:#8e44ad; color:white; border:none; flex: 1; white-space: nowrap; justify-content: center;">
-                <i class="fas fa-layer-group"></i> Gerar Prova (20)
+                <i class="fas fa-layer-group"></i> Gerar Prova (10)
             </button>
         </div>
     </div>
@@ -996,6 +996,10 @@
 
         <div id="quizAnatomiaContainer" class="hidden">
             <div class="quiz-card" style="border-left: 5px solid #2383e2;">
+                <div style="font-size:10px; color:#2383e2; font-weight:700; margin-bottom:5px; text-transform:uppercase;">ANATOMIA PRÁTICA</div>
+                <p id="anatCase" style="font-style:italic; font-size:14px; margin-bottom:10px; color:#555;"></p>
+                <h3 id="anatQuestion" class="quiz-question" style="font-size:16px; margin-bottom:15px; font-weight:700;"></h3>
+                <div id="anatOptions" class="quiz-options"></div>
                 <div id="anatFeedback" class="quiz-feedback hidden"></div>
             </div>
         </div>
@@ -4693,7 +4697,7 @@
 
     window.gerarProvaAnatomiaLote = async () => {
         const filtro = document.getElementById('selRegiaoAnatomia').value;
-        const confirmacao = confirm(`Gerar uma prova de 20 questões sobre: ${filtro ? bancoAnatomia[filtro].title_pt : "Toda a Anatomia"}?\n\nIsso pode levar uns 15 segundos.`);
+        const confirmacao = confirm(`Gerar uma prova de 10 questões sobre: ${filtro ? bancoAnatomia[filtro].title_pt : "Toda a Anatomia"}?\n\nIsso pode levar uns 15 segundos.`);
         
         if (!confirmacao) return;
 
@@ -4715,7 +4719,7 @@
             });
         });
 
-        // 2. Embaralhar e pegar 20
+        // 2. Embaralhar e pegar 10
         if (poolImagens.length < 5) return alert("Poucas imagens disponíveis nessa região.");
         
         // Fisher-Yates Shuffle
@@ -4724,7 +4728,7 @@
             [poolImagens[i], poolImagens[j]] = [poolImagens[j], poolImagens[i]];
         }
 
-        const selecionadas = poolImagens.slice(0, 20); // Pega as 20 primeiras
+        const selecionadas = poolImagens.slice(0, 10); // Pega as 10 primeiras
 
         // 3. Preparar payload para o Worker (SÓ TEXTO para economizar banda)
         const payload = selecionadas.map((img, index) => ({
@@ -4743,7 +4747,11 @@
                 })
             });
 
-            if (!response.ok) throw new Error("Erro no Preceptor");
+            if (!response.ok) {
+                const erroMisterioso = await response.json();
+                throw new Error(erroMisterioso.error || "Falha na API.");
+            }
+
 
             const questoesGeradas = await response.json(); // Array de 20 objetos
 
@@ -4797,9 +4805,10 @@
 
         } catch (e) {
             console.error(e);
-            alert("Erro ao gerar a prova. Tente gerar menos questões ou verifique a conexão.");
+            alert("Motivo real do erro retornado pelo Google: " + e.message);
             showFeedback("Erro.", false);
         }
+
     };
 
     // ============================================================
