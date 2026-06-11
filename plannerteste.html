@@ -4693,7 +4693,7 @@
 
     window.gerarProvaAnatomiaLote = async () => {
         const filtro = document.getElementById('selRegiaoAnatomia').value;
-        const confirmacao = confirm(`Gerar uma prova de 20 questões sobre: ${filtro ? bancoAnatomia[filtro].title_pt : "Toda a Anatomia"}?\n\nIsso pode levar uns 15 segundos.`);
+        const confirmacao = confirm(`Gerar uma prova de 10 questões sobre: ${filtro ? bancoAnatomia[filtro].title_pt : "Toda a Anatomia"}?\n\nIsso pode levar uns 15 segundos.`);
         
         if (!confirmacao) return;
 
@@ -4715,7 +4715,7 @@
             });
         });
 
-        // 2. Embaralhar e pegar 20
+        // 2. Embaralhar e pegar 10
         if (poolImagens.length < 5) return alert("Poucas imagens disponíveis nessa região.");
         
         // Fisher-Yates Shuffle
@@ -4724,7 +4724,7 @@
             [poolImagens[i], poolImagens[j]] = [poolImagens[j], poolImagens[i]];
         }
 
-        const selecionadas = poolImagens.slice(0, 20); // Pega as 20 primeiras
+        const selecionadas = poolImagens.slice(0, 10); // Pega as 10 primeiras
 
         // 3. Preparar payload para o Worker (SÓ TEXTO para economizar banda)
         const payload = selecionadas.map((img, index) => ({
