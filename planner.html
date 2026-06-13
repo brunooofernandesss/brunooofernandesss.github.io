@@ -4486,7 +4486,9 @@
             snap.forEach(doc => {
                 const file = doc.data();
                 if (selecionados.includes(doc.id) && file.tipo === 'texto' && file.contentHTML) {
-                    const conteudoLimpo = file.contentHTML.replace(/<img[^>]+src="data:image[^">]+"[^>]*>/gi, '');
+                    const conteudoLimpo = file.contentHTML
+                        .replace(/<img[^>]+src="data:image[^">]+"[^>]*>/gi, '')
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
                     
                     // Envolvemos no ql-snow e ql-editor para puxar a formatação perfeita do Quill
                     conteudoTotal += `
