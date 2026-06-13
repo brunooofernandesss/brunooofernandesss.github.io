@@ -1243,13 +1243,21 @@
     
 
     
-    // ⛔ BLOQUEAR BASE64
+    // ⛔ BLOQUEAR BASE64 E GARANTIR CARREGAMENTO DE IMAGENS VÁLIDAS
     quill.clipboard.addMatcher('IMG', function(node, delta) {
         const src = node.getAttribute('src');
+        const Delta = Quill.import('delta');
+        
         if (src && src.startsWith('data:')) {
             alert("⚠️ Por favor, use o botão de imagem para enviar fotos.");
-            return { ops: [] };
+            return new Delta();
         }
+        
+        // Garante que a imagem válida (Firebase) seja reconstruída no editor ao clicar em Editar
+        if (src) {
+            return new Delta().insert({ image: src });
+        }
+        
         return delta;
     });
 
