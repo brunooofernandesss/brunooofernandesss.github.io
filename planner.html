@@ -1223,14 +1223,16 @@
             // Se for separador, ignoramos (não cola nada)
             if (isSeparator) return; 
 
-            if (trimmed.includes('|')) {
-                // Se for linha de tabela, removemos os negritos (**) para ficar limpo
-                const cleanLine = line.replace(/\*\*/g, ''); 
-                novaDelta.insert(cleanLine + '\n');
-            } else {
-                // Se for texto normal misturado, cola normal
-                novaDelta.insert(line + '\n');
-            }
+            // Processa o negrito markdown (**) ao colar
+            const parts = line.split(/(\*\*.*?\*\*)/g);
+            parts.forEach(part => {
+                if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
+                    novaDelta.insert(part.slice(2, -2), { bold: true });
+                } else if (part) {
+                    novaDelta.insert(part);
+                }
+            });
+            novaDelta.insert('\n');
         });
         return novaDelta;
     });
@@ -2073,7 +2075,8 @@
                     output += `<tr>`;
                     cells.forEach(cell => {
                         const tag = isHeader ? 'th' : 'td';
-                        output += `<${tag}>${cell}</${tag}>`;
+                        const formattedCell = cell.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                        output += `<${tag}>${formattedCell}</${tag}>`;
                     });
                     output += '</tr>';
                 }
@@ -2097,7 +2100,8 @@
                     flushTable();
                     insideTable = false;
                 }
-                output += `<p style="margin-bottom: 12px; line-height: 1.6;">${line}</p>`;
+                const formattedLine = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                output += `<p style="margin-bottom: 12px; line-height: 1.6;">${formattedLine}</p>`;
             }
         });
 
@@ -3474,7 +3478,10 @@
                 })
             });
 
-            if (!response.ok) throw new Error("Erro no Preceptor IA");
+            if (!response.ok) {
+                const erroMisterioso = await response.json();
+                throw new Error(erroMisterioso.error || "Falha na API.");
+            }
 
             const data = await response.json();
             console.log("🔍 Dados do Quiz:", data);
@@ -3516,7 +3523,7 @@
 
         } catch (error) {
             console.error(error);
-            alert("O preceptor está ocupado. Tente novamente.");
+            alert("Motivo real do erro retornado pelo Google: " + error.message);
             loader.style.display = 'none';
             startMsg.style.display = 'block';
         }
