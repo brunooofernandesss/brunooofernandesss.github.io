@@ -2181,8 +2181,11 @@
                     <input type="number" id="startPage" class="ai-input" placeholder="Início">
                     <span style="color:#ddd">-</span>
                     <input type="number" id="endPage" class="ai-input" placeholder="Fim">
-                    <button class="btn-action btn-primary" id="btnMapearCapitulo" style="padding: 4px 8px; font-size: 11px;">
+                    <button class="btn-action btn-primary" id="btnMapearCapitulo" style="padding: 4px 8px; font-size: 11px;" title="Mapear Conceitos">
                         <i class="fas fa-robot"></i>
+                    </button>
+                    <button class="btn-action" id="btnResumirPDF" style="background:#27ae60; color:white; border:none; padding: 4px 8px; font-size: 11px;" title="Resumir PDF">
+                        <i class="fas fa-file-signature"></i>
                     </button>
                 </div>
             </div>
@@ -2243,8 +2246,11 @@
                     <input type="number" id="startPage" class="ai-input" placeholder="Início">
                     <span style="color:#ddd">-</span>
                     <input type="number" id="endPage" class="ai-input" placeholder="Fim">
-                    <button class="btn-action btn-primary" id="btnMapearCapitulo" style="padding: 4px 8px; font-size: 11px;">
+                    <button class="btn-action btn-primary" id="btnMapearCapitulo" style="padding: 4px 8px; font-size: 11px;" title="Mapear Conceitos">
                         <i class="fas fa-robot"></i>
+                    </button>
+                    <button class="btn-action" id="btnResumirPDF" style="background:#27ae60; color:white; border:none; padding: 4px 8px; font-size: 11px;" title="Resumir PDF">
+                        <i class="fas fa-file-signature"></i>
                     </button>
                 </div>
             </div>
@@ -2754,7 +2760,82 @@
                 renderConceptsList(conceitos);
             }
         }
+
+        if(e.target && e.target.closest('#btnResumirPDF')){
+            const startInput = document.getElementById('startPage').value;
+            const endInput = document.getElementById('endPage').value;
+            const pdfNameOriginal = document.getElementById('viewTitle').textContent;
+            
+            if(!startInput || !endInput) return alert("Defina as páginas inicial e final para resumir.");
+            const start = parseInt(startInput);
+            const end = parseInt(endInput);
+            
+            if(end < start) return alert("Páginas inválidas.");
+
+            const titulo = prompt("Qual o Título deste resumo?", pdfNameOriginal.replace('.pdf', ''));
+            if (!titulo) return;
+            
+            const tag = prompt("Qual a Matéria (Tag)?", "Geral");
+            if (!tag) return;
+
+            const feedbackEl = document.getElementById('statusFeedback');
+            feedbackEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Extraindo texto e resumindo... (Isso pode levar 1 minuto)`;
+            feedbackEl.style.display = 'block';
+            feedbackEl.style.background = '#27ae60';
+
+            try {
+                // Reaproveita sua função de ler o PDF
+                const textoBruto = await extractPdfText(start, end);
+                
+                // Atualiza o aviso visual para confirmar que todas as páginas foram lidas
+                feedbackEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Criando resumo de ${end - start + 1} páginas... (Isso pode levar 1 minuto)`;
+                feedbackEl.style.display = 'block';
+                feedbackEl.style.background = '#27ae60';
+                
+                const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "x-auth": "planner_2026_super_private_token_847362" },
+                    body: JSON.stringify({ 
+                        action: "resumir_pdf", 
+                        titulo: titulo,
+                        texto: textoBruto.substring(0, 35000)
+                    })
+                });
+
+                if (!response.ok) throw new Error("Erro de comunicação com a IA");
+                
+                const data = await response.json();
+                const htmlFormatado = marked.parse(data.html); // Converte o Markdown gerado para HTML
+
+                // Fecha o visualizador de PDF
+                fecharModalView();
+                
+                // Popula o Editor para o usuário ver/ajustar e Salvar
+                document.getElementById('subjectTitle').value = titulo;
+                document.getElementById('subjectTag').value = tag.toUpperCase();
+                quill.clipboard.dangerouslyPasteHTML(htmlFormatado);
+                
+                editingDocId = null; // Trata como um "Novo Estudo"
+                document.getElementById('btnSalvar').textContent = "Criar Cronograma";
+                if (document.getElementById('btnApenasSalvar')) {
+                    document.getElementById('btnApenasSalvar').textContent = "Apenas Salvar";
+                    document.getElementById('btnApenasSalvar').style.display = 'inline-flex';
+                }
+                
+                document.getElementById('modalEditor').style.display = 'flex';
+                setTimeout(() => quill.focus(), 100);
+
+                feedbackEl.style.display = 'none';
+                showFeedback("Resumo importado! Revise o material e clique em 'Criar Cronograma'.", false);
+
+            } catch (err) {
+                console.error(err);
+                feedbackEl.style.display = 'none';
+                alert("Falha ao processar e resumir o PDF.");
+            }
+        }
     });
+
 
 
 
