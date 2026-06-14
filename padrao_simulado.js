@@ -1,13 +1,10 @@
-import { auth } from './firebase.js';
+import { auth, db } from './firebase.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 
 // --- 1. CSS ---
 const style = document.createElement('style');
 style.textContent = `
-    /* RESET DO BODY:
-       Removemos padding/margin para a barra encostar nas bordas.
-       Definimos position relative para ser a referência do absolute.
-    */
     html, body {
         margin: 0 !important;
         padding: 0 !important;
@@ -16,15 +13,11 @@ style.textContent = `
         background-color: #f3f4f6 !important;
         font-family: 'Inter', -apple-system, sans-serif !important;
         overflow-x: hidden !important;
-        position: relative !important; 
+        position: relative !important;
     }
 
-    /* NAVBAR ABSOLUTE:
-       - Absolute: Fica no topo (top:0), mas rola junto com a página.
-       - Width 100%: Preenche a largura total.
-    */
     .navbar {
-        position: absolute !important; 
+        position: absolute !important;
         top: 0 !important;
         left: 0 !important;
         width: 100% !important;
@@ -39,15 +32,10 @@ style.textContent = `
         box-sizing: border-box !important;
     }
 
-    /* ESPAÇO NO BODY:
-       Adicionamos padding no topo do body igual à altura da barra (64px) + um respiro (20px).
-       Isso empurra o simulado para baixo para ele não começar escondido atrás da barra.
-    */
     body {
-        padding-top: 84px !important; 
+        padding-top: 84px !important;
     }
 
-    /* ESTILOS DA NAVBAR */
     .navbar-brand {
         font-weight: 700; font-size: 1.125rem; color: #0f172a;
         text-decoration: none; display: flex; align-items: center; gap: 10px;
@@ -69,12 +57,25 @@ style.textContent = `
 
     .user-info-text { display: flex; flex-direction: column; line-height: 1.2; text-align: right; }
     .user-name { font-size: 0.875rem; font-weight: 600; color: #111827; }
-    .user-meta { font-size: 0.75rem; color: #6b7280; }
+    .user-meta { font-size: 0.75rem; color: #6b7280; display: flex; align-items: center; gap: 6px; }
 
-    /* LAYOUT DO CONTEÚDO */
+    /* Badge de plano */
+    .badge-plano {
+        display: inline-flex; align-items: center; gap: 3px;
+        padding: 2px 7px; border-radius: 20px;
+        font-size: 0.7rem; font-weight: 700; letter-spacing: 0.02em;
+    }
+    .badge-premium {
+        background: #dbeafe; color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+    }
+    .badge-gratuito {
+        background: #fef9c3; color: #92400e;
+        border: 1px solid #fde68a;
+    }
+
     .quiz-container {
-        max-width: 800px;
-        width: 100%;
+        max-width: 800px; width: 100%;
         margin: 0 auto 40px auto !important;
         padding: 0 20px !important;
         box-sizing: border-box !important;
@@ -92,13 +93,12 @@ style.textContent = `
     .nav-tag:hover { color: #111827; background-color: rgba(0, 0, 0, 0.05); }
     .nav-tag.active { background-color: #e5e7eb; color: #0f172a; font-weight: 600; cursor: default; }
 
-    /* CSS GERAL */
     .card, .card-bloco {
         background-color: #ffffff; border: 1px solid #e5e7eb;
         border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
     h1 { color: #0f172a; font-size: 1.8rem; margin-bottom: 30px; text-align: center; font-family: 'Inter', sans-serif; }
-    
+
     .submit-btn { background-color: #2563eb; border-radius: 6px; font-weight: 600; }
     .submit-btn:hover { background-color: #1d4ed8; }
 
@@ -109,32 +109,23 @@ style.textContent = `
 
     /* DROPDOWN MENU */
     .user-dropdown {
-        position: absolute;
-        top: 60px;
-        right: 20px;
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        width: 160px;
-        display: none; /* Escondido por padrão */
-        flex-direction: column;
-        z-index: 2000;
-        overflow: hidden;
+        position: absolute; top: 60px; right: 20px;
+        background: white; border: 1px solid #e5e7eb;
+        border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        width: 180px; display: none; flex-direction: column;
+        z-index: 2000; overflow: hidden;
     }
     .user-dropdown.active { display: flex; }
-    
+
     .dropdown-item {
-        padding: 12px 16px;
-        font-size: 0.9rem;
-        color: #d44c47; /* Vermelho para sair */
-        cursor: pointer;
-        display: flex; align-items: center; gap: 8px;
-        font-weight: 500;
-        transition: background 0.2s;
-        text-decoration: none;
+        padding: 12px 16px; font-size: 0.9rem;
+        cursor: pointer; display: flex; align-items: center; gap: 8px;
+        font-weight: 500; transition: background 0.2s; text-decoration: none;
     }
-    .dropdown-item:hover { background-color: #fef2f2; }
+    .dropdown-item-logout { color: #d44c47; }
+    .dropdown-item-logout:hover { background-color: #fef2f2; }
+    .dropdown-item-premium { color: #1d4ed8; }
+    .dropdown-item-premium:hover { background-color: #eff6ff; }
 `;
 document.head.appendChild(style);
 
@@ -146,9 +137,8 @@ if (!document.querySelector('link[href*="font-awesome"]')) {
     document.head.appendChild(fa);
 }
 
-// 3. INJEÇÃO DA ESTRUTURA
+// 3. INJEÇÃO DA NAVBAR
 document.addEventListener("DOMContentLoaded", () => {
-    // Navbar
     const navbarHTML = `
         <nav class="navbar">
             <a href="index.html" class="navbar-brand">
@@ -157,13 +147,19 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="user-profile" id="btnProfileTrigger" style="cursor: pointer;">
                 <div class="user-info-text">
                     <span class="user-name" id="displayUser">Carregando...</span>
-                    <div class="user-meta"><span id="displayIp">...</span></div>
+                    <div class="user-meta">
+                        <span id="displayIp">...</span>
+                        <span id="badgePlano"></span>
+                    </div>
                 </div>
                 <div class="user-avatar" id="userAvatar"><i class="fas fa-user"></i></div>
             </div>
-            
+
             <div class="user-dropdown" id="userDropdownMenu">
-                <div class="dropdown-item" id="btnAppLogout">
+                <div class="dropdown-item dropdown-item-premium" id="btnAssinarPremium" style="display:none;">
+                    <i class="fas fa-star"></i> Assinar Premium
+                </div>
+                <div class="dropdown-item dropdown-item-logout" id="btnAppLogout">
                     <i class="fas fa-sign-out-alt"></i> Sair do Sistema
                 </div>
             </div>
@@ -171,19 +167,17 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
     document.body.insertAdjacentHTML('afterbegin', navbarHTML);
 
-    // --- LÓGICA DO MENU DROPDOWN ---
+    // Dropdown toggle
     const btnProfile = document.getElementById('btnProfileTrigger');
     const dropdown = document.getElementById('userDropdownMenu');
     const btnLogout = document.getElementById('btnAppLogout');
+    const btnPremium = document.getElementById('btnAssinarPremium');
 
-    // 1. Abrir/Fechar ao clicar no perfil
     if (btnProfile && dropdown) {
         btnProfile.addEventListener('click', (e) => {
-            e.stopPropagation(); // Evita fechar imediatamente
+            e.stopPropagation();
             dropdown.classList.toggle('active');
         });
-
-        // 2. Fechar se clicar fora
         document.addEventListener('click', (e) => {
             if (!btnProfile.contains(e.target) && !dropdown.contains(e.target)) {
                 dropdown.classList.remove('active');
@@ -191,64 +185,72 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // 3. Função de Logout
     if (btnLogout) {
         btnLogout.addEventListener('click', async () => {
             try {
                 await signOut(auth);
                 window.location.href = "login.html";
             } catch (error) {
-                console.error("Erro ao sair: ", error);
                 alert("Erro ao tentar sair.");
             }
         });
     }
 
-    // Tags (DESATIVADO PARA EVITAR CONFLITO NO PLANNER)
-    const quizContainer = document.querySelector('.quiz-container');
-    const title = quizContainer ? quizContainer.querySelector('h1') : null;
-    
-    /* COMENTADO PARA NÃO HAVER FUGA DO USUÁRIO GRATUITO
-    if (quizContainer) {
-        const tagsHTML = `
-            <div class="nav-tags">
-                <a href="index.html" class="nav-tag active">Simulados</a>
-                <a href="resumos.html" class="nav-tag">Resumos</a>
-                <a href="planner.html" class="nav-tag">Planner</a>
-            </div>
-        `;
-        if (title) title.insertAdjacentHTML('beforebegin', tagsHTML);
-        else quizContainer.insertAdjacentHTML('afterbegin', tagsHTML);
+    if (btnPremium) {
+        btnPremium.addEventListener('click', () => {
+            window.location.href = "login.html";
+        });
     }
-    */
 });
 
-// 4. AUTH
+// 4. AUTH + PLANO
 onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        const displayName = user.displayName || "Estudante";
-        const email = user.email || "";
-        
-        const nameEl = document.getElementById('displayUser');
-        if (nameEl) nameEl.textContent = displayName;
-        
-        const avatarEl = document.getElementById('userAvatar');
-        if (avatarEl) {
-            const initials = displayName.split(" ").map((n)=>n[0]).join("").substring(0,2).toUpperCase();
-            avatarEl.textContent = initials;
-        }
+    if (!user) return;
 
-        try {
-            const res = await fetch('https://api.ipify.org?format=json');
-            const data = await res.json();
-            const ipEl = document.getElementById('displayIp');
-            if(ipEl) {
-                ipEl.textContent = data.ip;
-                ipEl.title = `Logado como: ${email}`;
-            }
-        } catch {
-            const ipEl = document.getElementById('displayIp');
-            if(ipEl) ipEl.style.display = 'none';
+    const displayName = user.displayName || "Estudante";
+    const email = user.email || "";
+
+    // Nome e avatar
+    const nameEl = document.getElementById('displayUser');
+    if (nameEl) nameEl.textContent = displayName;
+
+    const avatarEl = document.getElementById('userAvatar');
+    if (avatarEl) {
+        const initials = displayName.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+        avatarEl.textContent = initials;
+    }
+
+    // IP
+    try {
+        const res = await fetch('https://api.ipify.org?format=json');
+        const data = await res.json();
+        const ipEl = document.getElementById('displayIp');
+        if (ipEl) {
+            ipEl.textContent = `IP: ${data.ip}`;
+            ipEl.title = `Logado como: ${email}`;
         }
+    } catch {
+        const ipEl = document.getElementById('displayIp');
+        if (ipEl) ipEl.style.display = 'none';
+    }
+
+    // Plano (lê do Firestore)
+    try {
+        const userRef = doc(db, "usuarios", email.toLowerCase());
+        const snap = await getDoc(userRef);
+        const plano = snap.exists() ? (snap.data().plano || "gratuito") : "gratuito";
+
+        const badgeEl = document.getElementById('badgePlano');
+        const btnPremium = document.getElementById('btnAssinarPremium');
+
+        if (plano === "premium") {
+            if (badgeEl) badgeEl.innerHTML = `<span class="badge-plano badge-premium"><i class="fas fa-star" style="font-size:0.6rem;"></i> Premium</span>`;
+            if (btnPremium) btnPremium.style.display = 'none';
+        } else {
+            if (badgeEl) badgeEl.innerHTML = `<span class="badge-plano badge-gratuito"><i class="fas fa-lock" style="font-size:0.6rem;"></i> Gratuito</span>`;
+            if (btnPremium) btnPremium.style.display = 'flex';
+        }
+    } catch (e) {
+        console.warn("Não foi possível ler o plano do usuário:", e.message);
     }
 });
