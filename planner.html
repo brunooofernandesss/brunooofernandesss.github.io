@@ -48,7 +48,10 @@
             height: 100dvh;       
             overflow-y: auto;     
             overflow-x: hidden;
-            padding-bottom: 120px; 
+            padding-bottom: 120px;
+            /* Scrollbar visível na sidebar para o usuário saber que tem mais itens */
+            scrollbar-width: thin;
+            scrollbar-color: #d0d0d0 transparent;
         }
 
         .sidebar::-webkit-scrollbar { width: 6px; }
@@ -760,11 +763,15 @@
     <aside class="sidebar">
         <div class="sidebar-header">
             <div id="headerUserName" class="user-id-text">Carregando...</div>
-            <div id="headerUserIP" class="user-ip-text">...</div>
+            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                <div id="headerUserIP" class="user-ip-text">...</div>
+                <span id="headerPlanBadge" style="display:none; font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; letter-spacing:0.02em;"></span>
+            </div>
         </div>
         
         <nav style="flex: 1 0 auto;"> <div class="nav-item active" id="navBoard"><i class="far fa-calendar-alt"></i> Cronograma Semanal</div>
             <div class="nav-item" id="navLib"><i class="fas fa-folder-open"></i> Biblioteca de Aulas</div>
+            <div class="nav-item" id="navPreAula" style="color: #27ae60; font-weight: 500;"><i class="fas fa-bolt"></i> Preparação Pré-Aula</div>
             <div class="nav-item" id="navAgenda"><i class="far fa-clock"></i> Agenda Diária</div>
             <div class="nav-item" id="navQuizzes"><i class="fas fa-brain"></i> Meus Simulados</div>
             <div class="nav-item" id="navTutorias" style="color: #d35400; font-weight: 500;"><i class="fas fa-chalkboard-teacher"></i> Tutorias PBL</div>
@@ -880,6 +887,39 @@
                         <tbody id="listaBiblioteca">
                         </tbody>
                     </table>
+                </div>
+            </section>
+
+            <section id="secPreAula" class="hidden" style="height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+                <div class="header-actions">
+                    <h1 class="page-title">Gerador de Pré-Aulas (PBL)</h1>
+                </div>
+                <div style="max-width: 800px; margin: 0 auto; width: 100%;">
+                    <div style="background: white; border-radius: 8px; border: 1px solid var(--border-color); padding: 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.03);">
+                        <p style="color: #666; font-size: 14px; margin-bottom: 20px;">
+                            Faça o upload do cronograma do semestre. O sistema vai extrair TODAS as aulas (mesmo que sejam várias no mesmo dia) e agendá-las no seu planner para <strong>1 dia antes da aula real</strong>. A IA preencherá o conteúdo denso destas aulas aos poucos no servidor, durante as férias.
+                        </p>
+                        
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:20px;">
+                            <div>
+                                <label style="font-size:12px; font-weight:600; display:block; margin-bottom:5px;">Data Inicial do Semestre</label>
+                                <input type="date" id="preAulaInicio" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                            </div>
+                            <div>
+                                <label style="font-size:12px; font-weight:600; display:block; margin-bottom:5px;">Data Final do Semestre</label>
+                                <input type="date" id="preAulaFim" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:5px;">Upload do Cronograma (PDF)</label>
+                            <input type="file" id="pdfCronograma" accept="application/pdf" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; background: #f9f9f9;">
+                        </div>
+
+                        <button class="btn-action" onclick="window.processarCronogramaPreAula()" style="width:100%; justify-content:center; background:#27ae60; color:white; border:none; padding:12px; font-weight:600; font-size: 15px;">
+                            <i class="fas fa-robot"></i> Analisar Cronograma e Agendar Aulas
+                        </button>
+                    </div>
                 </div>
             </section>
             
@@ -1075,6 +1115,37 @@
 
 
 <script type="module">
+    // =========================================================
+    // ⚙️ CONFIGURAÇÃO CENTRAL DO WORKER (Edite apenas aqui)
+    // =========================================================
+    // ATENÇÃO: Para maior segurança, troque o token por um token 
+    // gerado via Firebase ID Token (ver README). Por enquanto, 
+    // o token fixo foi centralizado aqui para facilitar a rotação.
+    const WORKER_URL = "https://planner-worker.onurbonecsamad.workers.dev/";
+    const WORKER_TOKEN = "planner_2026_super_private_token_847362";
+
+    // Helper centralizado: toda chamada ao Worker passa por aqui
+    // Inclui validação mínima de conteúdo e tratamento de JSON inválido
+    async function callWorker(payload, stepLabel = "") {
+        const response = await fetch(WORKER_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-auth": WORKER_TOKEN },
+            body: JSON.stringify(payload)
+        });
+        if (!response.ok) {
+            let errMsg = `Worker retornou status ${response.status}`;
+            try { const e = await response.json(); errMsg = e.error || errMsg; } catch(_) {}
+            throw new Error(errMsg);
+        }
+        let text;
+        try {
+            text = await response.text();
+            return JSON.parse(text);
+        } catch (_) {
+            throw new Error(`JSON inválido recebido do Worker${stepLabel ? " em " + stepLabel : ""}: ${(text||"").substring(0,200)}`);
+        }
+    }
+
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc, getDoc, deleteDoc, where, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -1343,57 +1414,112 @@
     }
     // ------------------------------------------------
 
+    // Variável global de controle de plano — usada pelos guards de função
+    let isPremium = false;
+
+    // Modal de upgrade (criado dinamicamente uma vez)
+    function mostrarModalUpgrade() {
+        let modal = document.getElementById('modalUpgradePremium');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'modalUpgradePremium';
+            modal.style.cssText = 'display:flex; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:99999; align-items:center; justify-content:center;';
+            modal.innerHTML = `
+                <div style="background:white; border-radius:12px; max-width:380px; width:90%; text-align:center; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,0.3); animation: fadeInUp 0.3s ease;">
+                    <div style="background:linear-gradient(135deg,#1d4ed8,#2563eb); color:white; padding:24px;">
+                        <i class="fas fa-star" style="font-size:2rem; margin-bottom:10px;"></i>
+                        <h3 style="margin:0; font-size:1.3rem;">Função Premium</h3>
+                    </div>
+                    <div style="padding:28px 24px;">
+                        <p style="color:#555; font-size:14px; margin-bottom:20px; line-height:1.6;">
+                            Esta função está disponível apenas no plano <strong>Premium</strong>.<br>
+                            Usuários gratuitos têm acesso aos Simulados Gratuitos.
+                        </p>
+                        <button onclick="window.location.href='login.html'" 
+                            style="width:100%; padding:13px; background:#2563eb; color:white; border:none; border-radius:8px; font-size:15px; font-weight:700; cursor:pointer; margin-bottom:10px;">
+                            <i class="fas fa-star"></i> Ver Planos Premium
+                        </button>
+                        <button onclick="document.getElementById('modalUpgradePremium').style.display='none'"
+                            style="background:none; border:none; color:#999; text-decoration:underline; cursor:pointer; font-size:13px;">
+                            Fechar
+                        </button>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+        } else {
+            modal.style.display = 'flex';
+        }
+    }
+
     onAuthStateChanged(auth, async (user) => {
         if (!user) { window.location.href = "login.html"; return; }
         currentUID = user.uid;
-        
-        const emailSeguro = user.email ? user.email.toLowerCase() : "usuario@gratuito.com";
-        const headerName = document.getElementById("headerUserName");
-        if (headerName) headerName.textContent = user.email || "Estudante";
 
+        const emailSeguro = user.email ? user.email.toLowerCase() : "";
+        const headerName = document.getElementById("headerUserName");
+        if (headerName) headerName.textContent = user.displayName || user.email || "Estudante";
+
+        // IP
         fetch('https://api.ipify.org?format=json')
             .then(r => r.json())
-            .then(d => { 
+            .then(d => {
                 const ipEl = document.getElementById('headerUserIP');
-                if (ipEl) ipEl.textContent = "IP: " + d.ip; 
+                if (ipEl) ipEl.textContent = "IP: " + d.ip;
             })
-            .catch(() => { 
+            .catch(() => {
                 const ipEl = document.getElementById('headerUserIP');
-                if (ipEl) ipEl.textContent = "IP: Detectando..."; 
+                if (ipEl) ipEl.textContent = "IP: N/D";
             });
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const isModoGratis = urlParams.get('modo') === 'gratis';
-
-        let isAutorizado = false;
+        // ✅ Lê autorizado E plano do Firestore — nunca confia só na URL
+        let plano = "gratuito";
+        let autorizado = false;
         try {
-            // Se o Firebase bloquear a leitura por falta de permissão, o "catch" assume.
             const userRef = doc(db, "usuarios", emailSeguro);
             const snap = await getDoc(userRef);
-            isAutorizado = snap.exists() && snap.data().autorizado === true;
+            if (snap.exists()) {
+                autorizado = snap.data().autorizado === true;
+                plano = snap.data().plano || "gratuito";
+            }
         } catch (errorDb) {
-            console.warn("Perfil sem acesso de leitura no Firebase. Forçando visualização restrita.");
-            isAutorizado = false;
+            console.warn("Erro ao ler Firestore. Forçando gratuito.", errorDb.message);
         }
 
-        if (!isAutorizado || isModoGratis) {
+        // Determina se é premium (tem que ter autorizado:true E plano:"premium")
+        isPremium = autorizado && plano === "premium";
+
+        // Badge de plano na sidebar
+        const badge = document.getElementById('headerPlanBadge');
+        if (badge) {
+            badge.style.display = 'inline-block';
+            if (isPremium) {
+                badge.textContent = '⭐ Premium';
+                badge.style.background = '#dbeafe';
+                badge.style.color = '#1d4ed8';
+                badge.style.border = '1px solid #bfdbfe';
+            } else {
+                badge.textContent = '🔓 Gratuito';
+                badge.style.background = '#fef9c3';
+                badge.style.color = '#92400e';
+                badge.style.border = '1px solid #fde68a';
+            }
+        }
+
+        if (!isPremium) {
+            // Modo gratuito: esconde tudo exceto simulados gratuitos
             document.querySelectorAll('.nav-item').forEach(item => {
                 if (item.id !== 'navSimuladosGratuitos') item.style.display = 'none';
             });
-            
             const metasEl = document.querySelector('.sidebar-goals');
             if (metasEl) metasEl.style.display = 'none';
-            
             const topBarEl = document.querySelector('.top-bar');
             if (topBarEl) topBarEl.style.display = 'none';
-            
             const btnGratis = document.getElementById('navSimuladosGratuitos');
             if (btnGratis) btnGratis.click();
         } else {
             loadDataAndInit();
         }
-        
-        // Esta linha é quem efetivamente busca e desenha os simulados:
+
         carregarSimuladosGratuitos();
     });
 
@@ -1755,6 +1881,7 @@
 
 
     document.getElementById("pdfInput").onchange = async (e) => {
+        if (!isPremium) { mostrarModalUpgrade(); e.target.value = ''; return; }
         const file = e.target.files[0];
         if (!file) return;
         const tag = prompt("Qual a matéria?", "Geral") || "Geral";
@@ -1798,15 +1925,11 @@
     async function gerarConteudoIA(textoOriginal, label) {
         // Chama seu Cloudflare Worker
         try {
-            const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "x-auth": "planner_2026_super_private_token_847362" },
-                body: JSON.stringify({ action: "gerar_revisao", textoOriginal, label })
-            });
-
-            if (!response.ok) return `<p>Erro ao gerar revisão automática para ${label}.</p>`;
-
-            const data = await response.json();
+            // Valida que o conteúdo tem substância antes de chamar a IA
+            if (!textoOriginal || textoOriginal.length < 50) {
+                return `<p>Conteúdo insuficiente para gerar revisão ${label}.</p>`;
+            }
+            const data = await callWorker({ action: "gerar_revisao", textoOriginal, label }, "gerar_revisao");
             return data.html; 
         } catch (error) {
             console.error("Erro Worker:", error);
@@ -1815,6 +1938,7 @@
     }
 
     async function criarRevisoesComIA(titulo, tag, contentOriginal) {
+        if (!isPremium) { mostrarModalUpgrade(); return; }
         if (!currentUID) return;
         
         // Configuração dos dias de revisão
@@ -2550,14 +2674,7 @@
     async function mapearConceitosComIA(texto) {
         try {
             const textoLimitado = texto.substring(0, 35000); 
-            const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "x-auth": "planner_2026_super_private_token_847362" },
-                body: JSON.stringify({ action: "mapear_capitulo", texto: textoLimitado })
-            });
-
-            if (!response.ok) throw new Error("Falha na comunicação com a IA");
-            const data = await response.json();
+            const data = await callWorker({ action: "mapear_capitulo", texto: textoLimitado }, "mapear_capitulo");
             
             if(data.conceitos && Array.isArray(data.conceitos)) return data.conceitos;
             return ["Erro: A IA não retornou uma lista válida."];
@@ -2569,6 +2686,7 @@
 
     // 3. FUNÇÃO ESTUDAR (Com layout e loading corrigidos)
     window.gerarAulaConceito = async (conceito) => {
+        if (!isPremium) { mostrarModalUpgrade(); return; }
         // Verifica memória ou tenta recuperar
         if (!currentStudyText) {
              const pdfName = document.getElementById('viewTitle').textContent;
@@ -2600,19 +2718,11 @@
         feedbackEl.style.background = '#2383e2';
 
         try {
-            const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "x-auth": "planner_2026_super_private_token_847362" },
-                body: JSON.stringify({ 
+            const data = await callWorker({ 
                     action: "gerar_aula_conceito", 
                     conceito: conceito,
                     texto: currentStudyText.substring(0, 35000)
-                })
-            });
-
-            if (!response.ok) throw new Error("Erro na resposta da IA");
-
-            const data = await response.json();
+                }, "gerar_aula_conceito");
             
             // Remove o loading
             feedbackEl.style.display = 'none';
@@ -2788,23 +2898,15 @@
                 const textoBruto = await extractPdfText(start, end);
                 
                 // Atualiza o aviso visual para confirmar que todas as páginas foram lidas
-                feedbackEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Criando resumo de ${end - start + 1} páginas... (Isso pode levar 1 minuto)`;
+                feedbackEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> [2/3] IA criando resumo de ${end - start + 1} páginas (pode levar 1 minuto)...`;
                 feedbackEl.style.display = 'block';
                 feedbackEl.style.background = '#27ae60';
                 
-                const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", "x-auth": "planner_2026_super_private_token_847362" },
-                    body: JSON.stringify({ 
+                const data = await callWorker({ 
                         action: "resumir_pdf", 
                         titulo: titulo,
                         texto: textoBruto.substring(0, 35000)
-                    })
-                });
-
-                if (!response.ok) throw new Error("Erro de comunicação com a IA");
-                
-                const data = await response.json();
+                    }, "resumir_pdf");
                 const htmlFormatado = marked.parse(data.html); // Converte o Markdown gerado para HTML
 
                 // Fecha o visualizador de PDF
@@ -2854,8 +2956,9 @@
     window.fecharModalView = () => document.getElementById('modalView').style.display = 'none';
     
     // --- RESET NOVO ESTUDO (MODO NORMAL) ---
-    document.getElementById('btnNovoAssunto').onclick = () => { 
-        isTutoriaMode = false; // Garante que é estudo normal
+    document.getElementById('btnNovoAssunto').onclick = () => {
+        if (!isPremium) { mostrarModalUpgrade(); return; }
+        isTutoriaMode = false;
         editingDocId = null; 
         document.getElementById('subjectTitle').value = '';
         document.getElementById('subjectTag').value = '';
@@ -3169,6 +3272,7 @@
 
     // 2. Botão Biblioteca
     document.getElementById('navLib').onclick = () => {
+        if (!isPremium) { mostrarModalUpgrade(); return; }
         ['secBoard', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secTutorias', 'secRevisao', 'secSimuladosGratuitos'].forEach(id => { const el = document.getElementById(id); if(el) el.classList.add('hidden'); });
         
         document.getElementById('secLib').classList.remove('hidden');
@@ -3177,11 +3281,12 @@
         document.getElementById('navLib').classList.add('active');
         
         carregarBiblioteca();
-        window.toggleTopBarElements(false); // ESCONDE PARA LIMPAR VISUAL
+        window.toggleTopBarElements(false);
     };
 
     // 3. Botão Agenda
     document.getElementById('navAgenda').onclick = () => {
+        if (!isPremium) { mostrarModalUpgrade(); return; }
         ['secBoard', 'secLib', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secTutorias', 'secRevisao', 'secSimuladosGratuitos'].forEach(id => { const el = document.getElementById(id); if(el) el.classList.add('hidden'); });
         
         document.getElementById('secAgenda').classList.remove('hidden');
@@ -3190,11 +3295,12 @@
         document.getElementById('navAgenda').classList.add('active');
         
         renderAgendaBoard();
-        window.toggleTopBarElements(true); // MOSTRA NA AGENDA TAMBÉM
+        window.toggleTopBarElements(true);
     };
 
     // 4. Botão Meus Simulados
     document.getElementById('navQuizzes').onclick = () => {
+        if (!isPremium) { mostrarModalUpgrade(); return; }
         ['secBoard', 'secLib', 'secAgenda', 'secAnatomia', 'secSyllabus', 'secTutorias', 'secRevisao', 'secSimuladosGratuitos'].forEach(id => { const el = document.getElementById(id); if(el) el.classList.add('hidden'); });
         
         document.getElementById('secQuizzes').classList.remove('hidden');
@@ -3203,7 +3309,7 @@
         document.getElementById('navQuizzes').classList.add('active');
         
         if (typeof carregarAbaQuizzes === "function") carregarAbaQuizzes();
-        window.toggleTopBarElements(false); // ESCONDE
+        window.toggleTopBarElements(false);
     };
 
 
@@ -3253,10 +3359,11 @@
     
         // --- GERAR QUIZ ---
     window.gerarQuiz = async (arquivoId, titulo, textoContexto, tipo) => {
+        if (!isPremium) { mostrarModalUpgrade(); return; }
         const confirmacao = confirm(`Gerar simulado sobre: "${titulo}"?`);
         if(!confirmacao) return;
 
-        showFeedback("🧠 Criando questões...", true);
+        showFeedback("🧠 [1/3] Preparando conteúdo para o simulado...", true);
 
         // Prepara o contexto para a IA
         let promptText = "";
@@ -3275,19 +3382,13 @@
         }
 
         try {
-            const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "x-auth": "planner_2026_super_private_token_847362" },
-                body: JSON.stringify({ 
+            showFeedback("🧠 [2/3] IA gerando questões (pode levar 30s)...", true);
+            const data = await callWorker({ 
                     action: "gerar_quiz_arquivo", 
                     textoOriginal: promptText, 
                     label: promptLabel 
-                })
-            });
-
-            if(!response.ok) throw new Error("Erro na API");
-            
-            const data = await response.json();
+                }, "gerar_quiz_arquivo");
+            showFeedback("💾 [3/3] Salvando simulado...", true);
             const quizHTML = data.html;
 
             // 1. Salva na coleção 'quizzes' (Para a aba Meus Simulados)
@@ -3408,6 +3509,7 @@
 
     // --- NAVEGAÇÃO TUTORIAS (NOVO) ---
     document.getElementById('navTutorias').onclick = () => {
+        if (!isPremium) { mostrarModalUpgrade(); return; }
         // Esconde todas as outras seções
         ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secRevisao', 'secSimuladosGratuitos'].forEach(id => {
             const el = document.getElementById(id);
@@ -3432,7 +3534,7 @@
 
     // 1. Navegação Anatomia
     document.getElementById('navAnatomia').onclick = () => {
-        // Esconde tudo explicitamente para garantir
+        if (!isPremium) { mostrarModalUpgrade(); return; }
         ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secSyllabus', 'secTutorias', 'secRevisao', 'secSimuladosGratuitos'].forEach(id => {
             const el = document.getElementById(id);
             if(el) el.classList.add('hidden');
@@ -3443,11 +3545,12 @@
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('navAnatomia').classList.add('active');
         
-        window.toggleTopBarElements(false); // ESCONDE TOPO
+        window.toggleTopBarElements(false);
     };
 
     // Navegação Revisão Espaçada
     document.getElementById('navRevisao').onclick = () => {
+        if (!isPremium) { mostrarModalUpgrade(); return; }
         ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secTutorias', 'secSimuladosGratuitos'].forEach(id => {
             const el = document.getElementById(id);
             if(el) el.classList.add('hidden');
@@ -3512,6 +3615,7 @@
 
     // 2. Lógica do Jogo (Versão Blindada v3)
     window.gerarNovoDesafioAnatomia = async () => {
+        if (!isPremium) { mostrarModalUpgrade(); return; }
         const imgEl = document.getElementById('imgAnatomia');
         const loader = document.getElementById('loadingAnatomia');
         const startMsg = document.getElementById('startAnatomia');
@@ -3558,21 +3662,10 @@
         document.getElementById('anatRegion').textContent = dadosPasta.title_pt;
 
         try {
-            const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "x-auth": "planner_2026_super_private_token_847362" },
-                body: JSON.stringify({ 
+            const data = await callWorker({ 
                     action: "gerar_quiz_anatomia", 
                     description: descricaoTecnica
-                })
-            });
-
-            if (!response.ok) {
-                const erroMisterioso = await response.json();
-                throw new Error(erroMisterioso.error || "Falha na API.");
-            }
-
-            const data = await response.json();
+                }, "gerar_quiz_anatomia");
             console.log("🔍 Dados do Quiz:", data);
 
             // BLINDAGEM: Tenta encontrar o índice correto em várias chaves possíveis
@@ -3699,6 +3792,7 @@
     // ============================================================
 
     window.abrirModalAgendaIA = () => {
+        if (!isPremium) { mostrarModalUpgrade(); return; }
         document.getElementById('promptAgenda').value = '';
         document.getElementById('modalAgendaIA').style.display = 'flex';
     };
@@ -3752,28 +3846,44 @@
             }
 
 
-            const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "x-auth": "planner_2026_super_private_token_847362" },
-                body: JSON.stringify({ 
+            // Validação JS de conflitos: remove itens já salvos da resposta
+            const novosHorarios = await callWorker({ 
                     action: "gerar_agenda_ia", 
                     textoUsuario: texto,
                     dataReferencia: hojeISO,
                     agendaExistente: agendaExistente,
                     pendencias: listaPendencias
-                })
-            });
-
-            if (!response.ok) throw new Error("Erro na IA");
-
-            const novosHorarios = await response.json();
+                }, "gerar_agenda_ia");
             
             if (!novosHorarios || novosHorarios.length === 0) {
                 showFeedback("Nenhum horário sugerido pela IA.", false);
                 return;
             }
 
-            const promises = novosHorarios.map(item => {
+            // ✅ Validação de conflito JS: filtra horários que sobrepõem os existentes
+            const toMinutes = (hhmm) => {
+                if (!hhmm || !hhmm.includes(':')) return 0;
+                const [h, m] = hhmm.split(':').map(Number);
+                return h * 60 + m;
+            };
+            const horariosFiltrados = novosHorarios.filter(novo => {
+                const novoInicio = toMinutes(novo.inicio);
+                const novoFim = toMinutes(novo.fim);
+                const conflito = allAgendaCache.some(existente => {
+                    if (existente.data !== novo.data) return false;
+                    const exInicio = toMinutes(existente.inicio);
+                    const exFim = toMinutes(existente.fim);
+                    return novoInicio < exFim && novoFim > exInicio;
+                });
+                if (conflito) console.warn(`[Agenda IA] Conflito detectado e removido: ${novo.titulo} ${novo.data} ${novo.inicio}-${novo.fim}`);
+                return !conflito;
+            });
+            if (horariosFiltrados.length === 0) {
+                showFeedback("Todos os horários sugeridos conflitavam com a agenda. Tente outro horário.", false);
+                return;
+            }
+
+            const promises = horariosFiltrados.map(item => {
                 return addDoc(collection(db, "planners", currentUID, "agenda"), {
                     titulo: item.titulo,
                     data: item.data,
@@ -3860,6 +3970,7 @@
     // 🚀 MOTOR DO SIMULADO GERAL (FASE 2 - FINAL)
     // ============================================================
     window.iniciarSimuladoMisto = async () => {
+        if (!isPremium) { mostrarModalUpgrade(); return; }
         // 1. CAPTURAR CONFIGURAÇÕES DO USUÁRIO
         const chkMaterias = Array.from(document.querySelectorAll('.chk-materia:checked')).map(c => c.value);
         const usarTodasTexto = document.getElementById('checkUsarTodas').checked;
@@ -3937,14 +4048,9 @@
                     // Prepara payload pro Worker
                     const payload = selecionadas.map((img, i) => ({ id: i, desc: img.desc }));
                     
-                    const res = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json", "x-auth": "planner_2026_super_private_token_847362" },
-                        body: JSON.stringify({ action: "gerar_prova_anatomia", listaImagens: payload })
-                    });
-
-                    if (res.ok) {
-                        const dadosAnato = await res.json();
+                    try {
+                    const dadosAnato = await callWorker({ action: "gerar_prova_anatomia", listaImagens: payload }, "gerar_prova_anatomia (simulado)");
+                    if (dadosAnato && dadosAnato.length > 0) {
                         dadosAnato.forEach(q => {
                             const imgOrig = selecionadas[q.id_imagem];
                             const cardHTML = `
@@ -3967,6 +4073,9 @@
                             `;
                             questoesFinais.push(cardHTML);
                         });
+                    }
+                    } catch(erroAnato) {
+                        console.warn("Anatomia falhou no simulado misto, continuando sem ela:", erroAnato.message);
                     }
                 }
             }
@@ -4352,6 +4461,7 @@
 
     // Abre a lista de erros
     window.abrirCadernoErros = async () => {
+        if (!isPremium) { mostrarModalUpgrade(); return; }
         document.getElementById('modalErros').style.display = 'flex';
         document.getElementById('listaErrosContainer').innerHTML = '<div style="padding:20px; text-align:center;"><i class="fas fa-spinner fa-spin"></i> Carregando suas falhas...</div>';
         
@@ -4711,6 +4821,7 @@
     // ============================================================
 
     window.abrirCorretor = () => {
+        if (!isPremium) { mostrarModalUpgrade(); return; }
         const modal = document.getElementById('modalCorretor');
         modal.style.display = 'flex';
         
@@ -4749,19 +4860,11 @@
         btn.style.opacity = "0.7";
 
         try {
-            const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "x-auth": "planner_2026_super_private_token_847362" },
-                body: JSON.stringify({ 
+            const data = await callWorker({ 
                     action: "corrigir_resumo", 
                     textoOriginal: original,
                     textoAluno: aluno
-                })
-            });
-
-            if (!response.ok) throw new Error("Erro na API");
-
-            const data = await response.json();
+                }, "corrigir_resumo");
             
             // Exibe Feedback
             const area = document.getElementById('areaFeedbackCorretor');
@@ -4794,6 +4897,7 @@
     // ============================================================
 
     window.gerarProvaAnatomiaLote = async () => {
+        if (!isPremium) { mostrarModalUpgrade(); return; }
         const filtro = document.getElementById('selRegiaoAnatomia').value;
         const confirmacao = confirm(`Gerar uma prova de 10 questões sobre: ${filtro ? bancoAnatomia[filtro].title_pt : "Toda a Anatomia"}?\n\nIsso pode levar uns 15 segundos.`);
         
@@ -4836,22 +4940,10 @@
 
         try {
             // 4. Chamar Worker
-            const response = await fetch("https://planner-worker.onurbonecsamad.workers.dev/", {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "x-auth": "planner_2026_super_private_token_847362" },
-                body: JSON.stringify({ 
+            const questoesGeradas = await callWorker({ 
                     action: "gerar_prova_anatomia", 
                     listaImagens: payload 
-                })
-            });
-
-            if (!response.ok) {
-                const erroMisterioso = await response.json();
-                throw new Error(erroMisterioso.error || "Falha na API.");
-            }
-
-
-            const questoesGeradas = await response.json(); // Array de 20 objetos
+                }, "gerar_prova_anatomia"); // Array de questões
 
             // 5. Montar o HTML do Simulado (Combinando a Imagem local com a Pergunta da IA)
             let htmlProva = `<div style="max-width:800px; margin:0 auto;">
@@ -4987,6 +5079,7 @@
 
     // 2. MODO FÉRIAS (Distribuição Inteligente)
     window.criarCronogramaFerias = async () => {
+        if (!isPremium) { mostrarModalUpgrade(); return; }
         const inicioStr = document.getElementById('feriasInicio').value;
         const fimStr = document.getElementById('feriasFim').value;
         const filtro = document.getElementById('feriasFiltro').value;
@@ -5079,6 +5172,120 @@
             alert("Erro ao criar cronograma de férias.");
         }
     };
+
+    // ============================================================
+    // ⚡ MÓDULO: GERADOR DE PRÉ-AULAS LOTE (PBL)
+    // ============================================================
+
+    document.getElementById('navPreAula').onclick = () => {
+        ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secTutorias', 'secRevisao', 'secSimuladosGratuitos'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.classList.add('hidden');
+        });
+        document.getElementById('secPreAula').classList.remove('hidden');
+        
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('navPreAula').classList.add('active');
+        window.toggleTopBarElements(false);
+    };
+
+    // Esconde a aba Pré-aula ao clicar nas outras abas
+    const abasIds = ['navBoard', 'navLib', 'navAgenda', 'navQuizzes', 'navTutorias', 'navAnatomia', 'navSyllabus', 'navRevisao', 'navSimuladosGratuitos'];
+    abasIds.forEach(navId => {
+        const btn = document.getElementById(navId);
+        if(btn) {
+            const clickAntigo = btn.onclick;
+            btn.onclick = (e) => {
+                if(clickAntigo) clickAntigo(e);
+                const sec = document.getElementById('secPreAula');
+                if(sec) sec.classList.add('hidden');
+            };
+        }
+    });
+
+    window.processarCronogramaPreAula = async () => {
+        if (!isPremium) { mostrarModalUpgrade(); return; }
+        const fileInput = document.getElementById('pdfCronograma');
+        const dataInicio = document.getElementById('preAulaInicio').value;
+        const dataFim = document.getElementById('preAulaFim').value;
+
+        if (!fileInput.files[0]) return alert("Por favor, selecione o PDF do cronograma.");
+        if (!dataInicio || !dataFim) return alert("Por favor, defina o intervalo do semestre.");
+
+        // Feedback multi-etapa: mostra em qual etapa o processamento está
+        showFeedback("📄 [1/4] Lendo arquivo PDF...", true);
+
+        try {
+            const file = fileInput.files[0];
+            const fileURL = URL.createObjectURL(file);
+            const pdf = await pdfjsLib.getDocument(fileURL).promise;
+            
+            let textoCronograma = "";
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const tokenizedText = await page.getTextContent();
+                textoCronograma += tokenizedText.items.map(token => token.str).join(' ') + "\n";
+                if (i % 3 === 0 || i === pdf.numPages) {
+                    showFeedback(`📄 [1/4] Lendo página ${i}/${pdf.numPages}...`, true);
+                }
+            }
+
+            showFeedback("🤖 [2/4] IA mapeando todas as aulas do semestre...", true);
+
+            // Chama o Worker APENAS para listar as aulas
+            const aulasExtraidas = await callWorker({ 
+                    action: "parse_cronograma", 
+                    textoOriginal: textoCronograma,
+                    dataInicio: dataInicio,
+                    dataFim: dataFim
+                }, "parse_cronograma");
+
+            if (!aulasExtraidas || aulasExtraidas.length === 0) {
+                return alert("A IA não conseguiu encontrar nenhuma aula nesse intervalo de datas.");
+            }
+
+            showFeedback(`📅 [3/4] Agendando ${aulasExtraidas.length} aulas no cronograma...`, true);
+
+            // Agendamento em lote no Firebase
+            const batchPromises = aulasExtraidas.map(aula => {
+                // Força a data ao meio dia para evitar bugs de fuso horário
+                const dataDaAula = new Date(aula.data + "T12:00:00");
+                
+                // Diminui 1 dia para ser a "Pré-aula"
+                const dataPreAula = new Date(dataDaAula);
+                dataPreAula.setDate(dataPreAula.getDate() - 1);
+
+                return addDoc(collection(db, "planners", currentUID, "tasks"), {
+                    titulo: `[PRÉ-AULA] ${aula.titulo}`,
+                    tag: aula.materia.toUpperCase(),
+                    // Texto temporário até o CRON preencher
+                    contentHTML: `<div style="text-align:center; padding:40px; color:#999;"><i class="fas fa-robot fa-2x"></i><br><br>A IA está redigindo o conteúdo técnico desta pré-aula no servidor.<br>O texto final aparecerá aqui automaticamente nos próximos dias.</div>`, 
+                    targetDate: dataPreAula.getTime(),
+                    dataAulaReal: dataDaAula.getTime(),
+                    concluido: false,
+                    criadoEm: serverTimestamp(),
+                    tipo: 'texto',
+                    precisaGerarIAPreAula: true // Flag vital para o robô de background
+                });
+            });
+
+            await Promise.all(batchPromises);
+
+            showFeedback("✅ [4/4] Pronto! Servidor processará o conteúdo das aulas.", false);
+            alert(`Sucesso absoluto!\n\n${aulasExtraidas.length} aulas foram fixadas no seu cronograma, exatamente 1 dia antes de acontecerem.\n\nComo você tem limites de API, o servidor irá escrever o conteúdo aos poucos de madrugada. Não feche nem mantenha nada aberto, está tudo automatizado.`);
+            showFeedback("Pronto!", false);
+            fileInput.value = '';
+            
+            // Recarrega o board para você ver as aulas futuras
+            loadDataAndInit();
+
+        } catch (error) {
+            console.error(error);
+            alert("Ocorreu um erro ao ler o PDF. Certifique-se de que é um cronograma legível.");
+            showFeedback("Erro.", false);
+        }
+    };
+
 
     </script>
 
