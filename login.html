@@ -7,7 +7,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-  /* --- SEUS ESTILOS ORIGINAIS --- */
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Roboto', sans-serif; }
   body { background: linear-gradient(135deg, #e0f7fa 0%, #ffffff 100%); height: 100vh; display: flex; justify-content: center; align-items: center; color: #333; }
   .login-card { background-color: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 100%; max-width: 400px; text-align: center; }
@@ -29,7 +28,7 @@
   .btn-github i { color: #333; }
   #status { margin-top: 1rem; font-size: 0.9rem; min-height: 1.2rem; }
 
-  /* --- ESTILOS DO MODAL DE PAGAMENTO --- */
+  /* MODAL DE ASSINATURA */
   .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; align-items: center; justify-content: center; }
   .modal-content { background: white; width: 90%; max-width: 400px; border-radius: 12px; overflow: hidden; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); animation: fadeIn 0.3s; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -38,6 +37,9 @@
   .price-box { background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #eee; }
   .btn-pay { width: 100%; padding: 15px; background: #009ee3; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
   .btn-pay:hover { background: #007eb5; }
+  .btn-gratis { width: 100%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 10px; }
+  .btn-gratis:hover { background: #219a52; }
+  .btn-sair { background: none; border: none; color: #999; text-decoration: underline; margin-top: 15px; cursor: pointer; font-size: 12px; }
 </style>
 <script type="module" src="js/firebase.js"></script>
 </head>
@@ -49,20 +51,20 @@
     <h1>Simulados Medicina</h1>
     <p>Bem-vindo de volta! Acesse sua conta.</p>
   </div>
-  
+
+  <!-- Campos de email/senha ocultos (mantidos para compatibilidade) -->
   <div class="input-group" style="display:none;">
     <input id="email" placeholder="Seu email" type="email">
   </div>
   <div class="input-group" style="display:none;">
     <input id="senha" placeholder="Sua senha" type="password">
   </div>
-  
   <button id="btnLogin" style="display:none;">Entrar</button>
 
   <div class="divider" style="margin-top: 0;">
     <span>Acesse usando sua conta</span>
   </div>
-  
+
   <div class="social-login">
     <button id="btnGoogle" class="social-btn btn-google">
       <i class="fab fa-google"></i> Google
@@ -71,170 +73,160 @@
       <i class="fab fa-github"></i> GitHub
     </button>
   </div>
-  
+
   <p id="status"></p>
 </div>
 
+<!-- Modal de assinatura: só aparece se autorizado: false no Firestore -->
 <div id="modalAssinatura" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 style="margin:0;"><i class="fas fa-lock"></i> Acesso Premium</h3>
-        </div>
-        <div class="modal-body">
-            <p style="color: #666; margin-bottom: 10px;">
-                Olá, <strong id="modalUserEmail">estudante</strong>!
-            </p>
-            <p style="font-size: 14px; color: #555;">
-                Sua conta foi criada, mas você ainda não possui uma assinatura ativa para acessar os simulados.
-            </p>
-            
-            <div class="price-box">
-                <div style="font-size: 13px; color: #777;">Plano R1 Mensal</div>
-                <div style="font-size: 28px; font-weight: 800; color: #333;">R$ 59,90</div>
-                <div style="font-size: 12px; color: #27ae60; font-weight: 600;">Desbloqueio Imediato</div>
-            </div>
-
-            <input type="text" id="cupomInput" placeholder="Possui cupom de desconto?" 
-                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 15px; text-align: center;">
-
-            <button onclick="window.iniciarPagamento()" id="btnPagarModal" class="btn-pay">
-                <i class="fas fa-bolt"></i> Assinar Agora
-            </button>
-
-            <button type="button" onclick="window.location.replace('planner.html?modo=gratis')" style="width: 100%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 10px;">
-                <i class="fas fa-gift"></i> Acessar Simulados Gratuitos
-            </button>
-            
-            <button onclick="window.sairDaConta()" style="background: none; border: none; color: #999; text-decoration: underline; margin-top: 15px; cursor: pointer; font-size: 12px;">
-                Sair e tentar outra conta
-            </button>
-        </div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 style="margin:0;"><i class="fas fa-lock"></i> Acesso Restrito</h3>
     </div>
+    <div class="modal-body">
+      <p style="color: #666; margin-bottom: 10px;">
+        Olá, <strong id="modalUserEmail">estudante</strong>!
+      </p>
+      <p style="font-size: 14px; color: #555;">
+        Sua conta foi bloqueada pelo administrador. Entre em contato para regularizar o acesso.
+      </p>
+      <div class="price-box">
+        <div style="font-size: 13px; color: #777;">Plano R1 Mensal</div>
+        <div style="font-size: 28px; font-weight: 800; color: #333;">R$ 59,90</div>
+        <div style="font-size: 12px; color: #27ae60; font-weight: 600;">Desbloqueio Imediato</div>
+      </div>
+      <input type="text" id="cupomInput" placeholder="Possui cupom de desconto?"
+             style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 15px; text-align: center;">
+      <button onclick="window.iniciarPagamento()" id="btnPagarModal" class="btn-pay">
+        <i class="fas fa-bolt"></i> Assinar Agora
+      </button>
+      <button onclick="window.sairDaConta()" class="btn-sair">
+        Sair e tentar outra conta
+      </button>
+    </div>
+  </div>
 </div>
 
 <script type="module">
 import { auth, db, loginGoogle, loginGitHub } from './firebase.js';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 
-const status = document.getElementById("status");
-let currentUserEmail = ""; // Variável global para guardar o email logado
+const statusEl = document.getElementById("status");
+let currentUserEmail = "";
 
 function showStatus(message, type) {
-  status.textContent = message;
-  status.style.color = type === 'error' ? '#d32f2f' : '#2e7d32';
+  statusEl.textContent = message;
+  statusEl.style.color = type === 'error' ? '#d32f2f' : '#2e7d32';
 }
 
-// ============================================
-// 1. VERIFICAÇÃO INTELIGENTE (MODIFICADO)
-// ============================================
+// ============================================================
+// VERIFICAÇÃO E AUTO-CADASTRO
+// ============================================================
 onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    currentUserEmail = user.email || "anonimo@gratuito.com";
-    document.getElementById("modalUserEmail").textContent = user.displayName || user.email || "Estudante";
-    
-    try {
-      showStatus("Verificando assinatura...", "success");
-      const isAuth = await checkFirestorePermission(user);
-      
-      if (isAuth) {
-        // CENÁRIO A: PAGOU
-        showStatus("✅ Redirecionando...", "success");
-        window.location.href = "planner.html";
-      } else {
-        // CENÁRIO B: LOGOU MAS NÃO PAGOU (AQUI ESTÁ A MUDANÇA)
-        // Não fazemos mais signOut automático. Mostramos o Modal.
-        showStatus("⚠️ Assinatura pendente.", "error");
-        document.getElementById('modalAssinatura').style.display = 'flex';
+  if (!user) return;
 
-// 🔥 LIBERA ACESSO GRATUITO AUTOMÁTICO
-// apenas mostra o modal
-document.getElementById('modalAssinatura').style.display = 'flex';
-      }
-    } catch (error) {
-      console.warn("Forçando modo gratuito após erro.");
-      // Se a verificação falhar, assume gratuito e mostra o modal
-      document.getElementById('modalAssinatura').style.display = 'flex';
-    }
-  }
-});
+  currentUserEmail = user.email || "";
+  const email = currentUserEmail.toLowerCase();
 
-async function checkFirestorePermission(user) {
-  if (!user || !user.email) return false; 
+  document.getElementById("modalUserEmail").textContent =
+    user.displayName || user.email || "Estudante";
+
+  showStatus("Verificando conta...", "success");
 
   try {
-    const email = user.email.toLowerCase();
     const userRef = doc(db, "usuarios", email);
     const snap = await getDoc(userRef);
 
     if (!snap.exists()) {
-      return false; 
+      // ✅ PRIMEIRO LOGIN: cria o documento automaticamente como gratuito
+      await setDoc(userRef, {
+        email: email,
+        nome: user.displayName || email,
+        autorizado: true,
+        plano: "gratuito",
+        ultimoLogin: new Date().toISOString()
+      });
+      showStatus("✅ Conta criada! Redirecionando...", "success");
+      window.location.href = "planner.html?modo=gratis";
+      return;
     }
 
-    if (snap.data().autorizado === true) {
-      return true;
+    // Documento existe — lê os campos
+    const data = snap.data();
+
+    // Atualiza último login
+    await updateDoc(userRef, { ultimoLogin: new Date().toISOString() });
+
+    // Conta bloqueada pelo admin
+    if (data.autorizado !== true) {
+      showStatus("⚠️ Conta sem autorização.", "error");
+      document.getElementById('modalAssinatura').style.display = 'flex';
+      return;
     }
 
-    return false;
-  } catch (e) {
-    // Evita que o erro de permissão do Firebase trave a tela
-    console.warn("Acesso ao banco negado. Tratando como perfil gratuito.");
-    return false;
+    // Verifica plano
+    const plano = data.plano || "gratuito";
+
+    if (plano === "premium") {
+      showStatus("✅ Premium! Redirecionando...", "success");
+      window.location.href = "planner.html";
+    } else {
+      // gratuito ou campo ausente
+      showStatus("✅ Acesso gratuito. Redirecionando...", "success");
+      window.location.href = "planner.html?modo=gratis";
+    }
+
+  } catch (error) {
+    console.error("Erro ao verificar conta:", error);
+    // Se falhar a leitura, trata como gratuito por segurança
+    showStatus("⚠️ Erro ao verificar. Entrando como gratuito...", "error");
+    window.location.href = "planner.html?modo=gratis";
   }
-}
+});
 
-// ============================================
-// 2. FUNÇÕES DE PAGAMENTO (NOVO)
-// ============================================
+// ============================================================
+// PAGAMENTO (mantido igual)
+// ============================================================
 window.iniciarPagamento = async () => {
-    const btn = document.getElementById('btnPagarModal');
-    const cupom = document.getElementById('cupomInput').value;
-    
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
-    btn.disabled = true;
+  const btn = document.getElementById('btnPagarModal');
+  const cupom = document.getElementById('cupomInput').value;
 
-    try {
-        // CHAMA SUA CLOUD FUNCTION DO FIREBASE
-        // Substitua pela URL correta que você obteve no passo anterior
-        const functionUrl = 'https://us-central1-simuladosmedicina-6a01b.cloudfunctions.net/criarAssinatura';
-        
-        const response = await fetch(functionUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                email: currentUserEmail, 
-                cupom: cupom 
-            })
-        });
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+  btn.disabled = true;
 
-        const data = await response.json();
-        
-        if (data.init_point) {
-            // Leva o usuário para o Mercado Pago
-            window.location.href = data.init_point;
-        } else {
-            alert("Erro ao criar pagamento. Tente novamente.");
-            btn.innerHTML = '<i class="fas fa-bolt"></i> Assinar Agora';
-            btn.disabled = false;
-        }
-    } catch (e) {
-        console.error(e);
-        alert("Erro de conexão com o servidor.");
-        btn.innerHTML = '<i class="fas fa-bolt"></i> Assinar Agora';
-        btn.disabled = false;
+  try {
+    const functionUrl = 'https://us-central1-simuladosmedicina-6a01b.cloudfunctions.net/criarAssinatura';
+    const response = await fetch(functionUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: currentUserEmail, cupom })
+    });
+    const data = await response.json();
+    if (data.init_point) {
+      window.location.href = data.init_point;
+    } else {
+      alert("Erro ao criar pagamento. Tente novamente.");
+      btn.innerHTML = '<i class="fas fa-bolt"></i> Assinar Agora';
+      btn.disabled = false;
     }
+  } catch (e) {
+    console.error(e);
+    alert("Erro de conexão com o servidor.");
+    btn.innerHTML = '<i class="fas fa-bolt"></i> Assinar Agora';
+    btn.disabled = false;
+  }
 };
 
 window.sairDaConta = async () => {
-    document.getElementById('modalAssinatura').style.display = 'none';
-    await signOut(auth);
-    window.location.reload();
+  document.getElementById('modalAssinatura').style.display = 'none';
+  await signOut(auth);
+  window.location.reload();
 };
 
-// ============================================
-// 3. LOGIN BOTÕES (GOOGLE E GITHUB)
-// ============================================
-
+// ============================================================
+// BOTÕES DE LOGIN
+// ============================================================
 document.getElementById("btnGoogle").addEventListener("click", async () => {
   try {
     showStatus("Aguardando Google...", "success");
