@@ -769,18 +769,18 @@
             </div>
         </div>
         
-        <nav style="flex: 1 0 auto;"> <div class="nav-item active" id="navBoard"><i class="far fa-calendar-alt"></i> Cronograma Semanal</div>
-            <div class="nav-item" id="navLib"><i class="fas fa-folder-open"></i> Biblioteca de Aulas</div>
-            <div class="nav-item" id="navPreAula" style="color: #27ae60; font-weight: 500;"><i class="fas fa-bolt"></i> Preparação Pré-Aula</div>
-            <div class="nav-item" id="navAgenda"><i class="far fa-clock"></i> Agenda Diária</div>
-            <div class="nav-item" id="navQuizzes"><i class="fas fa-brain"></i> Meus Simulados</div>
-            <div class="nav-item" id="navTutorias" style="color: #d35400; font-weight: 500;"><i class="fas fa-chalkboard-teacher"></i> Tutorias PBL</div>
-            <div class="nav-item" id="navAnatomia" style="color: #2383e2; font-weight: 500;"><i class="fas fa-bone"></i> Desafio Anatomia</div>
-            <div class="nav-item" id="navSyllabus"><i class="fas fa-th-list"></i> Matriz Curricular</div>
-            <div class="nav-item" onclick="window.abrirCadernoErros()" style="color: #d44c47; font-weight: 500;"><i class="fas fa-book-dead"></i> Caderno de Erros</div>
-            <div class="nav-item" id="navRevisao" style="color: #8e44ad; font-weight: 500;"><i class="fas fa-history"></i> Revisão Espaçada</div>
+        <nav style="flex: 1 0 auto;">
+            <div class="nav-item active" id="navBoard"><i class="far fa-calendar-alt"></i> Cronograma Semanal <span class="nav-lock" style="display:none;">🔒</span></div>
+            <div class="nav-item" id="navLib"><i class="fas fa-folder-open"></i> Biblioteca de Aulas <span class="nav-lock" style="display:none;">🔒</span></div>
+            <div class="nav-item" id="navPreAula" style="color: #27ae60; font-weight: 500;"><i class="fas fa-bolt"></i> Preparação Pré-Aula <span class="nav-lock" style="display:none;">🔒</span></div>
+            <div class="nav-item" id="navAgenda"><i class="far fa-clock"></i> Agenda Diária <span class="nav-lock" style="display:none;">🔒</span></div>
+            <div class="nav-item" id="navQuizzes"><i class="fas fa-brain"></i> Meus Simulados <span class="nav-lock" style="display:none;">🔒</span></div>
+            <div class="nav-item" id="navTutorias" style="color: #d35400; font-weight: 500;"><i class="fas fa-chalkboard-teacher"></i> Tutorias PBL <span class="nav-lock" style="display:none;">🔒</span></div>
+            <div class="nav-item" id="navAnatomia" style="color: #2383e2; font-weight: 500;"><i class="fas fa-bone"></i> Desafio Anatomia <span class="nav-lock" style="display:none;">🔒</span></div>
+            <div class="nav-item" id="navSyllabus"><i class="fas fa-th-list"></i> Matriz Curricular <span class="nav-lock" style="display:none;">🔒</span></div>
+            <div class="nav-item" id="navCadernoErros" onclick="window.abrirCadernoErros()" style="color: #d44c47; font-weight: 500;"><i class="fas fa-book-dead"></i> Caderno de Erros <span class="nav-lock" style="display:none;">🔒</span></div>
+            <div class="nav-item" id="navRevisao" style="color: #8e44ad; font-weight: 500;"><i class="fas fa-history"></i> Revisão Espaçada <span class="nav-lock" style="display:none;">🔒</span></div>
             <div class="nav-item" id="navSimuladosGratuitos" style="color: #27ae60; font-weight: 500;"><i class="fas fa-gift"></i> Simulados Gratuitos</div>
-
         </nav>
 
 
@@ -1414,33 +1414,35 @@
     }
     // ------------------------------------------------
 
-    // Variável global de controle de plano — usada pelos guards de função
+    // Variável global de plano — usada pelos guards de função
     let isPremium = false;
 
-    // Modal de upgrade (criado dinamicamente uma vez)
+    // ============================================================
+    // MODAL DE UPGRADE (criado uma vez, reutilizado)
+    // ============================================================
     function mostrarModalUpgrade() {
         let modal = document.getElementById('modalUpgradePremium');
         if (!modal) {
             modal = document.createElement('div');
             modal.id = 'modalUpgradePremium';
-            modal.style.cssText = 'display:flex; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:99999; align-items:center; justify-content:center;';
+            modal.style.cssText = 'display:flex;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:99999;align-items:center;justify-content:center;';
             modal.innerHTML = `
-                <div style="background:white; border-radius:12px; max-width:380px; width:90%; text-align:center; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,0.3); animation: fadeInUp 0.3s ease;">
-                    <div style="background:linear-gradient(135deg,#1d4ed8,#2563eb); color:white; padding:24px;">
-                        <i class="fas fa-star" style="font-size:2rem; margin-bottom:10px;"></i>
-                        <h3 style="margin:0; font-size:1.3rem;">Função Premium</h3>
+                <div style="background:white;border-radius:14px;max-width:360px;width:90%;text-align:center;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,0.25);">
+                    <div style="background:linear-gradient(135deg,#1d4ed8,#2563eb);color:white;padding:28px 24px;">
+                        <div style="font-size:2.2rem;margin-bottom:8px;">⭐</div>
+                        <h3 style="margin:0;font-size:1.2rem;">Função Premium</h3>
                     </div>
                     <div style="padding:28px 24px;">
-                        <p style="color:#555; font-size:14px; margin-bottom:20px; line-height:1.6;">
+                        <p style="color:#555;font-size:14px;line-height:1.6;margin-bottom:22px;">
                             Esta função está disponível apenas no plano <strong>Premium</strong>.<br>
-                            Usuários gratuitos têm acesso aos Simulados Gratuitos.
+                            Você está no plano <strong>Gratuito</strong> e tem acesso aos Simulados Gratuitos.
                         </p>
-                        <button onclick="window.location.href='login.html'" 
-                            style="width:100%; padding:13px; background:#2563eb; color:white; border:none; border-radius:8px; font-size:15px; font-weight:700; cursor:pointer; margin-bottom:10px;">
-                            <i class="fas fa-star"></i> Ver Planos Premium
+                        <button onclick="window.location.href='login.html'"
+                            style="width:100%;padding:13px;background:#2563eb;color:white;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;">
+                            ⭐ Ver Planos Premium
                         </button>
                         <button onclick="document.getElementById('modalUpgradePremium').style.display='none'"
-                            style="background:none; border:none; color:#999; text-decoration:underline; cursor:pointer; font-size:13px;">
+                            style="background:none;border:none;color:#aaa;text-decoration:underline;cursor:pointer;font-size:13px;">
                             Fechar
                         </button>
                     </div>
@@ -1451,6 +1453,9 @@
         }
     }
 
+    // ============================================================
+    // AUTH STATE
+    // ============================================================
     onAuthStateChanged(auth, async (user) => {
         if (!user) { window.location.href = "login.html"; return; }
         currentUID = user.uid;
@@ -1471,7 +1476,7 @@
                 if (ipEl) ipEl.textContent = "IP: N/D";
             });
 
-        // ✅ Lê autorizado E plano do Firestore — nunca confia só na URL
+        // ✅ Lê plano do Firestore — nunca confia só na URL
         let plano = "gratuito";
         let autorizado = false;
         try {
@@ -1481,43 +1486,52 @@
                 autorizado = snap.data().autorizado === true;
                 plano = snap.data().plano || "gratuito";
             }
-        } catch (errorDb) {
-            console.warn("Erro ao ler Firestore. Forçando gratuito.", errorDb.message);
+        } catch (err) {
+            console.warn("Erro ao ler Firestore, tratando como gratuito.", err.message);
         }
 
-        // Determina se é premium (tem que ter autorizado:true E plano:"premium")
         isPremium = autorizado && plano === "premium";
 
-        // Badge de plano na sidebar
+        // --- Badge de plano na sidebar ---
         const badge = document.getElementById('headerPlanBadge');
         if (badge) {
             badge.style.display = 'inline-block';
             if (isPremium) {
                 badge.textContent = '⭐ Premium';
-                badge.style.background = '#dbeafe';
-                badge.style.color = '#1d4ed8';
-                badge.style.border = '1px solid #bfdbfe';
+                badge.style.cssText += 'background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe;';
             } else {
                 badge.textContent = '🔓 Gratuito';
-                badge.style.background = '#fef9c3';
-                badge.style.color = '#92400e';
-                badge.style.border = '1px solid #fde68a';
+                badge.style.cssText += 'background:#fef9c3;color:#92400e;border:1px solid #fde68a;';
             }
         }
 
-        if (!isPremium) {
-            // Modo gratuito: esconde tudo exceto simulados gratuitos
-            document.querySelectorAll('.nav-item').forEach(item => {
-                if (item.id !== 'navSimuladosGratuitos') item.style.display = 'none';
+        if (isPremium) {
+            // Premium: acesso total, remove locks
+            document.querySelectorAll('.nav-lock').forEach(el => el.style.display = 'none');
+            loadDataAndInit();
+        } else {
+            // Gratuito: TODOS os itens visíveis, mas com 🔒 nos premium
+            // Mostra ícone de lock nos itens premium
+            const premiumNavIds = ['navBoard','navLib','navPreAula','navAgenda','navQuizzes',
+                                   'navTutorias','navAnatomia','navSyllabus','navCadernoErros','navRevisao'];
+            premiumNavIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const lock = el.querySelector('.nav-lock');
+                if (lock) lock.style.display = 'inline';
+                // Aparência levemente esmaecida para indicar que é premium
+                el.style.opacity = '0.7';
             });
+
+            // Esconde metas e topbar (não fazem sentido sem dados)
             const metasEl = document.querySelector('.sidebar-goals');
             if (metasEl) metasEl.style.display = 'none';
             const topBarEl = document.querySelector('.top-bar');
             if (topBarEl) topBarEl.style.display = 'none';
+
+            // Abre direto nos simulados gratuitos
             const btnGratis = document.getElementById('navSimuladosGratuitos');
             if (btnGratis) btnGratis.click();
-        } else {
-            loadDataAndInit();
         }
 
         carregarSimuladosGratuitos();
@@ -2958,7 +2972,7 @@
     // --- RESET NOVO ESTUDO (MODO NORMAL) ---
     document.getElementById('btnNovoAssunto').onclick = () => {
         if (!isPremium) { mostrarModalUpgrade(); return; }
-        isTutoriaMode = false;
+        isTutoriaMode = false; // Garante que é estudo normal
         editingDocId = null; 
         document.getElementById('subjectTitle').value = '';
         document.getElementById('subjectTag').value = '';
@@ -2990,8 +3004,8 @@
         setTimeout(() => quill.focus(), 100);
     };
     
-    document.getElementById('navBoard').onclick = () => { document.getElementById('secBoard').classList.remove('hidden'); document.getElementById('secLib').classList.add('hidden'); document.getElementById('navBoard').classList.add('active'); document.getElementById('navLib').classList.remove('active'); };
-    document.getElementById('navLib').onclick = () => { document.getElementById('secBoard').classList.add('hidden'); document.getElementById('secLib').classList.remove('hidden'); document.getElementById('navBoard').classList.remove('active'); document.getElementById('navLib').classList.add('active'); carregarBiblioteca(); };
+    document.getElementById('navBoard').onclick = () => { if (!isPremium) { mostrarModalUpgrade(); return; } document.getElementById('secBoard').classList.remove('hidden'); document.getElementById('secLib').classList.add('hidden'); document.getElementById('navBoard').classList.add('active'); document.getElementById('navLib').classList.remove('active'); };
+    document.getElementById('navLib').onclick = () => { if (!isPremium) { mostrarModalUpgrade(); return; } document.getElementById('secBoard').classList.add('hidden'); document.getElementById('secLib').classList.remove('hidden'); document.getElementById('navBoard').classList.remove('active'); document.getElementById('navLib').classList.add('active'); carregarBiblioteca(); };
 
         // ============================================================
     // 🕒 LÓGICA DA AGENDA (Adicione no final do Script)
@@ -3260,6 +3274,7 @@
 
     // 1. Botão Cronograma
     document.getElementById('navBoard').onclick = () => {
+        if (!isPremium) { mostrarModalUpgrade(); return; }
         ['secLib', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secTutorias', 'secRevisao', 'secSimuladosGratuitos'].forEach(id => { const el = document.getElementById(id); if(el) el.classList.add('hidden'); });
         
         document.getElementById('secBoard').classList.remove('hidden');
@@ -3281,7 +3296,7 @@
         document.getElementById('navLib').classList.add('active');
         
         carregarBiblioteca();
-        window.toggleTopBarElements(false);
+        window.toggleTopBarElements(false); // ESCONDE PARA LIMPAR VISUAL
     };
 
     // 3. Botão Agenda
@@ -3295,7 +3310,7 @@
         document.getElementById('navAgenda').classList.add('active');
         
         renderAgendaBoard();
-        window.toggleTopBarElements(true);
+        window.toggleTopBarElements(true); // MOSTRA NA AGENDA TAMBÉM
     };
 
     // 4. Botão Meus Simulados
@@ -3309,7 +3324,7 @@
         document.getElementById('navQuizzes').classList.add('active');
         
         if (typeof carregarAbaQuizzes === "function") carregarAbaQuizzes();
-        window.toggleTopBarElements(false);
+        window.toggleTopBarElements(false); // ESCONDE
     };
 
 
@@ -3497,6 +3512,7 @@
     // --- NAVEGAÇÃO PARA ABA QUIZZES ---
     
         document.getElementById('navQuizzes').onclick = () => {
+        if (!isPremium) { mostrarModalUpgrade(); return; }
         ['secBoard', 'secLib', 'secAgenda', 'secAnatomia', 'secSyllabus', 'secTutorias', 'secRevisao', 'secSimuladosGratuitos'].forEach(id => { const el = document.getElementById(id); if(el) el.classList.add('hidden'); });
         
         document.getElementById('secQuizzes').classList.remove('hidden');
@@ -3535,6 +3551,7 @@
     // 1. Navegação Anatomia
     document.getElementById('navAnatomia').onclick = () => {
         if (!isPremium) { mostrarModalUpgrade(); return; }
+        // Esconde tudo explicitamente para garantir
         ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secSyllabus', 'secTutorias', 'secRevisao', 'secSimuladosGratuitos'].forEach(id => {
             const el = document.getElementById(id);
             if(el) el.classList.add('hidden');
@@ -3545,7 +3562,7 @@
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('navAnatomia').classList.add('active');
         
-        window.toggleTopBarElements(false);
+        window.toggleTopBarElements(false); // ESCONDE TOPO
     };
 
     // Navegação Revisão Espaçada
@@ -4193,6 +4210,7 @@
 
     // 1. Navegação Matriz
     document.getElementById('navSyllabus').onclick = () => {
+        if (!isPremium) { mostrarModalUpgrade(); return; }
         ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secTutorias', 'secRevisao', 'secSimuladosGratuitos'].forEach(id => {
             const el = document.getElementById(id);
             if(el) el.classList.add('hidden');
@@ -5178,6 +5196,7 @@
     // ============================================================
 
     document.getElementById('navPreAula').onclick = () => {
+        if (!isPremium) { mostrarModalUpgrade(); return; }
         ['secBoard', 'secLib', 'secAgenda', 'secQuizzes', 'secAnatomia', 'secSyllabus', 'secTutorias', 'secRevisao', 'secSimuladosGratuitos'].forEach(id => {
             const el = document.getElementById(id);
             if(el) el.classList.add('hidden');
