@@ -1116,20 +1116,37 @@
 
 <script type="module">
     // =========================================================
-    // ⚙️ CONFIGURAÇÃO CENTRAL DO WORKER (Edite apenas aqui)
+    // ⚙️ CONFIGURAÇÃO CENTRAL DO WORKER
     // =========================================================
-    // ATENÇÃO: Para maior segurança, troque o token por um token 
-    // gerado via Firebase ID Token (ver README). Por enquanto, 
-    // o token fixo foi centralizado aqui para facilitar a rotação.
+    // Segurança: NÃO existe mais token fixo no código.
+    // Cada chamada usa o Firebase ID Token do usuário logado,
+    // um JWT assinado pelo Google que expira a cada 1 hora.
+    // O Worker valida esse token na API do Google — sem segredo exposto.
     const WORKER_URL = "https://planner-worker.onurbonecsamad.workers.dev/";
-    const WORKER_TOKEN = "planner_2026_super_private_token_847362";
+
+    // Retorna o ID Token atual do usuário (renovado automaticamente pelo Firebase SDK)
+    async function getFirebaseToken() {
+        const user = auth.currentUser;
+        if (!user) throw new Error("Usuário não autenticado.");
+        // getIdToken(true) força renovação se estiver próximo de expirar
+        return await user.getIdToken(false);
+    }
 
     // Helper centralizado: toda chamada ao Worker passa por aqui
-    // Inclui validação mínima de conteúdo e tratamento de JSON inválido
     async function callWorker(payload, stepLabel = "") {
+        let token;
+        try {
+            token = await getFirebaseToken();
+        } catch (e) {
+            throw new Error("Sessão expirada. Por favor, recarregue a página.");
+        }
+
         const response = await fetch(WORKER_URL, {
             method: "POST",
-            headers: { "Content-Type": "application/json", "x-auth": WORKER_TOKEN },
+            headers: {
+                "Content-Type": "application/json",
+                "x-firebase-token": token   // JWT assinado pelo Google, não um segredo fixo
+            },
             body: JSON.stringify(payload)
         });
         if (!response.ok) {
