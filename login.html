@@ -241,7 +241,14 @@ async function processarUsuario(user) {
         nome: user.displayName || email,
         autorizado: true,
         plano: "gratuito",
-        ultimoLogin: new Date().toISOString()
+        ultimoLogin: new Date().toISOString(),
+        ultimoLoginHorario: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
+        // Esqueleto de assinatura (para sistema de pagamentos futuro)
+        assinatura: {
+          tipo: "gratuito",       // "gratuito" | "premium" | "vitalicio"
+          expiracao: null,        // ISO string — preenchido pelo webhook do Mercado Pago
+          vitalicio: false        // true = nunca expira, independente da data
+        }
       });
       showStatus("✅ Conta criada! Entrando como gratuito...", "success");
       window.location.href = "planner.html";
@@ -250,7 +257,10 @@ async function processarUsuario(user) {
 
     // Documento existe
     const data = snap.data();
-    await updateDoc(userRef, { ultimoLogin: new Date().toISOString() });
+    await updateDoc(userRef, {
+      ultimoLogin: new Date().toISOString(),
+      ultimoLoginHorario: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+    });
 
     if (data.autorizado !== true) {
       // Conta bloqueada manualmente pelo admin
@@ -340,7 +350,13 @@ document.getElementById("btnCadastrar").addEventListener("click", async () => {
       nome: nome,
       autorizado: true,
       plano: "gratuito",
-      ultimoLogin: new Date().toISOString()
+      ultimoLogin: new Date().toISOString(),
+      ultimoLoginHorario: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
+      assinatura: {
+        tipo: "gratuito",
+        expiracao: null,
+        vitalicio: false
+      }
     });
 
     showStatus("✅ Conta criada com sucesso! Entrando...", "success");
