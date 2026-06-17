@@ -1434,6 +1434,12 @@
     // Variável global de plano — usada pelos guards de função
     let isPremium = false;
 
+    // Flag para proteger requisições longas durante logout por expiração
+    let requisicaoEmAndamento = false;
+    // Timer de sessão
+    let sessionTimer = null;
+    const SESSION_DURATION_MS = 60 * 60 * 1000; // 1 hora
+
     // ============================================================
     // MODAL DE UPGRADE (criado uma vez, reutilizado)
     // ============================================================
@@ -1471,6 +1477,45 @@
     }
 
     // ============================================================
+    // SESSÃO — Expira em 1 hora, respeitando requisições em andamento
+    // ============================================================
+    function iniciarTimerSessao() {
+        if (sessionTimer) clearTimeout(sessionTimer);
+        sessionTimer = setTimeout(async () => {
+            // Se há uma requisição longa rodando, aguarda ela terminar
+            if (requisicaoEmAndamento) {
+                console.log("⏳ Sessão expirada, mas há requisição em andamento. Aguardando...");
+                // Verifica a cada 5s se a requisição terminou
+                const aguardar = setInterval(async () => {
+                    if (!requisicaoEmAndamento) {
+                        clearInterval(aguardar);
+                        await expirarSessao();
+                    }
+                }, 5000);
+                return;
+            }
+            await expirarSessao();
+        }, SESSION_DURATION_MS);
+    }
+
+    async function expirarSessao() {
+        try { await signOut(auth); } catch(e) { console.warn("Erro ao fazer signOut:", e); }
+        alert("Sua sessão expirou após 1 hora. Faça login novamente.");
+        window.location.href = "login.html";
+    }
+
+    // Sobrescreve callWorker para rastrear requisições em andamento
+    const _callWorkerOriginal = callWorker;
+    window._callWorkerWrapped = async function(payload, stepLabel) {
+        requisicaoEmAndamento = true;
+        try {
+            return await _callWorkerOriginal(payload, stepLabel);
+        } finally {
+            requisicaoEmAndamento = false;
+        }
+    };
+
+    // ============================================================
     // AUTH STATE
     // ============================================================
     onAuthStateChanged(auth, async (user) => {
@@ -1480,6 +1525,9 @@
         const emailSeguro = user.email ? user.email.toLowerCase() : "";
         const headerName = document.getElementById("headerUserName");
         if (headerName) headerName.textContent = user.displayName || user.email || "Estudante";
+
+        // Inicia timer de sessão de 1 hora
+        iniciarTimerSessao();
 
         // IP
         fetch('https://api.ipify.org?format=json')
@@ -1493,15 +1541,28 @@
                 if (ipEl) ipEl.textContent = "IP: N/D";
             });
 
-        // ✅ Lê plano do Firestore — nunca confia só na URL
+        // ✅ Lê plano e assinatura do Firestore — nunca confia só na URL
         let plano = "gratuito";
         let autorizado = false;
+        let assinatura = { tipo: "gratuito", expiracao: null, vitalicio: false };
+
         try {
             const userRef = doc(db, "usuarios", emailSeguro);
             const snap = await getDoc(userRef);
             if (snap.exists()) {
-                autorizado = snap.data().autorizado === true;
-                plano = snap.data().plano || "gratuito";
+                const dados = snap.data();
+                autorizado = dados.autorizado === true;
+                plano = dados.plano || "gratuito";
+                assinatura = dados.assinatura || assinatura;
+
+                // Verifica se assinatura premium expirou (esqueleto para webhook futuro)
+                if (plano === "premium" && !assinatura.vitalicio && assinatura.expiracao) {
+                    const expiracao = new Date(assinatura.expiracao);
+                    if (expiracao < new Date()) {
+                        console.warn("⚠️ Assinatura premium expirada em", expiracao.toLocaleDateString('pt-BR'));
+                        plano = "gratuito"; // Trata como gratuito
+                    }
+                }
             }
         } catch (err) {
             console.warn("Erro ao ler Firestore, tratando como gratuito.", err.message);
@@ -1514,7 +1575,7 @@
         if (badge) {
             badge.style.display = 'inline-block';
             if (isPremium) {
-                badge.textContent = '⭐ Premium';
+                badge.textContent = assinatura.vitalicio ? '⭐ Premium Vitalício' : '⭐ Premium';
                 badge.style.cssText += 'background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe;';
             } else {
                 badge.textContent = '🔓 Gratuito';
@@ -1523,12 +1584,9 @@
         }
 
         if (isPremium) {
-            // Premium: acesso total, remove locks
             document.querySelectorAll('.nav-lock').forEach(el => el.style.display = 'none');
             loadDataAndInit();
         } else {
-            // Gratuito: TODOS os itens visíveis, mas com 🔒 nos premium
-            // Mostra ícone de lock nos itens premium
             const premiumNavIds = ['navBoard','navLib','navPreAula','navAgenda','navQuizzes',
                                    'navTutorias','navAnatomia','navSyllabus','navCadernoErros','navRevisao'];
             premiumNavIds.forEach(id => {
@@ -1536,17 +1594,14 @@
                 if (!el) return;
                 const lock = el.querySelector('.nav-lock');
                 if (lock) lock.style.display = 'inline';
-                // Aparência levemente esmaecida para indicar que é premium
                 el.style.opacity = '0.7';
             });
 
-            // Esconde metas e topbar (não fazem sentido sem dados)
             const metasEl = document.querySelector('.sidebar-goals');
             if (metasEl) metasEl.style.display = 'none';
             const topBarEl = document.querySelector('.top-bar');
             if (topBarEl) topBarEl.style.display = 'none';
 
-            // Abre direto nos simulados gratuitos
             const btnGratis = document.getElementById('navSimuladosGratuitos');
             if (btnGratis) btnGratis.click();
         }
@@ -3358,28 +3413,45 @@
             el.classList.add('correct');
         } else {
             el.classList.add('wrong');
-            // Mostra a correta
+            // Mostra a correta e captura o texto dela
             const siblings = el.parentElement.children;
+            let respostaCorretaTexto = "";
             for(let sib of siblings) {
-                if(sib.getAttribute('onclick') && sib.getAttribute('onclick').includes('true')) sib.classList.add('correct');
+                if(sib.getAttribute('onclick') && sib.getAttribute('onclick').includes('true')) {
+                    sib.classList.add('correct');
+                    respostaCorretaTexto = sib.innerText || sib.textContent || "";
+                }
             }
 
             // --- CAPTURA DE ERRO ---
-            const tituloQuestao = card.querySelector('.quiz-question').innerText;
-            const tituloEstudo = document.getElementById('viewTitle') ? document.getElementById('viewTitle').textContent : "Quiz Geral";
+            // Pega a pergunta COMPLETA (não truncada)
+            const perguntaCompleta = card.querySelector('.quiz-question')?.innerText || "";
+            const tituloEstudo = document.getElementById('viewTitle')?.textContent || "Quiz Geral";
 
             const divErro = document.createElement('div');
             divErro.style.marginTop = "15px";
+            // Usa data attributes para passar os dados sem truncar no onclick
             divErro.innerHTML = `
                 <div style="background:#fff5f5; border:1px solid #ffcccc; padding:10px; border-radius:6px; animation: fadeIn 0.5s;">
                     <p style="font-size:12px; color:#d44c47; margin-bottom:5px;"><strong><i class="fas fa-pen"></i> O que você aprendeu com esse erro?</strong></p>
                     <div style="display:flex; gap:5px;">
-                        <input type="text" class="input-erro" style="flex:1; padding:8px; font-size:13px; border:1px solid #ffcccc; border-radius:4px;" placeholder="Ex: Betabloqueadores não funcionam em asma...">
-                        <button class="btn-action" style="background:#d44c47; color:white; border:none;" 
-                            onclick="salvarPontoCego(this, '${tituloEstudo}', '${tituloQuestao.substring(0,40)}...')">Salvar</button>
+                        <input type="text" class="input-erro" style="flex:1; padding:8px; font-size:13px; border:1px solid #ffcccc; border-radius:4px;" placeholder="Ex: Betabloqueadores são contraindicados em asma...">
+                        <button class="btn-action btn-salvar-erro" style="background:#d44c47; color:white; border:none;"
+                            data-materia="${tituloEstudo.replace(/"/g, '&quot;')}"
+                            data-pergunta="${perguntaCompleta.replace(/"/g, '&quot;').replace(/\n/g, ' ')}"
+                            data-resposta="${respostaCorretaTexto.replace(/"/g, '&quot;')}">Salvar</button>
                     </div>
                 </div>
             `;
+            // Usa event listener em vez de onclick inline para evitar truncamento
+            divErro.querySelector('.btn-salvar-erro').addEventListener('click', function() {
+                salvarPontoCego(
+                    this,
+                    this.dataset.materia,
+                    this.dataset.pergunta,
+                    this.dataset.resposta
+                );
+            });
             card.appendChild(divErro);
         }
         
@@ -4461,12 +4533,11 @@
     // ============================================================
 
     // Função que salva o erro no banco
-    window.salvarPontoCego = async (btn, materia, contexto) => {
-        // Tenta achar o input perto do botão
+    window.salvarPontoCego = async (btn, materia, perguntaCompleta, respostaCorreta) => {
         const input = btn.previousElementSibling || document.getElementById('inputErroAnato');
-        const liçao = input ? input.value : "Erro sem descrição";
+        const licao = input ? input.value.trim() : "";
         
-        if(!liçao || !liçao.trim()) return alert("Escreva o que você aprendeu com esse erro.");
+        if(!licao) return alert("Escreva o que você aprendeu com esse erro.");
 
         const textoOriginalBtn = btn.innerText;
         btn.innerText = "Salvando...";
@@ -4474,15 +4545,15 @@
         
         try {
             await addDoc(collection(db, "planners", currentUID, "caderno_erros"), {
-                materia: materia,
-                contexto: contexto,
-                aprendizado: liçao,
+                materia: materia || "Geral",
+                pergunta: perguntaCompleta || "",
+                respostaCorreta: respostaCorreta || "",
+                aprendizado: licao,
                 data: serverTimestamp()
             });
             
-            btn.innerText = "Salvo!";
-            btn.style.background = "#ccc";
-            
+            btn.innerText = "✓ Salvo";
+            btn.style.background = "#27ae60";
             showFeedback("📓 Adicionado ao Caderno de Erros", false);
         } catch(e) {
             console.error(e);
@@ -4532,22 +4603,34 @@
 
         filtrados.forEach(erro => {
             const dataF = erro.data ? new Date(erro.data.seconds * 1000).toLocaleDateString('pt-BR') : '-';
+            // Compatibilidade: erros antigos podem não ter os campos novos
+            const pergunta = erro.pergunta || erro.contexto || "";
+            const respostaCorreta = erro.respostaCorreta || "";
+            const aprendizado = erro.aprendizado || "";
             
             const div = document.createElement('div');
-            div.style.cssText = `background:white; border-left:4px solid #d44c47; padding:15px; border-radius:6px; box-shadow:0 1px 3px rgba(0,0,0,0.1); position:relative;`;
+            div.style.cssText = `background:white; border-left:4px solid #d44c47; padding:15px; border-radius:6px; box-shadow:0 1px 3px rgba(0,0,0,0.1); position:relative; margin-bottom:8px;`;
             
             div.innerHTML = `
-                <div style="font-size:11px; color:#d44c47; font-weight:700; display:flex; justify-content:space-between; margin-bottom:6px;">
-                    <span style="background:#fff5f5; padding:2px 6px; border-radius:4px;">${erro.materia}</span>
-                    <span>${dataF}</span>
+                <div style="font-size:11px; color:#d44c47; font-weight:700; display:flex; justify-content:space-between; margin-bottom:8px;">
+                    <span style="background:#fff5f5; padding:2px 8px; border-radius:4px;">${erro.materia || 'Geral'}</span>
+                    <span style="color:#999;">${dataF}</span>
                 </div>
-                <div style="font-size:14px; color:#333; font-weight:500; line-height:1.4;">
-                    "${erro.aprendizado}"
-                </div>
-                <div style="font-size:11px; color:#999; margin-top:8px; font-style:italic; border-top:1px solid #f0f0f0; padding-top:4px;">
-                    Contexto: ${erro.contexto}
-                </div>
-                <button onclick="excluirErro('${erro.id}')" style="position:absolute; top:5px; right:5px; border:none; background:none; color:#ddd; cursor:pointer; font-size:12px;" title="Remover"><i class="fas fa-trash"></i></button>
+                ${pergunta ? `
+                <div style="font-size:13px; color:#222; line-height:1.5; margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid #f5f5f5;">
+                    <span style="font-size:10px; color:#888; display:block; margin-bottom:3px; text-transform:uppercase; letter-spacing:0.05em;">Questão</span>
+                    ${pergunta}
+                </div>` : ''}
+                ${respostaCorreta ? `
+                <div style="font-size:13px; color:#27ae60; font-weight:600; margin-bottom:8px; padding:6px 10px; background:#f0faf4; border-radius:4px;">
+                    <i class="fas fa-check-circle" style="margin-right:5px;"></i> Resposta correta: ${respostaCorreta}
+                </div>` : ''}
+                ${aprendizado ? `
+                <div style="font-size:13px; color:#555; padding-top:6px; border-top:1px dashed #eee;">
+                    <span style="font-size:10px; color:#d44c47; font-weight:700; display:block; margin-bottom:3px; text-transform:uppercase; letter-spacing:0.05em;">A lição era</span>
+                    "${aprendizado}"
+                </div>` : ''}
+                <button onclick="excluirErro('${erro.id}')" style="position:absolute; top:8px; right:8px; border:none; background:none; color:#ddd; cursor:pointer; font-size:13px;" title="Remover"><i class="fas fa-trash"></i></button>
             `;
             container.appendChild(div);
         });
