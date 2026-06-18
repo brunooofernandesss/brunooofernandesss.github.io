@@ -598,23 +598,29 @@
                 <div id="cardRevanche" onclick="virarRevanche()" style="background:white; color:#333; width:100%; max-width:320px; min-height:220px; padding:25px; border-radius:12px; cursor:pointer; display:flex; flex-direction:column; justify-content:center; align-items:center; box-shadow:0 10px 30px rgba(0,0,0,0.3); transition:transform 0.3s, box-shadow 0.3s; position:relative;">
                     
                     <div id="frenteRevanche" style="width:100%;">
-                        <div style="color:#d44c47; font-weight:700; margin-bottom:15px; font-size:13px; text-transform:uppercase; border-bottom:1px solid #eee; padding-bottom:5px;" id="revMateria">
+                        <div style="color:#d44c47; font-weight:700; margin-bottom:12px; font-size:13px; text-transform:uppercase; border-bottom:1px solid #eee; padding-bottom:5px;" id="revMateria">
                             Matéria
                         </div>
-                        <div style="font-size:16px; font-weight:600; line-height:1.5; color:#333;" id="revContexto">
-                            Contexto do Erro
+                        <div style="font-size:15px; font-weight:600; line-height:1.6; color:#222;" id="revPergunta">
+                            Pergunta
                         </div>
-                        <div style="margin-top:25px; font-size:11px; color:#999; font-style:italic;">
-                            <i class="fas fa-hand-pointer"></i> Toque para revelar a lição
+                        <div style="margin-top:20px; font-size:11px; color:#999; font-style:italic; text-align:center;">
+                            <i class="fas fa-hand-pointer"></i> Toque para revelar o gabarito
                         </div>
                     </div>
 
                     <div id="versoRevanche" style="display:none; width:100%; animation: fadeIn 0.3s;">
-                        <div style="color:#27ae60; font-weight:700; margin-bottom:10px; font-size:12px; text-transform:uppercase;">
+                        <div style="color:#27ae60; font-weight:700; margin-bottom:8px; font-size:12px; text-transform:uppercase;">
+                            <i class="fas fa-check-circle"></i> Resposta Correta:
+                        </div>
+                        <div style="font-size:15px; font-weight:700; line-height:1.4; color:#27ae60; margin-bottom:16px; padding:8px; background:#f0faf4; border-radius:6px;" id="revResposta">
+                            —
+                        </div>
+                        <div style="color:#e67e22; font-weight:700; margin-bottom:6px; font-size:12px; text-transform:uppercase;">
                             <i class="fas fa-lightbulb"></i> A Lição Era:
                         </div>
-                        <div style="font-size:18px; font-weight:700; line-height:1.4; color:#2c3e50;" id="revAprendizado">
-                            A resposta correta
+                        <div style="font-size:14px; font-weight:600; line-height:1.5; color:#2c3e50;" id="revAprendizado">
+                            —
                         </div>
                     </div>
                 </div>
@@ -1134,37 +1140,42 @@
 
     // Helper centralizado: toda chamada ao Worker passa por aqui
     async function callWorker(payload, stepLabel = "") {
-        let token;
+        requisicaoEmAndamento = true;
         try {
-            token = await getFirebaseToken();
-        } catch (e) {
-            throw new Error("Sessão expirada. Por favor, recarregue a página.");
-        }
+            let token;
+            try {
+                token = await getFirebaseToken();
+            } catch (e) {
+                throw new Error("Sessão expirada. Por favor, recarregue a página.");
+            }
 
-        const response = await fetch(WORKER_URL, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "x-firebase-token": token   // JWT assinado pelo Google, não um segredo fixo
-            },
-            body: JSON.stringify(payload)
-        });
-        if (!response.ok) {
-            let errMsg = `Worker retornou status ${response.status}`;
-            try { const e = await response.json(); errMsg = e.error || errMsg; } catch(_) {}
-            throw new Error(errMsg);
-        }
-        let text;
-        try {
-            text = await response.text();
-            return JSON.parse(text);
-        } catch (_) {
-            throw new Error(`JSON inválido recebido do Worker${stepLabel ? " em " + stepLabel : ""}: ${(text||"").substring(0,200)}`);
+            const response = await fetch(WORKER_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-firebase-token": token
+                },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) {
+                let errMsg = `Worker retornou status ${response.status}`;
+                try { const e = await response.json(); errMsg = e.error || errMsg; } catch(_) {}
+                throw new Error(errMsg);
+            }
+            let text;
+            try {
+                text = await response.text();
+                return JSON.parse(text);
+            } catch (_) {
+                throw new Error(`JSON inválido recebido do Worker${stepLabel ? " em " + stepLabel : ""}: ${(text||"").substring(0,200)}`);
+            }
+        } finally {
+            requisicaoEmAndamento = false;
         }
     }
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc, getDoc, deleteDoc, where, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
     import { bancoAnatomia } from './banco_anatomia.js'; // <--- BANCO DE ANATOMIA
@@ -1504,16 +1515,7 @@
         window.location.href = "login.html";
     }
 
-    // Sobrescreve callWorker para rastrear requisições em andamento
-    const _callWorkerOriginal = callWorker;
-    window._callWorkerWrapped = async function(payload, stepLabel) {
-        requisicaoEmAndamento = true;
-        try {
-            return await _callWorkerOriginal(payload, stepLabel);
-        } finally {
-            requisicaoEmAndamento = false;
-        }
-    };
+    // requisicaoEmAndamento é gerenciada diretamente dentro de callWorker (via try/finally)
 
     // ============================================================
     // AUTH STATE
@@ -4683,12 +4685,16 @@
 
         const erro = filaRevanche[erroAtualIndex];
         
-        // Preenche Frente
+        // Preenche Frente — compatível com erros antigos (campo "contexto") e novos (campo "pergunta")
         document.getElementById('revMateria').textContent = erro.materia || "Geral";
-        document.getElementById('revContexto').textContent = erro.contexto || "Sem contexto";
+        const perguntaTexto = erro.pergunta || erro.contexto || "Sem pergunta registrada";
+        document.getElementById('revPergunta').textContent = perguntaTexto;
         
         // Preenche Verso
-        document.getElementById('revAprendizado').textContent = erro.aprendizado || "...";
+        const respostaTexto = erro.respostaCorreta || "";
+        document.getElementById('revResposta').textContent = respostaTexto || "—";
+        document.getElementById('revResposta').style.display = respostaTexto ? 'block' : 'none';
+        document.getElementById('revAprendizado').textContent = erro.aprendizado || "—";
 
         // Reseta Visual
         document.getElementById('frenteRevanche').style.display = 'block';
