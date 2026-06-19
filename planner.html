@@ -2038,6 +2038,8 @@
 
         showFeedback("🤖 IA: Iniciando geração de revisões...", true);
 
+        let targetDateD21 = null;
+
         for (const item of cronograma) {
             try {
                 showFeedback(`🤖 Gerando revisão de ${item.label}...`, true);
@@ -2048,6 +2050,9 @@
                 // 2. Calcula a data futura
                 const targetDate = new Date();
                 targetDate.setDate(targetDate.getDate() + item.days);
+
+                // Guarda a data do D+21 para usar no simulado automático
+                if (item.label === "D+21") targetDateD21 = targetDate.getTime();
 
                 // 3. Salva no Firestore
                 await addDoc(collection(db, "planners", currentUID, "tasks"), {
@@ -2066,9 +2071,64 @@
                 console.error(`Erro ao criar ${item.label}`, e);
             }
         }
+
+        // ── Simulado automático integrado ao D+21 ──
+        // Cria o simulado na MESMA data da revisão D+21, usando o conteúdo original.
+        // Se o usuário já tiver gerado um simulado manualmente antes (botão 🧠),
+        // este é apenas mais um — a IA gera perguntas diferentes a cada chamada.
+        if (targetDateD21) {
+            try {
+                showFeedback("🧠 Gerando simulado integrado ao D+21...", true);
+                await gerarQuizAutomatico(titulo, tag, contentOriginal, targetDateD21);
+            } catch(e) {
+                console.error("Erro ao gerar simulado automático do D+21:", e);
+                // Não interrompe o fluxo — revisões já foram criadas com sucesso
+            }
+        }
         
-        showFeedback("✅ Revisões D+1, D+7 e D+21 criadas!", false);
+        showFeedback("✅ Revisões D+1, D+7, D+21 e simulado criados!", false);
         loadDataAndInit(); // Atualiza a tela no final
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 🧠 Simulado automático — chamado internamente pelo D+21
+    // Mesma lógica de window.gerarQuiz, mas sem confirm() e sem
+    // depender de clique manual. Usa o conteúdo original (texto puro).
+    // ─────────────────────────────────────────────────────────────
+    async function gerarQuizAutomatico(titulo, tag, contentOriginal, targetDate) {
+        // Limpa tags HTML do conteúdo original para economizar tokens
+        const tmp = document.createElement("DIV");
+        tmp.innerHTML = contentOriginal || "";
+        let promptText = tmp.textContent || tmp.innerText || "";
+        if (promptText.length > 12000) promptText = promptText.substring(0, 12000);
+
+        const data = await callWorker({
+            action: "gerar_quiz_arquivo",
+            textoOriginal: promptText,
+            label: titulo
+        }, "gerar_quiz_arquivo (auto D+21)");
+
+        const quizHTML = data.html;
+
+        // 1. Salva na coleção 'quizzes' (aparece em "Meus Simulados")
+        const quizRef = await addDoc(collection(db, "planners", currentUID, "quizzes"), {
+            titulo: titulo,
+            html: quizHTML,
+            criadoEm: serverTimestamp(),
+            origemId: null
+        });
+
+        // 2. Salva no Cronograma na MESMA data da revisão D+21
+        await addDoc(collection(db, "planners", currentUID, "tasks"), {
+            titulo: `[QUIZ] ${titulo}`,
+            tag: tag || "SIMULADO",
+            contentHTML: quizHTML,
+            targetDate: targetDate,
+            concluido: false,
+            criadoEm: serverTimestamp(),
+            tipo: 'quiz',
+            quizId: quizRef.id
+        });
     }
 
     
