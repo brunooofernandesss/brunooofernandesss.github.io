@@ -1320,6 +1320,158 @@
         return sinais.some(re => re.test(texto));
     }
 
+    // =========================================================
+    // 🛡️ NORMALIZAÇÃO DE LIMITE DE TABELA (corrige bug do Gemini)
+    // =========================================================
+    // Problema observado: o Gemini às vezes gera tabela Markdown e, na linha
+    // seguinte, já começa um parágrafo normal — SEM deixar uma linha vazia
+    // entre o fim da tabela e o início do texto. Dependendo da versão do
+    // parser, isso pode fazer o texto seguinte ser engolido como se fosse
+    // parte da última célula da tabela, gerando uma "tabela gigante" com
+    // texto solto dentro dela.
+    //
+    // Esta função varre o texto linha a linha: identifica blocos de tabela
+    // (linha com "|" seguida da linha separadora "|---|---|") e, ao detectar
+    // o fim desse bloco (uma linha sem "|" logo depois de linhas com "|"),
+    // insere uma linha vazia ali — garantindo que o parser sempre veja a
+    // fronteira da tabela de forma inequívoca, independente da versão do
+    // marked.js carregada via CDN.
+    // =========================================================
+    // 🛡️ REMOVE GAP ENTRE CABEÇALHO E CORPO DA TABELA (bug do Gemini)
+    // =========================================================
+    // Problema observado: às vezes o Gemini insere uma linha vazia logo
+    // APÓS a linha separadora (|---|---|), antes das linhas de dados:
+    //
+    //   | Estrutura | Função |
+    //   |---|---|
+    //   <-- linha vazia indevida aqui
+    //   | Núcleo | Controle |
+    //
+    // Pela especificação GFM, uma linha vazia encerra o bloco de tabela —
+    // então isso faz o parser tratar "cabeçalho + separador" como uma
+    // mini-tabela isolada (sem linhas de dados) e o restante como texto
+    // solto, criando o efeito visual de "espaço entre o título e o resto".
+    //
+    // Esta função remove esse gap especificamente: só age IMEDIATAMENTE
+    // depois de uma linha separadora real (|---|---|), e só se a próxima
+    // linha não-vazia também tiver "|" (ou seja, é mesmo o corpo da
+    // tabela). Isso evita juntar parágrafos soltos que por acaso têm "|".
+    function removerGapCabecalhoCorpo(texto) {
+        if (!texto || !texto.includes('|')) return texto;
+
+        const linhas = texto.split('\n');
+        const ehSeparadora = (l) => {
+            const t = l.trim();
+            return /^[|\s:-]+$/.test(t) && t.includes('-') && t.includes('|');
+        };
+
+        const resultado = [];
+        let i = 0;
+        while (i < linhas.length) {
+            const linha = linhas[i];
+            resultado.push(linha);
+
+            if (ehSeparadora(linha)) {
+                let j = i + 1;
+                let viuVazia = false;
+                while (j < linhas.length && linhas[j].trim() === '') {
+                    viuVazia = true;
+                    j++;
+                }
+                if (viuVazia && j < linhas.length && linhas[j].includes('|')) {
+                    i = j; // pula as linhas vazias, reconecta direto ao corpo
+                    continue;
+                }
+            }
+            i++;
+        }
+        return resultado.join('\n');
+    }
+
+    function normalizarLimitesDeTabela(texto) {
+        if (!texto || !texto.includes('|')) return texto;
+
+        // Passo 0: corrige o gap interno cabeçalho→corpo ANTES de qualquer
+        // outra análise — isso precisa rodar primeiro para que os blocos de
+        // tabela fiquem contíguos ao chegar nas próximas etapas.
+        texto = removerGapCabecalhoCorpo(texto);
+
+        const linhas = texto.split('\n');
+        const ehLinhaComPipe = (l) => l.includes('|');
+        const ehLinhaSeparadora = (l) => {
+            const t = l.trim();
+            // Linha tipo |---|---| ou :---:|--- — só hífen, pipe, dois-pontos e espaço.
+            // Essa é a assinatura inequívoca de uma tabela GFM real (header + separador).
+            return /^[|\s:-]+$/.test(t) && t.includes('-') && t.includes('|');
+        };
+
+        // 1ª passagem: identifica blocos contíguos de linhas com "|"
+        const blocosComPipe = [];
+        let inicioBloco = null;
+        for (let i = 0; i <= linhas.length; i++) {
+            const linha = i < linhas.length ? linhas[i] : '';
+            const temPipe = ehLinhaComPipe(linha);
+            if (temPipe && inicioBloco === null) {
+                inicioBloco = i;
+            } else if (!temPipe && inicioBloco !== null) {
+                blocosComPipe.push({ inicio: inicioBloco, fim: i - 1 });
+                inicioBloco = null;
+            }
+        }
+
+        // 2ª passagem: só considera "tabela real" o bloco que contém a linha
+        // separadora |---|---| em algum ponto. Isso evita falso positivo em
+        // frases com pipe solto (ex: "relação V|Q") que não são tabela.
+        const blocosDeTabelaReal = blocosComPipe.filter(b => {
+            for (let i = b.inicio; i <= b.fim; i++) {
+                if (ehLinhaSeparadora(linhas[i])) return true;
+            }
+            return false;
+        });
+
+        // 3ª passagem: insere linha vazia logo após cada bloco de tabela real,
+        // apenas se a linha seguinte já não estiver vazia.
+        const indicesParaInserir = new Set();
+        blocosDeTabelaReal.forEach(b => {
+            const proximaLinha = linhas[b.fim + 1];
+            if (proximaLinha !== undefined && proximaLinha.trim() !== '') {
+                indicesParaInserir.add(b.fim + 1);
+            }
+        });
+
+        if (indicesParaInserir.size === 0) return texto; // nada a corrigir
+
+        const resultado = [];
+        for (let i = 0; i < linhas.length; i++) {
+            if (indicesParaInserir.has(i)) resultado.push('');
+            resultado.push(linhas[i]);
+        }
+        return resultado.join('\n');
+    }
+
+    // =========================================================
+    // 📥 CARREGAR CONTEÚDO NO EDITOR (substitui dangerouslyPasteHTML)
+    // =========================================================
+    // Usado sempre que precisamos colocar HTML completo no editor — ao abrir
+    // "Editar" um card existente, ao inserir aula gerada por IA, ao popular
+    // resumo de PDF, etc.
+    //
+    // dangerouslyPasteHTML usa setContents() internamente, e a documentação
+    // oficial do quill-table-better avisa que isso QUEBRA a exibição de
+    // tabelas reais (a tabela "desaparece" visualmente, embora o dado ainda
+    // exista no Delta). A correção documentada é: limpar o editor e usar
+    // clipboard.convert({ html }) + updateContents() em vez de setContents.
+    function carregarConteudoNoEditor(html) {
+        quill.setText(''); // limpa o editor (Delta vazio, simples — não envolve tabela)
+
+        if (!html || !html.trim()) return;
+
+        const delta = quill.clipboard.convert({ html: html, text: '\n' });
+        quill.updateContents(delta, Quill.sources.USER);
+        quill.setSelection(0, Quill.sources.SILENT);
+        quill.scrollIntoView();
+    }
+
     quill.root.addEventListener('paste', function(e) {
         // Se o clipboard trouxer HTML real (Word, Docs, outro site) — incluindo
         // tabelas reais — deixa o Quill 2.x + table-better processar nativamente.
@@ -1328,43 +1480,86 @@
 
         const temTabelaHtmlReal = htmlData && /<table/i.test(htmlData);
 
-        if (!temTabelaHtmlReal && pareceMarkdown(textData)) {
+        // ⚠️ CORREÇÃO MOBILE: o botão "Colar" do teclado virtual (Android/iOS),
+        // diferente do Ctrl+V físico, às vezes dispara o evento 'paste' com
+        // clipboardData VAZIO — getData() retorna string vazia mesmo havendo
+        // conteúdo real na área de transferência. Isso faz tanto nosso
+        // interceptor de Markdown quanto o processamento padrão do Quill
+        // falharem silenciosamente (nada é colado, sem erro visível).
+        //
+        // Quando detectamos esse caso (evento de paste disparado, mas sem
+        // texto nem HTML no clipboardData), usamos a Clipboard API assíncrona
+        // (navigator.clipboard.readText()) como fallback — ela lê a área de
+        // transferência diretamente do sistema, contornando a limitação do
+        // evento nativo nesses navegadores/contextos mobile.
+        const clipboardDataVazio = !textData && !htmlData;
+
+        if (clipboardDataVazio) {
             e.preventDefault();
             e.stopPropagation();
 
-            try {
-                const htmlConvertido = marked.parse(textData);
-
-                // Posição atual do cursor (ou fim do documento se não houver seleção)
-                const range = quill.getSelection(true) || { index: quill.getLength(), length: 0 };
-
-                // Converte o HTML em Delta (API do Quill 2.x: convert({ html, text }))
-                const deltaConvertido = quill.clipboard.convert({ html: htmlConvertido, text: '\n' });
-
-                // Constrói o Delta final: mantém tudo antes do cursor (retain),
-                // remove a seleção se havia algo selecionado, insere o conteúdo novo.
-                // updateContents (não setContents) é exigido pelo quill-table-better
-                // para não quebrar a estrutura da tabela ao inserir.
-                const Delta = Quill.import('delta');
-                const deltaFinal = new Delta()
-                    .retain(range.index)
-                    .delete(range.length)
-                    .concat(deltaConvertido);
-
-                quill.updateContents(deltaFinal, Quill.sources.USER);
-
-                const novaPosicao = range.index + deltaConvertido.length();
-                quill.setSelection(novaPosicao, Quill.sources.SILENT);
-                quill.scrollIntoView();
-            } catch (err) {
-                console.warn('Falha ao converter Markdown colado, inserindo texto puro:', err);
-                const range = quill.getSelection(true) || { index: quill.getLength(), length: 0 };
-                quill.insertText(range.index, textData, 'user');
+            if (navigator.clipboard && navigator.clipboard.readText) {
+                navigator.clipboard.readText().then((textoLido) => {
+                    if (!textoLido) return; // área de transferência realmente vazia
+                    processarTextoColado(textoLido);
+                }).catch((err) => {
+                    console.warn('Não foi possível ler a área de transferência via Clipboard API:', err);
+                    // Sem mais alternativas seguras — o navegador bloqueou o acesso
+                    // (geralmente por falta de permissão ou contexto não-seguro/HTTP).
+                });
             }
+            return;
+        }
+
+        if (!temTabelaHtmlReal && pareceMarkdown(textData)) {
+            e.preventDefault();
+            e.stopPropagation();
+            processarTextoColado(textData);
         }
         // Caso não pareça Markdown e não haja heurística especial, deixa o
         // Quill seguir seu comportamento padrão de paste (não fazemos nada).
     }, true); // useCapture = true: intercepta antes dos listeners internos do Quill
+
+    // Função compartilhada: converte Markdown colado em HTML real e insere no
+    // editor. Usada tanto pelo caminho normal (clipboardData presente) quanto
+    // pelo fallback mobile (Clipboard API assíncrona).
+    function processarTextoColado(textoColado) {
+        try {
+            // Corrige a fronteira de tabelas (bug observado em respostas do
+            // Gemini, que às vezes não deixa linha vazia após a tabela, ou
+            // insere uma linha vazia indevida entre cabeçalho e corpo) ANTES
+            // de converter para HTML — assim o marked.parse() sempre vê uma
+            // fronteira inequívoca entre tabela e texto seguinte.
+            const textoNormalizado = normalizarLimitesDeTabela(textoColado);
+            const htmlConvertido = marked.parse(textoNormalizado);
+
+            // Posição atual do cursor (ou fim do documento se não houver seleção)
+            const range = quill.getSelection(true) || { index: quill.getLength(), length: 0 };
+
+            // Converte o HTML em Delta (API do Quill 2.x: convert({ html, text }))
+            const deltaConvertido = quill.clipboard.convert({ html: htmlConvertido, text: '\n' });
+
+            // Constrói o Delta final: mantém tudo antes do cursor (retain),
+            // remove a seleção se havia algo selecionado, insere o conteúdo novo.
+            // updateContents (não setContents) é exigido pelo quill-table-better
+            // para não quebrar a estrutura da tabela ao inserir.
+            const Delta = Quill.import('delta');
+            const deltaFinal = new Delta()
+                .retain(range.index)
+                .delete(range.length)
+                .concat(deltaConvertido);
+
+            quill.updateContents(deltaFinal, Quill.sources.USER);
+
+            const novaPosicao = range.index + deltaConvertido.length();
+            quill.setSelection(novaPosicao, Quill.sources.SILENT);
+            quill.scrollIntoView();
+        } catch (err) {
+            console.warn('Falha ao converter Markdown colado, inserindo texto puro:', err);
+            const range = quill.getSelection(true) || { index: quill.getLength(), length: 0 };
+            quill.insertText(range.index, textoColado, 'user');
+        }
+    }
 
 
 
@@ -1432,9 +1627,69 @@
     };
 
     // Função de upload segura
+    // =========================================================
+    // 🖼️ COMPACTAÇÃO DE IMAGEM (canvas) — antes do upload
+    // =========================================================
+    // Reduz o tamanho do arquivo redimensionando para no máximo 1600px no
+    // lado maior e recomprimindo como JPEG qualidade 0.82. Isso acelera o
+    // upload, economiza espaço no Storage e evita fotos de celular (que
+    // podem vir com 4000px+) deixando o editor pesado.
+    function compactarImagem(file) {
+        return new Promise((resolve) => {
+            // Não recomprime GIFs (perderia a animação) nem arquivos já pequenos
+            if (file.type === 'image/gif' || file.size < 150_000) {
+                resolve(file);
+                return;
+            }
+
+            const img = new Image();
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                img.onload = () => {
+                    const MAX_DIM = 1600;
+                    let { width, height } = img;
+
+                    if (width > MAX_DIM || height > MAX_DIM) {
+                        if (width > height) {
+                            height = Math.round(height * (MAX_DIM / width));
+                            width = MAX_DIM;
+                        } else {
+                            width = Math.round(width * (MAX_DIM / height));
+                            height = MAX_DIM;
+                        }
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    canvas.toBlob((blob) => {
+                        if (!blob) { resolve(file); return; } // fallback: usa original se falhar
+                        const nomeComprimido = file.name.replace(/\.\w+$/, '') + '.jpg';
+                        resolve(new File([blob], nomeComprimido, { type: 'image/jpeg' }));
+                    }, 'image/jpeg', 0.82);
+                };
+                img.onerror = () => resolve(file); // fallback: usa original se a imagem não carregar
+                img.src = e.target.result;
+            };
+            reader.onerror = () => resolve(file);
+            reader.readAsDataURL(file);
+        });
+    }
+
     async function imageHandler() {
         if (isUploadingImage) return; 
         if (!currentUID) { alert("Usuário não autenticado"); return; }
+
+        // ⚠️ CORREÇÃO QUILL 2.x: capturar o range ANTES de abrir o seletor de
+        // arquivo. No Quill 2.x, clicar no <input type="file"> tira o foco do
+        // editor, e quill.getSelection() pode retornar null/desatualizado depois
+        // do upload assíncrono (regressão conhecida: github.com/slab/quill/issues/4375).
+        // Capturando aqui, ainda com o editor focado, o range fica correto.
+        const rangeNoClique = quill.getSelection(true) || { index: quill.getLength() };
         
         const input = document.createElement('input');
         input.type = 'file';
@@ -1449,11 +1704,18 @@
             showFeedback("Enviando imagem...", true);
 
             try {
-                const range = quill.getSelection(true) || { index: quill.getLength() };
-                const imgRef = ref(storage, `planners/${currentUID}/editor_images/${Date.now()}_${file.name}`);
-                await uploadBytes(imgRef, file);
+                const range = rangeNoClique;
+                showFeedback("Compactando imagem...", true);
+                const fileCompactado = await compactarImagem(file);
+
+                showFeedback("Enviando imagem...", true);
+                const imgRef = ref(storage, `planners/${currentUID}/editor_images/${Date.now()}_${fileCompactado.name}`);
+                await uploadBytes(imgRef, fileCompactado);
                 const url = await getDownloadURL(imgRef);
 
+                // Restaura o foco no editor antes de inserir, garantindo que
+                // o Quill 2.x reconheça a posição corretamente.
+                quill.focus();
                 quill.insertText(range.index, '\n', 'user'); 
                 quill.insertEmbed(range.index + 1, 'image', url, 'user'); 
                 quill.insertText(range.index + 2, '\n\n', 'user');
@@ -1462,8 +1724,43 @@
                 showFeedback("Imagem inserida", false);
 
             } catch (e) {
-                console.error(e);
-                alert("Erro ao inserir imagem");
+                console.error("Erro no upload de imagem:", e);
+
+                // Diagnóstico específico: a maioria dos casos de "upload parou
+                // de funcionar do nada" é conta de faturamento do Firebase
+                // suspensa/desabilitada — não um bug no editor. O Firebase
+                // retorna códigos específicos para isso.
+                const codigo = e.code || '';
+                const mensagem = e.message || '';
+
+                if (codigo === 'storage/quota-exceeded' || /billing|quota/i.test(mensagem)) {
+                    alert(
+                        "⚠️ Não foi possível enviar a imagem.\n\n" +
+                        "Isso geralmente acontece quando a conta de faturamento do " +
+                        "Firebase está suspensa ou o limite gratuito foi excedido.\n\n" +
+                        "Verifique em: Firebase Console → Configurações do Projeto → " +
+                        "Uso e Faturamento, e confirme se o plano Blaze está ativo " +
+                        "e o cartão de cobrança está válido."
+                    );
+                } else if (codigo === 'storage/unauthorized') {
+                    alert(
+                        "⚠️ Sem permissão para enviar a imagem.\n\n" +
+                        "Verifique as regras de segurança do Firebase Storage " +
+                        "(Storage → Regras) — pode ser que o usuário não tenha " +
+                        "permissão de escrita configurada."
+                    );
+                } else if (codigo === 'storage/unauthenticated') {
+                    alert("⚠️ Sua sessão expirou. Recarregue a página e faça login novamente.");
+                } else if (/402|403/.test(String(e.status || ''))) {
+                    alert(
+                        "⚠️ O Firebase recusou o upload (erro " + e.status + ").\n\n" +
+                        "Isso geralmente indica que a conta de faturamento do projeto " +
+                        "está desativada. Verifique no Firebase Console → Faturamento."
+                    );
+                } else {
+                    alert("Erro ao inserir imagem: " + (mensagem || "motivo desconhecido. Veja o console (F12) para detalhes técnicos."));
+                }
+
                 showFeedback("Erro no upload", false);
             } finally {
                 isUploadingImage = false; 
@@ -2603,7 +2900,13 @@
         }
 
         document.getElementById('subjectTag').value = data.tag || '';
-        quill.clipboard.dangerouslyPasteHTML(data.contentHTML || '');
+
+        // ⚠️ CORREÇÃO: dangerouslyPasteHTML usa setContents internamente, que a
+        // documentação do quill-table-better avisa explicitamente que QUEBRA a
+        // exibição de tabelas reais. Usamos convert + updateContents (editor
+        // está vazio aqui, então não precisa de retain — insere desde o início).
+        carregarConteudoNoEditor(data.contentHTML || '');
+
         if (isTutoriaMode) {
             document.getElementById('btnSalvar').textContent = "Salvar Tutoria";
             if (document.getElementById('btnApenasSalvar')) document.getElementById('btnApenasSalvar').style.display = 'none';
@@ -2931,9 +3234,9 @@
         const tagAtual = document.getElementById('viewTagDisplay').textContent;
         document.getElementById('subjectTag').value = tagAtual || "Estudo Livro";
         
-        // Converte MD para HTML
-        const html = marked.parse(markdown);
-        quill.clipboard.dangerouslyPasteHTML(html);
+        // Converte MD para HTML e carrega com método seguro para tabelas
+        const html = marked.parse(normalizarLimitesDeTabela(markdown));
+        carregarConteudoNoEditor(html);
         
         editingDocId = null; // Garante criação de novo card
         document.getElementById('btnSalvar').textContent = "Criar Cronograma";
@@ -3094,7 +3397,7 @@
                         titulo: titulo,
                         texto: textoBruto.substring(0, 35000)
                     }, "resumir_pdf");
-                const htmlFormatado = marked.parse(data.html); // Converte o Markdown gerado para HTML
+                const htmlFormatado = marked.parse(normalizarLimitesDeTabela(data.html)); // Converte o Markdown gerado para HTML
 
                 // Fecha o visualizador de PDF
                 fecharModalView();
@@ -3102,7 +3405,7 @@
                 // Popula o Editor para o usuário ver/ajustar e Salvar
                 document.getElementById('subjectTitle').value = titulo;
                 document.getElementById('subjectTag').value = tag.toUpperCase();
-                quill.clipboard.dangerouslyPasteHTML(htmlFormatado);
+                carregarConteudoNoEditor(htmlFormatado);
                 
                 editingDocId = null; // Trata como um "Novo Estudo"
                 document.getElementById('btnSalvar').textContent = "Criar Cronograma";
