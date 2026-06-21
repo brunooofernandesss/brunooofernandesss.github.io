@@ -1861,22 +1861,23 @@
     }
 
     // =========================================================
-    // 🛡️ REDE DE SEGURANÇA: detecta Markdown cru inserido SEM passar
-    // pelo evento 'paste' (confirmado: o botão "Colar" da barra de
+    // 🛡️ REDE DE SEGURANÇA AUTOMÁTICA: detecta Markdown cru inserido SEM
+    // passar pelo evento 'paste' (confirmado: o botão "Colar" da barra de
     // sugestões do teclado Samsung insere texto via outro mecanismo —
     // provavelmente IME — que não dispara o ClipboardEvent do DOM, então
     // nosso interceptor de paste nunca tem chance de processar).
     //
     // Como não é possível interceptar ANTES nesse caso (o navegador não
-    // emite o evento que precisaríamos), detectamos DEPOIS: o listener
-    // de 'text-change' do Quill sempre dispara, independente de como o
-    // texto entrou. Se identificarmos sinais claros de Markdown não
-    // convertido logo após uma mudança de texto causada pelo usuário,
-    // mostramos um botão flutuante "Converter Markdown" — um clique
-    // resolve, sem precisar adivinhar qual gesto o usuário usou.
+    // emite o evento que precisaríamos), detectamos DEPOIS e convertemos
+    // automaticamente: o listener de 'text-change' do Quill sempre dispara,
+    // independente de como o texto entrou. Ao identificar sinais claros de
+    // Markdown não convertido, convertemos sem precisar de confirmação.
     let avisoConversaoTimeout = null;
+    let conversaoAutomaticaEmAndamento = false; // evita loop: carregarConteudoNoEditor também dispara text-change
+
     quill.on('text-change', function(delta, oldDelta, source) {
         if (source !== 'user') return; // ignora mudanças vindas da nossa própria API
+        if (conversaoAutomaticaEmAndamento) return; // evita reagir à própria conversão
 
         clearTimeout(avisoConversaoTimeout);
         avisoConversaoTimeout = setTimeout(() => {
@@ -1886,30 +1887,28 @@
                 /\|.+\|.+\|\s*\n\s*\|[\s|:-]+\|/.test(textoAtual) || // tabela |---|---|
                 /\*\*[^*]+\*\*/.test(textoAtual);         // **negrito**
 
-            mostrarBotaoConverterMarkdown(temSinalDeMarkdownCru);
+            if (temSinalDeMarkdownCru) {
+                converterMarkdownAutomaticamente();
+            }
         }, 400);
     });
 
-    function mostrarBotaoConverterMarkdown(mostrar) {
-        let btn = document.getElementById('btnConverterMarkdownFlutuante');
-        if (!mostrar) {
-            if (btn) btn.style.display = 'none';
-            return;
+    function converterMarkdownAutomaticamente() {
+        conversaoAutomaticaEmAndamento = true;
+        try {
+            const textoCompleto = quill.getText();
+            const htmlConvertido = marked.parse(
+                removerLinhasFantasmaDaTabela(normalizarLimitesDeTabela(textoCompleto))
+            );
+            carregarConteudoNoEditor(htmlConvertido);
+        } catch (err) {
+            console.warn('Falha na conversão automática de Markdown:', err);
+        } finally {
+            // Pequeno delay antes de liberar a flag, garantindo que o
+            // text-change disparado por carregarConteudoNoEditor já tenha
+            // sido completamente processado e ignorado.
+            setTimeout(() => { conversaoAutomaticaEmAndamento = false; }, 100);
         }
-        if (!btn) {
-            btn = document.createElement('button');
-            btn.id = 'btnConverterMarkdownFlutuante';
-            btn.innerHTML = '✨ Converter Markdown para formatação';
-            btn.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:99999;background:#2383e2;color:white;border:none;padding:12px 20px;border-radius:24px;font-size:14px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,0.25);cursor:pointer;';
-            btn.onclick = function() {
-                // Pega todo o texto do editor, converte e substitui o conteúdo inteiro.
-                const textoCompleto = quill.getText();
-                carregarConteudoNoEditor(marked.parse(removerLinhasFantasmaDaTabela(normalizarLimitesDeTabela(textoCompleto))));
-                btn.style.display = 'none';
-            };
-            document.body.appendChild(btn);
-        }
-        btn.style.display = 'block';
     }
 
 
@@ -5649,8 +5648,9 @@
                             border-radius: 8px;
                         }
                         
-                        table, .table-wrapper { page-break-inside: avoid; width: 100%; border-collapse: collapse; }
-                        tr { page-break-inside: avoid; page-break-after: auto; }
+                        table, .table-wrapper { page-break-inside: avoid; width: 100%; border-collapse: collapse; border-spacing: 0; }
+                        thead { border-spacing: 0; }
+                        tr { page-break-inside: avoid; page-break-after: auto; margin: 0; }
                         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
                         
                         /* Limpa as URLs que os navegadores colocam do lado dos links na impressão */
