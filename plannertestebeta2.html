@@ -198,6 +198,34 @@
         }
         #quill-editor { flex: 1; font-size: 16px; border: none; }
 
+        /* =====================================================
+           🛡️ CORREÇÃO: espaço vazio entre cabeçalho e corpo da
+           tabela DENTRO do editor Quill ativo.
+           =====================================================
+           Causa confirmada: o navegador aplica, por padrão (user-agent
+           stylesheet), um "border-spacing" entre <thead> e <tbody> que
+           empurra visualmente o corpo da tabela para baixo — não é uma
+           linha <tr> vazia de verdade, é puramente CSS. Isso só aparece
+           dentro do editor porque a classe .hybrid-table (que já zera
+           isso corretamente) só é aplicada quando o conteúdo é exibido
+           fora do editor (nos cards), nunca dentro do editor Quill ativo,
+           que usa o CSS próprio do módulo quill-table-better.
+           Esta regra força o mesmo reset diretamente no contexto do
+           editor, sem depender da classe .hybrid-table. */
+        #quill-editor table,
+        .ql-editor table {
+            border-collapse: collapse !important;
+            border-spacing: 0 !important;
+        }
+        #quill-editor table thead,
+        .ql-editor table thead {
+            border-spacing: 0 !important;
+        }
+        #quill-editor table tr,
+        .ql-editor table tr {
+            margin: 0 !important;
+        }
+
         /* --- LIGHTBOX & VISUALIZAÇÃO DE IMAGENS --- */
         .image-modal-content {
             width: 100vw; height: 100dvh; 
@@ -1830,6 +1858,58 @@
             const range = quill.getSelection(true) || { index: quill.getLength(), length: 0 };
             quill.insertText(range.index, textoColado, 'user');
         }
+    }
+
+    // =========================================================
+    // 🛡️ REDE DE SEGURANÇA: detecta Markdown cru inserido SEM passar
+    // pelo evento 'paste' (confirmado: o botão "Colar" da barra de
+    // sugestões do teclado Samsung insere texto via outro mecanismo —
+    // provavelmente IME — que não dispara o ClipboardEvent do DOM, então
+    // nosso interceptor de paste nunca tem chance de processar).
+    //
+    // Como não é possível interceptar ANTES nesse caso (o navegador não
+    // emite o evento que precisaríamos), detectamos DEPOIS: o listener
+    // de 'text-change' do Quill sempre dispara, independente de como o
+    // texto entrou. Se identificarmos sinais claros de Markdown não
+    // convertido logo após uma mudança de texto causada pelo usuário,
+    // mostramos um botão flutuante "Converter Markdown" — um clique
+    // resolve, sem precisar adivinhar qual gesto o usuário usou.
+    let avisoConversaoTimeout = null;
+    quill.on('text-change', function(delta, oldDelta, source) {
+        if (source !== 'user') return; // ignora mudanças vindas da nossa própria API
+
+        clearTimeout(avisoConversaoTimeout);
+        avisoConversaoTimeout = setTimeout(() => {
+            const textoAtual = quill.getText();
+            const temSinalDeMarkdownCru =
+                /^#{1,6}\s+\S/m.test(textoAtual) ||      // # Título
+                /\|.+\|.+\|\s*\n\s*\|[\s|:-]+\|/.test(textoAtual) || // tabela |---|---|
+                /\*\*[^*]+\*\*/.test(textoAtual);         // **negrito**
+
+            mostrarBotaoConverterMarkdown(temSinalDeMarkdownCru);
+        }, 400);
+    });
+
+    function mostrarBotaoConverterMarkdown(mostrar) {
+        let btn = document.getElementById('btnConverterMarkdownFlutuante');
+        if (!mostrar) {
+            if (btn) btn.style.display = 'none';
+            return;
+        }
+        if (!btn) {
+            btn = document.createElement('button');
+            btn.id = 'btnConverterMarkdownFlutuante';
+            btn.innerHTML = '✨ Converter Markdown para formatação';
+            btn.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:99999;background:#2383e2;color:white;border:none;padding:12px 20px;border-radius:24px;font-size:14px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,0.25);cursor:pointer;';
+            btn.onclick = function() {
+                // Pega todo o texto do editor, converte e substitui o conteúdo inteiro.
+                const textoCompleto = quill.getText();
+                carregarConteudoNoEditor(marked.parse(removerLinhasFantasmaDaTabela(normalizarLimitesDeTabela(textoCompleto))));
+                btn.style.display = 'none';
+            };
+            document.body.appendChild(btn);
+        }
+        btn.style.display = 'block';
     }
 
 
