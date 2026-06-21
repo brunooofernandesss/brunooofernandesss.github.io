@@ -198,6 +198,34 @@
         }
         #quill-editor { flex: 1; font-size: 16px; border: none; }
 
+        /* =====================================================
+           🛡️ CORREÇÃO: espaço vazio entre cabeçalho e corpo da
+           tabela DENTRO do editor Quill ativo.
+           =====================================================
+           Causa confirmada: o navegador aplica, por padrão (user-agent
+           stylesheet), um "border-spacing" entre <thead> e <tbody> que
+           empurra visualmente o corpo da tabela para baixo — não é uma
+           linha <tr> vazia de verdade, é puramente CSS. Isso só aparece
+           dentro do editor porque a classe .hybrid-table (que já zera
+           isso corretamente) só é aplicada quando o conteúdo é exibido
+           fora do editor (nos cards), nunca dentro do editor Quill ativo,
+           que usa o CSS próprio do módulo quill-table-better.
+           Esta regra força o mesmo reset diretamente no contexto do
+           editor, sem depender da classe .hybrid-table. */
+        #quill-editor table,
+        .ql-editor table {
+            border-collapse: collapse !important;
+            border-spacing: 0 !important;
+        }
+        #quill-editor table thead,
+        .ql-editor table thead {
+            border-spacing: 0 !important;
+        }
+        #quill-editor table tr,
+        .ql-editor table tr {
+            margin: 0 !important;
+        }
+
         /* --- LIGHTBOX & VISUALIZAÇÃO DE IMAGENS --- */
         .image-modal-content {
             width: 100vw; height: 100dvh; 
@@ -1556,27 +1584,36 @@
     // Mostra na tela exatamente o que o evento 'paste' capturou, para
     // diagnosticar o problema do teclado Samsung sem precisar de DevTools
     // remoto. Aparece como um modal que fica na tela até ser fechado.
-    function mostrarDiagnosticoPaste(info) {
-        let modal = document.getElementById('modalDiagnosticoPaste');
-        if (!modal) {
-            modal = document.createElement('div');
-            modal.id = 'modalDiagnosticoPaste';
-            modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:999999;display:flex;align-items:center;justify-content:center;padding:20px;';
-            document.body.appendChild(modal);
-        }
-        modal.innerHTML = `
-            <div style="background:white;border-radius:12px;max-width:500px;width:100%;max-height:80vh;overflow-y:auto;padding:20px;font-family:monospace;font-size:12px;">
-                <h3 style="margin:0 0 12px 0;font-family:sans-serif;color:#d44c47;">🔍 Diagnóstico de Colagem</h3>
-                <pre style="white-space:pre-wrap;word-break:break-all;background:#f5f5f5;padding:10px;border-radius:6px;">${info}</pre>
-                <button onclick="document.getElementById('modalDiagnosticoPaste').remove()" 
-                    style="margin-top:12px;width:100%;padding:10px;background:#2383e2;color:white;border:none;border-radius:6px;font-family:sans-serif;font-size:14px;">
-                    Fechar
-                </button>
-            </div>`;
-        modal.style.display = 'flex';
-    }
+    // =========================================================
+    // 🔒 LOCK CONTRA PASTE DUPLICADO (bug confirmado: Samsung/Android
+    // dispara o evento 'paste' DUAS VEZES para uma única ação de colar,
+    // especialmente ao manter pressionado em vez de usar o menu do
+    // teclado). Sem esse lock, o conteúdo era inserido duas vezes —
+    // a primeira formatada corretamente, a segunda como Markdown puro
+    // (porque a segunda chamada ocorria com o cursor em posição
+    // inesperada, fazendo o convert/updateContents cair no catch).
+    let pasteEmProcessamento = false;
+    let ultimoPasteTimestamp = 0;
+    const PASTE_DEBOUNCE_MS = 600; // janela mínima entre dois pastes legítimos
 
     quill.root.addEventListener('paste', function(e) {
+        // 🔒 Bloqueia paste duplicado: se já há um paste em processamento,
+        // ou se este evento disparou muito perto do último (mesma ação do
+        // usuário sendo capturada duas vezes pelo navegador/teclado),
+        // ignora completamente este segundo disparo.
+        const agora = Date.now();
+        if (pasteEmProcessamento || (agora - ultimoPasteTimestamp) < PASTE_DEBOUNCE_MS) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+        }
+        ultimoPasteTimestamp = agora;
+        pasteEmProcessamento = true;
+        // Libera o lock depois de um tempo suficiente para a inserção
+        // terminar (mesmo que processarTextoColado seja síncrono na maior
+        // parte, isso cobre qualquer microtask pendente do Quill).
+        setTimeout(() => { pasteEmProcessamento = false; }, PASTE_DEBOUNCE_MS);
+
         // Se o clipboard trouxer HTML real (Word, Docs, outro site) — incluindo
         // tabelas reais — deixa o Quill 2.x + table-better processar nativamente.
         const htmlData = e.clipboardData && e.clipboardData.getData('text/html');
@@ -1585,51 +1622,25 @@
         const temTabelaHtmlReal = htmlData && /<table/i.test(htmlData);
         const clipboardDataVazio = !textData && !htmlData;
 
-        // 🔍 DIAGNÓSTICO: mostra na tela o que foi capturado neste evento.
-        // Remover este bloco depois de identificar a causa do problema.
-        const diagnostico = [
-            `clipboardData existe: ${!!e.clipboardData}`,
-            `textData (text/plain): "${(textData || '').substring(0, 100)}" (length: ${(textData||'').length})`,
-            `htmlData (text/html): "${(htmlData || '').substring(0, 100)}" (length: ${(htmlData||'').length})`,
-            `clipboardDataVazio: ${clipboardDataVazio}`,
-            `temTabelaHtmlReal: ${temTabelaHtmlReal}`,
-            `navigator.clipboard existe: ${!!navigator.clipboard}`,
-            `navigator.clipboard.readText existe: ${!!(navigator.clipboard && navigator.clipboard.readText)}`,
-            `isSecureContext: ${window.isSecureContext}`,
-            `userAgent: ${navigator.userAgent.substring(0, 80)}`
-        ].join('\n');
-        mostrarDiagnosticoPaste(diagnostico);
-
         // ⚠️ CORREÇÃO MOBILE: o botão "Colar" do teclado virtual (Android/iOS),
         // diferente do Ctrl+V físico, às vezes dispara o evento 'paste' com
         // clipboardData VAZIO — getData() retorna string vazia mesmo havendo
-        // conteúdo real na área de transferência. Isso faz tanto nosso
-        // interceptor de Markdown quanto o processamento padrão do Quill
-        // falharem silenciosamente (nada é colado, sem erro visível).
-        //
-        // Quando detectamos esse caso (evento de paste disparado, mas sem
-        // texto nem HTML no clipboardData), usamos a Clipboard API assíncrona
-        // (navigator.clipboard.readText()) como fallback — ela lê a área de
-        // transferência diretamente do sistema, contornando a limitação do
-        // evento nativo nesses navegadores/contextos mobile.
-
+        // conteúdo real na área de transferência. Quando detectamos esse caso,
+        // usamos a Clipboard API assíncrona (navigator.clipboard.readText())
+        // como fallback — ela lê a área de transferência diretamente do
+        // sistema, contornando a limitação do evento nativo nesses
+        // navegadores/contextos mobile.
         if (clipboardDataVazio) {
             e.preventDefault();
             e.stopPropagation();
 
             if (navigator.clipboard && navigator.clipboard.readText) {
                 navigator.clipboard.readText().then((textoLido) => {
-                    if (!textoLido) {
-                        mostrarDiagnosticoPaste(diagnostico + '\n\n--- readText() retornou: VAZIO ---');
-                        return;
-                    }
-                    mostrarDiagnosticoPaste(diagnostico + `\n\n--- readText() retornou (${textoLido.length} chars): ---\n${textoLido.substring(0,200)}`);
+                    if (!textoLido) return; // área de transferência realmente vazia
                     processarTextoColado(textoLido);
                 }).catch((err) => {
-                    mostrarDiagnosticoPaste(diagnostico + `\n\n--- readText() FALHOU: ${err.name}: ${err.message} ---`);
+                    console.warn('Não foi possível ler a área de transferência via Clipboard API:', err);
                 });
-            } else {
-                mostrarDiagnosticoPaste(diagnostico + '\n\n--- Clipboard API não disponível neste navegador/contexto ---');
             }
             return;
         }
@@ -1637,12 +1648,9 @@
         // ⚠️ CORREÇÃO: apps mobile de IA (ex: Gemini no Android) podem copiar
         // HTML real para a área de transferência em vez de Markdown puro —
         // e esse HTML às vezes já vem com uma <tr> com células vazias entre
-        // o cabeçalho e o corpo da tabela (causa confirmada do bug visual
-        // "linha em branco dentro da tabela"). Antes, esse caminho era
-        // ignorado por completo (deixávamos o Quill processar "como está").
-        // Agora limpamos as <tr> vazias do HTML antes de entregar ao editor,
-        // usando o mesmo pipeline seguro (convert + updateContents) já usado
-        // para o caminho de Markdown.
+        // o cabeçalho e o corpo da tabela. Limpamos as <tr> vazias do HTML
+        // antes de entregar ao editor, usando o mesmo pipeline seguro
+        // (convert + updateContents) já usado para o caminho de Markdown.
         if (temTabelaHtmlReal) {
             e.preventDefault();
             e.stopPropagation();
@@ -1659,6 +1667,41 @@
         // Quill seguir seu comportamento padrão de paste (não fazemos nada).
     }, true); // useCapture = true: intercepta antes dos listeners internos do Quill
 
+    
+    // =========================================================
+    // 🛡️ INTERCEPTOR DE SUGESTÃO DE TECLADO (Mobile / Gboard / Samsung)
+    // =========================================================
+    // Teclados mobile geralmente NÃO disparam o evento 'paste' nativo quando
+    // o usuário toca na sugestão da área de transferência acima das teclas.
+    // Eles disparam 'beforeinput' e injetam o texto. Isso captura essa injeção.
+    quill.root.addEventListener('beforeinput', function(e) {
+        let texto = e.data;
+        if (!texto && e.dataTransfer) {
+            texto = e.dataTransfer.getData('text/plain');
+        }
+
+        // Se for um bloco grande de texto e tiver formato de Markdown
+        if (texto && texto.length > 15 && pareceMarkdown(texto)) {
+            const agora = Date.now();
+            
+            // Bloqueia duplicação caso o teclado dispare paste E beforeinput juntos
+            if (pasteEmProcessamento || (agora - ultimoPasteTimestamp) < PASTE_DEBOUNCE_MS) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            
+            ultimoPasteTimestamp = agora;
+            pasteEmProcessamento = true;
+            setTimeout(() => { pasteEmProcessamento = false; }, PASTE_DEBOUNCE_MS);
+
+            e.preventDefault();
+            e.stopPropagation();
+            processarTextoColado(texto);
+        }
+    }, true);
+   
+    
     // Função compartilhada: converte Markdown colado em HTML real e insere no
     // editor. Usada tanto pelo caminho normal (clipboardData presente) quanto
     // pelo fallback mobile (Clipboard API assíncrona).
@@ -1695,9 +1738,17 @@
     // só da limpeza de <tr> vazias antes de inserir).
     function processarHtmlColado(htmlBruto) {
         try {
-            const htmlLimpo = removerLinhasVaziasDoHTML(htmlBruto);
+            let htmlLimpo = removerLinhasVaziasDoHTML(htmlBruto);
+
+            // 🛡️ CORREÇÃO DO GAP DA TABELA (Cópia Rica / HTML):
+            // Remove espaços invisíveis/quebras de linha entre as tags estruturais
+            // da tabela, impedindo o Quill de renderizar linhas em branco.
+            htmlLimpo = htmlLimpo.replace(/<table[^>]*>[\s\S]*?<\/table>/gi, function(tabelaHtml) {
+                return tabelaHtml.replace(/>\s+</g, '><');
+            });
 
             const range = quill.getSelection(true) || { index: quill.getLength(), length: 0 };
+            
             const deltaConvertido = quill.clipboard.convert({ html: htmlLimpo, text: '\n' });
 
             const Delta = Quill.import('delta');
@@ -1708,9 +1759,24 @@
 
             quill.updateContents(deltaFinal, Quill.sources.USER);
 
-            const novaPosicao = range.index + deltaConvertido.length();
-            quill.setSelection(novaPosicao, Quill.sources.SILENT);
-            quill.scrollIntoView();
+            // Fórmula correta (documentação oficial do quill-table-better):
+            // tamanho do delta final completo, menos o tamanho da seleção
+            // anterior. A fórmula antiga (range.index + deltaConvertido.length())
+            // só funcionava por coincidência com o editor vazio.
+            const novaPosicao = deltaFinal.length() - range.length;
+
+            // ⚠️ CORREÇÃO: adiar setSelection/scrollIntoView para o próximo
+            // ciclo de eventos. A documentação do Quill confirma um bug
+            // conhecido de "cursor jump" quando updateContents insere
+            // estruturas complexas (como tabelas) e setSelection é chamado
+            // imediatamente — o DOM ainda não terminou de renderizar a nova
+            // estrutura, e a posição calculada pode ficar inconsistente com
+            // o estado real. setTimeout(0) garante que o navegador termine
+            // o reflow/render antes de tentarmos mover o cursor.
+            setTimeout(() => {
+                quill.setSelection(novaPosicao, Quill.sources.SILENT);
+                quill.scrollIntoView();
+            }, 0);
         } catch (err) {
             console.warn('Falha ao processar HTML colado, tentando inserção padrão:', err);
             // Última tentativa: deixa o Quill tentar do jeito padrão dele
@@ -1736,6 +1802,15 @@
             // sobrevivido à normalização do texto fonte.
             htmlConvertido = removerLinhasVaziasDoHTML(htmlConvertido);
 
+            // 🛡️ CORREÇÃO DO GAP DA TABELA DO GEMINI:
+            // O marked.js gera quebras de linha (\n) entre as tags </thead> e <tbody>.
+            // O módulo quill-table-better interpreta essas quebras de linha invisíveis
+            // como blocos de texto vazios, criando uma linha <tr> fantasma no editor.
+            // Isso remove todo o espaço em branco estrutural dentro das tabelas HTML:
+            htmlConvertido = htmlConvertido.replace(/<table[^>]*>[\s\S]*?<\/table>/gi, function(tabelaHtml) {
+                return tabelaHtml.replace(/>\s+</g, '><');
+            });
+
             // Posição atual do cursor (ou fim do documento se não houver seleção)
             const range = quill.getSelection(true) || { index: quill.getLength(), length: 0 };
 
@@ -1754,15 +1829,36 @@
 
             quill.updateContents(deltaFinal, Quill.sources.USER);
 
-            const novaPosicao = range.index + deltaConvertido.length();
-            quill.setSelection(novaPosicao, Quill.sources.SILENT);
-            quill.scrollIntoView();
+            // ⚠️ CORREÇÃO CRÍTICA: a fórmula correta documentada oficialmente
+            // pelo quill-table-better é deltaFinal.length() - range.length
+            // (tamanho do delta FINAL completo, menos o que foi selecionado/
+            // removido) — NÃO range.index + deltaConvertido.length() como
+            // estava antes. A fórmula antiga só "funcionava por coincidência"
+            // quando o editor estava vazio (range.index = 0).
+            const novaPosicao = deltaFinal.length() - range.length;
+
+            // ⚠️ CORREÇÃO: adiar setSelection/scrollIntoView para o próximo
+            // ciclo de eventos (mesma causa documentada do "cursor jump" do
+            // Quill ao inserir estruturas complexas como tabelas via
+            // updateContents — o DOM precisa de um instante para terminar
+            // de renderizar antes do cursor ser reposicionado com segurança).
+            // Isso também evita que a colagem seguinte (2ª, 3ª vez) leia uma
+            // seleção desatualizada e quebre a conversão, caindo no fallback
+            // de texto puro — padrão observado nos testes do usuário.
+            setTimeout(() => {
+                quill.setSelection(novaPosicao, Quill.sources.SILENT);
+                quill.scrollIntoView();
+            }, 0);
         } catch (err) {
             console.warn('Falha ao converter Markdown colado, inserindo texto puro:', err);
             const range = quill.getSelection(true) || { index: quill.getLength(), length: 0 };
             quill.insertText(range.index, textoColado, 'user');
         }
     }
+
+    // (Removida a rede de segurança via text-change: estava competindo com
+    // o interceptor de paste e causando duplicação/corrupção de tabelas
+    // quando dois mecanismos de colagem disparavam em sequência rápida.)
 
 
 
@@ -5501,8 +5597,9 @@
                             border-radius: 8px;
                         }
                         
-                        table, .table-wrapper { page-break-inside: avoid; width: 100%; border-collapse: collapse; }
-                        tr { page-break-inside: avoid; page-break-after: auto; }
+                        table, .table-wrapper { page-break-inside: avoid; width: 100%; border-collapse: collapse; border-spacing: 0; }
+                        thead { border-spacing: 0; }
+                        tr { page-break-inside: avoid; page-break-after: auto; margin: 0; }
                         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
                         
                         /* Limpa as URLs que os navegadores colocam do lado dos links na impressão */
