@@ -1703,9 +1703,17 @@
     // só da limpeza de <tr> vazias antes de inserir).
     function processarHtmlColado(htmlBruto) {
         try {
-            const htmlLimpo = removerLinhasVaziasDoHTML(htmlBruto);
+            let htmlLimpo = removerLinhasVaziasDoHTML(htmlBruto);
+
+            // 🛡️ CORREÇÃO DO GAP DA TABELA (Cópia Rica / HTML):
+            // Remove espaços invisíveis/quebras de linha entre as tags estruturais
+            // da tabela, impedindo o Quill de renderizar linhas em branco.
+            htmlLimpo = htmlLimpo.replace(/<table[^>]*>[\s\S]*?<\/table>/gi, function(tabelaHtml) {
+                return tabelaHtml.replace(/>\s+</g, '><');
+            });
 
             const range = quill.getSelection(true) || { index: quill.getLength(), length: 0 };
+            
             const deltaConvertido = quill.clipboard.convert({ html: htmlLimpo, text: '\n' });
 
             const Delta = Quill.import('delta');
@@ -1758,6 +1766,15 @@
             // Rede de segurança final: remove qualquer <tr> vazia que tenha
             // sobrevivido à normalização do texto fonte.
             htmlConvertido = removerLinhasVaziasDoHTML(htmlConvertido);
+
+            // 🛡️ CORREÇÃO DO GAP DA TABELA DO GEMINI:
+            // O marked.js gera quebras de linha (\n) entre as tags </thead> e <tbody>.
+            // O módulo quill-table-better interpreta essas quebras de linha invisíveis
+            // como blocos de texto vazios, criando uma linha <tr> fantasma no editor.
+            // Isso remove todo o espaço em branco estrutural dentro das tabelas HTML:
+            htmlConvertido = htmlConvertido.replace(/<table[^>]*>[\s\S]*?<\/table>/gi, function(tabelaHtml) {
+                return tabelaHtml.replace(/>\s+</g, '><');
+            });
 
             // Posição atual do cursor (ou fim do documento se não houver seleção)
             const range = quill.getSelection(true) || { index: quill.getLength(), length: 0 };
