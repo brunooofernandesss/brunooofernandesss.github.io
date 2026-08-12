@@ -2605,10 +2605,22 @@
 
             const ffmpeg = new FFmpeg();
             const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd';
+            // Base do pacote @ffmpeg/ffmpeg (não @ffmpeg/core) — é daqui que
+            // vem o worker.js interno da biblioteca.
+            const ffmpegPkgURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm';
 
+            // ⚠️ CORREÇÃO: o navegador bloqueia `new Worker(url)` quando a URL
+            // é de outra origem (a CDN, nesse caso) — daí o erro "Failed to
+            // construct 'Worker': ... cannot be accessed from origin ...".
+            // A solução oficial da biblioteca (desde a v0.12.9) é baixar o
+            // próprio worker.js via toBlobURL, convertê-lo em Blob local
+            // (mesma origem da página), e passar isso como classWorkerURL —
+            // assim o FFmpeg instancia o Worker a partir do blob local, não
+            // diretamente da CDN.
             await ffmpeg.load({
                 coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
                 wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+                classWorkerURL: await toBlobURL(`${ffmpegPkgURL}/worker.js`, 'text/javascript'),
             });
 
             ffmpegInstance = ffmpeg;
