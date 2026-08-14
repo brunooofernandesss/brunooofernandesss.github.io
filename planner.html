@@ -2605,22 +2605,24 @@
 
             const ffmpeg = new FFmpeg();
 
-            // ⚠️ CORREÇÃO CRÍTICA: coreURL/wasmURL estavam apontando para
-            // /dist/umd do @ffmpeg/core, enquanto o pacote @ffmpeg/ffmpeg e
-            // seu worker.js (carregados abaixo) são a variante /dist/esm.
-            // Misturar UMD com ESM entre essas peças causa o travamento
-            // silencioso observado (load() nunca resolve nem rejeita) —
-            // o worker.js faz import() dinâmico do coreURL esperando o
-            // formato ESM; ao receber UMD, a promise nunca fecha.
-            // Todos os três pacotes agora usam consistentemente /dist/esm,
-            // conforme os exemplos oficiais da biblioteca.
+            // coreURL/wasmURL na variante /dist/esm — mesma variante do
+            // pacote @ffmpeg/ffmpeg importado acima. Misturar ESM com UMD
+            // entre essas peças causa comportamento inconsistente.
             const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm';
-            const ffmpegPkgURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm';
 
-            // 🛡️ REDE DE SEGURANÇA: se ffmpeg.load() travar por qualquer
-            // motivo não previsto (rede instável, CDN fora do ar, etc.), o
-            // usuário via uma barra parada em 2% para sempre, sem explicação.
-            // Um timeout de 30s garante que o erro apareça de forma clara.
+            // ⚠️ CORREÇÃO: removido o classWorkerURL que eu tinha adicionado
+            // na tentativa anterior. Ele resolvia o erro "Failed to construct
+            // Worker" (CORS), mas introduzia um travamento silencioso pior —
+            // o worker.js baixado como blob faz import() relativo de outros
+            // arquivos internos do pacote (classes.js, const.js, errors.js),
+            // e esses caminhos relativos não resolvem corretamente quando o
+            // próprio worker.js está rodando a partir de uma blob: URL, então
+            // ffmpeg.load() nunca resolve nem rejeita.
+            // A combinação testada e confirmada em múltiplos exemplos oficiais
+            // funcionais para uso single-thread (sem SharedArrayBuffer) é
+            // apenas coreURL + wasmURL, sem classWorkerURL — o próprio
+            // @ffmpeg/ffmpeg importado via <script type="module"> já consegue
+            // instanciar seu Worker interno normalmente nesse cenário.
             const timeoutPromise = new Promise((_, reject) => {
                 setTimeout(() => reject(new Error("Tempo esgotado ao carregar o motor de áudio. Verifique sua conexão e tente novamente.")), 30000);
             });
@@ -2629,7 +2631,6 @@
                 ffmpeg.load({
                     coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
                     wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-                    classWorkerURL: await toBlobURL(`${ffmpegPkgURL}/worker.js`, 'text/javascript'),
                 }),
                 timeoutPromise
             ]);
