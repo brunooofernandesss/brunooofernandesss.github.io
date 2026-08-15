@@ -433,6 +433,26 @@
 
 
     </style>
+
+    <!-- =========================================================
+         🛡️ COI SERVICE WORKER — necessário para o FFmpeg.wasm
+         =========================================================
+         O FFmpeg.wasm (usado na seção "Resumir Áudio") depende
+         internamente de SharedArrayBuffer, que só funciona em páginas
+         com "Cross-Origin Isolation" ativa — isso exige os headers HTTP
+         Cross-Origin-Opener-Policy e Cross-Origin-Embedder-Policy.
+         O GitHub Pages NÃO permite configurar headers customizados no
+         servidor (é uma limitação da própria plataforma, documentada
+         oficialmente), então usamos o gzuidhof/coi-serviceworker — a
+         solução padrão da comunidade para esse cenário exato: um
+         Service Worker que intercepta as respostas no navegador e
+         injeta esses headers do lado do cliente, sem precisar de
+         nenhuma configuração de servidor.
+         Sem isso, ffmpeg.load() trava silenciosamente (nunca resolve
+         nem rejeita) em vez de dar erro claro — foi exatamente esse o
+         sintoma observado (barra parada em 2% / erro de Worker).
+    -->
+    <script src="https://cdn.jsdelivr.net/gh/gzuidhof/coi-serviceworker@7b1d2a92/coi-serviceworker.min.js"></script>
 </head>
 <body>
 
@@ -2600,29 +2620,39 @@
         ffmpegCarregando = (async () => {
             audioAtualizarStatus("Carregando motor de áudio (primeira vez pode demorar)...", 2);
 
+            // ⚠️ VERIFICAÇÃO: o FFmpeg.wasm depende de SharedArrayBuffer, que só
+            // existe em páginas com Cross-Origin Isolation ativa. O script
+            // coi-serviceworker (carregado no <head>) providencia isso via
+            // Service Worker, mas na PRIMEIRA visita ele precisa recarregar a
+            // página uma vez para o navegador aplicar o isolamento — esse
+            // reload já acontece automaticamente. Se por algum motivo o
+            // isolamento ainda não estiver ativo neste ponto, falhar aqui com
+            // uma mensagem clara é melhor que travar silenciosamente dentro
+            // do ffmpeg.load().
+            if (!window.crossOriginIsolated) {
+                throw new Error("Isolamento de origem ainda não ativo. Recarregue a página uma vez e tente novamente.");
+            }
+
             const { FFmpeg } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
             const { toBlobURL } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
 
             const ffmpeg = new FFmpeg();
 
-            // coreURL/wasmURL na variante /dist/esm — mesma variante do
-            // pacote @ffmpeg/ffmpeg importado acima. Misturar ESM com UMD
-            // entre essas peças causa comportamento inconsistente.
+            // coreURL/wasmURL/worker.js todos na variante /dist/esm — mesma
+            // variante do pacote @ffmpeg/ffmpeg importado acima. Misturar ESM
+            // com UMD entre essas peças causa comportamento inconsistente.
             const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm';
+            const ffmpegPkgURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm';
 
-            // ⚠️ CORREÇÃO: removido o classWorkerURL que eu tinha adicionado
-            // na tentativa anterior. Ele resolvia o erro "Failed to construct
-            // Worker" (CORS), mas introduzia um travamento silencioso pior —
-            // o worker.js baixado como blob faz import() relativo de outros
-            // arquivos internos do pacote (classes.js, const.js, errors.js),
-            // e esses caminhos relativos não resolvem corretamente quando o
-            // próprio worker.js está rodando a partir de uma blob: URL, então
-            // ffmpeg.load() nunca resolve nem rejeita.
-            // A combinação testada e confirmada em múltiplos exemplos oficiais
-            // funcionais para uso single-thread (sem SharedArrayBuffer) é
-            // apenas coreURL + wasmURL, sem classWorkerURL — o próprio
-            // @ffmpeg/ffmpeg importado via <script type="module"> já consegue
-            // instanciar seu Worker interno normalmente nesse cenário.
+            // classWorkerURL é necessário: a biblioteca sempre instancia um
+            // Worker internamente (com ou sem essa opção) — sem ela, tenta
+            // buscar o worker relativo à própria URL do módulo na CDN, o que
+            // o navegador bloqueia por ser cross-origin em relação à página
+            // ("Failed to construct 'Worker': ... cannot be accessed from
+            // origin ..."). Com classWorkerURL + toBlobURL, baixamos o
+            // worker.js e o convertemos em Blob local (mesma origem), e agora
+            // que a página está cross-origin isolated (graças ao service
+            // worker acima), o worker consegue rodar corretamente.
             const timeoutPromise = new Promise((_, reject) => {
                 setTimeout(() => reject(new Error("Tempo esgotado ao carregar o motor de áudio. Verifique sua conexão e tente novamente.")), 30000);
             });
@@ -2631,6 +2661,7 @@
                 ffmpeg.load({
                     coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
                     wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+                    classWorkerURL: await toBlobURL(`${ffmpegPkgURL}/worker.js`, 'text/javascript'),
                 }),
                 timeoutPromise
             ]);
