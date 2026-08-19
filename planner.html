@@ -435,61 +435,44 @@
     </style>
 
     <!-- =========================================================
-         🛡️ COI SERVICE WORKER — necessário para o FFmpeg.wasm
+         🛡️ COI SERVICE WORKER — DESATIVADO (causou o site quebrar)
          =========================================================
-         O FFmpeg.wasm (usado na seção "Resumir Áudio") depende de
-         SharedArrayBuffer, que só funciona com "Cross-Origin Isolation"
-         ativa (headers COOP/COEP). O GitHub Pages não permite configurar
-         headers customizados no servidor — então usamos a técnica do
-         gzuidhof/coi-serviceworker: um Service Worker que injeta esses
-         headers do lado do cliente.
+         ⚠️ INCIDENTE CONFIRMADO: o Service Worker anterior, registrado
+         com scope: '/' (a raiz inteira do site), passou a interceptar
+         TODAS as requisições da página — incluindo login (Firebase Auth),
+         ícones (Font Awesome) e qualquer recurso externo — e forçava o
+         header Cross-Origin-Embedder-Policy: require-corp em tudo.
+         Segundo a documentação oficial (MDN), isso faz o navegador
+         BLOQUEAR qualquer recurso cross-origin que não declare
+         explicitamente Cross-Origin-Resource-Policy: cross-origin —
+         o que é o caso do Firebase Auth e da maioria das CDNs de
+         terceiros. Resultado: login parou de funcionar, ícones sumiram,
+         página ficou em branco — exatamente o que foi reportado.
 
-         ⚠️ CONFIRMADO POR INVESTIGAÇÃO TÉCNICA: esse Service Worker
-         PRECISA ser um arquivo físico real no seu repositório, na
-         mesma pasta do planner.html. Duas tentativas anteriores
-         falharam por motivos técnicos diferentes e definitivos:
-         1) Carregar de uma CDN não funciona — a documentação oficial do
-            projeto afirma isso explicitamente: um Service Worker só
-            pode controlar a origem de onde ELE PRÓPRIO foi servido.
-         2) Embutir como Blob local também não funciona — confirmado
-            pela própria lista de discussão do grupo de trabalho do
-            W3C responsável pela especificação de Service Workers:
-            "blob URLs não suportam CORS", e por isso os navegadores
-            bloqueiam o registro de um Service Worker a partir de uma
-            blob: URL, mesmo que criada na mesma página.
-         A ÚNICA forma que realmente funciona é o arquivo existir no
-         seu domínio via HTTP de verdade. Veja instruções completas na
-         mensagem que acompanha esta entrega.
+         Este bloco agora faz o oposto do anterior: ao carregar a página,
+         verifica se existe algum Service Worker já registrado (de uma
+         visita anterior, quando o código quebrado rodou) e o remove
+         ativamente, restaurando o funcionamento normal do site.
+
+         A funcionalidade de áudio (FFmpeg.wasm) ficará indisponível até
+         uma nova versão, implementada com escopo restrito e testada
+         separadamente antes de ir ao ar — não vale a pena arriscar
+         quebrar o site inteiro de novo por essa função secundária.
     -->
     <script>
     (function() {
-        if (window.crossOriginIsolated) return; // já isolado, nada a fazer
-        if (!window.isSecureContext || !navigator.serviceWorker) return;
-
-        const reloadedBySelf = window.sessionStorage.getItem("coiReloadedBySelf");
-        window.sessionStorage.removeItem("coiReloadedBySelf");
-        if (reloadedBySelf) return; // evita loop infinito de reload
-
-        // 📌 Aponta para um arquivo real que precisa existir na raiz do
-        // repositório (ao lado de planner.html) — veja coi-serviceworker.js
-        // fornecido junto com esta entrega, com instrução de onde colocá-lo.
-        navigator.serviceWorker.register('/coi-serviceworker.js', { scope: '/' }).then(
-            (registration) => {
-                console.log("COOP/COEP Service Worker registered", registration.scope);
-                if (registration.active && !navigator.serviceWorker.controller) {
-                    console.log("Reloading page to activate COOP/COEP Service Worker.");
-                    window.sessionStorage.setItem("coiReloadedBySelf", "notcontrolling");
-                    window.location.reload();
-                }
-            },
-            (err) => {
-                // Se o arquivo ainda não foi adicionado ao repositório, o
-                // registro falha aqui — a página continua funcionando
-                // normalmente, só a seção "Resumir Áudio" ficará indisponível
-                // até o arquivo ser adicionado.
-                console.error("COOP/COEP Service Worker failed to register (arquivo coi-serviceworker.js ausente na raiz do repositório?):", err);
-            }
-        );
+        if (!navigator.serviceWorker) return;
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+            registrations.forEach((registration) => {
+                registration.unregister().then((sucesso) => {
+                    if (sucesso) {
+                        console.log("Service Worker problemático removido:", registration.scope);
+                    }
+                });
+            });
+        }).catch((err) => {
+            console.warn("Não foi possível verificar Service Workers registrados:", err);
+        });
     })();
     </script>
 </head>
