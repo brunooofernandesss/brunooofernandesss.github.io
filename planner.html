@@ -2588,12 +2588,26 @@
     // =========================================================
     // 🎙️ RESUMIR ÁUDIO — Transcrição via Whisper (Cloudflare Workers AI)
     // =========================================================
-    const AUDIO_CHUNK_SECONDS = 300;
-    const AUDIO_MAX_RETRIES = 3;
+    // ⚠️ ARQUITETURA REFORMULADA: a versão anterior usava FFmpeg.wasm no
+    // navegador para dividir o áudio em chunks antes do upload. Isso exigia
+    // Cross-Origin Isolation (SharedArrayBuffer), que o GitHub Pages não
+    // suporta sem truques de Service Worker — e essas tentativas quebraram
+    // o site inteiro (login, ícones) duas vezes, porque um Service Worker
+    // com escopo amplo intercepta TODAS as requisições da origem, não só
+    // as do áudio.
+    //
+    // Nova arquitetura, seguindo o padrão oficial da documentação da
+    // Cloudflare (developers.cloudflare.com/workers-ai/guides/tutorials/
+    // build-a-workers-ai-whisper-with-chunking): o navegador faz um upload
+    // simples do arquivo INTEIRO — sem nenhuma dependência de FFmpeg,
+    // SharedArrayBuffer ou Service Worker. Todo o trabalho de dividir o
+    // áudio em chunks (necessário porque o modelo Whisper tem limite real
+    // de ~2MB por chamada) agora acontece dentro do próprio Worker, via
+    // corte de bytes brutos — técnica que a própria Cloudflare documenta
+    // como referência para esse cenário.
 
-    let ffmpegInstance = null;
-    let ffmpegCarregando = null;
     let vttFinalGerado = "";
+    let textoFinalGerado = "";
     let nomeArquivoAtual = "aula";
 
     function audioAtualizarStatus(texto, percentual) {
@@ -2634,71 +2648,8 @@
         document.getElementById('audioDropArea').style.display = 'block';
         document.getElementById('inputAudioFile').value = '';
         vttFinalGerado = "";
+        textoFinalGerado = "";
     };
-
-    async function carregarFFmpeg() {
-        if (ffmpegInstance) return ffmpegInstance;
-        if (ffmpegCarregando) return ffmpegCarregando;
-
-        ffmpegCarregando = (async () => {
-            audioAtualizarStatus("Carregando motor de áudio (primeira vez pode demorar)...", 2);
-
-            // ⚠️ VERIFICAÇÃO: o FFmpeg.wasm depende de SharedArrayBuffer, que só
-            // existe em páginas com Cross-Origin Isolation ativa. O script
-            // coi-serviceworker (carregado no <head>) providencia isso via
-            // Service Worker, mas na PRIMEIRA visita ele precisa recarregar a
-            // página uma vez para o navegador aplicar o isolamento — esse
-            // reload já acontece automaticamente. Se por algum motivo o
-            // isolamento ainda não estiver ativo neste ponto, falhar aqui com
-            // uma mensagem clara é melhor que travar silenciosamente dentro
-            // do ffmpeg.load().
-            if (!window.crossOriginIsolated) {
-                throw new Error("Isolamento de origem ainda não ativo. Recarregue a página uma vez e tente novamente.");
-            }
-
-            const { FFmpeg } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
-            const { toBlobURL } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
-
-            const ffmpeg = new FFmpeg();
-
-            // coreURL/wasmURL/worker.js todos na variante /dist/esm — mesma
-            // variante do pacote @ffmpeg/ffmpeg importado acima. Misturar ESM
-            // com UMD entre essas peças causa comportamento inconsistente.
-            const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm';
-            const ffmpegPkgURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm';
-
-            // classWorkerURL é necessário: a biblioteca sempre instancia um
-            // Worker internamente (com ou sem essa opção) — sem ela, tenta
-            // buscar o worker relativo à própria URL do módulo na CDN, o que
-            // o navegador bloqueia por ser cross-origin em relação à página
-            // ("Failed to construct 'Worker': ... cannot be accessed from
-            // origin ..."). Com classWorkerURL + toBlobURL, baixamos o
-            // worker.js e o convertemos em Blob local (mesma origem), e agora
-            // que a página está cross-origin isolated (graças ao service
-            // worker acima), o worker consegue rodar corretamente.
-            const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(() => reject(new Error("Tempo esgotado ao carregar o motor de áudio. Verifique sua conexão e tente novamente.")), 30000);
-            });
-
-            await Promise.race([
-                ffmpeg.load({
-                    coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-                    wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-                    classWorkerURL: await toBlobURL(`${ffmpegPkgURL}/worker.js`, 'text/javascript'),
-                }),
-                timeoutPromise
-            ]);
-
-            ffmpegInstance = ffmpeg;
-            return ffmpeg;
-        })();
-
-        try {
-            return await ffmpegCarregando;
-        } finally {
-            ffmpegCarregando = null;
-        }
-    }
 
     function audioLerMetadados(file) {
         return new Promise((resolve, reject) => {
@@ -2718,50 +2669,11 @@
         });
     }
 
-    async function audioDividirEmChunks(file, duracaoTotal, onProgresso) {
-        const ffmpeg = await carregarFFmpeg();
-
-        const extensao = file.name.match(/\.\w+$/)?.[0] || '.mp3';
-        const nomeEntrada = 'input' + extensao;
-        const arrayBuffer = await file.arrayBuffer();
-        await ffmpeg.writeFile(nomeEntrada, new Uint8Array(arrayBuffer));
-
-        const totalChunks = Math.max(1, Math.ceil(duracaoTotal / AUDIO_CHUNK_SECONDS));
-
-        ffmpeg.on('progress', ({ progress }) => {
-            const pct = 12 + Math.min(1, Math.max(0, progress)) * 13;
-            onProgresso(pct, "Dividindo em chunks...");
-        });
-
-        await ffmpeg.exec([
-            '-i', nomeEntrada,
-            '-f', 'segment',
-            '-segment_time', String(AUDIO_CHUNK_SECONDS),
-            '-c', 'copy',
-            '-reset_timestamps', '1',
-            'chunk_%03d' + extensao
-        ]);
-
-        const chunks = [];
-        for (let i = 0; i < totalChunks; i++) {
-            const nomeChunk = `chunk_${String(i).padStart(3, '0')}${extensao}`;
-            try {
-                const data = await ffmpeg.readFile(nomeChunk);
-                chunks.push({ index: i, offsetSeconds: i * AUDIO_CHUNK_SECONDS, data });
-            } catch (e) {
-                break;
-            }
-        }
-
-        try { await ffmpeg.deleteFile(nomeEntrada); } catch (_) {}
-        for (const c of chunks) {
-            try { await ffmpeg.deleteFile(`chunk_${String(c.index).padStart(3, '0')}${extensao}`); } catch (_) {}
-        }
-
-        return chunks;
-    }
-
-    async function audioEnviarChunk(chunkBlob, chunkIndex, totalChunks, offsetSeconds) {
+    // --- Upload simples do arquivo inteiro ao Worker ---
+    // Sem chunking no navegador: o arquivo completo vai de uma vez via
+    // multipart/form-data. O Worker é quem divide em chunks de bytes e
+    // transcreve cada um, devolvendo o resultado já unido numa resposta.
+    async function audioEnviarArquivoCompleto(file) {
         let token;
         try {
             token = await getFirebaseToken();
@@ -2770,14 +2682,11 @@
         }
 
         const formData = new FormData();
-        formData.append('audio', chunkBlob, `chunk_${chunkIndex}.bin`);
-        formData.append('chunkIndex', String(chunkIndex));
-        formData.append('totalChunks', String(totalChunks));
-        formData.append('offsetSeconds', String(offsetSeconds));
+        formData.append('audio', file, file.name);
 
         const response = await fetch(WORKER_URL + 'transcribe-audio', {
             method: 'POST',
-            headers: { 'x-firebase-token': token },
+            headers: { 'x-firebase-token': token }, // NÃO definir Content-Type: o browser monta o boundary do multipart automaticamente
             body: formData
         });
 
@@ -2787,67 +2696,26 @@
             throw new Error(errMsg);
         }
 
-        return await response.json();
+        return await response.json(); // { text, vtt, totalChunks, chunksTranscritos, modelo }
     }
 
-    async function audioEnviarChunkComRetry(chunkBlob, chunkIndex, totalChunks, offsetSeconds) {
+    // Envia com retry automático (até 3 tentativas), para tolerar falhas
+    // transitórias de rede ou indisponibilidade momentânea do modelo.
+    async function audioEnviarComRetry(file) {
+        const MAX_TENTATIVAS = 3;
         let ultimoErro;
-        for (let tentativa = 1; tentativa <= AUDIO_MAX_RETRIES; tentativa++) {
+        for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
             try {
-                return await audioEnviarChunk(chunkBlob, chunkIndex, totalChunks, offsetSeconds);
+                return await audioEnviarArquivoCompleto(file);
             } catch (e) {
                 ultimoErro = e;
-                console.warn(`[Áudio] Chunk ${chunkIndex} falhou (tentativa ${tentativa}/${AUDIO_MAX_RETRIES}):`, e.message);
-                if (tentativa < AUDIO_MAX_RETRIES) {
-                    await new Promise(r => setTimeout(r, tentativa * 1500));
+                console.warn(`[Áudio] Envio falhou (tentativa ${tentativa}/${MAX_TENTATIVAS}):`, e.message);
+                if (tentativa < MAX_TENTATIVAS) {
+                    await new Promise(r => setTimeout(r, tentativa * 2000));
                 }
             }
         }
-        throw new Error(`Falha ao transcrever o trecho ${chunkIndex + 1}: ${ultimoErro.message}`);
-    }
-
-    function vttTimestampParaSegundos(ts) {
-        const m = ts.match(/(\d{2}):(\d{2}):(\d{2})\.(\d{3})/);
-        if (!m) return 0;
-        const [, hh, mm, ss, ms] = m;
-        return (+hh) * 3600 + (+mm) * 60 + (+ss) + (+ms) / 1000;
-    }
-    function segundosParaVttTimestamp(totalSegundos) {
-        const hh = Math.floor(totalSegundos / 3600);
-        const mm = Math.floor((totalSegundos % 3600) / 60);
-        const ss = Math.floor(totalSegundos % 60);
-        const ms = Math.round((totalSegundos - Math.floor(totalSegundos)) * 1000);
-        const pad = (n, len = 2) => String(n).padStart(len, '0');
-        return `${pad(hh)}:${pad(mm)}:${pad(ss)}.${pad(ms, 3)}`;
-    }
-
-    function audioUnirVTTs(vttsComOffset) {
-        let resultado = "WEBVTT\n\n";
-
-        vttsComOffset
-            .sort((a, b) => a.chunkIndex - b.chunkIndex)
-            .forEach(({ vtt, offsetSeconds }) => {
-                if (!vtt) return;
-
-                const linhas = vtt.split(/\r?\n/);
-                const linhasSemCabecalho = linhas.filter((linha, idx) => {
-                    if (idx === 0 && /^WEBVTT/i.test(linha.trim())) return false;
-                    return true;
-                });
-
-                const corrigido = linhasSemCabecalho.map(linha => {
-                    const matchTimestamp = linha.match(/(\d{2}:\d{2}:\d{2}\.\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}\.\d{3})/);
-                    if (!matchTimestamp) return linha;
-
-                    const inicio = vttTimestampParaSegundos(matchTimestamp[1]) + offsetSeconds;
-                    const fim = vttTimestampParaSegundos(matchTimestamp[2]) + offsetSeconds;
-                    return `${segundosParaVttTimestamp(inicio)} --> ${segundosParaVttTimestamp(fim)}`;
-                }).join('\n').trim();
-
-                if (corrigido) resultado += corrigido + "\n\n";
-            });
-
-        return resultado.trim() + "\n";
+        throw ultimoErro;
     }
 
     async function audioProcessarArquivoCompleto(file) {
@@ -2858,6 +2726,7 @@
         nomeArquivoAtual = (file.name || 'aula').replace(/\.\w+$/, '');
 
         try {
+            // --- Etapa 1: metadados ---
             audioAtualizarStatus("Preparando áudio...", 5);
             const duracao = await audioLerMetadados(file);
 
@@ -2866,37 +2735,32 @@
             document.getElementById('audioFileDuration').textContent = audioFormatarDuracao(duracao);
             document.getElementById('audioFileSize').textContent = audioFormatarTamanho(file.size);
 
-            audioAtualizarStatus("Dividindo em chunks...", 12);
-            const chunks = await audioDividirEmChunks(file, duracao, audioAtualizarStatus);
+            // --- Etapa 2: upload + transcrição no Worker ---
+            // Como todo o chunking e a transcrição acontecem no servidor
+            // numa única requisição, não há progresso incremental real para
+            // mostrar aqui — usamos uma barra indicativa que avança devagar
+            // enquanto aguarda a resposta, só para dar feedback visual de
+            // que o processo está em andamento.
+            audioAtualizarStatus("Enviando áudio para transcrição...", 15);
+            let progressoSimulado = 15;
+            const intervaloProgresso = setInterval(() => {
+                if (progressoSimulado < 90) {
+                    progressoSimulado += 2;
+                    audioAtualizarStatus("Transcrevendo áudio (isso pode levar alguns minutos)...", progressoSimulado);
+                }
+            }, 3000);
 
-            if (chunks.length === 0) {
-                throw new Error("Não foi possível dividir o áudio em partes. Verifique se o arquivo não está corrompido.");
+            let resultado;
+            try {
+                resultado = await audioEnviarComRetry(file);
+            } finally {
+                clearInterval(intervaloProgresso);
             }
 
-            const vttsGerados = [];
-            const faixaProgresso = 65;
-            for (let i = 0; i < chunks.length; i++) {
-                const { index, offsetSeconds, data } = chunks[i];
-                const pctBase = 25 + (faixaProgresso * (i / chunks.length));
-                audioAtualizarStatus(`Enviando chunk ${i + 1} de ${chunks.length}...`, pctBase);
-
-                const blob = new Blob([data], { type: file.type || 'audio/mpeg' });
-
-                audioAtualizarStatus(`Transcrevendo chunk ${i + 1} de ${chunks.length}...`, pctBase + (faixaProgresso / chunks.length) * 0.5);
-                const resultado = await audioEnviarChunkComRetry(blob, index, chunks.length, offsetSeconds);
-
-                vttsGerados.push({
-                    chunkIndex: resultado.chunkIndex ?? index,
-                    offsetSeconds: resultado.offsetSeconds ?? offsetSeconds,
-                    vtt: resultado.vtt || ""
-                });
-            }
-
-            audioAtualizarStatus("Unindo legendas...", 95);
-            const vttUnido = audioUnirVTTs(vttsGerados);
-
+            // --- Etapa 3: monta o resultado final ---
             audioAtualizarStatus("Gerando arquivo...", 98);
-            vttFinalGerado = vttUnido;
+            vttFinalGerado = resultado.vtt || "";
+            textoFinalGerado = resultado.text || "";
 
             audioAtualizarStatus("Concluído.", 100);
             await new Promise(r => setTimeout(r, 400));
@@ -2919,12 +2783,15 @@
                 mensagem = "O processamento demorou demais e atingiu o tempo limite.";
             } else if (/sessão expirada/i.test(mensagem)) {
                 mensagem = "Sua sessão expirou. Recarregue a página e tente novamente.";
+            } else if (/muito grande/i.test(mensagem)) {
+                // mensagem já vem pronta do Worker (limite de tamanho)
             }
             audioMostrarErro(mensagem);
         }
     }
 
     function audioDispararDownloadVtt() {
+
         const blob = new Blob([vttFinalGerado], { type: 'text/vtt' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -2937,7 +2804,7 @@
     }
 
     const AUDIO_FORMATOS_ACEITOS = /\.(mp3|wav|m4a|ogg|webm|flac)$/i;
-    const AUDIO_TAMANHO_MAXIMO_MB = 500;
+    const AUDIO_TAMANHO_MAXIMO_MB = 300; // alinhado com o limite de segurança no Worker
 
     function audioValidarArquivo(file) {
         if (!file) return "Nenhum arquivo selecionado.";
@@ -2945,7 +2812,7 @@
             return "Formato inválido. Use MP3, WAV, M4A, OGG, WEBM ou FLAC.";
         }
         if (file.size > AUDIO_TAMANHO_MAXIMO_MB * 1024 * 1024) {
-            return `Arquivo muito grande (máx. ${AUDIO_TAMANHO_MAXIMO_MB}MB). Considere dividir o áudio antes de enviar.`;
+            return `Arquivo muito grande (máx. ${AUDIO_TAMANHO_MAXIMO_MB}MB). Considere um áudio mais curto ou já compactado.`;
         }
         return null;
     }
