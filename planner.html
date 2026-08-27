@@ -2797,6 +2797,21 @@
                 audioAtualizarStatus(`Transcrevendo parte ${i + 1} de ${totalChunks}...`, progresso);
 
                 const chunkData = rawData.slice(i * samplesPerChunk, (i + 1) * samplesPerChunk);
+                
+                // 🛑 1. DETECTOR DE SILÊNCIO (Anti-Alucinação)
+                // Analisa o pico de volume deste pedaço de áudio.
+                let maxVolume = 0;
+                for (let j = 0; j < chunkData.length; j++) {
+                    const abs = Math.abs(chunkData[j]);
+                    if (abs > maxVolume) maxVolume = abs;
+                }
+
+                // Se for menor que 1.5% do volume máximo, é considerado silêncio ou chiado.
+                if (maxVolume < 0.015) {
+                    console.log(`Silêncio detectado na parte ${i + 1}. Pulando para evitar alucinações...`);
+                    continue; 
+                }
+
                 const wavBlob = audioBufferToWavBlob(chunkData, targetSampleRate);
                 const chunkFile = new File([wavBlob], `chunk_${i}.wav`, { type: 'audio/wav' });
 
@@ -2806,6 +2821,13 @@
                 if (resultado.vtt) {
                     const offsetSec = i * chunkDurationSecs;
                     vttCompleto += adjustVttOffsets(resultado.vtt, offsetSec) + "\n\n";
+                }
+
+                // 🛑 2. ANTI-BLOQUEIO DA CLOUDFLARE (Rate Limit)
+                // Se a aula for gigante (mais de 20 pedaços), dá 1.5s de respiro 
+                // ao servidor após cada envio, garantindo que não seremos bloqueados.
+                if (totalChunks > 20) {
+                    await new Promise(r => setTimeout(r, 1500));
                 }
             }
 
