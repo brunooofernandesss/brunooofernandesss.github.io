@@ -2784,50 +2784,64 @@
 
             const rawData = resampledAudio.getChannelData(0);
             
-            // Chunk de 25s gera ~800KB. O Worker processará isso INTEIRO sem quebrar!
             const chunkDurationSecs = 25; 
             const samplesPerChunk = targetSampleRate * chunkDurationSecs;
             const totalChunks = Math.ceil(rawData.length / samplesPerChunk);
 
-            let textoCompleto = "";
-            let vttCompleto = "WEBVTT\n\n";
-
+            // 1. Filtrar silêncio e preparar apenas os trechos úteis rapidamente
+            audioAtualizarStatus("Removendo silêncios e organizando lotes...", 12);
+            const chunksValidos = [];
             for (let i = 0; i < totalChunks; i++) {
-                const progresso = 15 + ((i / totalChunks) * 80);
-                audioAtualizarStatus(`Transcrevendo parte ${i + 1} de ${totalChunks}...`, progresso);
-
                 const chunkData = rawData.slice(i * samplesPerChunk, (i + 1) * samplesPerChunk);
-                
-                // 🛑 1. DETECTOR DE SILÊNCIO (Anti-Alucinação)
-                // Analisa o pico de volume deste pedaço de áudio.
                 let maxVolume = 0;
                 for (let j = 0; j < chunkData.length; j++) {
                     const abs = Math.abs(chunkData[j]);
                     if (abs > maxVolume) maxVolume = abs;
                 }
-
-                // Se for menor que 1.5% do volume máximo, é considerado silêncio ou chiado.
-                if (maxVolume < 0.015) {
-                    console.log(`Silêncio detectado na parte ${i + 1}. Pulando para evitar alucinações...`);
-                    continue; 
-                }
-
-                const wavBlob = audioBufferToWavBlob(chunkData, targetSampleRate);
-                const chunkFile = new File([wavBlob], `chunk_${i}.wav`, { type: 'audio/wav' });
-
-                const resultado = await audioEnviarComRetry(chunkFile);
                 
-                if (resultado.text) textoCompleto += resultado.text + " ";
-                if (resultado.vtt) {
-                    const offsetSec = i * chunkDurationSecs;
-                    vttCompleto += adjustVttOffsets(resultado.vtt, offsetSec) + "\n\n";
+                // Se for maior que 1.5%, significa que tem voz/conteúdo útil
+                if (maxVolume >= 0.015) { 
+                    const wavBlob = audioBufferToWavBlob(chunkData, targetSampleRate);
+                    const chunkFile = new File([wavBlob], `chunk_${i}.wav`, { type: 'audio/wav' });
+                    chunksValidos.push({ index: i, file: chunkFile });
                 }
+            }
 
-                // 🛑 2. ANTI-BLOQUEIO DA CLOUDFLARE (Rate Limit)
-                // Se a aula for gigante (mais de 20 pedaços), dá 1.5s de respiro 
-                // ao servidor após cada envio, garantindo que não seremos bloqueados.
-                if (totalChunks > 20) {
-                    await new Promise(r => setTimeout(r, 1500));
+            // 2. Processar na IA em PARALELO (Lotes de 3 para não estourar a Cloudflare)
+            let textoCompleto = "";
+            let vttCompleto = "WEBVTT\n\n";
+            const resultados = [];
+            const CONCORRENCIA = 3; // Dispara 3 blocos simultâneos
+
+            for (let i = 0; i < chunksValidos.length; i += CONCORRENCIA) {
+                const lote = chunksValidos.slice(i, i + CONCORRENCIA);
+                const progresso = 15 + ((i / chunksValidos.length) * 80);
+                audioAtualizarStatus(`Transcrevendo lote de áudio (${i + lote.length}/${chunksValidos.length})...`, progresso);
+
+                // Dispara os envios do lote ao mesmo tempo (Promise.all)
+                const promessas = lote.map(async (item) => {
+                    const res = await audioEnviarComRetry(item.file);
+                    return { index: item.index, text: res.text, vtt: res.vtt };
+                });
+
+                const resultadosLote = await Promise.all(promessas);
+                resultados.push(...resultadosLote);
+
+                // Respiro rápido de segurança entre os lotes paralelos
+                if (chunksValidos.length > 10) {
+                    await new Promise(r => setTimeout(r, 800));
+                }
+            }
+
+            // 3. Montar transcrição na ordem cronológica correta
+            audioAtualizarStatus("Montando texto final...", 98);
+            resultados.sort((a, b) => a.index - b.index); // Ordena pelo index original
+
+            for (const res of resultados) {
+                if (res.text) textoCompleto += res.text + " ";
+                if (res.vtt) {
+                    const offsetSec = res.index * chunkDurationSecs;
+                    vttCompleto += adjustVttOffsets(res.vtt, offsetSec) + "\n\n";
                 }
             }
 
