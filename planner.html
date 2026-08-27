@@ -2811,14 +2811,14 @@
             let textoCompleto = "";
             let vttCompleto = "WEBVTT\n\n";
             const resultados = [];
-            const CONCORRENCIA = 3; // Dispara 3 blocos simultâneos
+            // Reduz de 3 para 2, garantindo segurança em áudios gigantescos de até 2 horas
+            const CONCORRENCIA = 2; 
 
             for (let i = 0; i < chunksValidos.length; i += CONCORRENCIA) {
                 const lote = chunksValidos.slice(i, i + CONCORRENCIA);
                 const progresso = 15 + ((i / chunksValidos.length) * 80);
                 audioAtualizarStatus(`Transcrevendo lote de áudio (${i + lote.length}/${chunksValidos.length})...`, progresso);
 
-                // Dispara os envios do lote ao mesmo tempo (Promise.all)
                 const promessas = lote.map(async (item) => {
                     const res = await audioEnviarComRetry(item.file);
                     return { index: item.index, text: res.text, vtt: res.vtt };
@@ -2827,9 +2827,9 @@
                 const resultadosLote = await Promise.all(promessas);
                 resultados.push(...resultadosLote);
 
-                // Respiro rápido de segurança entre os lotes paralelos
+                // Aumenta o tempo de respiro para a Cloudflare não classificar como ataque (HTTP 429 / 503)
                 if (chunksValidos.length > 10) {
-                    await new Promise(r => setTimeout(r, 800));
+                    await new Promise(r => setTimeout(r, 2000));
                 }
             }
 
