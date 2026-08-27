@@ -2651,28 +2651,70 @@
         textoFinalGerado = "";
     };
 
-    function audioLerMetadados(file) {
-        return new Promise((resolve, reject) => {
-            const url = URL.createObjectURL(file);
-            const audioEl = new Audio();
-            audioEl.preload = 'metadata';
-            audioEl.onloadedmetadata = () => {
-                const duracao = audioEl.duration;
-                URL.revokeObjectURL(url);
-                resolve(duracao);
-            };
-            audioEl.onerror = () => {
-                URL.revokeObjectURL(url);
-                reject(new Error("Não foi possível ler os metadados do áudio. O arquivo pode estar corrompido."));
-            };
-            audioEl.src = url;
-        });
+    // --- UTILS DE CHUNKING DE ÁUDIO NO NAVEGADOR ---
+    function audioBufferToWavBlob(channelData, sampleRate) {
+        const buffer = new ArrayBuffer(44 + channelData.length * 2);
+        const view = new DataView(buffer);
+        const writeString = (view, offset, string) => {
+            for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
+        };
+        writeString(view, 0, 'RIFF');
+        view.setUint32(4, 36 + channelData.length * 2, true);
+        writeString(view, 8, 'WAVE');
+        writeString(view, 12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 1, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * 2, true);
+        view.setUint16(32, 2, true);
+        view.setUint16(34, 16, true);
+        writeString(view, 36, 'data');
+        view.setUint32(40, channelData.length * 2, true);
+        let offset = 44;
+        for (let i = 0; i < channelData.length; i++, offset += 2) {
+            let s = Math.max(-1, Math.min(1, channelData[i]));
+            view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+        }
+        return new Blob([buffer], { type: 'audio/wav' });
     }
 
-    // --- Upload simples do arquivo inteiro ao Worker ---
-    // Sem chunking no navegador: o arquivo completo vai de uma vez via
-    // multipart/form-data. O Worker é quem divide em chunks de bytes e
-    // transcreve cada um, devolvendo o resultado já unido numa resposta.
+    function offsetTimestamp(timestamp, offsetSec) {
+        const parts = timestamp.split(':');
+        let h = 0, m = 0, s = 0;
+        if (parts.length === 3) {
+            h = parseInt(parts[0], 10);
+            m = parseInt(parts[1], 10);
+            s = parseFloat(parts[2]);
+        } else if (parts.length === 2) {
+            m = parseInt(parts[0], 10);
+            s = parseFloat(parts[1]);
+        }
+        let totalSeconds = h * 3600 + m * 60 + s + offsetSec;
+        const newH = Math.floor(totalSeconds / 3600);
+        totalSeconds %= 3600;
+        const newM = Math.floor(totalSeconds / 60);
+        const newS = totalSeconds % 60;
+        return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}:${newS.toFixed(3).padStart(6, '0')}`;
+    }
+
+    function adjustVttOffsets(vtt, offsetSec) {
+        if (!vtt) return "";
+        const lines = vtt.split(/\r?\n/);
+        let adjusted = [];
+        for (let line of lines) {
+            if (line.includes('-->')) {
+                const parts = line.split('-->');
+                const start = offsetTimestamp(parts[0].trim(), offsetSec);
+                const end = offsetTimestamp(parts[1].trim(), offsetSec);
+                adjusted.push(`${start} --> ${end}`);
+            } else if (!line.toUpperCase().startsWith('WEBVTT') && line.trim() !== '') {
+                adjusted.push(line);
+            }
+        }
+        return adjusted.join('\n');
+    }
+
     async function audioEnviarArquivoCompleto(file) {
         let token;
         try {
@@ -2680,27 +2722,21 @@
         } catch (e) {
             throw new Error("Sessão expirada. Recarregue a página e tente novamente.");
         }
-
         const formData = new FormData();
         formData.append('audio', file, file.name);
-
         const response = await fetch(WORKER_URL + 'transcribe-audio', {
             method: 'POST',
-            headers: { 'x-firebase-token': token }, // NÃO definir Content-Type: o browser monta o boundary do multipart automaticamente
+            headers: { 'x-firebase-token': token },
             body: formData
         });
-
         if (!response.ok) {
             let errMsg = `Worker retornou status ${response.status}`;
             try { const e = await response.json(); errMsg = e.error || errMsg; } catch (_) {}
             throw new Error(errMsg);
         }
-
-        return await response.json(); // { text, vtt, totalChunks, chunksTranscritos, modelo }
+        return await response.json();
     }
 
-    // Envia com retry automático (até 3 tentativas), para tolerar falhas
-    // transitórias de rede ou indisponibilidade momentânea do modelo.
     async function audioEnviarComRetry(file) {
         const MAX_TENTATIVAS = 3;
         let ultimoErro;
@@ -2710,9 +2746,7 @@
             } catch (e) {
                 ultimoErro = e;
                 console.warn(`[Áudio] Envio falhou (tentativa ${tentativa}/${MAX_TENTATIVAS}):`, e.message);
-                if (tentativa < MAX_TENTATIVAS) {
-                    await new Promise(r => setTimeout(r, tentativa * 2000));
-                }
+                if (tentativa < MAX_TENTATIVAS) await new Promise(r => setTimeout(r, tentativa * 2000));
             }
         }
         throw ultimoErro;
@@ -2726,41 +2760,57 @@
         nomeArquivoAtual = (file.name || 'aula').replace(/\.\w+$/, '');
 
         try {
-            // --- Etapa 1: metadados ---
-            audioAtualizarStatus("Preparando áudio...", 5);
-            const duracao = await audioLerMetadados(file);
-
+            audioAtualizarStatus("Lendo áudio nativamente...", 5);
+            
+            // Decodificação Nativa do Navegador (Ignora problemas de formato)
+            const arrayBuffer = await file.arrayBuffer();
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+            
             document.getElementById('audioFileInfo').style.display = 'block';
             document.getElementById('audioFileName').textContent = file.name;
-            document.getElementById('audioFileDuration').textContent = audioFormatarDuracao(duracao);
+            document.getElementById('audioFileDuration').textContent = audioFormatarDuracao(audioBuffer.duration);
             document.getElementById('audioFileSize').textContent = audioFormatarTamanho(file.size);
 
-            // --- Etapa 2: upload + transcrição no Worker ---
-            // Como todo o chunking e a transcrição acontecem no servidor
-            // numa única requisição, não há progresso incremental real para
-            // mostrar aqui — usamos uma barra indicativa que avança devagar
-            // enquanto aguarda a resposta, só para dar feedback visual de
-            // que o processo está em andamento.
-            audioAtualizarStatus("Enviando áudio para transcrição...", 15);
-            let progressoSimulado = 15;
-            const intervaloProgresso = setInterval(() => {
-                if (progressoSimulado < 90) {
-                    progressoSimulado += 2;
-                    audioAtualizarStatus("Transcrevendo áudio (isso pode levar alguns minutos)...", progressoSimulado);
-                }
-            }, 3000);
+            audioAtualizarStatus("Otimizando qualidade para IA...", 10);
+            
+            const targetSampleRate = 16000;
+            const offlineCtx = new OfflineAudioContext(1, audioBuffer.duration * targetSampleRate, targetSampleRate);
+            const source = offlineCtx.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(offlineCtx.destination);
+            source.start();
+            const resampledAudio = await offlineCtx.startRendering();
 
-            let resultado;
-            try {
-                resultado = await audioEnviarComRetry(file);
-            } finally {
-                clearInterval(intervaloProgresso);
+            const rawData = resampledAudio.getChannelData(0);
+            
+            // Chunk de 25s gera ~800KB. O Worker processará isso INTEIRO sem quebrar!
+            const chunkDurationSecs = 25; 
+            const samplesPerChunk = targetSampleRate * chunkDurationSecs;
+            const totalChunks = Math.ceil(rawData.length / samplesPerChunk);
+
+            let textoCompleto = "";
+            let vttCompleto = "WEBVTT\n\n";
+
+            for (let i = 0; i < totalChunks; i++) {
+                const progresso = 15 + ((i / totalChunks) * 80);
+                audioAtualizarStatus(`Transcrevendo parte ${i + 1} de ${totalChunks}...`, progresso);
+
+                const chunkData = rawData.slice(i * samplesPerChunk, (i + 1) * samplesPerChunk);
+                const wavBlob = audioBufferToWavBlob(chunkData, targetSampleRate);
+                const chunkFile = new File([wavBlob], `chunk_${i}.wav`, { type: 'audio/wav' });
+
+                const resultado = await audioEnviarComRetry(chunkFile);
+                
+                if (resultado.text) textoCompleto += resultado.text + " ";
+                if (resultado.vtt) {
+                    const offsetSec = i * chunkDurationSecs;
+                    vttCompleto += adjustVttOffsets(resultado.vtt, offsetSec) + "\n\n";
+                }
             }
 
-            // --- Etapa 3: monta o resultado final ---
-            audioAtualizarStatus("Gerando arquivo...", 98);
-            vttFinalGerado = resultado.vtt || "";
-            textoFinalGerado = resultado.text || "";
+            vttFinalGerado = vttCompleto.trim() + "\n";
+            textoFinalGerado = textoCompleto.trim();
 
             audioAtualizarStatus("Concluído.", 100);
             await new Promise(r => setTimeout(r, 400));
@@ -2773,20 +2823,7 @@
         } catch (e) {
             console.error("[Resumir Áudio] Erro:", e);
             audioAtualizarStatus("Erro no processamento", 0);
-
-            let mensagem = e.message || "Ocorreu um erro inesperado.";
-            if (/corrompid|metadados/i.test(mensagem)) {
-                mensagem = "O áudio parece estar corrompido ou em um formato não suportado.";
-            } else if (/network|fetch|Failed to fetch/i.test(mensagem)) {
-                mensagem = "Erro de rede. Verifique sua conexão e tente novamente.";
-            } else if (/timeout/i.test(mensagem)) {
-                mensagem = "O processamento demorou demais e atingiu o tempo limite.";
-            } else if (/sessão expirada/i.test(mensagem)) {
-                mensagem = "Sua sessão expirou. Recarregue a página e tente novamente.";
-            } else if (/muito grande/i.test(mensagem)) {
-                // mensagem já vem pronta do Worker (limite de tamanho)
-            }
-            audioMostrarErro(mensagem);
+            audioMostrarErro(e.message || "Ocorreu um erro ao fatiar ou transcrever o áudio.");
         }
     }
 
