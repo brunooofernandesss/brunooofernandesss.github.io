@@ -2784,7 +2784,9 @@
 
             const rawData = resampledAudio.getChannelData(0);
             
-            const chunkDurationSecs = 25; 
+            // 🛑 A MÁGICA AQUI: Reduzimos a fatia para 10 segundos. 
+            // Isso evita que o backend estoure o limite de CPU (50ms) da Cloudflare.
+            const chunkDurationSecs = 10; 
             const samplesPerChunk = targetSampleRate * chunkDurationSecs;
             const totalChunks = Math.ceil(rawData.length / samplesPerChunk);
 
@@ -2799,7 +2801,7 @@
                     if (abs > maxVolume) maxVolume = abs;
                 }
                 
-                // Se for maior que 1.5%, significa que tem voz/conteúdo útil
+                // Se for maior que 1.5%, significa que tem voz (pula os silêncios para não alucinar)
                 if (maxVolume >= 0.015) { 
                     const wavBlob = audioBufferToWavBlob(chunkData, targetSampleRate);
                     const chunkFile = new File([wavBlob], `chunk_${i}.wav`, { type: 'audio/wav' });
@@ -2807,17 +2809,19 @@
                 }
             }
 
-            // 2. Processar na IA em PARALELO (Lotes de 3 para não estourar a Cloudflare)
             let textoCompleto = "";
             let vttCompleto = "WEBVTT\n\n";
             const resultados = [];
-            // Reduz de 3 para 2, garantindo segurança em áudios gigantescos de até 2 horas
+            
+            // 🛑 SEGURANÇA MÁXIMA ANTI-BLOQUEIO: 
+            // O limite gratuito da Cloudflare é de 50 requests/minuto.
+            // 2 blocos simultâneos a cada 2.5 segundos nos mantém completamente seguros.
             const CONCORRENCIA = 2; 
 
             for (let i = 0; i < chunksValidos.length; i += CONCORRENCIA) {
                 const lote = chunksValidos.slice(i, i + CONCORRENCIA);
                 const progresso = 15 + ((i / chunksValidos.length) * 80);
-                audioAtualizarStatus(`Transcrevendo lote de áudio (${i + lote.length}/${chunksValidos.length})...`, progresso);
+                audioAtualizarStatus(`Transcrevendo áudio (${i + lote.length}/${chunksValidos.length}). Deixe a tela aberta...`, progresso);
 
                 const promessas = lote.map(async (item) => {
                     const res = await audioEnviarComRetry(item.file);
@@ -2827,9 +2831,9 @@
                 const resultadosLote = await Promise.all(promessas);
                 resultados.push(...resultadosLote);
 
-                // Aumenta o tempo de respiro para a Cloudflare não classificar como ataque (HTTP 429 / 503)
+                // Pausa militar para não ativar o bloqueio da Cloudflare
                 if (chunksValidos.length > 10) {
-                    await new Promise(r => setTimeout(r, 2000));
+                    await new Promise(r => setTimeout(r, 2500));
                 }
             }
 
