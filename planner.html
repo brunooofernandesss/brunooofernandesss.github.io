@@ -1106,6 +1106,9 @@
                             <button class="btn-action btn-primary" id="btnBaixarVtt" style="background:#16a085; color:white; border:none;">
                                 <i class="fas fa-download"></i> Baixar .vtt
                             </button>
+                            <button class="btn-action btn-primary" id="btnGerarResumoVtt" style="background:#2383e2; color:white; border:none;">
+                                <i class="fas fa-brain"></i> Resumir Aula com IA (20 em 20 min)
+                            </button>
                             <button class="btn-action" id="btnCopiarVtt" style="background:#f0f0f0; color:#333; border:1px solid #ddd;">
                                 <i class="fas fa-copy"></i> Copiar Conteúdo
                             </button>
@@ -2967,6 +2970,128 @@
 
         btnNova?.addEventListener('click', () => window.resetarResumirAudio());
     });
+    // ============================================================
+    // 🧠 RESUMIDOR INTELIGENTE DE AULAS LONGAS (PICOTA DE 1h EM 1h)
+    // ============================================================
+
+    function extrairBlocosDeUmaHoraVtt(vttTexto) {
+        const blocos = [];
+        const linhas = vttTexto.split(/\r?\n/);
+        let tempoMaxSegundos = 0;
+        const timeRegex = /(\d{2}):(\d{2}):(\d{2})/;
+
+        for (const l of linhas) {
+            const m = l.match(timeRegex);
+            if (m) {
+                const seg = parseInt(m[1], 10) * 3600 + parseInt(m[2], 10) * 60 + parseInt(m[3], 10);
+                if (seg > tempoMaxSegundos) tempoMaxSegundos = seg;
+            }
+        }
+
+        const totalHoras = Math.max(1, Math.ceil(tempoMaxSegundos / 3600));
+
+        for (let h = 0; h < totalHoras; h++) {
+            const inicioSeg = h * 3600;
+            const fimSeg = (h + 1) * 3600;
+            let textoDoBloco = "";
+            let capturando = false;
+
+            for (let i = 0; i < linhas.length; i++) {
+                const linha = linhas[i];
+                if (linha.includes("-->")) {
+                    const m = linha.match(timeRegex);
+                    if (m) {
+                        const segAtual = parseInt(m[1], 10) * 3600 + parseInt(m[2], 10) * 60 + parseInt(m[3], 10);
+                        capturando = (segAtual >= inicioSeg && segAtual < fimSeg);
+                    }
+                } else if (capturando && linha.trim() && !linha.toUpperCase().startsWith("WEBVTT")) {
+                    textoDoBloco += linha.trim() + " ";
+                }
+            }
+
+            if (textoDoBloco.trim().length > 20) {
+                blocos.push({
+                    horaNum: h + 1,
+                    minInicio: h * 60,
+                    minFim: Math.min(Math.round(tempoMaxSegundos / 60), (h + 1) * 60),
+                    texto: textoDoBloco.trim()
+                });
+            }
+        }
+        return blocos;
+    }
+
+    window.iniciarResumoInteligenteVtt = async () => {
+        if (!vttFinalGerado || vttFinalGerado.length < 50) {
+            alert("Nenhuma transcrição disponível para resumir.");
+            return;
+        }
+
+        const blocosHoras = extrairBlocosDeUmaHoraVtt(vttFinalGerado);
+        if (blocosHoras.length === 0) {
+            alert("Não foi possível identificar os intervalos de tempo no arquivo.");
+            return;
+        }
+
+        const btnResumir = document.getElementById('btnGerarResumoVtt');
+        const txtOriginalBtn = btnResumir ? btnResumir.innerHTML : "";
+        if (btnResumir) btnResumir.disabled = true;
+
+        showFeedback(`🤖 Iniciando resumo em ${blocosHoras.length} bloco(s) de 1 hora...`, true);
+
+        let resumoCompletoMarkdown = "";
+
+        try {
+            for (let i = 0; i < blocosHoras.length; i++) {
+                const b = blocosHoras[i];
+                showFeedback(`🤖 Resumindo Bloco ${i + 1} de ${blocosHoras.length} (${b.minInicio} a ${b.minFim} min)...`, true);
+
+                const data = await callWorker({
+                    action: "resumir_vtt",
+                    textoBloco: b.texto,
+                    minInicio: b.minInicio,
+                    minFim: b.minFim,
+                    tituloAula: nomeArquivoAtual
+                }, `resumir_vtt_bloco_${i + 1}`);
+
+                if (data && data.resumo_md) {
+                    resumoCompletoMarkdown += `\n\n# ⏱️ Resumo da Aula: ${b.minInicio} a ${b.minFim} minutos\n\n` + data.resumo_md.trim();
+                }
+            }
+
+            showFeedback("✅ Resumo concluído! Abrindo no editor...", false);
+
+            // Popula no editor Quill
+            document.getElementById('subjectTitle').value = `Resumo: ${nomeArquivoAtual}`;
+            document.getElementById('subjectTag').value = "AULA";
+            
+            const htmlFormatado = marked.parse(normalizarLimitesDeTabela(resumoCompletoMarkdown));
+            carregarConteudoNoEditor(htmlFormatado);
+
+            editingDocId = null;
+            document.getElementById('btnSalvar').textContent = "Criar Cronograma";
+            if (document.getElementById('btnApenasSalvar')) {
+                document.getElementById('btnApenasSalvar').textContent = "Apenas Salvar";
+                document.getElementById('btnApenasSalvar').style.display = 'inline-flex';
+            }
+
+            document.getElementById('modalEditor').style.display = 'flex';
+            setTimeout(() => quill.focus(), 100);
+
+        } catch (e) {
+            console.error("Erro ao resumir aula:", e);
+            alert("Ocorreu um erro ao resumir os blocos da aula: " + e.message);
+            showFeedback("Erro ao resumir.", false);
+        } finally {
+            if (btnResumir) {
+                btnResumir.disabled = false;
+                btnResumir.innerHTML = txtOriginalBtn;
+            }
+        }
+    };
+
+    document.getElementById('btnGerarResumoVtt')?.addEventListener('click', window.iniciarResumoInteligenteVtt);
+
     // ============================================================
     // SESSÃO — Expira em 1 hora, respeitando requisições em andamento
     // ============================================================
