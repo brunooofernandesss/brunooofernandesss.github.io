@@ -2809,8 +2809,8 @@
                 }
                 const rms = Math.sqrt(sumOfSquares / chunkData.length);
                 
-                // Threshold de 0.5% — descarta só silêncio genuíno, preserva voz suave
-                if (rms >= 0.005) {
+                // Threshold mais rigoroso (1.5%) para evitar que a IA alucine com ruídos do microfone
+                if (rms >= 0.015) {
                     const wavBlob = audioBufferToWavBlob(chunkData, targetSampleRate);
                     const chunkFile = new File([wavBlob], `chunk_${i}.wav`, { type: 'audio/wav' });
                     chunksValidos.push({ index: i, file: chunkFile });
@@ -2825,7 +2825,7 @@
             // Com chunks de 30s (vs 10s antes), a taxa natural é 3x menor.
             // 3 concorrentes + pausa de 1000ms → ~3 req/1s = 180 RPM teórico,
             // mas latência real de rede (~1-2s/request) mantém em ~30-40 RPM efetivo.
-            const CONCORRENCIA = 3; 
+            const CONCORRENCIA = 1; 
 
             for (let i = 0; i < chunksValidos.length; i += CONCORRENCIA) {
                 const lote = chunksValidos.slice(i, i + CONCORRENCIA);
@@ -2840,10 +2840,9 @@
                 const resultadosLote = await Promise.all(promessas);
                 resultados.push(...resultadosLote);
 
-                // Pausa reduzida: com chunks de 30s a taxa é naturalmente menor,
-                // então 1000ms é suficiente para manter margem segura no limite de 50 RPM.
+                // Pausa de 2 segundos para respeitar estritamente o limite gratuito da Cloudflare (50 RPM)
                 if (chunksValidos.length > 5) {
-                    await new Promise(r => setTimeout(r, 1000));
+                    await new Promise(r => setTimeout(r, 2000));
                 }
             }
 
