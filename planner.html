@@ -3034,34 +3034,107 @@
         }
 
         const btnResumir = document.getElementById('btnGerarResumoVtt');
-        const txtOriginalBtn = btnResumir ? btnResumir.innerHTML : "";
-        if (btnResumir) btnResumir.disabled = true;
-
-        showFeedback(`🤖 Iniciando resumo em ${blocosHoras.length} bloco(s) de 1 hora...`, true);
+        // Guarda o texto padrão para restaurar no final
+        const txtOriginalBtn = '<i class="fas fa-brain"></i> Resumir Aula com IA (20 em 20 min)';
+        if (btnResumir) {
+            btnResumir.disabled = true;
+            if (!btnResumir.innerHTML.includes("Continuar")) {
+                btnResumir.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparando nuvem...';
+            } else {
+                btnResumir.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Retomando do último ponto...';
+            }
+        }
 
         let resumoCompletoMarkdown = "";
+        let rascunhoId = null;
+        let blocosStatus = new Array(blocosHoras.length).fill(false);
+        let resumosSalvos = new Array(blocosHoras.length).fill("");
 
         try {
+            // 1. CHECA SE EXISTE RASCUNHO NA NUVEM PARA ESTA AULA
+            const q = query(collection(db, "planners", currentUID, "rascunhos_resumo"), where("aula", "==", nomeArquivoAtual));
+            const snap = await getDocs(q);
+
+            if (!snap.empty) {
+                const docRascunho = snap.docs[0];
+                rascunhoId = docRascunho.id;
+                const dadosRascunho = docRascunho.data();
+                
+                // Restaura o estado salvo se bater com o tamanho atual
+                if (dadosRascunho.resumosSalvos && dadosRascunho.resumosSalvos.length === blocosHoras.length) {
+                    resumosSalvos = dadosRascunho.resumosSalvos;
+                    blocosStatus = dadosRascunho.blocosStatus;
+                    console.log("Rascunho encontrado na nuvem. Retomando de onde parou...");
+                }
+            } else {
+                // Cria um novo rascunho em branco no Firestore
+                const novoDoc = await addDoc(collection(db, "planners", currentUID, "rascunhos_resumo"), {
+                    aula: nomeArquivoAtual,
+                    totalBlocos: blocosHoras.length,
+                    blocosStatus: blocosStatus,
+                    resumosSalvos: resumosSalvos,
+                    dataCriacao: serverTimestamp()
+                });
+                rascunhoId = novoDoc.id;
+            }
+
+            // 2. LOOP DE PROCESSAMENTO (PULA OS JÁ CONCLUÍDOS NA NUVEM)
             for (let i = 0; i < blocosHoras.length; i++) {
+                if (blocosStatus[i] === true) {
+                    showFeedback(`✅ Bloco ${i + 1} de ${blocosHoras.length} já estava pronto. Pulando...`, true);
+                    resumoCompletoMarkdown += resumosSalvos[i];
+                    await new Promise(r => setTimeout(r, 800)); // Pequena pausa visual
+                    continue;
+                }
+
                 const b = blocosHoras[i];
                 showFeedback(`🤖 Resumindo Bloco ${i + 1} de ${blocosHoras.length} (${b.minInicio} a ${b.minFim} min)...`, true);
 
-                const data = await callWorker({
-                    action: "resumir_vtt",
-                    textoBloco: b.texto,
-                    minInicio: b.minInicio,
-                    minFim: b.minFim,
-                    tituloAula: nomeArquivoAtual
-                }, `resumir_vtt_bloco_${i + 1}`);
+                try {
+                    const data = await callWorker({
+                        action: "resumir_vtt",
+                        textoBloco: b.texto,
+                        minInicio: b.minInicio,
+                        minFim: b.minFim,
+                        tituloAula: nomeArquivoAtual
+                    }, `resumir_vtt_bloco_${i + 1}`);
 
-                if (data && data.resumo_md) {
-                    resumoCompletoMarkdown += `\n\n# ⏱️ Resumo da Aula: ${b.minInicio} a ${b.minFim} minutos\n\n` + data.resumo_md.trim();
+                    if (data && data.resumo_md) {
+                        const textoGerado = `\n\n# ⏱️ Resumo da Aula: ${b.minInicio} a ${b.minFim} minutos\n\n` + data.resumo_md.trim();
+                        resumoCompletoMarkdown += textoGerado;
+                        
+                        // ATUALIZA O ESTADO E SALVA NO FIRESTORE IMEDIATAMENTE
+                        resumosSalvos[i] = textoGerado;
+                        blocosStatus[i] = true;
+                        
+                        await updateDoc(doc(db, "planners", currentUID, "rascunhos_resumo", rascunhoId), {
+                            resumosSalvos: resumosSalvos,
+                            blocosStatus: blocosStatus
+                        });
+                    }
+                } catch (erroDoBloco) {
+                    // O erro aconteceu no meio do caminho. Avisa, transforma o botão e encerra o fluxo com segurança.
+                    console.error(`Erro no bloco ${i + 1}:`, erroDoBloco);
+                    const faltam = blocosStatus.filter(s => !s).length;
+                    
+                    if (btnResumir) {
+                        btnResumir.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Continuar Resumo (Faltam ${faltam})`;
+                        btnResumir.style.background = "#e67e22"; // Laranja de aviso (stand-by)
+                        btnResumir.disabled = false;
+                    }
+                    
+                    throw new Error(`A Inteligência Artificial congestionou no Bloco ${i + 1}.\n\nFique tranquilo! O seu progresso até a última hora foi SALVO na nuvem do Google.\n\nPara tentar novamente e retomar EXATAMENTE de onde parou, clique no botão laranja "Continuar Resumo".`);
                 }
             }
 
-            showFeedback("✅ Resumo concluído! Abrindo no editor...", false);
+            // 3. FINALIZAÇÃO: TUDO PRONTO
+            if (resumoCompletoMarkdown.trim() === "") {
+                throw new Error("Nenhum bloco pôde ser resumido.");
+            }
 
-            // Popula no editor Quill
+            showFeedback("✅ Resumo 100% concluído! Abrindo no editor...", false);
+
+            // Popula no editor Quill com o caderno completo
             document.getElementById('subjectTitle').value = `Resumo: ${nomeArquivoAtual}`;
             document.getElementById('subjectTag').value = "AULA";
             
@@ -3078,14 +3151,26 @@
             document.getElementById('modalEditor').style.display = 'flex';
             setTimeout(() => quill.focus(), 100);
 
-        } catch (e) {
-            console.error("Erro ao resumir aula:", e);
-            alert("Ocorreu um erro ao resumir os blocos da aula: " + e.message);
-            showFeedback("Erro ao resumir.", false);
-        } finally {
+            // 4. LIMPEZA VITAL: DELETA O RASCUNHO DO FIRESTORE POIS O TEXTO JÁ ESTÁ NA TELA
+            if (rascunhoId) {
+                await deleteDoc(doc(db, "planners", currentUID, "rascunhos_resumo", rascunhoId));
+            }
+            
+            // Reseta o botão para o azul original e ativa
             if (btnResumir) {
                 btnResumir.disabled = false;
                 btnResumir.innerHTML = txtOriginalBtn;
+                btnResumir.style.background = "#2383e2"; 
+            }
+
+        } catch (e) {
+            alert(e.message);
+            showFeedback("Pausado.", false);
+            // Se foi erro de outra natureza, e o botão não virou o de "Continuar", reseta ele normal.
+            if (btnResumir && !btnResumir.innerHTML.includes("Continuar")) {
+                 btnResumir.disabled = false;
+                 btnResumir.innerHTML = txtOriginalBtn;
+                 btnResumir.style.background = "#2383e2";
             }
         }
     };
