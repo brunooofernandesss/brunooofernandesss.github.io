@@ -3036,12 +3036,13 @@
         const btnResumir = document.getElementById('btnGerarResumoVtt');
         // Guarda o texto padrão para restaurar no final
         const txtOriginalBtn = '<i class="fas fa-brain"></i> Resumir Aula com IA (20 em 20 min)';
+        
         if (btnResumir) {
             btnResumir.disabled = true;
-            if (!btnResumir.innerHTML.includes("Continuar")) {
-                btnResumir.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparando nuvem...';
+            if (btnResumir.innerHTML.includes("Continuar")) {
+                btnResumir.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Retomando da nuvem...';
             } else {
-                btnResumir.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Retomando do último ponto...';
+                btnResumir.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparando nuvem...';
             }
         }
 
@@ -3049,6 +3050,7 @@
         let rascunhoId = null;
         let blocosStatus = new Array(blocosHoras.length).fill(false);
         let resumosSalvos = new Array(blocosHoras.length).fill("");
+        let isPausado = false;
 
         try {
             // 1. CHECA SE EXISTE RASCUNHO NA NUVEM PARA ESTA AULA
@@ -3057,16 +3059,21 @@
 
             if (!snap.empty) {
                 const docRascunho = snap.docs[0];
-                rascunhoId = docRascunho.id;
                 const dadosRascunho = docRascunho.data();
                 
-                // Restaura o estado salvo se bater com o tamanho atual
+                // Restaura o estado salvo apenas se o total de blocos bater
                 if (dadosRascunho.resumosSalvos && dadosRascunho.resumosSalvos.length === blocosHoras.length) {
+                    rascunhoId = docRascunho.id;
                     resumosSalvos = dadosRascunho.resumosSalvos;
                     blocosStatus = dadosRascunho.blocosStatus;
                     console.log("Rascunho encontrado na nuvem. Retomando de onde parou...");
+                } else {
+                    // Se o tamanho for diferente (mudou a transcrição), deleta o antigo
+                    await deleteDoc(doc(db, "planners", currentUID, "rascunhos_resumo", docRascunho.id));
                 }
-            } else {
+            }
+
+            if (!rascunhoId) {
                 // Cria um novo rascunho em branco no Firestore
                 const novoDoc = await addDoc(collection(db, "planners", currentUID, "rascunhos_resumo"), {
                     aula: nomeArquivoAtual,
@@ -3083,7 +3090,7 @@
                 if (blocosStatus[i] === true) {
                     showFeedback(`✅ Bloco ${i + 1} de ${blocosHoras.length} já estava pronto. Pulando...`, true);
                     resumoCompletoMarkdown += resumosSalvos[i];
-                    await new Promise(r => setTimeout(r, 800)); // Pequena pausa visual
+                    await new Promise(r => setTimeout(r, 600)); // Pequena pausa visual
                     continue;
                 }
 
@@ -3100,6 +3107,7 @@
                     }, `resumir_vtt_bloco_${i + 1}`);
 
                     if (data && data.resumo_md) {
+                        // Constrói o texto do bloco
                         const textoGerado = `\n\n# ⏱️ Resumo da Aula: ${b.minInicio} a ${b.minFim} minutos\n\n` + data.resumo_md.trim();
                         resumoCompletoMarkdown += textoGerado;
                         
@@ -3111,19 +3119,24 @@
                             resumosSalvos: resumosSalvos,
                             blocosStatus: blocosStatus
                         });
+                    } else {
+                        throw new Error("Resposta da IA veio vazia.");
                     }
                 } catch (erroDoBloco) {
                     // O erro aconteceu no meio do caminho. Avisa, transforma o botão e encerra o fluxo com segurança.
                     console.error(`Erro no bloco ${i + 1}:`, erroDoBloco);
+                    isPausado = true;
                     const faltam = blocosStatus.filter(s => !s).length;
                     
                     if (btnResumir) {
                         btnResumir.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Continuar Resumo (Faltam ${faltam})`;
-                        btnResumir.style.background = "#e67e22"; // Laranja de aviso (stand-by)
+                        btnResumir.style.background = "#e67e22"; // Laranja de aviso
                         btnResumir.disabled = false;
                     }
                     
-                    throw new Error(`A Inteligência Artificial congestionou no Bloco ${i + 1}.\n\nFique tranquilo! O seu progresso até a última hora foi SALVO na nuvem do Google.\n\nPara tentar novamente e retomar EXATAMENTE de onde parou, clique no botão laranja "Continuar Resumo".`);
+                    alert(`A Inteligência Artificial congestionou no Bloco ${i + 1} (${b.minInicio} a ${b.minFim} min).\n\nFique tranquilo! Seu progresso até aqui foi SALVO na nuvem do Google.\n\nPara retomar EXATAMENTE de onde parou, clique no botão laranja "Continuar Resumo".`);
+                    showFeedback("Resumo pausado com segurança.", false);
+                    return; // Interrompe a função inteira aqui e espera clique manual para tentar de novo
                 }
             }
 
@@ -3164,10 +3177,11 @@
             }
 
         } catch (e) {
-            alert(e.message);
-            showFeedback("Pausado.", false);
-            // Se foi erro de outra natureza, e o botão não virou o de "Continuar", reseta ele normal.
-            if (btnResumir && !btnResumir.innerHTML.includes("Continuar")) {
+            console.error("Erro geral ao resumir aula:", e);
+            alert("Ocorreu um erro geral ao resumir: " + e.message);
+            showFeedback("Erro ao resumir.", false);
+            
+            if (btnResumir && !isPausado) {
                  btnResumir.disabled = false;
                  btnResumir.innerHTML = txtOriginalBtn;
                  btnResumir.style.background = "#2383e2";
