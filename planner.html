@@ -2865,13 +2865,21 @@
             vttFinalGerado = vttCompleto.trim() + "\n";
             textoFinalGerado = textoCompleto.trim();
 
+            // 🛡️ NOVA BLINDAGEM: Verifica se a Groq realmente devolveu palavras
+            if (textoFinalGerado.length < 50) {
+                throw new Error("A API de transcrição falhou no meio do processo. Por favor, tente novamente.");
+            }
+
             audioAtualizarStatus("Concluído.", 100);
             await new Promise(r => setTimeout(r, 400));
 
             document.getElementById('audioProcessArea').style.display = 'none';
             document.getElementById('audioResultArea').style.display = 'block';
 
-            audioDispararDownloadVtt();
+            // Só dispara o download se realmente tiver texto
+            if (vttFinalGerado.length > 50) {
+                audioDispararDownloadVtt();
+            }
 
         } catch (e) {
             console.error("[Resumir Áudio] Erro:", e);
