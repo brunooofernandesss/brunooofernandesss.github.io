@@ -2753,9 +2753,15 @@
     async function audioEnviarComRetry(file) {
         let tentativasNaMesmaChave = 0;
 
-        while (groqKeyAtual <= TOTAL_CHAVES_GROQ) {
+        while (true) {
+            const chaveTentativa = groqKeyAtual; 
+            
+            if (chaveTentativa > TOTAL_CHAVES_GROQ) {
+                throw new Error("Todas as suas chaves da Groq esgotaram a cota de hoje.");
+            }
+
             try {
-                const resultado = await audioEnviarArquivoCompleto(file, groqKeyAtual);
+                const resultado = await audioEnviarArquivoCompleto(file, chaveTentativa);
                 
                 if (!resultado.text || resultado.text.trim().length === 0) {
                     const erroMudo = new Error("Corte silencioso detectado.");
@@ -2765,16 +2771,15 @@
                 return resultado;
                 
             } catch (e) {
-                console.warn(`[Áudio] Falha na Chave ${groqKeyAtual}:`, e.message);
+                console.warn(`[Áudio] Falha na Chave ${chaveTentativa}:`, e.message);
                 
                 if (e.status === 429) {
-                    console.warn(`⏳ Chave ${groqKeyAtual} esgotada. Trocando para a próxima...`);
-                    groqKeyAtual++;
-                    tentativasNaMesmaChave = 0;
-                    if (groqKeyAtual > TOTAL_CHAVES_GROQ) {
-                        throw new Error("Todas as suas chaves da Groq esgotaram a cota de hoje.");
+                    if (groqKeyAtual === chaveTentativa) {
+                        console.warn(`⏳ Chave ${chaveTentativa} esgotada. Trocando para a próxima...`);
+                        groqKeyAtual++;
                     }
-                    await new Promise(r => setTimeout(r, 2000));
+                    tentativasNaMesmaChave = 0;
+                    await new Promise(r => setTimeout(r, 2000 + Math.random() * 1000));
                     continue; 
                 }
                 
@@ -2783,7 +2788,6 @@
                 await new Promise(r => setTimeout(r, tentativasNaMesmaChave * 2000));
             }
         }
-        throw new Error("Falha geral no rodízio de chaves.");
     }
 
     async function audioProcessarArquivoCompleto(file) {
