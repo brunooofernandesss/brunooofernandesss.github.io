@@ -2775,37 +2775,29 @@
             document.getElementById('audioFileDuration').textContent = audioFormatarDuracao(audioBuffer.duration);
             document.getElementById('audioFileSize').textContent = audioFormatarTamanho(file.size);
 
-            audioAtualizarStatus("Otimizando qualidade para IA...", 10);
+            audioAtualizarStatus("Fatiando, otimizando e removendo silêncios...", 10);
             
             const targetSampleRate = 16000;
-            const offlineCtx = new OfflineAudioContext(1, audioBuffer.duration * targetSampleRate, targetSampleRate);
-            const source = offlineCtx.createBufferSource();
-            source.buffer = audioBuffer;
-            source.connect(offlineCtx.destination);
-            source.start();
-            const resampledAudio = await offlineCtx.startRendering();
-
-            const rawData = resampledAudio.getChannelData(0);
-            
-            // Chunks de 30s — janela ótima documentada do Whisper (OpenAI especifica
-            // 30s como o "receptive field" efetivo do modelo). Chunks de 10s geravam
-            // 1440+ requests para aulas de 4h e VTT com timestamps imprecisos.
-            // Com 30s: 480 chunks para 4h, timestamps corretos, mesma qualidade.
-            const chunkDurationSecs = 300; // Alterado para 5 minutos por lote para a API da Groq (Ultra Rápido)
-            const samplesPerChunk = targetSampleRate * chunkDurationSecs;
-            const totalChunks = Math.ceil(rawData.length / samplesPerChunk);
-
-            // Filtra silêncio usando RMS (energia média), não peak (valor máximo).
-            // Peak >= 0.015 descartava voz suave de microfones distantes ou áudio
-            // com compressão — principal causa das alucinações (Whisper recebe PCM
-            // zerado e "inventa" texto em idiomas aleatórios).
-            // RMS >= 0.005 é um threshold muito mais sensível e correto fisicamente.
-            audioAtualizarStatus("Removendo silêncios e organizando lotes...", 12);
+            const chunkDurationSecs = 300; // 5 minutos por lote
+            const totalChunks = Math.ceil(audioBuffer.duration / chunkDurationSecs);
             const chunksValidos = [];
+
             for (let i = 0; i < totalChunks; i++) {
-                const chunkData = rawData.slice(i * samplesPerChunk, (i + 1) * samplesPerChunk);
+                const startSec = i * chunkDurationSecs;
+                const endSec = Math.min((i + 1) * chunkDurationSecs, audioBuffer.duration);
+                const durationSec = endSec - startSec;
+
+                // 1. CONVERSOR MINÚSCULO (Poupa a RAM do tablet)
+                const offlineCtx = new OfflineAudioContext(1, durationSec * targetSampleRate, targetSampleRate);
+                const source = offlineCtx.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(offlineCtx.destination);
+                source.start(0, startSec, durationSec);
                 
-                // Calcula RMS (Root Mean Square): raiz da média dos quadrados das amostras
+                const resampledChunk = await offlineCtx.startRendering();
+                const chunkData = resampledChunk.getChannelData(0);
+                
+                // 2. FILTRO DE SILÊNCIO ORIGINAL MANTIDO (Cálculo RMS)
                 let sumOfSquares = 0;
                 for (let j = 0; j < chunkData.length; j++) {
                     sumOfSquares += chunkData[j] * chunkData[j];
