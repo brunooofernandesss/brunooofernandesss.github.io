@@ -2718,7 +2718,10 @@
         return adjusted.join('\n');
     }
 
-    async function audioEnviarArquivoCompleto(file) {
+    let groqKeyAtual = 1; 
+    const TOTAL_CHAVES_GROQ = 5; // ⚠️ Troque para a quantidade exata de Secrets que você criou no Cloudflare
+
+    async function audioEnviarArquivoCompleto(file, keyId) {
         let token;
         try {
             token = await getFirebaseToken();
@@ -2727,32 +2730,60 @@
         }
         const formData = new FormData();
         formData.append('audio', file, file.name);
+        
         const response = await fetch(WORKER_URL + 'transcribe-audio', {
             method: 'POST',
-            headers: { 'x-firebase-token': token },
+            headers: { 
+                'x-firebase-token': token,
+                'x-groq-key-id': keyId.toString()
+            },
             body: formData
         });
+        
         if (!response.ok) {
             let errMsg = `Worker retornou status ${response.status}`;
             try { const e = await response.json(); errMsg = e.error || errMsg; } catch (_) {}
-            throw new Error(errMsg);
+            const erro = new Error(errMsg);
+            erro.status = response.status; 
+            throw erro;
         }
         return await response.json();
     }
 
     async function audioEnviarComRetry(file) {
-        const MAX_TENTATIVAS = 3;
-        let ultimoErro;
-        for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
+        let tentativasNaMesmaChave = 0;
+
+        while (groqKeyAtual <= TOTAL_CHAVES_GROQ) {
             try {
-                return await audioEnviarArquivoCompleto(file);
+                const resultado = await audioEnviarArquivoCompleto(file, groqKeyAtual);
+                
+                if (!resultado.text || resultado.text.trim().length === 0) {
+                    const erroMudo = new Error("Corte silencioso detectado.");
+                    erroMudo.status = 429;
+                    throw erroMudo;
+                }
+                return resultado;
+                
             } catch (e) {
-                ultimoErro = e;
-                console.warn(`[Áudio] Envio falhou (tentativa ${tentativa}/${MAX_TENTATIVAS}):`, e.message);
-                if (tentativa < MAX_TENTATIVAS) await new Promise(r => setTimeout(r, tentativa * 2000));
+                console.warn(`[Áudio] Falha na Chave ${groqKeyAtual}:`, e.message);
+                
+                if (e.status === 429) {
+                    console.warn(`⏳ Chave ${groqKeyAtual} esgotada. Trocando para a próxima...`);
+                    groqKeyAtual++;
+                    tentativasNaMesmaChave = 0;
+                    if (groqKeyAtual > TOTAL_CHAVES_GROQ) {
+                        throw new Error("Todas as suas chaves da Groq esgotaram a cota de hoje.");
+                    }
+                    await new Promise(r => setTimeout(r, 2000));
+                    continue; 
+                }
+                
+                tentativasNaMesmaChave++;
+                if (tentativasNaMesmaChave >= 3) throw e;
+                await new Promise(r => setTimeout(r, tentativasNaMesmaChave * 2000));
             }
         }
-        throw ultimoErro;
+        throw new Error("Falha geral no rodízio de chaves.");
     }
 
     async function audioProcessarArquivoCompleto(file) {
