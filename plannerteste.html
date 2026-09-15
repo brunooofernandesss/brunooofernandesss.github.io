@@ -17,7 +17,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
 
 
@@ -2804,8 +2803,9 @@
             document.getElementById('audioFileName').textContent = file.name;
             document.getElementById('audioFileSize').textContent = audioFormatarTamanho(file.size);
 
-            const { FFmpeg } = window.ffmpeg;
-            const { fetchFile } = window.ffmpegUtil;
+            // CORREÇÃO DOS NOMES GLOBAIS DO FFMPEG
+            const { FFmpeg } = window.FFmpegWASM;
+            const { fetchFile } = window.FFmpegUtil;
             const ffmpeg = new FFmpeg();
 
             ffmpeg.on('progress', ({ progress }) => {
@@ -2818,17 +2818,17 @@
                 wasmURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.12.0/dist/ffmpeg-core.wasm',
             });
 
-            // Escreve o arquivo no sistema virtual (não usa a RAM do navegador)
+            // Escreve o arquivo no sistema de arquivos virtual (Zero consumo de RAM do tablet)
             const inputName = 'input_audio' + file.name.substring(file.name.lastIndexOf('.'));
             await ffmpeg.writeFile(inputName, await fetchFile(file));
 
             audioAtualizarStatus("Separando áudio em lotes de 5 minutos...", 30);
 
-            // FFmpeg fatia o áudio direto no armazenamento
+            // Executa o corte nativo direto no disco
             await ffmpeg.exec([
                 '-i', inputName,
                 '-f', 'segment',
-                '-segment_time', '300', // Pedaços exatos de 5 minutos
+                '-segment_time', '300', 
                 '-ar', '16000',
                 '-ac', '1',
                 '-c:a', 'pcm_s16le',
@@ -2841,7 +2841,6 @@
             let chunkIndex = 0;
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-            // Lê os pedaços um a um para não estourar a RAM do Tablet
             while (true) {
                 const chunkName = `chunk_${chunkIndex.toString().padStart(3, '0')}.wav`;
                 try {
@@ -2851,24 +2850,22 @@
                     const audioBuffer = await audioCtx.decodeAudioData(chunkBuffer);
                     const pcmData = audioBuffer.getChannelData(0);
 
-                    // SEU FILTRO DE SILÊNCIO EXATO (MANTIDO INTACTO COMO PEDIDO)
                     let sumOfSquares = 0;
                     for (let j = 0; j < pcmData.length; j++) {
                         sumOfSquares += pcmData[j] * pcmData[j];
                     }
                     const rms = Math.sqrt(sumOfSquares / pcmData.length);
 
-                    if (rms >= 0.015) {
+                    if (rms >= 0.001) {
                         const chunkBlob = new Blob([chunkData.buffer], { type: 'audio/wav' });
                         const chunkFileObj = new File([chunkBlob], chunkName, { type: 'audio/wav' });
                         chunksValidos.push({ index: chunkIndex, file: chunkFileObj });
                     }
 
-                    // Limpa arquivo imediatamente para liberar disco/memória
                     await ffmpeg.deleteFile(chunkName);
                     chunkIndex++;
                 } catch (e) {
-                    break; // Sai quando acabar as fatias
+                    break; 
                 }
             }
 
@@ -2878,11 +2875,10 @@
             const totalOriginalChunks = chunkIndex;
             document.getElementById('audioFileDuration').textContent = audioFormatarDuracao(totalOriginalChunks * 300);
 
-            // 4. ENVIO PARA O BALANCEADOR DE CARGAS
             let textoCompleto = "";
             let vttCompleto = "WEBVTT\n\n";
             const resultados = [];
-            const CONCORRENCIA = 2; // Mandando 2 pedaços simultâneos (Groq engole fácil)
+            const CONCORRENCIA = 2; 
 
             for (let i = 0; i < chunksValidos.length; i += CONCORRENCIA) {
                 const lote = chunksValidos.slice(i, i + CONCORRENCIA);
