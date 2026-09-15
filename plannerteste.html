@@ -15,8 +15,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
 
 
@@ -2798,94 +2796,74 @@
         nomeArquivoAtual = (file.name || 'aula').replace(/\.\w+$/, '');
 
         try {
-            audioAtualizarStatus("Carregando motor de fatiamento seguro...", 5);
+            audioAtualizarStatus("Lendo áudio nativamente...", 5);
+            
             document.getElementById('audioFileInfo').style.display = 'block';
             document.getElementById('audioFileName').textContent = file.name;
             document.getElementById('audioFileSize').textContent = audioFormatarTamanho(file.size);
 
-            // CORREÇÃO DOS NOMES GLOBAIS DO FFMPEG
-            const { FFmpeg } = window.FFmpegWASM;
-            const { fetchFile } = window.FFmpegUtil;
-            const ffmpeg = new FFmpeg();
-
-            ffmpeg.on('progress', ({ progress }) => {
-                audioAtualizarStatus(`Fatiando áudio gigante com segurança: ${Math.round(progress * 100)}%`, 10 + (progress * 20));
-            });
-
-            audioAtualizarStatus("Inicializando FFmpeg Single-Thread...", 10);
-            await ffmpeg.load({
-                coreURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.12.0/dist/ffmpeg-core.js',
-                wasmURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.12.0/dist/ffmpeg-core.wasm',
-            });
-
-            // Escreve o arquivo no sistema de arquivos virtual (Zero consumo de RAM do tablet)
-            const inputName = 'input_audio' + file.name.substring(file.name.lastIndexOf('.'));
-            await ffmpeg.writeFile(inputName, await fetchFile(file));
-
-            audioAtualizarStatus("Separando áudio em lotes de 5 minutos...", 30);
-
-            // Executa o corte nativo direto no disco
-            await ffmpeg.exec([
-                '-i', inputName,
-                '-f', 'segment',
-                '-segment_time', '300', 
-                '-ar', '16000',
-                '-ac', '1',
-                '-c:a', 'pcm_s16le',
-                'chunk_%03d.wav'
-            ]);
-
-            audioAtualizarStatus("Analisando ruídos e descartando silêncios...", 35);
+            audioAtualizarStatus("Fatiando áudio direto no disco (Zero RAM)...", 10);
             
-            const chunksValidos = [];
-            let chunkIndex = 0;
+            const targetSampleRate = 16000;
+            const chunkDurationSecs = 300; // 5 Minutos cravados
+            
+            // Pega o áudio bruto
+            const arrayBuffer = await file.arrayBuffer();
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const audioBufferTotal = await audioCtx.decodeAudioData(arrayBuffer);
+            
+            document.getElementById('audioFileDuration').textContent = audioFormatarDuracao(audioBufferTotal.duration);
 
-            while (true) {
-                const chunkName = `chunk_${chunkIndex.toString().padStart(3, '0')}.wav`;
-                try {
-                    const chunkData = await ffmpeg.readFile(chunkName);
-                    const chunkBuffer = chunkData.buffer.slice(0);
-                    
-                    const audioBuffer = await audioCtx.decodeAudioData(chunkBuffer);
-                    const pcmData = audioBuffer.getChannelData(0);
+            const totalChunks = Math.ceil(audioBufferTotal.duration / chunkDurationSecs);
+            const chunksValidos = [];
 
-                    let sumOfSquares = 0;
-                    for (let j = 0; j < pcmData.length; j++) {
-                        sumOfSquares += pcmData[j] * pcmData[j];
-                    }
-                    const rms = Math.sqrt(sumOfSquares / pcmData.length);
+            // Motor otimizado que cria a fatia, mede o RMS, salva e DESTRÓI a RAM do pedaço
+            for (let i = 0; i < totalChunks; i++) {
+                audioAtualizarStatus(`Analisando ruídos do pedaço ${i+1} de ${totalChunks}...`, 10 + ((i / totalChunks) * 20));
+                
+                const startSec = i * chunkDurationSecs;
+                const endSec = Math.min((i + 1) * chunkDurationSecs, audioBufferTotal.duration);
+                const durationSec = endSec - startSec;
 
-                    if (rms >= 0.001) {
-                        const chunkBlob = new Blob([chunkData.buffer], { type: 'audio/wav' });
-                        const chunkFileObj = new File([chunkBlob], chunkName, { type: 'audio/wav' });
-                        chunksValidos.push({ index: chunkIndex, file: chunkFileObj });
-                    }
-
-                    await ffmpeg.deleteFile(chunkName);
-                    chunkIndex++;
-                } catch (e) {
-                    break; 
+                // Cria um mini-contexto só para esses 5 minutos (Evita o Chrome dar Crash)
+                const offlineCtx = new OfflineAudioContext(1, durationSec * targetSampleRate, targetSampleRate);
+                const source = offlineCtx.createBufferSource();
+                source.buffer = audioBufferTotal;
+                source.connect(offlineCtx.destination);
+                source.start(0, startSec, durationSec);
+                
+                const resampledChunk = await offlineCtx.startRendering();
+                const chunkData = resampledChunk.getChannelData(0);
+                
+                // MANTIDO: O seu cálculo de ruído com limiar tolerante (0.001) para não apagar fala baixa
+                let sumOfSquares = 0;
+                for (let j = 0; j < chunkData.length; j++) {
+                    sumOfSquares += chunkData[j] * chunkData[j];
+                }
+                const rms = Math.sqrt(sumOfSquares / chunkData.length);
+                
+                if (rms >= 0.001) {
+                    const wavBlob = audioBufferToWavBlob(chunkData, targetSampleRate);
+                    const chunkFile = new File([wavBlob], `chunk_${i}.wav`, { type: 'audio/wav' });
+                    chunksValidos.push({ index: i, file: chunkFile });
                 }
             }
 
-            await ffmpeg.deleteFile(inputName);
+            // Libera a memória do áudio gigante de uma vez
             audioCtx.close();
-
-            const totalOriginalChunks = chunkIndex;
-            document.getElementById('audioFileDuration').textContent = audioFormatarDuracao(totalOriginalChunks * 300);
 
             let textoCompleto = "";
             let vttCompleto = "WEBVTT\n\n";
             const resultados = [];
-            const CONCORRENCIA = 2; 
+            const CONCORRENCIA = 2; // Envia de 2 em 2 fatias para a Groq
 
             for (let i = 0; i < chunksValidos.length; i += CONCORRENCIA) {
                 const lote = chunksValidos.slice(i, i + CONCORRENCIA);
-                const progresso = 40 + ((i / chunksValidos.length) * 55);
+                const progresso = 30 + ((i / chunksValidos.length) * 65);
                 audioAtualizarStatus(`Transcrevendo áudio (${i + lote.length}/${chunksValidos.length}). IA da Groq trabalhando...`, progresso);
 
                 const promessas = lote.map(async (item) => {
+                    // Manda pro nosso Balanceador de Chaves
                     const res = await audioEnviarComRetry(item.file);
                     return { index: item.index, text: res.text, vtt: res.vtt };
                 });
@@ -2901,7 +2879,6 @@
             audioAtualizarStatus("Montando texto final...", 98);
             resultados.sort((a, b) => a.index - b.index);
 
-            const chunkDurationSecs = 300;
             for (const res of resultados) {
                 if (res.text) textoCompleto += res.text + " ";
                 if (res.vtt) {
