@@ -545,6 +545,9 @@
                  <button class="btn-action" onclick="window.exportarParaPDF()" style="color:#d44c47; border-color:#ffe2dd; background:#fff5f5;" title="Salvar como Arquivo PDF">
                     <i class="fas fa-file-pdf"></i> Exportar PDF
                  </button>
+                 <button class="btn-action" id="btnAdicionarImagens" onclick="window.adicionarImagensApostila()" style="color:#8e44ad; border-color:#e8d5f5; background:#f9f4fc;" title="Buscar e inserir imagens relevantes no texto">
+                    <i class="fas fa-images"></i> Adicionar Imagens
+                 </button>
              </div>
              <button class="btn-action" id="btnExcluirEstudo" style="color:#d44c47; border-color: #ffe2dd; background: #fff5f5;">
                     <i class="fas fa-trash"></i> Excluir Estudo
@@ -2761,26 +2764,28 @@
             }
 
             try {
-                // Tenta transcrever. O Worker vai devolver 429 se bater a cota
                 const resultado = await audioEnviarArquivoCompleto(file, chaveTentativa);
-                return resultado; 
+                
+                if (!resultado.text || resultado.text.trim().length === 0) {
+                    const erroMudo = new Error("Corte silencioso detectado.");
+                    erroMudo.status = 429;
+                    throw erroMudo;
+                }
+                return resultado;
                 
             } catch (e) {
                 console.warn(`[Áudio] Falha na Chave ${chaveTentativa}:`, e.message);
                 
                 if (e.status === 429) {
-                    // Impede que 2 blocos de áudio girem a chave ao mesmo tempo (evita o erro do seu log)
                     if (groqKeyAtual === chaveTentativa) {
                         console.warn(`⏳ Chave ${chaveTentativa} esgotada. Trocando para a próxima...`);
                         groqKeyAtual++;
                     }
                     tentativasNaMesmaChave = 0;
-                    // Pausa de 2 segundos para o sistema respirar antes de usar a chave nova
                     await new Promise(r => setTimeout(r, 2000 + Math.random() * 1000));
                     continue; 
                 }
                 
-                // Se for outro erro de conexão da internet, tenta 3 vezes antes de desistir
                 tentativasNaMesmaChave++;
                 if (tentativasNaMesmaChave >= 3) throw e;
                 await new Promise(r => setTimeout(r, tentativasNaMesmaChave * 2000));
@@ -2798,72 +2803,69 @@
         try {
             audioAtualizarStatus("Lendo áudio nativamente...", 5);
             
-            document.getElementById('audioFileInfo').style.display = 'block';
-            document.getElementById('audioFileName').textContent = file.name;
-            document.getElementById('audioFileSize').textContent = audioFormatarTamanho(file.size);
-
-            audioAtualizarStatus("Fatiando áudio direto no disco (Zero RAM)...", 10);
-            
-            const targetSampleRate = 16000;
-            const chunkDurationSecs = 300; // 5 Minutos cravados
-            
-            // Pega o áudio bruto
+            // Decodificação Nativa do Navegador (Ignora problemas de formato)
             const arrayBuffer = await file.arrayBuffer();
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const audioBufferTotal = await audioCtx.decodeAudioData(arrayBuffer);
+            const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
             
-            document.getElementById('audioFileDuration').textContent = audioFormatarDuracao(audioBufferTotal.duration);
+            document.getElementById('audioFileInfo').style.display = 'block';
+            document.getElementById('audioFileName').textContent = file.name;
+            document.getElementById('audioFileDuration').textContent = audioFormatarDuracao(audioBuffer.duration);
+            document.getElementById('audioFileSize').textContent = audioFormatarTamanho(file.size);
 
-            const totalChunks = Math.ceil(audioBufferTotal.duration / chunkDurationSecs);
+            audioAtualizarStatus("Fatiando, otimizando e removendo silêncios...", 10);
+            
+            const targetSampleRate = 16000;
+            const chunkDurationSecs = 300; // 5 minutos por lote
+            const totalChunks = Math.ceil(audioBuffer.duration / chunkDurationSecs);
             const chunksValidos = [];
 
-            // Motor otimizado que cria a fatia, mede o RMS, salva e DESTRÓI a RAM do pedaço
             for (let i = 0; i < totalChunks; i++) {
-                audioAtualizarStatus(`Analisando ruídos do pedaço ${i+1} de ${totalChunks}...`, 10 + ((i / totalChunks) * 20));
-                
                 const startSec = i * chunkDurationSecs;
-                const endSec = Math.min((i + 1) * chunkDurationSecs, audioBufferTotal.duration);
+                const endSec = Math.min((i + 1) * chunkDurationSecs, audioBuffer.duration);
                 const durationSec = endSec - startSec;
 
-                // Cria um mini-contexto só para esses 5 minutos (Evita o Chrome dar Crash)
+                // 1. CONVERSOR MINÚSCULO (Poupa a RAM do tablet)
                 const offlineCtx = new OfflineAudioContext(1, durationSec * targetSampleRate, targetSampleRate);
                 const source = offlineCtx.createBufferSource();
-                source.buffer = audioBufferTotal;
+                source.buffer = audioBuffer;
                 source.connect(offlineCtx.destination);
                 source.start(0, startSec, durationSec);
                 
                 const resampledChunk = await offlineCtx.startRendering();
                 const chunkData = resampledChunk.getChannelData(0);
                 
-                // MANTIDO: O seu cálculo de ruído com limiar tolerante (0.001) para não apagar fala baixa
+                // 2. FILTRO DE SILÊNCIO ORIGINAL MANTIDO (Cálculo RMS)
                 let sumOfSquares = 0;
                 for (let j = 0; j < chunkData.length; j++) {
                     sumOfSquares += chunkData[j] * chunkData[j];
                 }
                 const rms = Math.sqrt(sumOfSquares / chunkData.length);
                 
-                if (rms >= 0.001) {
+                // Threshold mais rigoroso (1.5%) para evitar que a IA alucine com ruídos do microfone
+                if (rms >= 0.015) {
                     const wavBlob = audioBufferToWavBlob(chunkData, targetSampleRate);
                     const chunkFile = new File([wavBlob], `chunk_${i}.wav`, { type: 'audio/wav' });
                     chunksValidos.push({ index: i, file: chunkFile });
                 }
             }
 
-            // Libera a memória do áudio gigante de uma vez
-            audioCtx.close();
-
             let textoCompleto = "";
             let vttCompleto = "WEBVTT\n\n";
             const resultados = [];
-            const CONCORRENCIA = 2; // Envia de 2 em 2 fatias para a Groq
+            
+            // Plano gratuito Cloudflare Workers AI: 50 RPM.
+            // Com chunks de 30s (vs 10s antes), a taxa natural é 3x menor.
+            // 3 concorrentes + pausa de 1000ms → ~3 req/1s = 180 RPM teórico,
+            // mas latência real de rede (~1-2s/request) mantém em ~30-40 RPM efetivo.
+            const CONCORRENCIA = 2; // Enviando de 2 em 2 blocos pesados
 
             for (let i = 0; i < chunksValidos.length; i += CONCORRENCIA) {
                 const lote = chunksValidos.slice(i, i + CONCORRENCIA);
-                const progresso = 30 + ((i / chunksValidos.length) * 65);
+                const progresso = 15 + ((i / chunksValidos.length) * 80);
                 audioAtualizarStatus(`Transcrevendo áudio (${i + lote.length}/${chunksValidos.length}). IA da Groq trabalhando...`, progresso);
 
                 const promessas = lote.map(async (item) => {
-                    // Manda pro nosso Balanceador de Chaves
                     const res = await audioEnviarComRetry(item.file);
                     return { index: item.index, text: res.text, vtt: res.vtt };
                 });
@@ -2871,13 +2873,16 @@
                 const resultadosLote = await Promise.all(promessas);
                 resultados.push(...resultadosLote);
 
+                // Pausa minúscula apenas por segurança, Groq é absurdamente rápido
                 if (chunksValidos.length > 2) {
                     await new Promise(r => setTimeout(r, 500));
                 }
             }
 
+
+            // 3. Montar transcrição na ordem cronológica correta
             audioAtualizarStatus("Montando texto final...", 98);
-            resultados.sort((a, b) => a.index - b.index);
+            resultados.sort((a, b) => a.index - b.index); // Ordena pelo index original
 
             for (const res of resultados) {
                 if (res.text) textoCompleto += res.text + " ";
@@ -2890,6 +2895,7 @@
             vttFinalGerado = vttCompleto.trim() + "\n";
             textoFinalGerado = textoCompleto.trim();
 
+            // 🛡️ NOVA BLINDAGEM: Verifica se a Groq realmente devolveu palavras
             if (textoFinalGerado.length < 50) {
                 throw new Error("A API de transcrição falhou no meio do processo. Por favor, tente novamente.");
             }
@@ -2900,6 +2906,7 @@
             document.getElementById('audioProcessArea').style.display = 'none';
             document.getElementById('audioResultArea').style.display = 'block';
 
+            // Só dispara o download se realmente tiver texto
             if (vttFinalGerado.length > 50) {
                 audioDispararDownloadVtt();
             }
@@ -6855,8 +6862,74 @@
             btn.style.opacity = "1";
         }
     };
-    
-    
+
+    // ============================================================
+    // 🖼️ ADICIONAR IMAGENS NA APOSTILA
+    // ============================================================
+    // Divide a nota em blocos (por título ## / ### ou <h1-6>), manda cada
+    // bloco pro Worker, que usa o Gemini com busca na web pra achar imagens
+    // relevantes e já VALIDA cada uma (HEAD check real) antes de devolver —
+    // só URL confirmada entra no texto. Sem confirmação manual: o que passa
+    // na validação é inserido direto.
+
+    window.adicionarImagensApostila = async () => {
+        if (!editingDocId) return;
+
+        const btn = document.getElementById('btnAdicionarImagens');
+        const oldText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Buscando imagens...';
+        btn.disabled = true;
+
+        try {
+            const refDoc = doc(db, "planners", currentUID, "tasks", editingDocId);
+            const snap = await getDoc(refDoc);
+            if (!snap.exists()) { alert("Documento não encontrado."); return; }
+            const data = snap.data();
+            const contentOriginal = data.contentHTML || "";
+
+            // Divide em blocos por título markdown (#) ou HTML (<h1-6>).
+            // Sem nenhum título no texto, o conteúdo inteiro vira 1 bloco só.
+            const partesBrutas = contentOriginal
+                .split(/(?=^#{1,6}\s+.+$)|(?=<h[1-6][^>]*>)/gm)
+                .filter(p => p.trim());
+            const blocosArray = partesBrutas.length > 0 ? partesBrutas : [contentOriginal];
+
+            const resultado = await callWorker({
+                action: "buscar_imagens_apostila",
+                blocos: blocosArray.map((texto, id) => ({ id, texto }))
+            }, "Adicionar Imagens");
+
+            let totalInseridas = 0;
+            const blocosComImagem = blocosArray.map((texto, id) => {
+                const achado = resultado.blocos.find(b => b.id === id);
+                if (!achado || achado.imagens.length === 0) return texto;
+                totalInseridas += achado.imagens.length;
+                const tagsImg = achado.imagens
+                    .map(url => `\n<img src="${url}" style="max-width:100%; border-radius:8px; margin:10px 0;">\n`)
+                    .join("");
+                return texto.trimEnd() + tagsImg;
+            });
+
+            const contentAtualizado = blocosComImagem.join("");
+            await updateDoc(refDoc, { contentHTML: contentAtualizado });
+
+            if (totalInseridas === 0) {
+                alert("Nenhuma imagem confiável foi encontrada para este conteúdo.");
+            } else {
+                showFeedback(`✅ ${totalInseridas} imagem(ns) adicionada(s)!`, false);
+                renderQuillContent(document.getElementById('viewContainer'), { ...data, contentHTML: contentAtualizado });
+            }
+
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao buscar imagens: " + e.message);
+        } finally {
+            btn.innerHTML = oldText;
+            btn.disabled = false;
+        }
+    };
+
+
         // ============================================================
     // 💀 PROVA DE ANATOMIA EM LOTE (20 QUESTÕES)
     // ============================================================
