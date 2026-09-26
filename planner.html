@@ -2790,6 +2790,447 @@
         }
     }
 
+    // =========================================================
+    // 🔪 EXTRATOR BINÁRIO NO DISCO (ESTILO CHUNKAUDIO - ZERO RAM)
+    // =========================================================
+    function mp4ListarBoxes(view, start, end) {
+        const boxes = [];
+        let pos = start;
+        while (pos + 8 <= end) {
+            let size = view.getUint32(pos);
+            const type = String.fromCharCode(
+                view.getUint8(pos + 4), view.getUint8(pos + 5),
+                view.getUint8(pos + 6), view.getUint8(pos + 7)
+            );
+            let headerSize = 8;
+            if (size === 1) {
+                if (pos + 16 > end) break;
+                size = Number(view.getBigUint64(pos + 8));
+                headerSize = 16;
+            } else if (size === 0) {
+                size = end - pos;
+            }
+            if (size < headerSize || pos + size > end) break;
+            boxes.push({ type, offset: pos, size, contentStart: pos + headerSize, contentEnd: pos + size });
+            pos += size;
+        }
+        return boxes;
+    }
+
+    function mp4ExtrairConfigADTS(view, stsdStart, stsdEnd, fallbackSampleRate, fallbackChannels) {
+        const srMap = [96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350];
+        let profile = 1; // AAC-LC padrão
+        let freqIdx = srMap.indexOf(fallbackSampleRate);
+        if (freqIdx === -1) {
+            freqIdx = 4; // 44100 Hz fallback
+            for (let i = 0; i < srMap.length; i++) {
+                if (Math.abs(srMap[i] - fallbackSampleRate) < 500) { freqIdx = i; break; }
+            }
+        }
+        let chanCfg = fallbackChannels || 1;
+
+        // Procura a assinatura da box 'esds' dentro de stsd
+        for (let p = stsdStart + 8; p + 8 < stsdEnd; p++) {
+            if (
+                view.getUint8(p + 4) === 0x65 && // 'e'
+                view.getUint8(p + 5) === 0x73 && // 's'
+                view.getUint8(p + 6) === 0x64 && // 'd'
+                view.getUint8(p + 7) === 0x73    // 's'
+            ) {
+                const esdsSize = view.getUint32(p);
+                const esdsEnd = Math.min(stsdEnd, p + esdsSize);
+                let q = p + 12; // Pula header (8) + version/flags (4)
+                while (q + 2 < esdsEnd) {
+                    const tag = view.getUint8(q++);
+                    let len = 0;
+                    for (let k = 0; k < 4 && q < esdsEnd; k++) {
+                        const b = view.getUint8(q++);
+                        len = (len << 7) | (b & 0x7F);
+                        if (!(b & 0x80)) break;
+                    }
+                    if (tag === 0x03) {
+                        // ES_Descriptor
+                        if (q + 3 > esdsEnd) break;
+                        const flags = view.getUint8(q + 2);
+                        q += 3;
+                        if (flags & 0x80) q += 2;
+                        if (flags & 0x40) { const uLen = view.getUint8(q); q += 1 + uLen; }
+                        if (flags & 0x20) q += 2;
+                    } else if (tag === 0x04) {
+                        // DecoderConfigDescriptor
+                        q += 13;
+                    } else if (tag === 0x05) {
+                        // DecoderSpecificInfo (AudioSpecificConfig)
+                        if (q + 2 <= esdsEnd) {
+                            const b0 = view.getUint8(q);
+                            const b1 = view.getUint8(q + 1);
+                            const audioObjectType = b0 >> 3;
+                            const fIdx = ((b0 & 0x07) << 1) | (b1 >> 7);
+                            const cCfg = (b1 >> 3) & 0x0F;
+                            if (audioObjectType >= 1 && audioObjectType <= 4) profile = audioObjectType - 1;
+                            if (fIdx >= 0 && fIdx < 13) freqIdx = fIdx;
+                            if (cCfg > 0 && cCfg <= 7) chanCfg = cCfg;
+                        }
+                        break;
+                    } else {
+                        q += len;
+                    }
+                }
+                break;
+            }
+        }
+        return { profile, freqIdx, chanCfg };
+    }
+
+    async function prepararFatiasM4A(file, chunkDurationSecs) {
+        let pos = 0;
+        let moovBuffer = null;
+
+        // 1. Varre o arquivo no disco pulando o 'mdat' gigante para achar só o índice 'moov'
+        while (pos + 8 <= file.size) {
+            const hdrBuf = await file.slice(pos, Math.min(pos + 16, file.size)).arrayBuffer();
+            const hdrView = new DataView(hdrBuf);
+            let size = hdrView.getUint32(0);
+            const type = String.fromCharCode(
+                hdrView.getUint8(4), hdrView.getUint8(5),
+                hdrView.getUint8(6), hdrView.getUint8(7)
+            );
+            let headerSize = 8;
+            if (size === 1) {
+                if (hdrBuf.byteLength < 16) break;
+                size = Number(hdrView.getBigUint64(8));
+                headerSize = 16;
+            } else if (size === 0) {
+                size = file.size - pos;
+            }
+            if (size < headerSize || pos + size > file.size) break;
+
+            if (type === 'moov') {
+                moovBuffer = await file.slice(pos + headerSize, pos + size).arrayBuffer();
+                break;
+            }
+            pos += size;
+        }
+
+        if (!moovBuffer) throw new Error("Índice 'moov' não encontrado no arquivo M4A.");
+        const view = new DataView(moovBuffer);
+        const traks = mp4ListarBoxes(view, 0, moovBuffer.byteLength).filter(b => b.type === 'trak');
+
+        for (const trak of traks) {
+            const mdia = mp4ListarBoxes(view, trak.contentStart, trak.contentEnd).find(b => b.type === 'mdia');
+            if (!mdia) continue;
+            const mdiaBoxes = mp4ListarBoxes(view, mdia.contentStart, mdia.contentEnd);
+            const mdhd = mdiaBoxes.find(b => b.type === 'mdhd');
+            const minf = mdiaBoxes.find(b => b.type === 'minf');
+            if (!mdhd || !minf) continue;
+
+            const minfBoxes = mp4ListarBoxes(view, minf.contentStart, minf.contentEnd);
+            const stbl = minfBoxes.find(b => b.type === 'stbl');
+            if (!stbl) continue;
+
+            const stblBoxes = mp4ListarBoxes(view, stbl.contentStart, stbl.contentEnd);
+            const stsd = stblBoxes.find(b => b.type === 'stsd');
+            const stts = stblBoxes.find(b => b.type === 'stts');
+            const stsc = stblBoxes.find(b => b.type === 'stsc');
+            const stsz = stblBoxes.find(b => b.type === 'stsz');
+            const stco = stblBoxes.find(b => b.type === 'stco');
+            const co64 = stblBoxes.find(b => b.type === 'co64');
+
+            if (!stsd || !stts || !stsc || !stsz || (!stco && !co64)) continue;
+
+            // Verifica o tipo da entrada em stsd
+            const entryType = String.fromCharCode(
+                view.getUint8(stsd.contentStart + 12), view.getUint8(stsd.contentStart + 13),
+                view.getUint8(stsd.contentStart + 14), view.getUint8(stsd.contentStart + 15)
+            );
+            const isSound = minfBoxes.some(b => b.type === 'smhd') || entryType === 'mp4a';
+            if (!isSound) continue;
+
+            const mdhdVer = view.getUint8(mdhd.contentStart);
+            const timescale = mdhdVer === 1
+                ? view.getUint32(mdhd.contentStart + 20)
+                : view.getUint32(mdhd.contentStart + 12);
+            const durationTicks = mdhdVer === 1
+                ? Number(view.getBigUint64(mdhd.contentStart + 24))
+                : view.getUint32(mdhd.contentStart + 16);
+
+            const fallbackChannels = view.getUint16(stsd.contentStart + 8 + 24) || 1;
+            const fallbackSR = view.getUint16(stsd.contentStart + 8 + 32) || timescale || 44100;
+            const adtsCfg = mp4ExtrairConfigADTS(view, stsd.contentStart, stsd.contentEnd, fallbackSR, fallbackChannels);
+
+            // Lê tamanhos dos quadros (stsz)
+            const defaultSampleSize = view.getUint32(stsz.contentStart + 4);
+            const numSamples = view.getUint32(stsz.contentStart + 8);
+            if (numSamples === 0) continue;
+
+            const sampleSizes = new Uint32Array(numSamples);
+            if (defaultSampleSize !== 0) {
+                sampleSizes.fill(defaultSampleSize);
+            } else {
+                let p = stsz.contentStart + 12;
+                for (let i = 0; i < numSamples; i++, p += 4) {
+                    sampleSizes[i] = view.getUint32(p);
+                }
+            }
+
+            // Lê offsets dos blocos (stco / co64)
+            const offsetBox = stco || co64;
+            const is64 = Boolean(co64 && !stco);
+            const numChunks = view.getUint32(offsetBox.contentStart + 4);
+            const chunkOffsets = new Float64Array(numChunks);
+            let pOff = offsetBox.contentStart + 8;
+            for (let i = 0; i < numChunks; i++) {
+                chunkOffsets[i] = is64 ? Number(view.getBigUint64(pOff)) : view.getUint32(pOff);
+                pOff += is64 ? 8 : 4;
+            }
+
+            // Lê mapeamento sample-to-chunk (stsc)
+            const stscCount = view.getUint32(stsc.contentStart + 4);
+            const stscEntries = [];
+            let pStsc = stsc.contentStart + 8;
+            for (let i = 0; i < stscCount; i++, pStsc += 12) {
+                stscEntries.push({
+                    firstChunk: view.getUint32(pStsc),
+                    samplesPerChunk: view.getUint32(pStsc + 4)
+                });
+            }
+
+            // Calcula o byte offset exato de cada quadro AAC no disco
+            const sampleOffsets = new Float64Array(numSamples);
+            let sampleIdx = 0;
+            let stscIdx = 0;
+            for (let chunkIdx = 0; chunkIdx < numChunks && sampleIdx < numSamples; chunkIdx++) {
+                const chunkNum = chunkIdx + 1;
+                while (stscIdx + 1 < stscEntries.length && chunkNum >= stscEntries[stscIdx + 1].firstChunk) {
+                    stscIdx++;
+                }
+                const samplesInChunk = stscEntries[stscIdx].samplesPerChunk;
+                let curByte = chunkOffsets[chunkIdx];
+                for (let s = 0; s < samplesInChunk && sampleIdx < numSamples; s++) {
+                    sampleOffsets[sampleIdx] = curByte;
+                    curByte += sampleSizes[sampleIdx];
+                    sampleIdx++;
+                }
+            }
+            const totalValidSamples = sampleIdx;
+
+            // Lê durações (stts) e agrupa em janelas de 5 minutos (300s)
+            const sttsCount = view.getUint32(stts.contentStart + 4);
+            let pStts = stts.contentStart + 8;
+            const ticksPorFatia = chunkDurationSecs * timescale;
+
+            const fatias = [];
+            let sliceStartSample = 0;
+            let ticksAcumuladosNaFatia = 0;
+            let ticksTotais = 0;
+            let curSample = 0;
+
+            for (let i = 0; i < sttsCount && curSample < totalValidSamples; i++, pStts += 8) {
+                const sCount = view.getUint32(pStts);
+                const sDelta = view.getUint32(pStts + 4);
+                for (let j = 0; j < sCount && curSample < totalValidSamples; j++) {
+                    ticksAcumuladosNaFatia += sDelta;
+                    ticksTotais += sDelta;
+                    curSample++;
+                    if (ticksAcumuladosNaFatia >= ticksPorFatia) {
+                        const durSec = ticksAcumuladosNaFatia / timescale;
+                        const startSec = (ticksTotais - ticksAcumuladosNaFatia) / timescale;
+                        fatias.push({ startSample: sliceStartSample, endSample: curSample, startSec, durationSec: durSec });
+                        sliceStartSample = curSample;
+                        ticksAcumuladosNaFatia = 0;
+                    }
+                }
+            }
+            if (sliceStartSample < totalValidSamples) {
+                const durSec = ticksAcumuladosNaFatia / timescale;
+                const startSec = (ticksTotais - ticksAcumuladosNaFatia) / timescale;
+                fatias.push({ startSample: sliceStartSample, endSample: totalValidSamples, startSec, durationSec: durSec });
+            }
+
+            // Função que monta apenas 1 fatia de 5 minutos em ADTS sob demanda
+            const extrairFatiaBuffer = async (fatia) => {
+                const { startSample, endSample } = fatia;
+                let totalAdtsBytes = 0;
+                let minByte = Infinity;
+                let maxByte = 0;
+
+                for (let s = startSample; s < endSample; s++) {
+                    const sz = sampleSizes[s];
+                    const off = sampleOffsets[s];
+                    totalAdtsBytes += 7 + sz;
+                    if (off < minByte) minByte = off;
+                    if (off + sz > maxByte) maxByte = off + sz;
+                }
+
+                const adtsOut = new Uint8Array(totalAdtsBytes);
+                let writePos = 0;
+                const { profile, freqIdx, chanCfg } = adtsCfg;
+
+                // Se a janela no disco tiver até 35 MB, faz apenas 1 leitura contínua do disco
+                if (maxByte - minByte <= 35 * 1024 * 1024) {
+                    const rawSlice = new Uint8Array(await file.slice(minByte, maxByte).arrayBuffer());
+                    for (let s = startSample; s < endSample; s++) {
+                        const sz = sampleSizes[s];
+                        const frameLen = sz + 7;
+                        const relOff = sampleOffsets[s] - minByte;
+
+                        adtsOut[writePos]     = 0xFF;
+                        adtsOut[writePos + 1] = 0xF1;
+                        adtsOut[writePos + 2] = ((profile & 0x03) << 6) | ((freqIdx & 0x0F) << 2) | ((chanCfg >> 2) & 0x01);
+                        adtsOut[writePos + 3] = ((chanCfg & 0x03) << 6) | ((frameLen >> 11) & 0x03);
+                        adtsOut[writePos + 4] = (frameLen >> 3) & 0xFF;
+                        adtsOut[writePos + 5] = ((frameLen & 0x07) << 5) | 0x1F;
+                        adtsOut[writePos + 6] = 0xFC;
+
+                        adtsOut.set(rawSlice.subarray(relOff, relOff + sz), writePos + 7);
+                        writePos += frameLen;
+                    }
+                } else {
+                    for (let s = startSample; s < endSample; s++) {
+                        const sz = sampleSizes[s];
+                        const frameLen = sz + 7;
+                        const rawFrame = new Uint8Array(await file.slice(sampleOffsets[s], sampleOffsets[s] + sz).arrayBuffer());
+
+                        adtsOut[writePos]     = 0xFF;
+                        adtsOut[writePos + 1] = 0xF1;
+                        adtsOut[writePos + 2] = ((profile & 0x03) << 6) | ((freqIdx & 0x0F) << 2) | ((chanCfg >> 2) & 0x01);
+                        adtsOut[writePos + 3] = ((chanCfg & 0x03) << 6) | ((frameLen >> 11) & 0x03);
+                        adtsOut[writePos + 4] = (frameLen >> 3) & 0xFF;
+                        adtsOut[writePos + 5] = ((frameLen & 0x07) << 5) | 0x1F;
+                        adtsOut[writePos + 6] = 0xFC;
+
+                        adtsOut.set(rawFrame, writePos + 7);
+                        writePos += frameLen;
+                    }
+                }
+                return adtsOut.buffer;
+            };
+
+            return {
+                duracaoTotal: durationTicks / timescale,
+                fatias,
+                extrairFatiaBuffer
+            };
+        }
+        throw new Error("Nenhuma trilha de áudio AAC compatível encontrada no M4A.");
+    }
+
+    async function prepararFatiasWAV(file, chunkDurationSecs) {
+        const hdrBuf = await file.slice(0, Math.min(4096, file.size)).arrayBuffer();
+        const view = new DataView(hdrBuf);
+        let pos = 12;
+        let channels = 1, sampleRate = 16000, bitsPerSample = 16, blockAlign = 2;
+        let dataOffset = 44, dataSize = file.size - 44;
+
+        while (pos + 8 <= hdrBuf.byteLength) {
+            const id = String.fromCharCode(view.getUint8(pos), view.getUint8(pos+1), view.getUint8(pos+2), view.getUint8(pos+3));
+            const sz = view.getUint32(pos + 4, true);
+            if (id === 'fmt ') {
+                channels = view.getUint16(pos + 10, true);
+                sampleRate = view.getUint32(pos + 12, true);
+                blockAlign = view.getUint16(pos + 20, true);
+                bitsPerSample = view.getUint16(pos + 22, true);
+            } else if (id === 'data') {
+                dataOffset = pos + 8;
+                dataSize = sz || (file.size - dataOffset);
+                break;
+            }
+            pos += 8 + sz;
+        }
+
+        const bytesPorSegundo = sampleRate * blockAlign;
+        const bytesPorFatia = Math.floor(chunkDurationSecs * bytesPorSegundo / blockAlign) * blockAlign;
+        const fatias = [];
+        let curOffset = dataOffset;
+        const endOffset = Math.min(file.size, dataOffset + dataSize);
+        let startSec = 0;
+
+        while (curOffset < endOffset) {
+            const nextOffset = Math.min(endOffset, curOffset + bytesPorFatia);
+            const durSec = (nextOffset - curOffset) / bytesPorSegundo;
+            fatias.push({ startByte: curOffset, endByte: nextOffset, startSec, durationSec: durSec });
+            startSec += durSec;
+            curOffset = nextOffset;
+        }
+
+        const extrairFatiaBuffer = async (fatia) => {
+            const pcmSlice = new Uint8Array(await file.slice(fatia.startByte, fatia.endByte).arrayBuffer());
+            const wavBuf = new ArrayBuffer(44 + pcmSlice.byteLength);
+            const v = new DataView(wavBuf);
+            const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) v.setUint8(off + i, s.charCodeAt(i)); };
+            writeStr(0, 'RIFF');
+            v.setUint32(4, 36 + pcmSlice.byteLength, true);
+            writeStr(8, 'WAVE');
+            writeStr(12, 'fmt ');
+            v.setUint32(16, 16, true);
+            v.setUint16(20, 1, true);
+            v.setUint16(22, channels, true);
+            v.setUint32(24, sampleRate, true);
+            v.setUint32(28, sampleRate * blockAlign, true);
+            v.setUint16(32, blockAlign, true);
+            v.setUint16(34, bitsPerSample, true);
+            writeStr(36, 'data');
+            v.setUint32(40, pcmSlice.byteLength, true);
+            new Uint8Array(wavBuf, 44).set(pcmSlice);
+            return wavBuf;
+        };
+
+        return { duracaoTotal: startSec, fatias, extrairFatiaBuffer };
+    }
+
+    async function prepararFatiasMP3(file, chunkDurationSecs) {
+        // Pula tag ID3v2 inicial se existir
+        let audioStart = 0;
+        const id3Buf = new Uint8Array(await file.slice(0, 10).arrayBuffer());
+        if (id3Buf[0] === 0x49 && id3Buf[1] === 0x44 && id3Buf[2] === 0x33) {
+            const id3Size = ((id3Buf[6] & 0x7F) << 21) | ((id3Buf[7] & 0x7F) << 14) | ((id3Buf[8] & 0x7F) << 7) | (id3Buf[9] & 0x7F);
+            audioStart = 10 + id3Size;
+        }
+
+        // Descobre a duração total rapidamente via elemento de áudio sem decodificar PCM na RAM
+        const duracaoEstimada = await new Promise((resolve) => {
+            const tempAudio = document.createElement('audio');
+            tempAudio.preload = 'metadata';
+            const objUrl = URL.createObjectURL(file);
+            const limpar = (val) => { URL.revokeObjectURL(objUrl); resolve(val); };
+            tempAudio.onloadedmetadata = () => limpar(Number.isFinite(tempAudio.duration) && tempAudio.duration > 0 ? tempAudio.duration : 0);
+            tempAudio.onerror = () => limpar(0);
+            setTimeout(() => limpar(0), 4000);
+            tempAudio.src = objUrl;
+        });
+
+        const totalBytesAudio = file.size - audioStart;
+        const bytesPorSegundo = duracaoEstimada > 0 ? (totalBytesAudio / duracaoEstimada) : 16000; // ~128kbps fallback
+        const bytesPorFatia = Math.max(512 * 1024, Math.floor(bytesPorSegundo * chunkDurationSecs));
+
+        const fatias = [];
+        let curOffset = audioStart;
+        let startSec = 0;
+        while (curOffset < file.size) {
+            let nextOffset = Math.min(file.size, curOffset + bytesPorFatia);
+            if (nextOffset < file.size) {
+                // Alinha exatamente no início de um frame MP3 (syncword 0xFF 0xE0)
+                const probe = new Uint8Array(await file.slice(nextOffset, Math.min(file.size, nextOffset + 4096)).arrayBuffer());
+                for (let i = 0; i + 1 < probe.length; i++) {
+                    if (probe[i] === 0xFF && (probe[i + 1] & 0xE0) === 0xE0) {
+                        nextOffset += i;
+                        break;
+                    }
+                }
+            }
+            const durSec = (nextOffset - curOffset) / bytesPorSegundo;
+            fatias.push({ startByte: curOffset, endByte: nextOffset, startSec: null, durationSec: durSec });
+            startSec += durSec;
+            curOffset = nextOffset;
+        }
+
+        const extrairFatiaBuffer = async (fatia) => {
+            return await file.slice(fatia.startByte, fatia.endByte).arrayBuffer();
+        };
+
+        return { duracaoTotal: duracaoEstimada || startSec, fatias, extrairFatiaBuffer };
+    }
+
     async function audioProcessarArquivoCompleto(file) {
         document.getElementById('audioDropArea').style.display = 'none';
         document.getElementById('audioProcessArea').style.display = 'block';
@@ -2798,93 +3239,123 @@
         nomeArquivoAtual = (file.name || 'aula').replace(/\.\w+$/, '');
 
         try {
-            audioAtualizarStatus("Lendo áudio nativamente...", 5);
-            
-            // Decodificação Nativa do Navegador (Ignora problemas de formato)
-            const arrayBuffer = await file.arrayBuffer();
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-            
+            audioAtualizarStatus("Mapeando índice binário do áudio no disco...", 5);
             document.getElementById('audioFileInfo').style.display = 'block';
             document.getElementById('audioFileName').textContent = file.name;
-            document.getElementById('audioFileDuration').textContent = audioFormatarDuracao(audioBuffer.duration);
             document.getElementById('audioFileSize').textContent = audioFormatarTamanho(file.size);
 
-            audioAtualizarStatus("Fatiando, otimizando e removendo silêncios...", 10);
-            
             const targetSampleRate = 16000;
             const chunkDurationSecs = 300; // 5 minutos por lote
-            const totalChunks = Math.ceil(audioBuffer.duration / chunkDurationSecs);
-            const chunksValidos = [];
+            const ext = (file.name.split('.').pop() || '').toLowerCase();
 
+            let planoDisco = null;
+            if (ext === 'm4a' || ext === 'mp4' || ext === 'aac') {
+                planoDisco = await prepararFatiasM4A(file, chunkDurationSecs);
+            } else if (ext === 'wav') {
+                planoDisco = await prepararFatiasWAV(file, chunkDurationSecs);
+            } else if (ext === 'mp3') {
+                planoDisco = await prepararFatiasMP3(file, chunkDurationSecs);
+            } else {
+                // Fallback para formatos diversos (.ogg, .webm, .flac)
+                planoDisco = await prepararFatiasMP3(file, chunkDurationSecs);
+            }
+
+            document.getElementById('audioFileDuration').textContent = audioFormatarDuracao(planoDisco.duracaoTotal);
+
+            const totalChunks = planoDisco.fatias.length;
+            const CONCORRENCIA = 2;
+            const resultados = [];
+            let loteAtual = [];
+            let tempoAcumuladoReal = 0;
+
+            const dispararLoteGroq = async (loteParaEnviar) => {
+                const promessas = loteParaEnviar.map(async (item) => {
+                    const res = await audioEnviarComRetry(item.file);
+                    // Libera a referência do arquivo WAV imediatamente após o envio
+                    item.file = null;
+                    return { index: item.index, startSec: item.startSec, text: res.text, vtt: res.vtt };
+                });
+                const resultadosLote = await Promise.all(promessas);
+                resultados.push(...resultadosLote);
+                if (totalChunks > 2) {
+                    await new Promise(r => setTimeout(r, 500));
+                }
+            };
+
+            // Processa fatia por fatia do disco, mantendo no máximo 2 blocos na RAM por vez
             for (let i = 0; i < totalChunks; i++) {
-                const startSec = i * chunkDurationSecs;
-                const endSec = Math.min((i + 1) * chunkDurationSecs, audioBuffer.duration);
-                const durationSec = endSec - startSec;
+                const progresso = 10 + ((i / totalChunks) * 85);
+                audioAtualizarStatus(`Processando e transcrevendo parte ${i + 1} de ${totalChunks}...`, progresso);
 
-                // 1. CONVERSOR MINÚSCULO (Poupa a RAM do tablet)
-                const offlineCtx = new OfflineAudioContext(1, durationSec * targetSampleRate, targetSampleRate);
+                const fatia = planoDisco.fatias[i];
+                const rawChunkBuffer = await planoDisco.extrairFatiaBuffer(fatia);
+
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                let audioBuffer;
+                try {
+                    audioBuffer = await audioCtx.decodeAudioData(rawChunkBuffer);
+                } finally {
+                    await audioCtx.close().catch(() => {});
+                }
+
+                const startSecDestaFatia = (fatia.startSec !== null && fatia.startSec !== undefined)
+                    ? fatia.startSec
+                    : tempoAcumuladoReal;
+                tempoAcumuladoReal += audioBuffer.duration;
+
+                // 1. CONVERSOR MINÚSCULO DE 5 MINUTOS (Poupa a RAM do tablet)
+                const offlineCtx = new OfflineAudioContext(1, Math.ceil(audioBuffer.duration * targetSampleRate), targetSampleRate);
                 const source = offlineCtx.createBufferSource();
                 source.buffer = audioBuffer;
                 source.connect(offlineCtx.destination);
-                source.start(0, startSec, durationSec);
-                
+                source.start(0);
+
                 const resampledChunk = await offlineCtx.startRendering();
+                audioBuffer = null; // Libera o buffer estéreo original imediatamente
                 const chunkData = resampledChunk.getChannelData(0);
-                
-                // 2. FILTRO DE SILÊNCIO ORIGINAL MANTIDO (Cálculo RMS)
+
+                // 2. FILTRO DE SILÊNCIO ORIGINAL MANTIDO (Cálculo RMS >= 0.015)
                 let sumOfSquares = 0;
                 for (let j = 0; j < chunkData.length; j++) {
                     sumOfSquares += chunkData[j] * chunkData[j];
                 }
                 const rms = Math.sqrt(sumOfSquares / chunkData.length);
-                
-                // Threshold mais rigoroso (1.5%) para evitar que a IA alucine com ruídos do microfone
+
                 if (rms >= 0.015) {
                     const wavBlob = audioBufferToWavBlob(chunkData, targetSampleRate);
                     const chunkFile = new File([wavBlob], `chunk_${i}.wav`, { type: 'audio/wav' });
-                    chunksValidos.push({ index: i, file: chunkFile });
+                    loteAtual.push({ index: i, startSec: startSecDestaFatia, file: chunkFile });
                 }
+
+                // Quando juntar 2 fatias válidas, envia para a Groq e esvazia a RAM antes de continuar!
+                if (loteAtual.length >= CONCORRENCIA) {
+                    audioAtualizarStatus(`Transcrevendo lote na IA da Groq (${i + 1}/${totalChunks})...`, progresso);
+                    await dispararLoteGroq(loteAtual);
+                    loteAtual = [];
+                }
+
+                // Pausa de 25ms para o Garbage Collector do Chrome/Firefox limpar a RAM do tablet
+                await new Promise(r => setTimeout(r, 25));
             }
 
-            let textoCompleto = "";
-            let vttCompleto = "WEBVTT\n\n";
-            const resultados = [];
-            
-            // Plano gratuito Cloudflare Workers AI: 50 RPM.
-            // Com chunks de 30s (vs 10s antes), a taxa natural é 3x menor.
-            // 3 concorrentes + pausa de 1000ms → ~3 req/1s = 180 RPM teórico,
-            // mas latência real de rede (~1-2s/request) mantém em ~30-40 RPM efetivo.
-            const CONCORRENCIA = 2; // Enviando de 2 em 2 blocos pesados
-
-            for (let i = 0; i < chunksValidos.length; i += CONCORRENCIA) {
-                const lote = chunksValidos.slice(i, i + CONCORRENCIA);
-                const progresso = 15 + ((i / chunksValidos.length) * 80);
-                audioAtualizarStatus(`Transcrevendo áudio (${i + lote.length}/${chunksValidos.length}). IA da Groq trabalhando...`, progresso);
-
-                const promessas = lote.map(async (item) => {
-                    const res = await audioEnviarComRetry(item.file);
-                    return { index: item.index, text: res.text, vtt: res.vtt };
-                });
-
-                const resultadosLote = await Promise.all(promessas);
-                resultados.push(...resultadosLote);
-
-                // Pausa minúscula apenas por segurança, Groq é absurdamente rápido
-                if (chunksValidos.length > 2) {
-                    await new Promise(r => setTimeout(r, 500));
-                }
+            // Envia qualquer fatia restante do último lote
+            if (loteAtual.length > 0) {
+                audioAtualizarStatus(`Finalizando último lote na IA da Groq...`, 95);
+                await dispararLoteGroq(loteAtual);
+                loteAtual = [];
             }
-
 
             // 3. Montar transcrição na ordem cronológica correta
             audioAtualizarStatus("Montando texto final...", 98);
-            resultados.sort((a, b) => a.index - b.index); // Ordena pelo index original
+            resultados.sort((a, b) => a.index - b.index);
+
+            let textoCompleto = "";
+            let vttCompleto = "WEBVTT\n\n";
 
             for (const res of resultados) {
                 if (res.text) textoCompleto += res.text + " ";
                 if (res.vtt) {
-                    const offsetSec = res.index * chunkDurationSecs;
+                    const offsetSec = res.startSec !== undefined ? res.startSec : (res.index * chunkDurationSecs);
                     vttCompleto += adjustVttOffsets(res.vtt, offsetSec) + "\n\n";
                 }
             }
@@ -2892,7 +3363,7 @@
             vttFinalGerado = vttCompleto.trim() + "\n";
             textoFinalGerado = textoCompleto.trim();
 
-            // 🛡️ NOVA BLINDAGEM: Verifica se a Groq realmente devolveu palavras
+            // 🛡️ BLINDAGEM MANTIDA: Verifica se a Groq realmente devolveu palavras
             if (textoFinalGerado.length < 50) {
                 throw new Error("A API de transcrição falhou no meio do processo. Por favor, tente novamente.");
             }
@@ -2903,7 +3374,6 @@
             document.getElementById('audioProcessArea').style.display = 'none';
             document.getElementById('audioResultArea').style.display = 'block';
 
-            // Só dispara o download se realmente tiver texto
             if (vttFinalGerado.length > 50) {
                 audioDispararDownloadVtt();
             }
