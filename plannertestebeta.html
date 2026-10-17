@@ -8045,7 +8045,7 @@
     };
 
     // ============================================================
-    // 💬 CHATBOT GEMMA 4 (COM LEITURA DE CONTEXTO PROFUNDO)
+    // 💬 CHATBOT GEMMA 4 (COM LEITURA DE CONTEXTO ULTRA RÁPIDA)
     // ============================================================
     let gemmaChatHistorico = [];
     let gemmaEnviando = false;
@@ -8089,6 +8089,7 @@
         }
     };
 
+    // Leitura instantânea (usando textContent em vez de innerText para não travar o navegador)
     function obterContextoAtivo() {
         let contexto = "";
         let titulo = document.getElementById("viewTitle")?.textContent.trim() || "";
@@ -8107,19 +8108,18 @@
 
         // 2. Tenta ler o conteúdo aberto no Modal de Visualização Normal (Resumo de texto)
         const quillEditor = document.querySelector("#viewContainer .ql-editor");
-        if (quillEditor && quillEditor.innerText && quillEditor.innerText.trim().length > 10) {
-            let textoTela = quillEditor.innerText.trim();
-            // Limita para 1500 caracteres para evitar lentidão extrema da IA
-            if (textoTela.length > 1500) textoTela = textoTela.substring(0, 1500) + "..."; 
+        if (quillEditor && quillEditor.textContent && quillEditor.textContent.trim().length > 10) {
+            let textoTela = quillEditor.textContent.trim().replace(/\s+/g, ' ');
+            if (textoTela.length > 2000) textoTela = textoTela.substring(0, 2000) + "..."; 
             contexto += `Conteúdo visível na tela no momento:\n"""\n${textoTela}\n"""\n`;
             return contexto;
         }
 
-        // 3. Leitura de PDF ativo na tela (Pega a camada de texto do visualizador de PDF)
+        // 3. Leitura de PDF ativo na tela
         const textLayer = document.getElementById("text-layer");
-        if (textLayer && textLayer.innerText && textLayer.innerText.trim().length > 10) {
-            let textoPdf = textLayer.innerText.trim();
-            if (textoPdf.length > 1500) textoPdf = textoPdf.substring(0, 1500) + "...";
+        if (textLayer && textLayer.textContent && textLayer.textContent.trim().length > 10) {
+            let textoPdf = textLayer.textContent.trim().replace(/\s+/g, ' ');
+            if (textoPdf.length > 2000) textoPdf = textoPdf.substring(0, 2000) + "...";
             contexto += `Texto visível na página atual do PDF:\n"""\n${textoPdf}\n"""\n`;
             return contexto;
         }
@@ -8167,7 +8167,6 @@
             const dadosContexto = obterContextoAtivo();
             let mensagensPayload = [...gemmaChatHistorico, { role: "user", content: texto }];
 
-            // Injeta instrução de sistema rigorosa combinada com o que o aluno está vendo de forma curta
             const sysPrompt = `Você é um preceptor acadêmico sênior focado em medicina. Seja direto, cirúrgico e técnico. Aqui está o contexto do que o aluno está vendo na tela agora para te ajudar a responder dúvidas (ignore se a pergunta não for sobre isso):\n\n${dadosContexto}`;
             mensagensPayload.unshift({ role: "system", content: sysPrompt });
 
@@ -8222,13 +8221,14 @@
     }
 
     // =================================================================
-    // 🎙️ MODO FEYNMAN NATIVE AUDIO (GRAVADOR CORRIGIDO - WEBSOCKET)
+    // 🎙️ MODO FEYNMAN NATIVE AUDIO (GRAVADOR ESTÁVEL + SETUP SYNC)
     // =================================================================
     let feynmanAudioCtx = null;
     let feynmanMediaStream = null;
     let feynmanScriptNode = null;
     let feynmanWS = null;
     let feynmanIsRecording = false;
+    let feynmanIsSetupComplete = false; // <-- CONTROLE RÍGIDO ADICIONADO AQUI
     let feynmanPlaybackAudioCtx = null;
 
     function floatTo16BitPCM(input) {
@@ -8264,8 +8264,9 @@
         try {
             btnIniciar.disabled = true;
             statusText.textContent = "Solicitando microfone...";
+            feynmanIsSetupComplete = false;
 
-            // 1. Pega permissão PRIMEIRO (evita timeout do Google)
+            // 1. Pega permissão PRIMEIRO
             feynmanMediaStream = await navigator.mediaDevices.getUserMedia({
                 audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true }
             });
@@ -8277,7 +8278,7 @@
             feynmanWS = new WebSocket(wsUrl);
 
             feynmanWS.onopen = () => {
-                // FORMATO CAMELCASE OBRIGATÓRIO (Se for snake_case o Google derruba a conexão)
+                // Envia Setup, mas NÃO COMEÇA A GRAVAR AINDA.
                 const setupMessage = {
                     setup: {
                         model: "models/gemini-2.5-flash",
@@ -8296,18 +8297,18 @@
                 };
                 feynmanWS.send(JSON.stringify(setupMessage));
 
-                // 2. Monta o Pipeline de Áudio
+                // 2. Monta o Pipeline de Áudio (Mas o evento onaudioprocess ficará "travado")
                 feynmanAudioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
                 const source = feynmanAudioCtx.createMediaStreamSource(feynmanMediaStream);
                 feynmanScriptNode = feynmanAudioCtx.createScriptProcessor(4096, 1, 1);
 
                 feynmanScriptNode.onaudioprocess = (e) => {
-                    if (!feynmanIsRecording || !feynmanWS || feynmanWS.readyState !== WebSocket.OPEN) return;
+                    // SE O GOOGLE AINDA NÃO DISSE "OK", NÃO ENVIAMOS O ÁUDIO!
+                    if (!feynmanIsRecording || !feynmanIsSetupComplete || !feynmanWS || feynmanWS.readyState !== WebSocket.OPEN) return;
                     
                     const pcm16 = floatTo16BitPCM(e.inputBuffer.getChannelData(0));
                     const base64Data = arrayBufferToBase64(pcm16.buffer);
 
-                    // Formato camelCase obrigatório
                     feynmanWS.send(JSON.stringify({
                         realtimeInput: {
                             mediaChunks: [{
@@ -8321,7 +8322,6 @@
                 source.connect(feynmanScriptNode);
                 feynmanScriptNode.connect(feynmanAudioCtx.destination);
 
-                // Força UI Visual
                 feynmanIsRecording = true;
                 btnIniciar.style.display = "none";
                 if (btnEncerrar) {
@@ -8329,8 +8329,8 @@
                     btnEncerrar.disabled = false;
                 }
                 if (pulseDot) pulseDot.style.display = "inline-block";
-                statusText.textContent = "🎙️ Ouvindo sua explicação em tempo real (Feynman)...";
-
+                statusText.textContent = "Aguardando sinal do Google...";
+                
                 document.getElementById("areaFeedbackCorretor").style.display = "none";
                 document.getElementById("conteudoFeedback").innerHTML = "";
             };
@@ -8338,6 +8338,13 @@
             feynmanWS.onmessage = async (event) => {
                 let msg;
                 try { msg = JSON.parse(event.data); } catch(_) { return; }
+
+                // A MÁGICA: O Google confirmou que recebeu o setup, agora sim podemos liberar o microfone!
+                if (msg.setupComplete) {
+                    feynmanIsSetupComplete = true;
+                    statusText.textContent = "🎙️ Pode falar! O preceptor está escutando sua explicação...";
+                    return;
+                }
 
                 if (msg.serverContent && msg.serverContent.modelTurn) {
                     const parts = msg.serverContent.modelTurn.parts || [];
@@ -8398,12 +8405,9 @@
         // Envia o sinal que a explicação acabou
         if (!fromErrorOrClose && feynmanWS && feynmanWS.readyState === WebSocket.OPEN) {
             if (statusText) statusText.textContent = "Processando explicação... Gerando áudio de correção.";
-            // Estrutura exata do "turnComplete" do Gemini Live API
+            // Estrutura simplificada turnComplete
             feynmanWS.send(JSON.stringify({ 
-                clientContent: { 
-                    turns: [{ role: "user", parts: [] }],
-                    turnComplete: true 
-                } 
+                clientContent: { turnComplete: true } 
             }));
         } else {
             if (statusText) statusText.textContent = "Sessão finalizada.";
@@ -8454,4 +8458,4 @@
     </script>
     <script type="module" src="padrao_simulado.js"></script>
 </body>
-</html>    
+</html>
