@@ -8044,10 +8044,8 @@
         }
     };
 
-
-
     // ============================================================
-    // 💬 TAREFA 1: CHATBOT GEMMA 4 (ESTILO FREEMIUM / VITRINE)
+    // 💬 CHATBOT GEMMA 4 (COM LEITURA DE CONTEXTO PROFUNDO)
     // ============================================================
     let gemmaChatHistorico = [];
     let gemmaEnviando = false;
@@ -8062,7 +8060,6 @@
         const btnSend = document.getElementById("btnSendGemmaChat");
         const bannerEl = document.getElementById("gemmaFreemiumBanner");
 
-        // Visibilidade Universal: aparece para TODOS os usuários logados
         if (btnFloat) btnFloat.style.display = "flex";
 
         const vip = usuarioEhVip();
@@ -8092,18 +8089,46 @@
         }
     };
 
-    function obterTituloEstudoAberto() {
-        const viewTitleEl = document.getElementById("viewTitle");
-        const titulo = viewTitleEl ? viewTitleEl.textContent.trim() : "";
-        return titulo || "";
+    function obterContextoAtivo() {
+        let contexto = "";
+        let titulo = document.getElementById("viewTitle")?.textContent.trim() || "";
+        if (titulo) contexto += `O usuário está na aba/estudo: "${titulo}".\n`;
+
+        // 1. Tenta ler o texto de um Card de Anatomia aberto (Caso Clínico + Pergunta)
+        const anatContainer = document.getElementById("quizAnatomiaContainer");
+        if (anatContainer && !anatContainer.classList.contains("hidden")) {
+            const caso = document.getElementById("anatCase")?.textContent || "";
+            const pergunta = document.getElementById("anatQuestion")?.textContent || "";
+            if (caso || pergunta) {
+                contexto += `O usuário está resolvendo uma questão de Anatomia:\nCaso Clínico: ${caso}\nPergunta: ${pergunta}\n`;
+                return contexto; // Retorna rápido se for anatomia
+            }
+        }
+
+        // 2. Tenta ler o conteúdo aberto no Modal de Visualização Normal (Resumo de texto ou simulados)
+        const viewContainer = document.getElementById("viewContainer");
+        if (viewContainer && viewContainer.innerText && viewContainer.innerText.trim().length > 10) {
+            let textoTela = viewContainer.innerText.trim();
+            if (textoTela.length > 3000) textoTela = textoTela.substring(0, 3000) + "..."; // Limita para não estourar tokens
+            contexto += `Conteúdo visível na tela no momento:\n"""\n${textoTela}\n"""\n`;
+            return contexto;
+        }
+
+        // 3. Verifica se tem texto de Memória (PDF sendo lido)
+        if (typeof currentStudyText === 'string' && currentStudyText.length > 50) {
+            let trechoMem = currentStudyText.substring(0, 4000);
+            contexto += `Conteúdo do PDF em memória:\n"""\n${trechoMem}\n"""\n`;
+        }
+
+        return contexto;
     }
 
     function atualizarBadgeContextoGemma() {
         const badge = document.getElementById("gemmaContextBadge");
         if (!badge) return;
-        const titulo = obterTituloEstudoAberto();
+        const titulo = document.getElementById("viewTitle")?.textContent.trim();
         if (titulo) {
-            badge.textContent = `📖 ${titulo}`;
+            badge.textContent = `📖 ${titulo.substring(0, 25)}`;
             badge.style.display = "inline-block";
         } else {
             badge.style.display = "none";
@@ -8115,194 +8140,110 @@
             mostrarModalUpgrade();
             return;
         }
-        if (gemmaEnviando) return;
 
         const inputEl = document.getElementById("gemmaChatInput");
-        const msgContainer = document.getElementById("gemmaChatMessages");
-        const btnSend = document.getElementById("btnSendGemmaChat");
-        if (!inputEl || !msgContainer) return;
+        if (!inputEl) return;
+        const texto = inputEl.value.trim();
+        if (!texto || gemmaEnviando) return;
 
-        const textoUsuario = inputEl.value.trim();
-        if (!textoUsuario) return;
-
-        inputEl.value = "";
         gemmaEnviando = true;
-        if (btnSend) btnSend.disabled = true;
+        inputEl.value = "";
+        adicionarBalaoGemma("user", texto);
 
-        // 1. Adiciona balão do usuário
-        const userBubble = document.createElement("div");
-        userBubble.className = "gemma-msg user";
-        userBubble.textContent = textoUsuario;
-        msgContainer.appendChild(userBubble);
-
-        // 2. Adiciona balão temporário do modelo
-        const modelBubble = document.createElement("div");
-        modelBubble.className = "gemma-msg model";
-        modelBubble.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Pensando...';
-        msgContainer.appendChild(modelBubble);
-        msgContainer.scrollTop = msgContainer.scrollHeight;
-
-        gemmaChatHistorico.push({ role: "user", content: textoUsuario });
+        const chatMsgContainer = document.getElementById("gemmaChatMessages");
+        const loadingId = "gemma-loading-" + Date.now();
+        const loadingDiv = document.createElement("div");
+        loadingDiv.id = loadingId;
+        loadingDiv.className = "gemma-msg model";
+        loadingDiv.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Preceptor pensando...`;
+        chatMsgContainer.appendChild(loadingDiv);
+        chatMsgContainer.scrollTop = chatMsgContainer.scrollHeight;
 
         try {
+            const dadosContexto = obterContextoAtivo();
+            let mensagensPayload = [...gemmaChatHistorico, { role: "user", content: texto }];
+
+            // Injeta instrução de sistema rigorosa combinada com o que o aluno está vendo
+            const sysPrompt = `Você é um preceptor acadêmico sênior focado em provas de residência (USP) e Método Feynman. Baseie suas respostas em literatura rigorosa (UpToDate, Harrison, etc.). Seja técnico, direto e incisivo. Não repita informações desnecessárias. Aqui está o contexto do que o aluno está vendo na tela agora para te ajudar a responder dúvidas (ignore isso se a pergunta do aluno não tiver a ver):\n\n${dadosContexto}`;
+            mensagensPayload.unshift({ role: "system", content: sysPrompt });
+
             const token = await getFirebaseToken();
-            const payloadMessages = [];
-
-            // Contexto Inteligente: se #viewTitle estiver preenchido, injeta role: "system" no início
-            const tituloEstudo = obterTituloEstudoAberto();
-            if (tituloEstudo) {
-                payloadMessages.push({
-                    role: "system",
-                    content: `O usuário está atualmente com o estudo "${tituloEstudo}" aberto no visualizador. Use esse tópico como contexto principal para responder com precisão médica.`
-                });
-            }
-
-            payloadMessages.push(...gemmaChatHistorico);
-
-            const baseWorkerUrl = WORKER_URL.endsWith("/") ? WORKER_URL : WORKER_URL + "/";
-            const response = await fetch(baseWorkerUrl + "chat-gemma", {
+            const res = await fetch(WORKER_URL + "chat-gemma", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "x-firebase-token": token
                 },
-                body: JSON.stringify({ messages: payloadMessages })
+                body: JSON.stringify({ messages: mensagensPayload })
             });
 
-            if (response.status === 403) {
-                modelBubble.remove();
-                mostrarModalUpgrade();
-                return;
+            document.getElementById(loadingId)?.remove();
+
+            if (!res.ok) {
+                let errText = "Erro ao contatar o assistente.";
+                try { const errJson = await res.json(); errText = errJson.error || errText; } catch(_) {}
+                throw new Error(errText);
             }
 
-            if (!response.ok) {
-                let errTxt = `Erro ${response.status}`;
-                try {
-                    const errJson = await response.json();
-                    errTxt = errJson.error || errTxt;
-                } catch (_) {}
-                throw new Error(errTxt);
-            }
+            const data = await res.json();
+            const respostaIA = data.text || data.reply || "Sem resposta do modelo.";
 
-            const data = await response.json();
-            const respostaIA = data.text || data.reply || data.response || "Sem resposta do modelo.";
+            gemmaChatHistorico.push({ role: "user", content: texto });
+            gemmaChatHistorico.push({ role: "model", content: respostaIA });
 
-            gemmaChatHistorico.push({ role: "assistant", content: respostaIA });
-            modelBubble.innerHTML = marked.parse(normalizarLimitesDeTabela(respostaIA));
-            msgContainer.scrollTop = msgContainer.scrollHeight;
-        } catch (err) {
-            console.error("[Gemma Chat] Erro:", err);
-            modelBubble.innerHTML = `<span style="color:#d44c47;"><i class="fas fa-exclamation-circle"></i> Erro: ${err.message}</span>`;
+            adicionarBalaoGemma("model", respostaIA);
+
+        } catch (e) {
+            document.getElementById(loadingId)?.remove();
+            console.error("❌ [CHAT-GEMMA]", e);
+            adicionarBalaoGemma("model", `⚠️ Ocorreu um erro: ${e.message}`);
         } finally {
             gemmaEnviando = false;
-            if (btnSend && usuarioEhVip()) btnSend.disabled = false;
         }
     };
 
-    // ============================================================
-    // 🎙️ TAREFA 2: MODO FEYNMAN NATIVE AUDIO (WEBSOCKET + PCM 16kHz/24kHz)
-    // ============================================================
+    function adicionarBalaoGemma(role, texto) {
+        const container = document.getElementById("gemmaChatMessages");
+        if (!container) return;
+        const div = document.createElement("div");
+        div.className = `gemma-msg ${role}`;
+        
+        if (role === "model") {
+            div.innerHTML = marked.parse(texto);
+        } else {
+            div.textContent = texto;
+        }
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    // =================================================================
+    // 🎙️ MODO FEYNMAN NATIVE AUDIO (GRAVADOR ESTÁVEL)
+    // =================================================================
+    let feynmanAudioCtx = null;
+    let feynmanMediaStream = null;
+    let feynmanScriptNode = null;
     let feynmanWS = null;
-    let feynmanMicStream = null;
-    let feynmanCaptureCtx = null;
-    let feynmanScriptProcessor = null;
-    let feynmanPlaybackCtx = null;
-    let feynmanNextPlayTime = 0;
-    let feynmanTextoAcumulado = "";
-    let feynmanGravando = false;
+    let feynmanIsRecording = false;
+    let feynmanPlaybackAudioCtx = null;
 
-    // Conversão matemática Float32 (-1.0 a +1.0) -> Int16 PCM Little-Endian (-32768 a +32767)
-    function converterFloat32ParaInt16PCM(float32Buffer) {
-        const int16Buffer = new Int16Array(float32Buffer.length);
-        for (let i = 0; i < float32Buffer.length; i++) {
-            const sample = Math.max(-1, Math.min(1, float32Buffer[i]));
-            int16Buffer[i] = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+    function floatTo16BitPCM(input) {
+        const output = new Int16Array(input.length);
+        for (let i = 0; i < input.length; i++) {
+            const s = Math.max(-1, Math.min(1, input[i]));
+            output[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
         }
-        return int16Buffer;
+        return output;
     }
 
-    // Conversão ArrayBuffer (Int16 PCM) -> Base64 em blocos seguros contra estouro de pilha
-    function pcmArrayBufferParaBase64(arrayBuffer) {
-        const bytes = new Uint8Array(arrayBuffer);
-        let binary = "";
-        const chunkSize = 0x8000;
-        for (let i = 0; i < bytes.byteLength; i += chunkSize) {
-            binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
-        }
-        return btoa(binary);
-    }
-
-    // Conversão Base64 -> ArrayBuffer (para o áudio PCM 24kHz recebido do Gemini)
-    function base64ParaArrayBuffer(base64) {
-        const binaryString = atob(base64);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
+    function arrayBufferToBase64(buffer) {
+        let binary = '';
+        const bytes = new Uint8Array(buffer);
+        const len = bytes.byteLength;
         for (let i = 0; i < len; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
+            binary += String.fromCharCode(bytes[i]);
         }
-        return bytes.buffer;
-    }
-
-    // Reprodução contínua (gapless queue) de chunks PCM 16-bit 24kHz enviados pelo Gemini
-    function reproduzirChunkAudioPCM24k(base64AudioData) {
-        try {
-            if (!feynmanPlaybackCtx || feynmanPlaybackCtx.state === "closed") {
-                feynmanPlaybackCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
-                feynmanNextPlayTime = 0;
-            }
-            if (feynmanPlaybackCtx.state === "suspended") {
-                feynmanPlaybackCtx.resume();
-            }
-
-            const rawBuffer = base64ParaArrayBuffer(base64AudioData);
-            const int16Samples = new Int16Array(rawBuffer);
-            if (int16Samples.length === 0) return;
-
-            const float32Samples = new Float32Array(int16Samples.length);
-            for (let i = 0; i < int16Samples.length; i++) {
-                float32Samples[i] = int16Samples[i] / 32768.0;
-            }
-
-            const audioBuffer = feynmanPlaybackCtx.createBuffer(1, float32Samples.length, 24000);
-            audioBuffer.getChannelData(0).set(float32Samples);
-
-            const source = feynmanPlaybackCtx.createBufferSource();
-            source.buffer = audioBuffer;
-            source.connect(feynmanPlaybackCtx.destination);
-
-            const agora = feynmanPlaybackCtx.currentTime;
-            if (feynmanNextPlayTime < agora) {
-                feynmanNextPlayTime = agora + 0.02;
-            }
-            source.start(feynmanNextPlayTime);
-            feynmanNextPlayTime += audioBuffer.duration;
-        } catch (err) {
-            console.error("[Feynman Audio] Erro ao reproduzir chunk PCM 24kHz:", err);
-        }
-    }
-
-    function pararCapturaMicrofoneFeynman() {
-        feynmanGravando = false;
-        if (feynmanScriptProcessor) {
-            try { feynmanScriptProcessor.disconnect(); } catch (_) {}
-            feynmanScriptProcessor.onaudioprocess = null;
-            feynmanScriptProcessor = null;
-        }
-        if (feynmanCaptureCtx) {
-            try { feynmanCaptureCtx.close(); } catch (_) {}
-            feynmanCaptureCtx = null;
-        }
-        if (feynmanMicStream) {
-            feynmanMicStream.getTracks().forEach((track) => track.stop());
-            feynmanMicStream = null;
-        }
-    }
-
-    function atualizarStatusFeynmanUI(texto, gravando = false) {
-        const statusTxt = document.getElementById("feynmanLiveStatusText");
-        const pulseDot = document.getElementById("feynmanPulseDot");
-        if (statusTxt) statusTxt.textContent = texto;
-        if (pulseDot) pulseDot.style.display = gravando ? "inline-block" : "none";
+        return window.btoa(binary);
     }
 
     window.iniciarFeynmanAudio = async () => {
@@ -8313,182 +8254,149 @@
 
         const btnIniciar = document.getElementById("btnIniciarFeynmanAudio");
         const btnEncerrar = document.getElementById("btnEncerrarFeynmanAudio");
-        const areaFeedback = document.getElementById("areaFeedbackCorretor");
-        const conteudoFeedback = document.getElementById("conteudoFeedback");
+        const pulseDot = document.getElementById("feynmanPulseDot");
+        const statusText = document.getElementById("feynmanLiveStatusText");
 
         try {
-            atualizarStatusFeynmanUI("Conectando ao Preceptor Feynman Live...", false);
-            if (btnIniciar) btnIniciar.disabled = true;
+            btnIniciar.disabled = true;
+            statusText.textContent = "Solicitando acesso ao microfone e conectando ao preceptor...";
+
+            // Solicita microfone PRIMEIRO para evitar timeout do WebSocket
+            feynmanMediaStream = await navigator.mediaDevices.getUserMedia({
+                audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true }
+            });
 
             const token = await getFirebaseToken();
-            const baseWs = WORKER_URL.replace("https://", "wss://").replace(/\/+$/, "");
-            const wsUrl = `${baseWs}/feynman-live?token=${encodeURIComponent(token)}`;
-
-            // Inicializa contexto de reprodução 24kHz no gesto do clique do usuário
-            if (!feynmanPlaybackCtx || feynmanPlaybackCtx.state === "closed") {
-                feynmanPlaybackCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
-            }
-            if (feynmanPlaybackCtx.state === "suspended") {
-                await feynmanPlaybackCtx.resume();
-            }
-            feynmanNextPlayTime = 0;
-            feynmanTextoAcumulado = "";
-
-            // Solicita microfone 16kHz
-            feynmanMicStream = await navigator.mediaDevices.getUserMedia({
-                audio: {
-                    channelCount: 1,
-                    sampleRate: 16000,
-                    echoCancellation: true,
-                    noiseSuppression: true
-                }
-            });
+            const wsUrl = WORKER_URL.replace(/^http/, "ws") + "feynman-live?token=" + token;
 
             feynmanWS = new WebSocket(wsUrl);
 
-            feynmanWS.onopen = async () => {
-                // 1. Envia imediatamente o Setup Inicial exigido pelo protocolo Gemini Live
-                const textoRef = document.getElementById("textoReferencia")?.value?.trim() || "";
-                const instrucaoBase = "Você é um preceptor avaliando o Método Feynman. O aluno falará por até 20 minutos. É TERMINANTEMENTE PROIBIDO intervir, emitir sons ou interromper enquanto o aluno fala. Apenas escute. Só dê o seu feedback em texto e áudio quando o aluno enviar o comando de término.";
-                const instrucaoCompleta = textoRef
-                    ? `${instrucaoBase}\n\nMATERIAL DE REFERÊNCIA DA AULA:\n${textoRef.substring(0, 15000)}`
-                    : instrucaoBase;
-
-                const setupPayload = {
+            feynmanWS.onopen = () => {
+                // Configuração inicial obrigatória para o Google AI
+                const setupMessage = {
                     setup: {
                         model: "models/gemini-2.5-flash",
                         system_instruction: {
-                            parts: [{ text: instrucaoCompleta }]
+                            parts: [{
+                                text: "Você é um preceptor acadêmico especialista no Método Feynman. REGRA ABSOLUTA: Ouça atentamente a explicação completa do aluno sem emitir NENHUM som, confirmação ou interrupção (barge-in desativado). Apenas processe. Só inicie a sua resposta falada e o feedback em texto quando o aluno enviar o comando de término."
+                            }]
                         },
                         generation_config: {
-                            response_modalities: ["AUDIO", "TEXT"]
+                            response_modalities: ["AUDIO", "TEXT"],
+                            speech_config: {
+                                voice_config: { prebuilt_voice_config: { voice_name: "Aoede" } } // Voz preceptor
+                            }
                         }
                     }
                 };
-                feynmanWS.send(JSON.stringify(setupPayload));
+                feynmanWS.send(JSON.stringify(setupMessage));
 
-                // 2. Inicia captura PCM 16kHz em tempo real
-                feynmanCaptureCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-                const sourceNode = feynmanCaptureCtx.createMediaStreamSource(feynmanMicStream);
-                feynmanScriptProcessor = feynmanCaptureCtx.createScriptProcessor(4096, 1, 1);
+                // Monta o Pipeline de Áudio 16kHz
+                feynmanAudioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+                const source = feynmanAudioCtx.createMediaStreamSource(feynmanMediaStream);
+                
+                // Usando ScriptProcessor para garantir compatibilidade máxima cross-browser
+                feynmanScriptNode = feynmanAudioCtx.createScriptProcessor(4096, 1, 1);
 
-                feynmanGravando = true;
-                feynmanScriptProcessor.onaudioprocess = (audioEvent) => {
-                    if (!feynmanGravando || !feynmanWS || feynmanWS.readyState !== WebSocket.OPEN) return;
-                    const float32Data = audioEvent.inputBuffer.getChannelData(0);
-                    const int16PCM = converterFloat32ParaInt16PCM(float32Data);
-                    const pcmBase64 = pcmArrayBufferParaBase64(int16PCM.buffer);
+                feynmanScriptNode.onaudioprocess = (e) => {
+                    if (!feynmanIsRecording || !feynmanWS || feynmanWS.readyState !== WebSocket.OPEN) return;
+                    const inputData = e.inputBuffer.getChannelData(0);
+                    const pcm16 = floatTo16BitPCM(inputData);
+                    const base64Data = arrayBufferToBase64(pcm16.buffer);
 
                     feynmanWS.send(JSON.stringify({
                         realtime_input: {
-                            media_chunks: [
-                                {
-                                    mime_type: "audio/pcm;rate=16000",
-                                    data: pcmBase64
-                                }
-                            ]
+                            media_chunks: [{
+                                mime_type: "audio/pcm;rate=16000",
+                                data: base64Data
+                            }]
                         }
                     }));
                 };
 
-                sourceNode.connect(feynmanScriptProcessor);
-                feynmanScriptProcessor.connect(feynmanCaptureCtx.destination);
+                source.connect(feynmanScriptNode);
+                feynmanScriptNode.connect(feynmanAudioCtx.destination);
 
-                if (btnIniciar) {
-                    btnIniciar.style.display = "none";
-                    btnIniciar.disabled = false;
-                }
+                // Força alteração visual DOM
+                feynmanIsRecording = true;
+                btnIniciar.style.display = "none";
                 if (btnEncerrar) {
                     btnEncerrar.style.display = "inline-flex";
+                    btnEncerrar.disabled = false;
                 }
-                atualizarStatusFeynmanUI("🎙️ Gravando explicação em tempo real (16kHz PCM)... Fale livremente!", true);
+                if (pulseDot) pulseDot.style.display = "inline-block";
+                statusText.textContent = "🎙️ Ouvindo sua explicação em tempo real (Feynman)...";
+
+                document.getElementById("areaFeedbackCorretor").style.display = "none";
+                document.getElementById("conteudoFeedback").innerHTML = "";
             };
 
             feynmanWS.onmessage = async (event) => {
-                try {
-                    let rawJson = "";
-                    if (typeof event.data === "string") {
-                        rawJson = event.data;
-                    } else if (event.data instanceof Blob) {
-                        rawJson = await event.data.text();
-                    } else if (event.data instanceof ArrayBuffer) {
-                        rawJson = new TextDecoder("utf-8").decode(event.data);
-                    }
-                    if (!rawJson) return;
+                let msg;
+                try { msg = JSON.parse(event.data); } catch(_) { return; }
 
-                    const msg = JSON.parse(rawJson);
-                    const parts = msg?.serverContent?.modelTurn?.parts;
-
-                    if (Array.isArray(parts)) {
-                        for (const part of parts) {
-                            if (part.text) {
-                                feynmanTextoAcumulado += part.text;
-                                if (areaFeedback) areaFeedback.style.display = "block";
-                                if (conteudoFeedback) {
-                                    conteudoFeedback.innerHTML = marked.parse(normalizarLimitesDeTabela(feynmanTextoAcumulado));
-                                }
-                                const editorBody = document.querySelector("#modalCorretor .editor-body");
-                                if (editorBody) editorBody.style.flex = "0 0 45%";
-                            }
-
-                            const inlineData = part.inlineData || part.inline_data;
-                            if (inlineData && inlineData.data) {
-                                reproduzirChunkAudioPCM24k(inlineData.data);
+                if (msg.serverContent && msg.serverContent.modelTurn) {
+                    const parts = msg.serverContent.modelTurn.parts || [];
+                    for (const part of parts) {
+                        // Feedback Escrito
+                        if (part.text) {
+                            const areaFb = document.getElementById("areaFeedbackCorretor");
+                            const contentFb = document.getElementById("conteudoFeedback");
+                            if (areaFb && contentFb) {
+                                areaFb.style.display = "block";
+                                contentFb.innerHTML += marked.parse(part.text);
+                                document.querySelector("#modalCorretor .editor-body").style.flex = "0 0 50%";
                             }
                         }
-                    }
-
-                    // Suporte adicional caso a transcrição do áudio do modelo venha em outputTranscription
-                    const outputTranscript = msg?.serverContent?.outputTranscription?.text;
-                    if (outputTranscript) {
-                        feynmanTextoAcumulado += outputTranscript;
-                        if (areaFeedback) areaFeedback.style.display = "block";
-                        if (conteudoFeedback) {
-                            conteudoFeedback.innerHTML = marked.parse(normalizarLimitesDeTabela(feynmanTextoAcumulado));
+                        // Feedback Falado em Tempo Real
+                        if (part.inlineData && part.inlineData.data) {
+                            reproduzirAudioFeynman(part.inlineData.data);
                         }
                     }
-
-                    if (msg?.serverContent?.turnComplete) {
-                        atualizarStatusFeynmanUI("✅ Avaliação em áudio e texto concluída pelo Preceptor.", false);
-                    }
-                } catch (err) {
-                    console.error("[Feynman WS] Erro ao processar mensagem do servidor:", err);
                 }
             };
 
             feynmanWS.onerror = (err) => {
-                console.error("[Feynman WS] Erro na conexão:", err);
-                atualizarStatusFeynmanUI("❌ Erro na conexão com o servidor de áudio.", false);
+                console.error("❌ [FEYNMAN WS] Erro na conexão:", err);
+                statusText.textContent = "Erro na conexão com o preceptor de voz.";
+                window.encerrarFeynmanAudio(true);
             };
 
             feynmanWS.onclose = () => {
-                pararCapturaMicrofoneFeynman();
-                if (btnIniciar) {
-                    btnIniciar.style.display = "inline-flex";
-                    btnIniciar.disabled = false;
-                }
-                if (btnEncerrar) {
-                    btnEncerrar.style.display = "none";
-                }
+                window.encerrarFeynmanAudio(true);
             };
-        } catch (err) {
-            console.error("[Feynman Audio] Falha ao iniciar:", err);
-            pararCapturaMicrofoneFeynman();
-            if (btnIniciar) {
-                btnIniciar.style.display = "inline-flex";
-                btnIniciar.disabled = false;
-            }
-            if (btnEncerrar) btnEncerrar.style.display = "none";
-            atualizarStatusFeynmanUI("❌ Não foi possível acessar o microfone ou conectar.", false);
-            showFeedback("Erro ao iniciar Modo Feynman: " + err.message, false);
+
+        } catch (e) {
+            console.error("❌ [FEYNMAN AUDIO]", e);
+            alert("Não foi possível iniciar o microfone. Verifique as permissões do navegador.");
+            btnIniciar.disabled = false;
+            statusText.textContent = "Falha ao acessar microfone.";
         }
     };
 
-    window.encerrarFeynmanAudio = () => {
-        pararCapturaMicrofoneFeynman();
+    window.encerrarFeynmanAudio = (fromErrorOrClose = false) => {
+        if (!feynmanIsRecording && !fromErrorOrClose) return;
+        feynmanIsRecording = false;
 
         const btnIniciar = document.getElementById("btnIniciarFeynmanAudio");
         const btnEncerrar = document.getElementById("btnEncerrarFeynmanAudio");
+        const pulseDot = document.getElementById("feynmanPulseDot");
+        const statusText = document.getElementById("feynmanLiveStatusText");
+
+        // Envia comando obrigatório para o modelo falar se o usuário clicou no botão Encerrar
+        if (!fromErrorOrClose && feynmanWS && feynmanWS.readyState === WebSocket.OPEN) {
+            if (statusText) statusText.textContent = "Processando explicação e gerando feedback em áudio...";
+            feynmanWS.send(JSON.stringify({ client_content: { turn_complete: true } }));
+        } else {
+            if (statusText) statusText.textContent = "Sessão de áudio finalizada.";
+        }
+
+        // Limpa instâncias do microfone
+        if (feynmanScriptNode) { try { feynmanScriptNode.disconnect(); } catch(_) {} }
+        if (feynmanMediaStream) { feynmanMediaStream.getTracks().forEach(t => t.stop()); }
+        if (feynmanAudioCtx) { try { feynmanAudioCtx.close(); } catch(_) {} }
+
+        // Restaura os botões
         if (btnIniciar) {
             btnIniciar.style.display = "inline-flex";
             btnIniciar.disabled = false;
@@ -8496,51 +8404,41 @@
         if (btnEncerrar) {
             btnEncerrar.style.display = "none";
         }
+        if (pulseDot) {
+            pulseDot.style.display = "none";
+        }
+    };
 
-        if (feynmanWS && feynmanWS.readyState === WebSocket.OPEN) {
-            atualizarStatusFeynmanUI("🎧 Explicação encerrada! Ouvindo e gerando avaliação do Preceptor...", false);
-            const areaFeedback = document.getElementById("areaFeedbackCorretor");
-            const conteudoFeedback = document.getElementById("conteudoFeedback");
-            if (areaFeedback) areaFeedback.style.display = "block";
-            if (conteudoFeedback && !feynmanTextoAcumulado) {
-                conteudoFeedback.innerHTML = '<i class="fas fa-spinner fa-spin"></i> O Preceptor está formulando o feedback em áudio e texto...';
+    async function reproduzirAudioFeynman(base64Data) {
+        try {
+            const rawBytes = Uint8Array.from(window.atob(base64Data), c => c.charCodeAt(0));
+            if (!feynmanPlaybackAudioCtx) {
+                feynmanPlaybackAudioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+            }
+            const audioCtx = feynmanPlaybackAudioCtx;
+            if (audioCtx.state === 'suspended') {
+                await audioCtx.resume();
             }
 
-            feynmanWS.send(JSON.stringify({
-                client_content: {
-                    turn_complete: true
-                }
-            }));
-        } else {
-            atualizarStatusFeynmanUI("Sessão encerrada.", false);
-        }
-    };
+            const pcm16 = new Int16Array(rawBytes.buffer);
+            const float32 = new Float32Array(pcm16.length);
+            for (let i = 0; i < pcm16.length; i++) {
+                float32[i] = pcm16[i] / 32768.0;
+            }
 
-    window.fecharModalCorretor = () => {
-        pararCapturaMicrofoneFeynman();
-        if (feynmanWS) {
-            try { feynmanWS.close(); } catch (_) {}
-            feynmanWS = null;
-        }
-        if (feynmanPlaybackCtx && feynmanPlaybackCtx.state !== "closed") {
-            try { feynmanPlaybackCtx.close(); } catch (_) {}
-            feynmanPlaybackCtx = null;
-        }
-        const btnIniciar = document.getElementById("btnIniciarFeynmanAudio");
-        const btnEncerrar = document.getElementById("btnEncerrarFeynmanAudio");
-        if (btnIniciar) {
-            btnIniciar.style.display = "inline-flex";
-            btnIniciar.disabled = false;
-        }
-        if (btnEncerrar) btnEncerrar.style.display = "none";
-        atualizarStatusFeynmanUI("Explique o tema em voz alta por até 20 min sem interrupções.", false);
-        document.getElementById("modalCorretor").style.display = "none";
-    };
+            const buffer = audioCtx.createBuffer(1, float32.length, 24000);
+            buffer.copyToChannel(float32, 0);
 
-        </script>
+            const source = audioCtx.createBufferSource();
+            source.buffer = buffer;
+            source.connect(audioCtx.destination);
+            source.start(0);
+        } catch (e) {
+            console.error("❌ [AUDIO PLAYBACK]", e);
+        }
+    }
 
-    
-    
+    </script>
     <script type="module" src="padrao_simulado.js"></script>
 </body>
-</html>
+</html>  
