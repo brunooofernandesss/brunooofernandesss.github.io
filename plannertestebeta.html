@@ -432,6 +432,258 @@
     }
 
 
+    
+    /* =========================================================
+       💬 CHATBOT GEMMA 4 (FLUTUANTE / VITRINE FREEMIUM)
+       ========================================================= */
+    #btnFloatingGemmaChat {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        width: 58px;
+        height: 58px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #1d4ed8, #2563eb);
+        color: #ffffff;
+        border: none;
+        box-shadow: 0 8px 24px rgba(37, 99, 235, 0.38);
+        cursor: pointer;
+        z-index: 4500;
+        display: none; /* Exibido universalmente após login no onAuthStateChanged */
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    #btnFloatingGemmaChat:hover {
+        transform: scale(1.07);
+        box-shadow: 0 12px 28px rgba(37, 99, 235, 0.5);
+    }
+
+    #gemmaChatPanel {
+        position: fixed;
+        bottom: 94px;
+        right: 24px;
+        width: 390px;
+        max-width: calc(100vw - 32px);
+        height: 560px;
+        max-height: calc(100dvh - 120px);
+        background: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
+        z-index: 4500;
+        display: none;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .gemma-chat-header {
+        background: linear-gradient(135deg, #1e3a8a, #2563eb);
+        color: #ffffff;
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-shrink: 0;
+    }
+    .gemma-chat-header-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .gemma-chat-context-pill {
+        font-size: 11px;
+        background: rgba(255, 255, 255, 0.18);
+        padding: 2px 8px;
+        border-radius: 12px;
+        max-width: 220px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: none;
+    }
+
+    #gemmaChatMessages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+        background: #f8fafc;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .gemma-msg {
+        max-width: 86%;
+        padding: 10px 14px;
+        border-radius: 12px;
+        font-size: 13.5px;
+        line-height: 1.55;
+        word-wrap: break-word;
+    }
+    .gemma-msg.user {
+        align-self: flex-end;
+        background: #2563eb;
+        color: #ffffff;
+        border-bottom-right-radius: 4px;
+    }
+    .gemma-msg.model {
+        align-self: flex-start;
+        background: #ffffff;
+        color: var(--text-primary);
+        border: 1px solid #e2e8f0;
+        border-bottom-left-radius: 4px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    .gemma-msg.model p { margin-bottom: 8px; }
+    .gemma-msg.model p:last-child { margin-bottom: 0; }
+    .gemma-msg.model ul, .gemma-msg.model ol { margin-left: 18px; margin-bottom: 8px; }
+
+    #gemmaFreemiumBanner {
+        display: none;
+        background: linear-gradient(90deg, #fffbeb, #fef3c7);
+        border-top: 1px solid #fde68a;
+        padding: 10px 14px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        font-size: 12px;
+        color: #92400e;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+    #gemmaFreemiumBanner button {
+        background: #2563eb;
+        color: #ffffff;
+        border: none;
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 11.5px;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .gemma-chat-input-area {
+        padding: 12px;
+        background: #ffffff;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+        flex-shrink: 0;
+    }
+    #gemmaChatInput {
+        flex: 1;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 9px 12px;
+        font-size: 13px;
+        font-family: inherit;
+        resize: none;
+        max-height: 90px;
+        outline: none;
+    }
+    #gemmaChatInput:disabled {
+        background: #f1f5f9;
+        color: #94a3b8;
+        cursor: not-allowed;
+    }
+    #btnSendGemmaChat {
+        background: #2563eb;
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: background 0.2s;
+    }
+    #btnSendGemmaChat:disabled {
+        background: #cbd5e1;
+        cursor: not-allowed;
+    }
+
+    /* =========================================================
+       🎙️ ESTÚDIO HÍBRIDO FEYNMAN NATIVE AUDIO (#modalCorretor)
+       ========================================================= */
+    .feynman-audio-studio {
+        background: linear-gradient(135deg, #fffbf0, #fff3e0);
+        border-bottom: 1px solid #fadbd8;
+        padding: 14px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+        flex-wrap: wrap;
+        flex-shrink: 0;
+    }
+    .feynman-audio-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    #btnIniciarFeynmanAudio {
+        background: linear-gradient(135deg, #16a085, #1abc9c);
+        color: #ffffff;
+        border: none;
+        padding: 11px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(22, 160, 133, 0.28);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    #btnIniciarFeynmanAudio:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(22, 160, 133, 0.38);
+    }
+    #btnEncerrarFeynmanAudio {
+        background: linear-gradient(135deg, #c0392b, #e74c3c);
+        color: #ffffff;
+        border: none;
+        padding: 11px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(231, 76, 60, 0.35);
+    }
+    .feynman-live-status {
+        font-size: 13px;
+        font-weight: 600;
+        color: #7f8c8d;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .feynman-pulse-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #e74c3c;
+        display: none;
+        animation: feynmanPulse 1.2s infinite ease-in-out;
+    }
+    @keyframes feynmanPulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.45); opacity: 0.45; }
+    }
+
     </style>
 
     <!-- =========================================================
@@ -730,9 +982,29 @@
         <div class="modal-content" style="max-width: 95%; height: 90vh; display:flex; flex-direction:column; box-shadow: 0 0 50px rgba(0,0,0,0.5);">
             <div class="editor-header">
                 <h3 style="margin:0; color:#e67e22;"><i class="fas fa-check-double"></i> Corretor de Resumos (Feynman)</h3>
-                <button class="btn-action" onclick="document.getElementById('modalCorretor').style.display='none'" style="background:#f0f0f0; border:1px solid #ddd; font-weight:bold; color:#333;">
+                <button class="btn-action" onclick="window.fecharModalCorretor ? window.fecharModalCorretor() : (document.getElementById('modalCorretor').style.display='none')" style="background:#f0f0f0; border:1px solid #ddd; font-weight:bold; color:#333;">
                     <i class="fas fa-times"></i> FECHAR
                 </button>
+            </div>
+
+            <div class="feynman-audio-studio">
+                <div>
+                    <div style="font-size:13px; font-weight:700; color:#d35400;">
+                        <i class="fas fa-headset"></i> Modo Feynman Native Audio (Tempo Real · Gemini 2.5 Flash)
+                    </div>
+                    <div class="feynman-live-status" id="feynmanLiveStatus">
+                        <span class="feynman-pulse-dot" id="feynmanPulseDot"></span>
+                        <span id="feynmanLiveStatusText">Explique o tema em voz alta por até 20 min sem interrupções.</span>
+                    </div>
+                </div>
+                <div class="feynman-audio-controls">
+                    <button type="button" id="btnIniciarFeynmanAudio" onclick="window.iniciarFeynmanAudio()">
+                        🎤 Iniciar Explicação (Áudio)
+                    </button>
+                    <button type="button" id="btnEncerrarFeynmanAudio" onclick="window.encerrarFeynmanAudio()">
+                        ⏹️ Encerrar Explicação
+                    </button>
+                </div>
             </div>
 
             
@@ -837,6 +1109,46 @@
     </div>
 
     
+        <!-- =========================================================
+         💬 WIDGET FLUTUANTE: CHATBOT GEMMA 4 (FREEMIUM / VIP)
+         ========================================================= -->
+    <button id="btnFloatingGemmaChat" onclick="window.toggleGemmaChat()" title="Assistente Médico Gemma 4">
+        <i class="fas fa-brain"></i>
+    </button>
+
+    <div id="gemmaChatPanel">
+        <div class="gemma-chat-header">
+            <div class="gemma-chat-header-info">
+                <i class="fas fa-brain" style="font-size:18px;"></i>
+                <div>
+                    <div style="font-weight:700; font-size:14px;">Assistente Gemma 4</div>
+                    <div id="gemmaContextBadge" class="gemma-chat-context-pill"></div>
+                </div>
+            </div>
+            <button onclick="window.toggleGemmaChat()" style="background:rgba(255,255,255,0.18); border:none; color:white; width:28px; height:28px; border-radius:6px; cursor:pointer;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div id="gemmaChatMessages">
+            <div class="gemma-msg model">
+                Olá! Sou o <strong>Gemma 4</strong>, seu preceptor médico assistente. Abra qualquer estudo ou pergunte sua dúvida clínica abaixo!
+            </div>
+        </div>
+
+        <div id="gemmaFreemiumBanner">
+            <span>✨ O Assistente Gemma é exclusivo do plano Premium</span>
+            <button type="button" onclick="window.mostrarModalUpgrade()">⭐ Fazer Upgrade</button>
+        </div>
+
+        <div class="gemma-chat-input-area">
+            <textarea id="gemmaChatInput" rows="2" placeholder="Digite sua dúvida médica..." onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); window.enviarMensagemGemma(); }"></textarea>
+            <button type="button" id="btnSendGemmaChat" onclick="window.enviarMensagemGemma()" title="Enviar">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
     <div id="statusFeedback">Processando...</div>
 
     <aside class="sidebar">
@@ -2288,8 +2600,9 @@
     }
     // ------------------------------------------------
 
-    // Variável global de plano — usada pelos guards de função
+    // Variáveis globais de plano e e-mail — usadas pelos guards de função e rotas VIP
     let isPremium = false;
+    let userEmail = "";
 
     // Flag para proteger requisições longas durante logout por expiração
     let requisicaoEmAndamento = false;
@@ -2300,6 +2613,7 @@
     // ============================================================
     // MODAL DE UPGRADE (criado uma vez, reutilizado)
     // ============================================================
+    window.mostrarModalUpgrade = mostrarModalUpgrade;
     function mostrarModalUpgrade() {
         let modal = document.getElementById('modalUpgradePremium');
         if (!modal) {
@@ -2719,7 +3033,7 @@
     }
 
     let groqKeyAtual = 1; 
-    const TOTAL_CHAVES_GROQ = 2; // ⚠️ Troque para a quantidade exata de Secrets que você criou no Cloudflare
+    const TOTAL_CHAVES_GROQ = 3; // ⚠️ Troque para a quantidade exata de Secrets que você criou no Cloudflare
 
     async function audioEnviarArquivoCompleto(file, keyId) {
         let token;
@@ -3734,6 +4048,7 @@
         currentUID = user.uid;
 
         const emailSeguro = user.email ? user.email.toLowerCase() : "";
+        userEmail = emailSeguro;
         const headerName = document.getElementById("headerUserName");
         if (headerName) headerName.textContent = user.displayName || user.email || "Estudante";
 
@@ -3818,6 +4133,9 @@
         }
 
         carregarSimuladosGratuitos();
+        if (typeof window.atualizarEstadoGemmaChat === "function") {
+            window.atualizarEstadoGemmaChat();
+        }
     });
 
         async function loadDataAndInit(dataInicio, dataFim) {
@@ -7726,11 +8044,414 @@
         }
     };
 
+    // ============================================================
+    // 💬 CHATBOT GEMMA 4 (COM LEITURA DE CONTEXTO PROFUNDO)
+    // ============================================================
+    let gemmaChatHistorico = [];
+    let gemmaEnviando = false;
+
+    function usuarioEhVip() {
+        return isPremium === true || (userEmail && userEmail.toLowerCase() === "onurbonecsamad@gmail.com");
+    }
+
+    window.atualizarEstadoGemmaChat = () => {
+        const btnFloat = document.getElementById("btnFloatingGemmaChat");
+        const inputEl = document.getElementById("gemmaChatInput");
+        const btnSend = document.getElementById("btnSendGemmaChat");
+        const bannerEl = document.getElementById("gemmaFreemiumBanner");
+
+        if (btnFloat) btnFloat.style.display = "flex";
+
+        const vip = usuarioEhVip();
+        if (inputEl) {
+            inputEl.disabled = !vip;
+            inputEl.placeholder = vip
+                ? "Digite sua dúvida médica..."
+                : "Recurso exclusivo do plano Premium...";
+        }
+        if (btnSend) btnSend.disabled = !vip;
+        if (bannerEl) bannerEl.style.display = vip ? "none" : "flex";
+    };
+
+    window.toggleGemmaChat = () => {
+        const panel = document.getElementById("gemmaChatPanel");
+        if (!panel) return;
+        const abrindo = panel.style.display !== "flex";
+        panel.style.display = abrindo ? "flex" : "none";
+
+        if (abrindo) {
+            window.atualizarEstadoGemmaChat();
+            atualizarBadgeContextoGemma();
+            const inputEl = document.getElementById("gemmaChatInput");
+            if (inputEl && !inputEl.disabled) {
+                setTimeout(() => inputEl.focus(), 80);
+            }
+        }
+    };
+
+    function obterContextoAtivo() {
+        let contexto = "";
+        let titulo = document.getElementById("viewTitle")?.textContent.trim() || "";
+        if (titulo) contexto += `O usuário está na aba/estudo: "${titulo}".\n`;
+
+        // 1. Tenta ler o texto de um Card de Anatomia aberto
+        const anatContainer = document.getElementById("quizAnatomiaContainer");
+        if (anatContainer && !anatContainer.classList.contains("hidden")) {
+            const caso = document.getElementById("anatCase")?.textContent || "";
+            const pergunta = document.getElementById("anatQuestion")?.textContent || "";
+            if (caso || pergunta) {
+                contexto += `O usuário está resolvendo uma questão de Anatomia:\nCaso Clínico: ${caso}\nPergunta: ${pergunta}\n`;
+                return contexto; 
+            }
+        }
+
+        // 2. Tenta ler o conteúdo aberto no Modal de Visualização Normal (Resumo de texto)
+        const quillEditor = document.querySelector("#viewContainer .ql-editor");
+        if (quillEditor && quillEditor.innerText && quillEditor.innerText.trim().length > 10) {
+            let textoTela = quillEditor.innerText.trim();
+            // Limita para 1500 caracteres para evitar lentidão extrema da IA
+            if (textoTela.length > 1500) textoTela = textoTela.substring(0, 1500) + "..."; 
+            contexto += `Conteúdo visível na tela no momento:\n"""\n${textoTela}\n"""\n`;
+            return contexto;
+        }
+
+        // 3. Leitura de PDF ativo na tela (Pega a camada de texto do visualizador de PDF)
+        const textLayer = document.getElementById("text-layer");
+        if (textLayer && textLayer.innerText && textLayer.innerText.trim().length > 10) {
+            let textoPdf = textLayer.innerText.trim();
+            if (textoPdf.length > 1500) textoPdf = textoPdf.substring(0, 1500) + "...";
+            contexto += `Texto visível na página atual do PDF:\n"""\n${textoPdf}\n"""\n`;
+            return contexto;
+        }
+
+        return contexto;
+    }
+
+    function atualizarBadgeContextoGemma() {
+        const badge = document.getElementById("gemmaContextBadge");
+        if (!badge) return;
+        const titulo = document.getElementById("viewTitle")?.textContent.trim();
+        if (titulo) {
+            badge.textContent = `📖 ${titulo.substring(0, 25)}`;
+            badge.style.display = "inline-block";
+        } else {
+            badge.style.display = "none";
+        }
+    }
+
+    window.enviarMensagemGemma = async () => {
+        if (!usuarioEhVip()) {
+            window.mostrarModalUpgrade();
+            return;
+        }
+
+        const inputEl = document.getElementById("gemmaChatInput");
+        if (!inputEl) return;
+        const texto = inputEl.value.trim();
+        if (!texto || gemmaEnviando) return;
+
+        gemmaEnviando = true;
+        inputEl.value = "";
+        adicionarBalaoGemma("user", texto);
+
+        const chatMsgContainer = document.getElementById("gemmaChatMessages");
+        const loadingId = "gemma-loading-" + Date.now();
+        const loadingDiv = document.createElement("div");
+        loadingDiv.id = loadingId;
+        loadingDiv.className = "gemma-msg model";
+        loadingDiv.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Preceptor pensando...`;
+        chatMsgContainer.appendChild(loadingDiv);
+        chatMsgContainer.scrollTop = chatMsgContainer.scrollHeight;
+
+        try {
+            const dadosContexto = obterContextoAtivo();
+            let mensagensPayload = [...gemmaChatHistorico, { role: "user", content: texto }];
+
+            // Injeta instrução de sistema rigorosa combinada com o que o aluno está vendo de forma curta
+            const sysPrompt = `Você é um preceptor acadêmico sênior focado em medicina. Seja direto, cirúrgico e técnico. Aqui está o contexto do que o aluno está vendo na tela agora para te ajudar a responder dúvidas (ignore se a pergunta não for sobre isso):\n\n${dadosContexto}`;
+            mensagensPayload.unshift({ role: "system", content: sysPrompt });
+
+            const token = await getFirebaseToken();
+            const res = await fetch(WORKER_URL + "chat-gemma", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-firebase-token": token
+                },
+                body: JSON.stringify({ messages: mensagensPayload })
+            });
+
+            document.getElementById(loadingId)?.remove();
+
+            if (!res.ok) {
+                let errText = "Erro ao contatar o assistente.";
+                try { const errJson = await res.json(); errText = errJson.error || errText; } catch(_) {}
+                throw new Error(errText);
+            }
+
+            const data = await res.json();
+            const respostaIA = data.text || data.reply || "Sem resposta do modelo.";
+
+            gemmaChatHistorico.push({ role: "user", content: texto });
+            gemmaChatHistorico.push({ role: "model", content: respostaIA });
+
+            adicionarBalaoGemma("model", respostaIA);
+
+        } catch (e) {
+            document.getElementById(loadingId)?.remove();
+            console.error("❌ [CHAT-GEMMA]", e);
+            adicionarBalaoGemma("model", `⚠️ Ocorreu um erro: ${e.message}`);
+        } finally {
+            gemmaEnviando = false;
+        }
+    };
+
+    function adicionarBalaoGemma(role, texto) {
+        const container = document.getElementById("gemmaChatMessages");
+        if (!container) return;
+        const div = document.createElement("div");
+        div.className = `gemma-msg ${role}`;
+        
+        if (role === "model") {
+            div.innerHTML = marked.parse(texto);
+        } else {
+            div.textContent = texto;
+        }
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    // =================================================================
+    // 🎙️ MODO FEYNMAN NATIVE AUDIO (GRAVADOR CORRIGIDO - WEBSOCKET)
+    // =================================================================
+    let feynmanAudioCtx = null;
+    let feynmanMediaStream = null;
+    let feynmanScriptNode = null;
+    let feynmanWS = null;
+    let feynmanIsRecording = false;
+    let feynmanPlaybackAudioCtx = null;
+
+    function floatTo16BitPCM(input) {
+        const output = new Int16Array(input.length);
+        for (let i = 0; i < input.length; i++) {
+            const s = Math.max(-1, Math.min(1, input[i]));
+            output[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        }
+        return output;
+    }
+
+    function arrayBufferToBase64(buffer) {
+        let binary = '';
+        const bytes = new Uint8Array(buffer);
+        const len = bytes.byteLength;
+        for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return window.btoa(binary);
+    }
+
+    window.iniciarFeynmanAudio = async () => {
+        if (!usuarioEhVip()) {
+            window.mostrarModalUpgrade();
+            return;
+        }
+
+        const btnIniciar = document.getElementById("btnIniciarFeynmanAudio");
+        const btnEncerrar = document.getElementById("btnEncerrarFeynmanAudio");
+        const pulseDot = document.getElementById("feynmanPulseDot");
+        const statusText = document.getElementById("feynmanLiveStatusText");
+
+        try {
+            btnIniciar.disabled = true;
+            statusText.textContent = "Solicitando microfone...";
+
+            // 1. Pega permissão PRIMEIRO (evita timeout do Google)
+            feynmanMediaStream = await navigator.mediaDevices.getUserMedia({
+                audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true }
+            });
+
+            statusText.textContent = "Conectando ao preceptor de voz...";
+            const token = await getFirebaseToken();
+            const wsUrl = WORKER_URL.replace(/^http/, "ws") + "feynman-live?token=" + token;
+
+            feynmanWS = new WebSocket(wsUrl);
+
+            feynmanWS.onopen = () => {
+                // FORMATO CAMELCASE OBRIGATÓRIO (Se for snake_case o Google derruba a conexão)
+                const setupMessage = {
+                    setup: {
+                        model: "models/gemini-2.5-flash",
+                        systemInstruction: {
+                            parts: [{
+                                text: "Você é um preceptor médico avaliando a técnica Feynman. REGRA ABSOLUTA: Ouça a explicação completa do aluno em silêncio. NÃO interrompa. Só inicie a sua devolutiva corretiva em áudio e texto quando o aluno enviar o comando de término."
+                            }]
+                        },
+                        generationConfig: {
+                            responseModalities: ["AUDIO", "TEXT"],
+                            speechConfig: {
+                                voiceConfig: { prebuiltVoiceConfig: { voiceName: "Aoede" } }
+                            }
+                        }
+                    }
+                };
+                feynmanWS.send(JSON.stringify(setupMessage));
+
+                // 2. Monta o Pipeline de Áudio
+                feynmanAudioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+                const source = feynmanAudioCtx.createMediaStreamSource(feynmanMediaStream);
+                feynmanScriptNode = feynmanAudioCtx.createScriptProcessor(4096, 1, 1);
+
+                feynmanScriptNode.onaudioprocess = (e) => {
+                    if (!feynmanIsRecording || !feynmanWS || feynmanWS.readyState !== WebSocket.OPEN) return;
+                    
+                    const pcm16 = floatTo16BitPCM(e.inputBuffer.getChannelData(0));
+                    const base64Data = arrayBufferToBase64(pcm16.buffer);
+
+                    // Formato camelCase obrigatório
+                    feynmanWS.send(JSON.stringify({
+                        realtimeInput: {
+                            mediaChunks: [{
+                                mimeType: "audio/pcm;rate=16000",
+                                data: base64Data
+                            }]
+                        }
+                    }));
+                };
+
+                source.connect(feynmanScriptNode);
+                feynmanScriptNode.connect(feynmanAudioCtx.destination);
+
+                // Força UI Visual
+                feynmanIsRecording = true;
+                btnIniciar.style.display = "none";
+                if (btnEncerrar) {
+                    btnEncerrar.style.display = "inline-flex";
+                    btnEncerrar.disabled = false;
+                }
+                if (pulseDot) pulseDot.style.display = "inline-block";
+                statusText.textContent = "🎙️ Ouvindo sua explicação em tempo real (Feynman)...";
+
+                document.getElementById("areaFeedbackCorretor").style.display = "none";
+                document.getElementById("conteudoFeedback").innerHTML = "";
+            };
+
+            feynmanWS.onmessage = async (event) => {
+                let msg;
+                try { msg = JSON.parse(event.data); } catch(_) { return; }
+
+                if (msg.serverContent && msg.serverContent.modelTurn) {
+                    const parts = msg.serverContent.modelTurn.parts || [];
+                    for (const part of parts) {
+                        // Feedback em Texto
+                        if (part.text) {
+                            const areaFb = document.getElementById("areaFeedbackCorretor");
+                            const contentFb = document.getElementById("conteudoFeedback");
+                            if (areaFb && contentFb) {
+                                areaFb.style.display = "block";
+                                contentFb.innerHTML += marked.parse(part.text);
+                                document.querySelector("#modalCorretor .editor-body").style.flex = "0 0 50%";
+                            }
+                        }
+                        // Feedback Falado
+                        if (part.inlineData && part.inlineData.data) {
+                            reproduzirAudioFeynman(part.inlineData.data);
+                        }
+                    }
+                }
+            };
+
+            feynmanWS.onerror = (err) => {
+                console.error("❌ [FEYNMAN WS] Erro:", err);
+                statusText.textContent = "A conexão com a API falhou.";
+                window.encerrarFeynmanAudio(true);
+            };
+
+            feynmanWS.onclose = () => {
+                window.encerrarFeynmanAudio(true);
+            };
+
+        } catch (e) {
+            console.error("❌ [FEYNMAN AUDIO]", e);
+            alert("Não foi possível iniciar o microfone. Verifique as permissões do navegador.");
+            btnIniciar.disabled = false;
+            statusText.textContent = "Falha ao acessar microfone.";
+        }
+    };
+
+    window.encerrarFeynmanAudio = (fromErrorOrClose = false) => {
+        if (!feynmanIsRecording && !fromErrorOrClose) return;
+        feynmanIsRecording = false;
+
+        const btnIniciar = document.getElementById("btnIniciarFeynmanAudio");
+        const btnEncerrar = document.getElementById("btnEncerrarFeynmanAudio");
+        const pulseDot = document.getElementById("feynmanPulseDot");
+        const statusText = document.getElementById("feynmanLiveStatusText");
+
+        // Já destrava o áudio do navegador ao clicar para o Google poder responder
+        if (!feynmanPlaybackAudioCtx) {
+            feynmanPlaybackAudioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+        }
+        if (feynmanPlaybackAudioCtx.state === 'suspended') {
+            feynmanPlaybackAudioCtx.resume();
+        }
+
+        // Envia o sinal que a explicação acabou
+        if (!fromErrorOrClose && feynmanWS && feynmanWS.readyState === WebSocket.OPEN) {
+            if (statusText) statusText.textContent = "Processando explicação... Gerando áudio de correção.";
+            // Estrutura exata do "turnComplete" do Gemini Live API
+            feynmanWS.send(JSON.stringify({ 
+                clientContent: { 
+                    turns: [{ role: "user", parts: [] }],
+                    turnComplete: true 
+                } 
+            }));
+        } else {
+            if (statusText) statusText.textContent = "Sessão finalizada.";
+        }
+
+        // Limpa instâncias
+        if (feynmanScriptNode) { try { feynmanScriptNode.disconnect(); } catch(_) {} }
+        if (feynmanMediaStream) { feynmanMediaStream.getTracks().forEach(t => t.stop()); }
+        if (feynmanAudioCtx) { try { feynmanAudioCtx.close(); } catch(_) {} }
+
+        if (btnIniciar) {
+            btnIniciar.style.display = "inline-flex";
+            btnIniciar.disabled = false;
+        }
+        if (btnEncerrar) btnEncerrar.style.display = "none";
+        if (pulseDot) pulseDot.style.display = "none";
+    };
+
+    async function reproduzirAudioFeynman(base64Data) {
+        try {
+            const rawBytes = Uint8Array.from(window.atob(base64Data), c => c.charCodeAt(0));
+            if (!feynmanPlaybackAudioCtx) {
+                feynmanPlaybackAudioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+            }
+            if (feynmanPlaybackAudioCtx.state === 'suspended') {
+                await feynmanPlaybackAudioCtx.resume();
+            }
+
+            // Descompacta PCM 16 bit para Float32 exigido pelos falantes do navegador
+            const pcm16 = new Int16Array(rawBytes.buffer);
+            const float32 = new Float32Array(pcm16.length);
+            for (let i = 0; i < pcm16.length; i++) {
+                float32[i] = pcm16[i] / 32768.0;
+            }
+
+            const buffer = feynmanPlaybackAudioCtx.createBuffer(1, float32.length, 24000);
+            buffer.copyToChannel(float32, 0);
+
+            const source = feynmanPlaybackAudioCtx.createBufferSource();
+            source.buffer = buffer;
+            source.connect(feynmanPlaybackAudioCtx.destination);
+            source.start(0);
+        } catch (e) {
+            console.error("❌ [AUDIO PLAYBACK]", e);
+        }
+    }
 
     </script>
-
-    
-    
     <script type="module" src="padrao_simulado.js"></script>
 </body>
-</html>
+</html>    
