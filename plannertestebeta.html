@@ -8220,16 +8220,41 @@
         container.scrollTop = container.scrollHeight;
     }
 
-    // =================================================================
-    // 🎙️ MODO FEYNMAN NATIVE AUDIO (GRAVADOR ESTÁVEL + SETUP SYNC)
-    // =================================================================
+    // =========================================================
+    // 🎙️ MODO FEYNMAN NATIVE AUDIO (GEMINI LIVE API WEBSOCKET)
+    // =========================================================
     let feynmanAudioCtx = null;
     let feynmanMediaStream = null;
     let feynmanScriptNode = null;
     let feynmanWS = null;
     let feynmanIsRecording = false;
-    let feynmanIsSetupComplete = false; // <-- CONTROLE RÍGIDO ADICIONADO AQUI
+    let feynmanIsSetupComplete = false;
     let feynmanPlaybackAudioCtx = null;
+    let feynmanNextPlayTime = 0;
+    let feynmanTranscriptAccumulator = "";
+
+    function downsampleBuffer(buffer, inputSampleRate, outputSampleRate) {
+        if (outputSampleRate === inputSampleRate) {
+            return buffer;
+        }
+        const sampleRateRatio = inputSampleRate / outputSampleRate;
+        const newLength = Math.round(buffer.length / sampleRateRatio);
+        const result = new Float32Array(newLength);
+        let offsetResult = 0;
+        let offsetBuffer = 0;
+        while (offsetResult < result.length) {
+            const nextOffsetBuffer = Math.round((offsetResult + 1) * sampleRateRatio);
+            let accum = 0, count = 0;
+            for (let i = offsetBuffer; i < nextOffsetBuffer && i < buffer.length; i++) {
+                accum += buffer[i];
+                count++;
+            }
+            result[offsetResult] = count > 0 ? accum / count : 0;
+            offsetResult++;
+            offsetBuffer = nextOffsetBuffer;
+        }
+        return result;
+    }
 
     function floatTo16BitPCM(input) {
         const output = new Int16Array(input.length);
@@ -8237,11 +8262,11 @@
             const s = Math.max(-1, Math.min(1, input[i]));
             output[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
         }
-        return output;
+        return output.buffer;
     }
 
     function arrayBufferToBase64(buffer) {
-        let binary = '';
+        let binary = "";
         const bytes = new Uint8Array(buffer);
         const len = bytes.byteLength;
         for (let i = 0; i < len; i++) {
@@ -8262,161 +8287,224 @@
         const statusText = document.getElementById("feynmanLiveStatusText");
 
         try {
-            btnIniciar.disabled = true;
-            statusText.textContent = "Solicitando microfone...";
-            feynmanIsSetupComplete = false;
+            // Fecha qualquer sessão anterior pendente
+            if (feynmanWS && feynmanWS.readyState === WebSocket.OPEN) {
+                try { feynmanWS.close(1000, "Nova sessão iniciada"); } catch (_) {}
+            }
 
-            // 1. Pega permissão PRIMEIRO
+            btnIniciar.disabled = true;
+            statusText.textContent = "A solicitar acesso ao microfone...";
+
             feynmanMediaStream = await navigator.mediaDevices.getUserMedia({
-                audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true }
+                audio: {
+                    channelCount: 1,
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                }
             });
 
-            statusText.textContent = "Conectando ao preceptor de voz...";
+            statusText.textContent = "A ligar ao preceptor de voz...";
             const token = await getFirebaseToken();
-            const wsUrl = WORKER_URL.replace(/^http/, "ws") + "feynman-live?token=" + token;
+            const wsUrl = WORKER_URL.replace(/^http/, "ws") + "feynman-live?token=" + encodeURIComponent(token);
 
             feynmanWS = new WebSocket(wsUrl);
+            feynmanIsSetupComplete = false;
+            feynmanTranscriptAccumulator = "";
 
             feynmanWS.onopen = () => {
-                // Envia Setup, mas NÃO COMEÇA A GRAVAR AINDA.
-                const setupMessage = {
+                const textoRef = (document.getElementById("textoReferencia")?.value || "").trim().substring(0, 12000);
+                const contextoRef = textoRef
+                    ? `\n\nCONTEÚDO DE REFERÊNCIA DA AULA:\n"""\n${textoRef}\n"""`
+                    : "";
+
+                const setupPayload = {
                     setup: {
-                        model: "models/gemini-2.5-flash",
+                        model: "models/gemini-2.5-flash-native-audio-preview-09-2025",
+                        generationConfig: {
+                            responseModalities: ["AUDIO"],
+                            speechConfig: {
+                                voiceConfig: {
+                                    prebuiltVoiceConfig: {
+                                        voiceName: "Aoede"
+                                    }
+                                }
+                            }
+                        },
+                        inputAudioTranscription: {},
+                        outputAudioTranscription: {},
                         systemInstruction: {
                             parts: [{
-                                text: "Você é um preceptor médico avaliando a técnica Feynman. REGRA ABSOLUTA: Ouça a explicação completa do aluno em silêncio. NÃO interrompa. Só inicie a sua devolutiva corretiva em áudio e texto quando o aluno enviar o comando de término."
+                                text: "Você é um Preceptor Sênior de Medicina avaliando o aluno pelo Método Feynman. " +
+                                      "REGRA ABSOLUTA: Ouça em silêncio absoluto toda a explicação do aluno. NÃO fale nada e NÃO interrompa enquanto o aluno apenas estiver explicando, mesmo que ele faça pausas para respirar ou pensar. " +
+                                      "Só forneça o seu feedback completo, detalhado e falado quando receber o comando final de que o aluno encerrou a explicação. " +
+                                      "No feedback final: 1) Elogie os pontos certos; 2) Corrija com rigor qualquer erro conceitual ou fisiopatológico; 3) Aponte o que faltou mencionar; 4) Dê uma nota de 0 a 10." +
+                                      contextoRef
                             }]
-                        },
-                        generationConfig: {
-                            responseModalities: ["AUDIO", "TEXT"],
-                            speechConfig: {
-                                voiceConfig: { prebuiltVoiceConfig: { voiceName: "Aoede" } }
-                            }
                         }
                     }
                 };
-                feynmanWS.send(JSON.stringify(setupMessage));
 
-                // 2. Monta o Pipeline de Áudio (Mas o evento onaudioprocess ficará "travado")
-                feynmanAudioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-                const source = feynmanAudioCtx.createMediaStreamSource(feynmanMediaStream);
-                feynmanScriptNode = feynmanAudioCtx.createScriptProcessor(4096, 1, 1);
-
-                feynmanScriptNode.onaudioprocess = (e) => {
-                    // SE O GOOGLE AINDA NÃO DISSE "OK", NÃO ENVIAMOS O ÁUDIO!
-                    if (!feynmanIsRecording || !feynmanIsSetupComplete || !feynmanWS || feynmanWS.readyState !== WebSocket.OPEN) return;
-                    
-                    const pcm16 = floatTo16BitPCM(e.inputBuffer.getChannelData(0));
-                    const base64Data = arrayBufferToBase64(pcm16.buffer);
-
-                    feynmanWS.send(JSON.stringify({
-                        realtimeInput: {
-                            mediaChunks: [{
-                                mimeType: "audio/pcm;rate=16000",
-                                data: base64Data
-                            }]
-                        }
-                    }));
-                };
-
-                source.connect(feynmanScriptNode);
-                feynmanScriptNode.connect(feynmanAudioCtx.destination);
-
-                feynmanIsRecording = true;
-                btnIniciar.style.display = "none";
-                if (btnEncerrar) {
-                    btnEncerrar.style.display = "inline-flex";
-                    btnEncerrar.disabled = false;
-                }
-                if (pulseDot) pulseDot.style.display = "inline-block";
-                statusText.textContent = "Aguardando sinal do Google...";
-                
-                document.getElementById("areaFeedbackCorretor").style.display = "none";
-                document.getElementById("conteudoFeedback").innerHTML = "";
+                feynmanWS.send(JSON.stringify(setupPayload));
+                statusText.textContent = "A configurar sala de avaliação...";
             };
 
             feynmanWS.onmessage = async (event) => {
-                let msg;
-                try { msg = JSON.parse(event.data); } catch(_) { return; }
+                try {
+                    let rawText = "";
+                    if (typeof event.data === "string") {
+                        rawText = event.data;
+                    } else if (event.data instanceof Blob) {
+                        rawText = await event.data.text();
+                    } else if (event.data instanceof ArrayBuffer) {
+                        rawText = new TextDecoder("utf-8").decode(event.data);
+                    }
+                    if (!rawText) return;
 
-                // A MÁGICA: O Google confirmou que recebeu o setup, agora sim podemos liberar o microfone!
-                if (msg.setupComplete) {
-                    feynmanIsSetupComplete = true;
-                    statusText.textContent = "🎙️ Pode falar! O preceptor está escutando sua explicação...";
-                    return;
-                }
+                    const msg = JSON.parse(rawText);
 
-                if (msg.serverContent && msg.serverContent.modelTurn) {
-                    const parts = msg.serverContent.modelTurn.parts || [];
-                    for (const part of parts) {
-                        // Feedback em Texto
-                        if (part.text) {
-                            const areaFb = document.getElementById("areaFeedbackCorretor");
-                            const contentFb = document.getElementById("conteudoFeedback");
-                            if (areaFb && contentFb) {
-                                areaFb.style.display = "block";
-                                contentFb.innerHTML += marked.parse(part.text);
-                                document.querySelector("#modalCorretor .editor-body").style.flex = "0 0 50%";
-                            }
-                        }
-                        // Feedback Falado
-                        if (part.inlineData && part.inlineData.data) {
-                            reproduzirAudioFeynman(part.inlineData.data);
+                    if (msg.error) {
+                        console.error("❌ [GEMINI LIVE ERROR]", msg.error);
+                        alert("Erro da API Gemini Live: " + (msg.error.message || JSON.stringify(msg.error)));
+                        window.encerrarFeynmanAudio(true);
+                        return;
+                    }
+
+                    // Assim que o Google confirma o setupComplete, inicia a captura real do microfone
+                    if (msg.setupComplete !== undefined && !feynmanIsSetupComplete) {
+                        feynmanIsSetupComplete = true;
+                        await iniciarCapturaMicrofoneFeynman();
+                        btnIniciar.style.display = "none";
+                        btnIniciar.disabled = false;
+                        btnEncerrar.style.display = "inline-flex";
+                        pulseDot.style.display = "inline-block";
+                        statusText.textContent = "🔴 A gravar: explique o tema em voz alta (clique em Encerrar quando terminar).";
+                        return;
+                    }
+
+                    // Transcrição do que o aluno está a falar (preenche o campo "SEU RESUMO" em tempo real)
+                    const userTranscript = msg.serverContent?.inputTranscription?.text;
+                    if (userTranscript) {
+                        const campoAluno = document.getElementById("textoAluno");
+                        if (campoAluno) {
+                            campoAluno.value += userTranscript;
                         }
                     }
+
+                    // Transcrição em texto da avaliação falada pelo Preceptor
+                    const modelTranscript = msg.serverContent?.outputTranscription?.text;
+                    if (modelTranscript) {
+                        feynmanTranscriptAccumulator += modelTranscript;
+                        exibirTextoFeedbackFeynman(feynmanTranscriptAccumulator);
+                    }
+
+                    // Partes de áudio (PCM 24kHz) ou texto enviadas pelo modelo
+                    const parts = msg.serverContent?.modelTurn?.parts || [];
+                    for (const part of parts) {
+                        if (part.text) {
+                            feynmanTranscriptAccumulator += part.text;
+                            exibirTextoFeedbackFeynman(feynmanTranscriptAccumulator);
+                        }
+                        if (part.inlineData && part.inlineData.data) {
+                            reproduzirChunkAudioFeynman(part.inlineData.data);
+                        }
+                    }
+
+                    if (msg.serverContent?.turnComplete && !feynmanIsRecording) {
+                        statusText.textContent = "✅ Avaliação concluída pelo Preceptor.";
+                    }
+                } catch (e) {
+                    console.error("❌ [FEYNMAN WS MESSAGE]", e);
                 }
             };
 
             feynmanWS.onerror = (err) => {
-                console.error("❌ [FEYNMAN WS] Erro:", err);
-                statusText.textContent = "A conexão com a API falhou.";
-                window.encerrarFeynmanAudio(true);
+                console.error("❌ [FEYNMAN WS ERROR]", err);
+                statusText.textContent = "Erro na ligação de voz.";
             };
 
-            feynmanWS.onclose = () => {
-                window.encerrarFeynmanAudio(true);
+            feynmanWS.onclose = (event) => {
+                console.log("🔌 [FEYNMAN WS CLOSED]", event.code, event.reason);
+                if (feynmanIsRecording) {
+                    window.encerrarFeynmanAudio(true);
+                    statusText.textContent = `Ligação encerrada (${event.reason || "código " + event.code}).`;
+                }
             };
 
-        } catch (e) {
-            console.error("❌ [FEYNMAN AUDIO]", e);
-            alert("Não foi possível iniciar o microfone. Verifique as permissões do navegador.");
+        } catch (err) {
+            console.error("❌ [FEYNMAN INIT ERROR]", err);
             btnIniciar.disabled = false;
-            statusText.textContent = "Falha ao acessar microfone.";
+            statusText.textContent = "Permissão de microfone negada ou falha ao iniciar.";
+            alert("Não foi possível aceder ao microfone no tablet: " + (err.message || err));
+            window.encerrarFeynmanAudio(true);
         }
     };
 
+    async function iniciarCapturaMicrofoneFeynman() {
+        feynmanAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (feynmanAudioCtx.state === "suspended") {
+            await feynmanAudioCtx.resume();
+        }
+
+        const nativeSampleRate = feynmanAudioCtx.sampleRate;
+        const source = feynmanAudioCtx.createMediaStreamSource(feynmanMediaStream);
+        feynmanScriptNode = feynmanAudioCtx.createScriptProcessor(4096, 1, 1);
+
+        feynmanIsRecording = true;
+
+        feynmanScriptNode.onaudioprocess = (audioProcessingEvent) => {
+            if (!feynmanIsRecording || !feynmanWS || feynmanWS.readyState !== WebSocket.OPEN || !feynmanIsSetupComplete) {
+                return;
+            }
+            const inputBuffer = audioProcessingEvent.inputBuffer.getChannelData(0);
+            const downsampled = downsampleBuffer(inputBuffer, nativeSampleRate, 16000);
+            const pcm16Buffer = floatTo16BitPCM(downsampled);
+            const base64Audio = arrayBufferToBase64(pcm16Buffer);
+
+            feynmanWS.send(JSON.stringify({
+                realtimeInput: {
+                    mediaChunks: [{
+                        mimeType: "audio/pcm;rate=16000",
+                        data: base64Audio
+                    }]
+                }
+            }));
+        };
+
+        source.connect(feynmanScriptNode);
+        feynmanScriptNode.connect(feynmanAudioCtx.destination);
+    }
+
+    function exibirTextoFeedbackFeynman(texto) {
+        const area = document.getElementById("areaFeedbackCorretor");
+        const content = document.getElementById("conteudoFeedback");
+        if (!area || !content) return;
+        area.style.display = "block";
+        document.querySelector("#modalCorretor .editor-body").style.flex = "0 0 50%";
+        content.innerHTML = marked.parse(texto);
+        area.scrollTop = area.scrollHeight;
+    }
+
     window.encerrarFeynmanAudio = (fromErrorOrClose = false) => {
-        if (!feynmanIsRecording && !fromErrorOrClose) return;
         feynmanIsRecording = false;
+
+        if (feynmanScriptNode) {
+            try { feynmanScriptNode.disconnect(); } catch (_) {}
+            feynmanScriptNode = null;
+        }
+        if (feynmanAudioCtx) {
+            try { feynmanAudioCtx.close(); } catch (_) {}
+            feynmanAudioCtx = null;
+        }
+        if (feynmanMediaStream) {
+            try { feynmanMediaStream.getTracks().forEach(track => track.stop()); } catch (_) {}
+            feynmanMediaStream = null;
+        }
 
         const btnIniciar = document.getElementById("btnIniciarFeynmanAudio");
         const btnEncerrar = document.getElementById("btnEncerrarFeynmanAudio");
         const pulseDot = document.getElementById("feynmanPulseDot");
         const statusText = document.getElementById("feynmanLiveStatusText");
-
-        // Já destrava o áudio do navegador ao clicar para o Google poder responder
-        if (!feynmanPlaybackAudioCtx) {
-            feynmanPlaybackAudioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
-        }
-        if (feynmanPlaybackAudioCtx.state === 'suspended') {
-            feynmanPlaybackAudioCtx.resume();
-        }
-
-        // Envia o sinal que a explicação acabou
-        if (!fromErrorOrClose && feynmanWS && feynmanWS.readyState === WebSocket.OPEN) {
-            if (statusText) statusText.textContent = "Processando explicação... Gerando áudio de correção.";
-            // Estrutura simplificada turnComplete
-            feynmanWS.send(JSON.stringify({ 
-                clientContent: { turnComplete: true } 
-            }));
-        } else {
-            if (statusText) statusText.textContent = "Sessão finalizada.";
-        }
-
-        // Limpa instâncias
-        if (feynmanScriptNode) { try { feynmanScriptNode.disconnect(); } catch(_) {} }
-        if (feynmanMediaStream) { feynmanMediaStream.getTracks().forEach(t => t.stop()); }
-        if (feynmanAudioCtx) { try { feynmanAudioCtx.close(); } catch(_) {} }
 
         if (btnIniciar) {
             btnIniciar.style.display = "inline-flex";
@@ -8424,19 +8512,53 @@
         }
         if (btnEncerrar) btnEncerrar.style.display = "none";
         if (pulseDot) pulseDot.style.display = "none";
+
+        if (!fromErrorOrClose && feynmanWS && feynmanWS.readyState === WebSocket.OPEN) {
+            statusText.textContent = "🎧 Explicação encerrada. A ouvir a avaliação do Preceptor...";
+            // Envia comando final para o Preceptor avaliar toda a explicação
+            feynmanWS.send(JSON.stringify({
+                clientContent: {
+                    turns: [{
+                        role: "user",
+                        parts: [{
+                            text: "Encerrei a minha explicação. Por favor, faça agora a sua avaliação completa em voz alta seguindo as instruções de sistema."
+                        }]
+                    }],
+                    turnComplete: true
+                }
+            }));
+        } else if (fromErrorOrClose && feynmanWS) {
+            try { feynmanWS.close(1000, "Encerrado"); } catch (_) {}
+            feynmanWS = null;
+        }
     };
 
-    async function reproduzirAudioFeynman(base64Data) {
+    window.fecharModalCorretor = () => {
+        window.encerrarFeynmanAudio(true);
+        if (feynmanPlaybackAudioCtx) {
+            try { feynmanPlaybackAudioCtx.close(); } catch (_) {}
+            feynmanPlaybackAudioCtx = null;
+        }
+        document.getElementById("modalCorretor").style.display = "none";
+    };
+
+    async function reproduzirChunkAudioFeynman(base64Data) {
         try {
-            const rawBytes = Uint8Array.from(window.atob(base64Data), c => c.charCodeAt(0));
+            const binaryString = window.atob(base64Data);
+            const len = binaryString.length;
+            const rawBytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                rawBytes[i] = binaryString.charCodeAt(i);
+            }
+
             if (!feynmanPlaybackAudioCtx) {
                 feynmanPlaybackAudioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+                feynmanNextPlayTime = 0;
             }
             if (feynmanPlaybackAudioCtx.state === 'suspended') {
                 await feynmanPlaybackAudioCtx.resume();
             }
 
-            // Descompacta PCM 16 bit para Float32 exigido pelos falantes do navegador
             const pcm16 = new Int16Array(rawBytes.buffer);
             const float32 = new Float32Array(pcm16.length);
             for (let i = 0; i < pcm16.length; i++) {
@@ -8449,11 +8571,18 @@
             const source = feynmanPlaybackAudioCtx.createBufferSource();
             source.buffer = buffer;
             source.connect(feynmanPlaybackAudioCtx.destination);
-            source.start(0);
+
+            const currentTime = feynmanPlaybackAudioCtx.currentTime;
+            if (feynmanNextPlayTime < currentTime) {
+                feynmanNextPlayTime = currentTime + 0.05;
+            }
+            source.start(feynmanNextPlayTime);
+            feynmanNextPlayTime += buffer.duration;
         } catch (e) {
             console.error("❌ [AUDIO PLAYBACK]", e);
         }
     }
+
 
     </script>
     <script type="module" src="padrao_simulado.js"></script>
