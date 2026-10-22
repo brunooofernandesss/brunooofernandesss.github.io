@@ -8089,50 +8089,147 @@
         }
     };
 
-    // Leitura instantânea (usando textContent em vez de innerText para não travar o navegador)
-    function obterContextoAtivo() {
-        let contexto = "";
-        let titulo = document.getElementById("viewTitle")?.textContent.trim() || "";
-        if (titulo) contexto += `O usuário está na aba/estudo: "${titulo}".\n`;
+    // ------------------------------------------------------------
+    // Limite de contexto enviado ao modelo (protege o teto de 16k TPM)
+    // ------------------------------------------------------------
+    const GEMMA_MAX_CONTEXTO = 8000;
+    const GEMMA_MAX_HISTORICO = 6; // últimas 6 mensagens (3 trocas)
 
-        // 1. Tenta ler o texto de um Card de Anatomia aberto
-        const anatContainer = document.getElementById("quizAnatomiaContainer");
-        if (anatContainer && !anatContainer.classList.contains("hidden")) {
-            const caso = document.getElementById("anatCase")?.textContent || "";
-            const pergunta = document.getElementById("anatQuestion")?.textContent || "";
-            if (caso || pergunta) {
-                contexto += `O usuário está resolvendo uma questão de Anatomia:\nCaso Clínico: ${caso}\nPergunta: ${pergunta}\n`;
-                return contexto; 
+    function gemmaVisivel(el) {
+        return !!el && el.getClientRects().length > 0 && !el.classList.contains("hidden");
+    }
+
+    function gemmaLimpar(txt) {
+        return (txt || "").replace(/\s+/g, " ").trim();
+    }
+
+    // Retorna { rotulo, texto } da tela aberta no momento
+    function lerTelaAtiva() {
+        const modalView = document.getElementById("modalView");
+        const modalAberto = modalView && modalView.style.display === "flex";
+        const titulo = gemmaLimpar(document.getElementById("viewTitle")?.textContent);
+
+        // 1) Modal de visualização (PDF, resumo, simulado)
+        if (modalAberto) {
+            const viewContainer = document.getElementById("viewContainer");
+
+            // 1a) Simulado: cards de questões dentro do #viewContainer
+            const cards = viewContainer ? viewContainer.querySelectorAll(".quiz-card") : [];
+            if (cards.length > 0) {
+                const textoCards = Array.from(cards)
+                    .map((c, n) => `Questão ${n + 1}: ${gemmaLimpar(c.textContent)}`)
+                    .join("\n");
+                return { rotulo: `📝 ${titulo || "Simulado"}`, texto: `Simulado aberto "${titulo}":\n${textoCards}` };
+            }
+
+            // 1b) Texto de PDF
+            const textLayer = viewContainer?.querySelector("#text-layer") || document.getElementById("text-layer");
+            const textoPdf = gemmaLimpar(textLayer?.textContent);
+            if (textoPdf.length > 10) {
+                return { rotulo: `📄 ${titulo || "PDF"}`, texto: `PDF aberto "${titulo}", página atual:\n${textoPdf}` };
+            }
+
+            // 1c) Resumo em Quill dentro do modal
+            const quillModal = viewContainer?.querySelector(".ql-editor");
+            const textoQuillModal = gemmaLimpar(quillModal?.textContent);
+            if (textoQuillModal.length > 10) {
+                return { rotulo: `📖 ${titulo || "Resumo"}`, texto: `Resumo aberto "${titulo}":\n${textoQuillModal}` };
+            }
+
+            // 1d) Qualquer outro conteúdo do modal
+            const textoGeral = gemmaLimpar(viewContainer?.textContent);
+            if (textoGeral.length > 10) {
+                return { rotulo: `📖 ${titulo || "Estudo"}`, texto: `Conteúdo aberto "${titulo}":\n${textoGeral}` };
             }
         }
 
-        // 2. Tenta ler o conteúdo aberto no Modal de Visualização Normal (Resumo de texto)
-        const quillEditor = document.querySelector("#viewContainer .ql-editor");
-        if (quillEditor && quillEditor.textContent && quillEditor.textContent.trim().length > 10) {
-            let textoTela = quillEditor.textContent.trim().replace(/\s+/g, ' ');
-            if (textoTela.length > 2000) textoTela = textoTela.substring(0, 2000) + "..."; 
-            contexto += `Conteúdo visível na tela no momento:\n"""\n${textoTela}\n"""\n`;
-            return contexto;
+        // 2) Editor Quill visível fora do modal
+        const editores = Array.from(document.querySelectorAll(".ql-editor")).filter(gemmaVisivel);
+        for (const ed of editores) {
+            const t = gemmaLimpar(ed.textContent);
+            if (t.length > 10) {
+                return { rotulo: "✍️ Editor de resumo", texto: `Editor de texto aberto:\n${t}` };
+            }
         }
 
-        // 3. Leitura de PDF ativo na tela
-        const textLayer = document.getElementById("text-layer");
-        if (textLayer && textLayer.textContent && textLayer.textContent.trim().length > 10) {
-            let textoPdf = textLayer.textContent.trim().replace(/\s+/g, ' ');
-            if (textoPdf.length > 2000) textoPdf = textoPdf.substring(0, 2000) + "...";
-            contexto += `Texto visível na página atual do PDF:\n"""\n${textoPdf}\n"""\n`;
-            return contexto;
+        // 3) Prontuário Neuro-OS
+        const neuro = document.getElementById("neuroOsContent");
+        if (gemmaVisivel(neuro)) {
+            const t = gemmaLimpar(neuro.textContent);
+            if (t.length > 10) {
+                return { rotulo: "🧠 Neuro-OS", texto: `Prontuário Neuro-OS do aluno:\n${t}` };
+            }
         }
 
-        return contexto;
+        // 4) Matriz Curricular
+        const syllabus = document.getElementById("syllabusContainer");
+        if (gemmaVisivel(syllabus)) {
+            const t = gemmaLimpar(syllabus.textContent);
+            if (t.length > 10) {
+                return { rotulo: "📚 Matriz Curricular", texto: `Matriz Curricular (progresso por matéria):\n${t}` };
+            }
+        }
+
+        // 5) Laboratório de Anatomia (caso clínico, pergunta, alternativas e imagem)
+        const secAnat = document.getElementById("secAnatomia");
+        if (gemmaVisivel(secAnat)) {
+            const regiao = gemmaLimpar(document.getElementById("anatRegion")?.textContent);
+            const caso = gemmaLimpar(document.getElementById("anatCase")?.textContent);
+            const pergunta = gemmaLimpar(document.getElementById("anatQuestion")?.textContent);
+            const opcoes = gemmaLimpar(document.getElementById("anatOptions")?.textContent);
+            const img = document.getElementById("imgAnatomia");
+            const imagemVisivel = img && img.style.display !== "none" && img.getAttribute("src");
+
+            let t = "Laboratório de Anatomia Clínica.\n";
+            if (regiao) t += `Região: ${regiao}\n`;
+            if (imagemVisivel) t += `Há uma imagem anatômica na tela${img.alt ? ` (${img.alt})` : ""}, que você não consegue ver.\n`;
+            if (caso) t += `Caso clínico: ${caso}\n`;
+            if (pergunta) t += `Pergunta: ${pergunta}\n`;
+            if (opcoes) t += `Alternativas: ${opcoes}\n`;
+            if (caso || pergunta || imagemVisivel) {
+                return { rotulo: "🦴 Anatomia", texto: t };
+            }
+        }
+
+        // 6) Nada relevante aberto
+        return { rotulo: titulo ? `📖 ${titulo}` : "", texto: titulo ? `O aluno está na aba/estudo "${titulo}".` : "" };
+    }
+
+    // Contexto final, travado em 8.000 caracteres
+    function obterContextoAtivo() {
+        const { texto } = lerTelaAtiva();
+        return (texto || "").substring(0, GEMMA_MAX_CONTEXTO);
+    }
+
+    // Remove o monólogo interno do modelo antes de exibir
+    function limparPensamentoGemma(txt) {
+        let t = String(txt || "");
+
+        // Blocos <think>...</think> e <thought>...</thought> (fechados)
+        t = t.replace(/<(think|thinking|thought)>[\s\S]*?<\/\1>/gi, "");
+        // Bloco aberto e nunca fechado: some tudo dali em diante
+        t = t.replace(/<(think|thinking|thought)>[\s\S]*$/i, "");
+        // Tags soltas
+        t = t.replace(/<\/?(think|thinking|thought)>/gi, "");
+
+        // "Thinking Process:" em diante. Se houver marcador de resposta final, preserva o que vem depois dele.
+        const m = t.match(/(\*\*)?Thinking Process:?(\*\*)?:?/i);
+        if (m) {
+            const antes = t.substring(0, m.index);
+            const depois = t.substring(m.index);
+            const final = depois.match(/\n\s*(?:\*\*|#+\s*)?(?:Resposta(?: final)?|Final Answer|Answer)(?:\*\*)?\s*:?\s*\n?/i);
+            t = final ? antes + depois.substring(final.index + final[0].length) : antes;
+        }
+
+        return t.trim();
     }
 
     function atualizarBadgeContextoGemma() {
         const badge = document.getElementById("gemmaContextBadge");
         if (!badge) return;
-        const titulo = document.getElementById("viewTitle")?.textContent.trim();
-        if (titulo) {
-            badge.textContent = `📖 ${titulo.substring(0, 25)}`;
+        const { rotulo } = lerTelaAtiva();
+        if (rotulo) {
+            badge.textContent = rotulo.length > 28 ? rotulo.substring(0, 28) + "…" : rotulo;
             badge.style.display = "inline-block";
         } else {
             badge.style.display = "none";
@@ -8159,15 +8256,27 @@
         const loadingDiv = document.createElement("div");
         loadingDiv.id = loadingId;
         loadingDiv.className = "gemma-msg model";
-        loadingDiv.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Preceptor pensando...`;
+        loadingDiv.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Preceptor analisando...`;
         chatMsgContainer.appendChild(loadingDiv);
         chatMsgContainer.scrollTop = chatMsgContainer.scrollHeight;
 
         try {
             const dadosContexto = obterContextoAtivo();
-            let mensagensPayload = [...gemmaChatHistorico, { role: "user", content: texto }];
+            const historicoRecente = gemmaChatHistorico.slice(-GEMMA_MAX_HISTORICO);
+            let mensagensPayload = [...historicoRecente, { role: "user", content: texto }];
 
-            const sysPrompt = `Você é um preceptor acadêmico sênior focado em medicina. Seja direto, cirúrgico e técnico. Aqui está o contexto do que o aluno está vendo na tela agora para te ajudar a responder dúvidas (ignore se a pergunta não for sobre isso):\n\n${dadosContexto}`;
+            const sysPrompt =
+`Você é um preceptor médico sênior que auxilia um estudante de medicina brasileiro.
+Regras obrigatórias:
+1. Responda sempre em Português do Brasil.
+2. Entregue apenas a resposta final. É proibido exibir processo de raciocínio interno, "Thinking Process", análise em etapas ou qualquer texto dentro de tags <think>.
+3. Seja direto, técnico e objetivo, com a profundidade de um preceptor.
+4. Use o conteúdo da tela abaixo como referência quando a pergunta tratar dele. Se a pergunta não tiver relação com a tela, ignore o conteúdo.
+
+CONTEÚDO ATUAL DA TELA DO ALUNO:
+"""
+${dadosContexto || "(nenhum conteúdo aberto no momento)"}
+"""`;
             mensagensPayload.unshift({ role: "system", content: sysPrompt });
 
             const token = await getFirebaseToken();
@@ -8177,7 +8286,10 @@
                     "Content-Type": "application/json",
                     "x-firebase-token": token
                 },
-                body: JSON.stringify({ messages: mensagensPayload })
+                body: JSON.stringify({
+                    messages: mensagensPayload,
+                    generationConfig: { maxOutputTokens: 4096 }
+                })
             });
 
             document.getElementById(loadingId)?.remove();
@@ -8189,8 +8301,10 @@
             }
 
             const data = await res.json();
-            const respostaIA = data.text || data.reply || "Sem resposta do modelo.";
+            const respostaBruta = data.text || data.reply || "Sem resposta do modelo.";
+            const respostaIA = limparPensamentoGemma(respostaBruta) || "Não consegui formular uma resposta. Tente reformular a pergunta.";
 
+            // Histórico guarda a versão limpa para não gastar tokens com o monólogo
             gemmaChatHistorico.push({ role: "user", content: texto });
             gemmaChatHistorico.push({ role: "model", content: respostaIA });
 
@@ -8210,9 +8324,18 @@
         if (!container) return;
         const div = document.createElement("div");
         div.className = `gemma-msg ${role}`;
-        
+
         if (role === "model") {
-            div.innerHTML = marked.parse(texto);
+            // Filtro anti-pensamento antes do marked.parse()
+            const limpo = String(texto || "")
+                .replace(/<(think|thinking|thought)>[\s\S]*?<\/\1>/gi, "")
+                .replace(/<(think|thinking|thought)>[\s\S]*$/i, "")
+                .replace(/Thinking Process:[\s\S]*$/i, (trecho) => {
+                    const f = trecho.match(/\n\s*(?:\*\*|#+\s*)?(?:Resposta(?: final)?|Final Answer|Answer)(?:\*\*)?\s*:?\s*\n?/i);
+                    return f ? trecho.substring(f.index + f[0].length) : "";
+                })
+                .trim();
+            div.innerHTML = marked.parse(limpo || "...");
         } else {
             div.textContent = texto;
         }
