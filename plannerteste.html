@@ -7465,43 +7465,45 @@
         const btnOriginalHTML = btnImg ? btnImg.innerHTML : '';
 
         try {
-            // Remove imagens geradas anteriormente se o usuário clicar novamente para atualizar/refazer
+            // 0. Remove imagens geradas anteriormente por esta função para não duplicar ao rodar de novo
             editorEl.querySelectorAll('.bloco-imagens-ia').forEach(el => el.remove());
 
-            // 1. Identifica todos os blocos de 20 minutos — inclusive quando o Gemini gera "• Bloco: 60 a 80 minutos"
-            // dentro de uma lista <ul><li>...</li></ul> (o que antes fazia o código pular o título ou jogar a imagem DEPOIS do título da próxima hora)
-            const NosCandidatos = Array.from(editorEl.querySelectorAll('h1, h2, h3, h4, p, li'));
-            const regexBloco20 = /^\s*(?:[•\-*]\s*)?bloco\s*\d*\s*[:\-—]?\s*\d+\s*a\s*\d+\s*min/i;
-            const regexMacroHora = /resumo\s+da\s+aula\s*:/i;
-
-            // Filtra apenas os nós folha que marcam exatamente o início de um bloco de 20 min
-            let marcadoresBloco = NosCandidatos.filter(el => {
-                if (el.querySelector('p, li, h1, h2, h3, h4')) return false;
-                const txt = (el.innerText || el.textContent || '').trim();
-                return regexBloco20.test(txt) && !regexMacroHora.test(txt) && txt.length < 120;
+            // 1. Achata listas (UL/OL) para que marcadores como "• Bloco: 60 a 80 minutos" (dentro de <li>)
+            //    sejam lidos exatamente no mesmo nível dos parágrafos <p> e cabeçalhos <h1>-<h4>!
+            const todosElementos = [];
+            Array.from(editorEl.children).forEach(el => {
+                if (el.tagName === 'UL' || el.tagName === 'OL') {
+                    Array.from(el.children).forEach(li => todosElementos.push(li));
+                } else {
+                    todosElementos.push(el);
+                }
             });
 
-            // Converte cada marcador para o seu elemento de nível raiz direto de editorEl (ex: se for <li> dentro de <ul>, pega o <ul>)
-            const obterFilhoDireto = (no) => {
-                let atual = no;
-                while (atual && atual.parentElement && atual.parentElement !== editorEl) {
-                    atual = atual.parentElement;
-                }
-                return atual;
-            };
+            // Regex estrito: captura APENAS subtítulos de "Bloco: X a Y minutos"
+            // e IGNORA títulos gerais de 1 hora ("Resumo da Aula: 0 a 60 minutos")
+            const regexBloco20 = /^[^a-zA-Z0-9]*bloco\s*\d*\s*[:\-—]?\s*\d+\s*a\s*\d+\s*min/i;
+            const regexTitulo1Hora = /resumo\s+da\s+aula\s*:/i;
 
-            const todosElementos = Array.from(editorEl.children);
             let indicesInicios = [];
-
-            marcadoresBloco.forEach(m => {
-                const raiz = obterFilhoDireto(m);
-                const idx = todosElementos.indexOf(raiz);
-                if (idx !== -1 && !indicesInicios.includes(idx)) {
+            todosElementos.forEach((el, idx) => {
+                const txt = (el.innerText || el.textContent || '').trim();
+                if (regexBloco20.test(txt) && !regexTitulo1Hora.test(txt) && txt.length < 140) {
                     indicesInicios.push(idx);
                 }
             });
 
-            // Fallback 1: se a aula não for de transcrição VTT (ex: resumo de PDF ou livro com subtítulos h2/h3)
+            // Fallback 1: se for um resumo sem "Bloco: X a Y min", procura qualquer "X a Y minutos" exceto "Resumo da Aula"
+            if (indicesInicios.length === 0) {
+                const regexMinutosGenerico = /\b\d+\s*a\s*\d+\s*minutos/i;
+                todosElementos.forEach((el, idx) => {
+                    const txt = (el.innerText || el.textContent || '').trim();
+                    if (regexMinutosGenerico.test(txt) && !regexTitulo1Hora.test(txt) && txt.length < 140) {
+                        indicesInicios.push(idx);
+                    }
+                });
+            }
+
+            // Fallback 2: se não achou cabeçalhos de minutos, usa h2/h3
             if (indicesInicios.length === 0) {
                 todosElementos.forEach((el, idx) => {
                     if (/^H[23]$/i.test(el.tagName)) {
@@ -7510,7 +7512,7 @@
                 });
             }
 
-            // Fallback 2: se for texto corrido sem subtítulos, divide a cada 5 parágrafos
+            // Fallback 3: se ainda não houver divisões, agrupa a cada 5 parágrafos
             if (indicesInicios.length === 0 && todosElementos.length > 0) {
                 for (let i = 0; i < todosElementos.length; i += 5) {
                     indicesInicios.push(i);
@@ -7521,30 +7523,27 @@
                 return alert("Não foi possível identificar blocos de texto neste resumo.");
             }
 
-            // Monta os blocos garantindo que, se houver um título de hora ("# Resumo da Aula: 60 a 93 minutos")
-            // no meio do caminho, o bloco anterior termine ANTES desse título!
+            // Monta os blocos de 20 min, parando ANTES de qualquer título "Resumo da Aula: X a Y min"
             const blocosMapeados = [];
             for (let b = 0; b < indicesInicios.length; b++) {
                 const ini = indicesInicios[b];
-                const limiteBruto = (b + 1 < indicesInicios.length) ? indicesInicios[b + 1] - 1 : todosElementos.length - 1;
+                const fimBruto = (b + 1 < indicesInicios.length) ? indicesInicios[b + 1] - 1 : todosElementos.length - 1;
                 let textoAcumulado = "";
                 let ultimoElementoDoBloco = todosElementos[ini];
 
-                for (let k = ini; k <= limiteBruto; k++) {
+                for (let k = ini; k <= fimBruto; k++) {
                     const el = todosElementos[k];
                     if (!el || el.classList.contains('bloco-imagens-ia')) continue;
                     const txtEl = (el.innerText || el.textContent || '').trim();
-
-                    // Se encontrar um cabeçalho macro de próxima hora (ex: "Resumo da Aula: 60 a 93 minutos"),
-                    // encerra o bloco atual imediatamente ANTES dele para as imagens não invadirem a próxima hora!
-                    if (k > ini && (/^H1$/i.test(el.tagName) || regexMacroHora.test(txtEl))) {
-                        break;
+                    // Não deixa o cabeçalho da próxima hora ("Resumo da Aula: 60 a 93 minutos") entrar no final do bloco anterior!
+                    if (k > ini && regexTitulo1Hora.test(txtEl) && txtEl.length < 120) {
+                        continue;
                     }
-
                     textoAcumulado += txtEl + "\n";
                     ultimoElementoDoBloco = el;
                 }
 
+                // Se o último elemento do bloco estiver dentro de um <ul>/<ol>, ancora após a lista ou no próprio item
                 if (textoAcumulado.trim().length > 40) {
                     blocosMapeados.push({
                         id: b,
@@ -7564,66 +7563,66 @@
             }
 
             let totalImagensInseridas = 0;
-            const urlsJaUsadasGlobal = [];
 
-            // Processa até 2 blocos por vez para não estourar subrequests do Cloudflare Worker
-            const LOTE_BLOCOS = 2;
-            for (let i = 0; i < blocosMapeados.length; i += LOTE_BLOCOS) {
-                const fatia = blocosMapeados.slice(i, i + LOTE_BLOCOS);
-                showFeedback(`🖼️ Buscando imagens no Google para os blocos ${i + 1} a ${Math.min(i + LOTE_BLOCOS, blocosMapeados.length)} de ${blocosMapeados.length}...`, true);
+            // Processa 1 bloco de 20 minutos por requisição:
+            // - Evita o limite de 50 subrequests do Cloudflare Worker Free
+            // - Evita rate-limit (429) nas chamadas do Gemini com Google Search
+            // - Garante que os blocos de 20-40, 60-80 e 80-93 recebam imagens normalmente!
+            for (let i = 0; i < blocosMapeados.length; i++) {
+                const blocoAtual = blocosMapeados[i];
+                showFeedback(`🖼️ Buscando imagens para o bloco ${i + 1} de ${blocosMapeados.length}...`, true);
                 if (btnImg) {
                     btnImg.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Bloco ${i + 1}/${blocosMapeados.length}...`;
                 }
 
-                const payloadBlocos = fatia.map(item => ({ id: item.id, texto: item.texto }));
-                const resposta = await callWorker({
-                    action: "buscar_imagens_apostila",
-                    blocos: payloadBlocos,
-                    urlsJaUsadas: urlsJaUsadasGlobal
-                }, `buscar_imagens_bloco_${i + 1}`);
+                try {
+                    const resposta = await callWorker({
+                        action: "buscar_imagens_apostila",
+                        blocos: [{ id: blocoAtual.id, texto: blocoAtual.texto }]
+                    }, `buscar_imagens_bloco_${i + 1}`);
 
-                if (resposta && Array.isArray(resposta.blocos)) {
-                    resposta.blocos.forEach(resBloco => {
-                        const blocoRef = fatia.find(x => x.id === resBloco.id);
-                        const listaImgs = Array.isArray(resBloco.imagens) ? resBloco.imagens : [];
-                        if (!blocoRef || listaImgs.length === 0) return;
+                    if (resposta && Array.isArray(resposta.blocos)) {
+                        resposta.blocos.forEach(resBloco => {
+                            const listaImgs = Array.isArray(resBloco.imagens) ? resBloco.imagens : [];
+                            if (listaImgs.length === 0) return;
 
-                        // Cria o container visual ao final do bloco de 20 minutos
-                        let elementoReferencia = blocoRef.anchorEl;
-                        listaImgs.forEach(imgItem => {
-                            const urlImg = typeof imgItem === 'string' ? imgItem : (imgItem.url_imagem || imgItem.url);
-                            const legendaImg = typeof imgItem === 'object' && imgItem.conceito ? imgItem.conceito : 'Imagem complementar';
-                            const fonteImg = typeof imgItem === 'object' && imgItem.dominio ? imgItem.dominio : '';
-                            const linkFonte = typeof imgItem === 'object' && imgItem.url_fonte ? imgItem.url_fonte : urlImg;
-                            if (!urlImg) return;
+                            let elementoReferencia = blocoAtual.anchorEl;
+                            // Se por acaso o anchorEl for um <li> solto no meio de um <ul>, insere após o próprio elemento
+                            listaImgs.forEach(imgItem => {
+                                const urlImg = typeof imgItem === 'string' ? imgItem : (imgItem.url_imagem || imgItem.url);
+                                const legendaImg = typeof imgItem === 'object' && imgItem.conceito ? imgItem.conceito : 'Imagem complementar';
+                                const fonteImg = typeof imgItem === 'object' && imgItem.dominio ? imgItem.dominio : '';
+                                const linkFonte = typeof imgItem === 'object' && imgItem.url_fonte ? imgItem.url_fonte : urlImg;
+                                if (!urlImg) return;
 
-                            const pImg = document.createElement('p');
-                            pImg.className = 'bloco-imagens-ia';
-                            pImg.style.textAlign = 'center';
-                            pImg.style.margin = '18px 0 6px 0';
+                                const pImg = document.createElement('p');
+                                pImg.className = 'bloco-imagens-ia';
+                                pImg.style.textAlign = 'center';
+                                pImg.style.margin = '18px 0 6px 0';
 
-                            const imgTag = document.createElement('img');
-                            imgTag.src = urlImg;
-                            imgTag.alt = legendaImg;
-                            imgTag.onerror = function() {
-                                // Se o servidor remoto bloquear hotlink, remove a imagem quebrada silenciosamente
-                                if (pLegenda && pLegenda.parentNode) pLegenda.remove();
-                                this.parentElement.remove();
-                            };
-                            pImg.appendChild(imgTag);
+                                const imgTag = document.createElement('img');
+                                imgTag.src = urlImg;
+                                imgTag.alt = legendaImg;
+                                imgTag.onerror = function() {
+                                    if (pLegenda && pLegenda.parentNode) pLegenda.remove();
+                                    this.parentElement.remove();
+                                };
+                                pImg.appendChild(imgTag);
 
-                            const pLegenda = document.createElement('p');
-                            pLegenda.className = 'bloco-imagens-ia';
-                            pLegenda.style.cssText = 'text-align:center; font-size:12px; color:#666; margin-bottom:18px; font-style:italic;';
-                            pLegenda.innerHTML = `<strong>${legendaImg}</strong>${fonteImg ? ` — <a href="${linkFonte}" target="_blank" rel="noopener noreferrer" style="color:#2383e2;">${fonteImg}</a>` : ''}`;
+                                const pLegenda = document.createElement('p');
+                                pLegenda.className = 'bloco-imagens-ia';
+                                pLegenda.style.cssText = 'text-align:center; font-size:12px; color:#666; margin-bottom:18px; font-style:italic;';
+                                pLegenda.innerHTML = `<strong>${legendaImg}</strong>${fonteImg ? ` — <a href="${linkFonte}" target="_blank" rel="noopener noreferrer" style="color:#2383e2;">${fonteImg}</a>` : ''}`;
 
-                            urlsJaUsadasGlobal.push(urlImg);
-                            elementoReferencia.insertAdjacentElement('afterend', pImg);
-                            pImg.insertAdjacentElement('afterend', pLegenda);
-                            elementoReferencia = pLegenda;
-                            totalImagensInseridas++;
+                                elementoReferencia.insertAdjacentElement('afterend', pImg);
+                                pImg.insertAdjacentElement('afterend', pLegenda);
+                                elementoReferencia = pLegenda;
+                                totalImagensInseridas++;
+                            });
                         });
-                    });
+                    }
+                } catch (errBloco) {
+                    console.warn(`Aviso: falha ao buscar imagens do bloco ${i + 1}:`, errBloco);
                 }
             }
 
@@ -7660,7 +7659,6 @@
                     arqCache.geradoPorIA = false;
                 }
             } else if (tituloBase) {
-                // Se abriu pelo Cronograma, sincroniza também o arquivo correspondente na Biblioteca
                 const qLib = query(collection(db, "planners", currentUID, "arquivos"));
                 const snapLib = await getDocs(qLib);
                 const updatesLib = [];
@@ -7672,7 +7670,7 @@
                 if (updatesLib.length > 0) await Promise.all(updatesLib);
             }
 
-            showFeedback(`✅ ${totalImagensInseridas} imagens adicionadas e salvas nos blocos!`, false);
+            showFeedback(`✅ ${totalImagensInseridas} imagens adicionadas e salvas em todos os blocos!`, false);
 
         } catch (err) {
             console.error("Erro ao adicionar imagens nos blocos:", err);
