@@ -7465,20 +7465,43 @@
         const btnOriginalHTML = btnImg ? btnImg.innerHTML : '';
 
         try {
-            // 1. Identifica os blocos de 20 minutos (headings ou parágrafos com "Bloco... minutos")
-            // Se o texto não tiver marcação explícita de 20 min, divide pelos subtítulos (h2/h3) ou a cada 5 parágrafos
-            const todosElementos = Array.from(editorEl.children);
-            const regexBloco20 = /(bloco\s*\d*\s*[:\-—]?\s*\d+\s*a\s*\d+\s*min|\d+\s*a\s*\d+\s*minutos)/i;
+            // Remove imagens geradas anteriormente se o usuário clicar novamente para atualizar/refazer
+            editorEl.querySelectorAll('.bloco-imagens-ia').forEach(el => el.remove());
 
-            let indicesInicios = [];
-            todosElementos.forEach((el, idx) => {
+            // 1. Identifica todos os blocos de 20 minutos — inclusive quando o Gemini gera "• Bloco: 60 a 80 minutos"
+            // dentro de uma lista <ul><li>...</li></ul> (o que antes fazia o código pular o título ou jogar a imagem DEPOIS do título da próxima hora)
+            const NosCandidatos = Array.from(editorEl.querySelectorAll('h1, h2, h3, h4, p, li'));
+            const regexBloco20 = /^\s*(?:[•\-*]\s*)?bloco\s*\d*\s*[:\-—]?\s*\d+\s*a\s*\d+\s*min/i;
+            const regexMacroHora = /resumo\s+da\s+aula\s*:/i;
+
+            // Filtra apenas os nós folha que marcam exatamente o início de um bloco de 20 min
+            let marcadoresBloco = NosCandidatos.filter(el => {
+                if (el.querySelector('p, li, h1, h2, h3, h4')) return false;
                 const txt = (el.innerText || el.textContent || '').trim();
-                if (regexBloco20.test(txt) && txt.length < 140) {
+                return regexBloco20.test(txt) && !regexMacroHora.test(txt) && txt.length < 120;
+            });
+
+            // Converte cada marcador para o seu elemento de nível raiz direto de editorEl (ex: se for <li> dentro de <ul>, pega o <ul>)
+            const obterFilhoDireto = (no) => {
+                let atual = no;
+                while (atual && atual.parentElement && atual.parentElement !== editorEl) {
+                    atual = atual.parentElement;
+                }
+                return atual;
+            };
+
+            const todosElementos = Array.from(editorEl.children);
+            let indicesInicios = [];
+
+            marcadoresBloco.forEach(m => {
+                const raiz = obterFilhoDireto(m);
+                const idx = todosElementos.indexOf(raiz);
+                if (idx !== -1 && !indicesInicios.includes(idx)) {
                     indicesInicios.push(idx);
                 }
             });
 
-            // Fallback: se não achou cabeçalhos explícitos de "X a Y minutos", usa h2/h3
+            // Fallback 1: se a aula não for de transcrição VTT (ex: resumo de PDF ou livro com subtítulos h2/h3)
             if (indicesInicios.length === 0) {
                 todosElementos.forEach((el, idx) => {
                     if (/^H[23]$/i.test(el.tagName)) {
@@ -7487,7 +7510,7 @@
                 });
             }
 
-            // Fallback 2: se ainda não houver divisões, agrupa a cada 5 parágrafos
+            // Fallback 2: se for texto corrido sem subtítulos, divide a cada 5 parágrafos
             if (indicesInicios.length === 0 && todosElementos.length > 0) {
                 for (let i = 0; i < todosElementos.length; i += 5) {
                     indicesInicios.push(i);
@@ -7498,20 +7521,28 @@
                 return alert("Não foi possível identificar blocos de texto neste resumo.");
             }
 
-            // Monta os blocos com seus respectivos elementos finais para sabermos onde inserir as imagens
+            // Monta os blocos garantindo que, se houver um título de hora ("# Resumo da Aula: 60 a 93 minutos")
+            // no meio do caminho, o bloco anterior termine ANTES desse título!
             const blocosMapeados = [];
             for (let b = 0; b < indicesInicios.length; b++) {
                 const ini = indicesInicios[b];
-                const fim = (b + 1 < indicesInicios.length) ? indicesInicios[b + 1] - 1 : todosElementos.length - 1;
+                const limiteBruto = (b + 1 < indicesInicios.length) ? indicesInicios[b + 1] - 1 : todosElementos.length - 1;
                 let textoAcumulado = "";
-                let ultimoElementoDoBloco = todosElementos[fim];
+                let ultimoElementoDoBloco = todosElementos[ini];
 
-                for (let k = ini; k <= fim; k++) {
+                for (let k = ini; k <= limiteBruto; k++) {
                     const el = todosElementos[k];
-                    if (el && !el.classList.contains('bloco-imagens-ia')) {
-                        textoAcumulado += (el.innerText || el.textContent || '') + "\n";
-                        ultimoElementoDoBloco = el;
+                    if (!el || el.classList.contains('bloco-imagens-ia')) continue;
+                    const txtEl = (el.innerText || el.textContent || '').trim();
+
+                    // Se encontrar um cabeçalho macro de próxima hora (ex: "Resumo da Aula: 60 a 93 minutos"),
+                    // encerra o bloco atual imediatamente ANTES dele para as imagens não invadirem a próxima hora!
+                    if (k > ini && (/^H1$/i.test(el.tagName) || regexMacroHora.test(txtEl))) {
+                        break;
                     }
+
+                    textoAcumulado += txtEl + "\n";
+                    ultimoElementoDoBloco = el;
                 }
 
                 if (textoAcumulado.trim().length > 40) {
@@ -7533,6 +7564,7 @@
             }
 
             let totalImagensInseridas = 0;
+            const urlsJaUsadasGlobal = [];
 
             // Processa até 2 blocos por vez para não estourar subrequests do Cloudflare Worker
             const LOTE_BLOCOS = 2;
@@ -7546,7 +7578,8 @@
                 const payloadBlocos = fatia.map(item => ({ id: item.id, texto: item.texto }));
                 const resposta = await callWorker({
                     action: "buscar_imagens_apostila",
-                    blocos: payloadBlocos
+                    blocos: payloadBlocos,
+                    urlsJaUsadas: urlsJaUsadasGlobal
                 }, `buscar_imagens_bloco_${i + 1}`);
 
                 if (resposta && Array.isArray(resposta.blocos)) {
@@ -7584,6 +7617,7 @@
                             pLegenda.style.cssText = 'text-align:center; font-size:12px; color:#666; margin-bottom:18px; font-style:italic;';
                             pLegenda.innerHTML = `<strong>${legendaImg}</strong>${fonteImg ? ` — <a href="${linkFonte}" target="_blank" rel="noopener noreferrer" style="color:#2383e2;">${fonteImg}</a>` : ''}`;
 
+                            urlsJaUsadasGlobal.push(urlImg);
                             elementoReferencia.insertAdjacentElement('afterend', pImg);
                             pImg.insertAdjacentElement('afterend', pLegenda);
                             elementoReferencia = pLegenda;
