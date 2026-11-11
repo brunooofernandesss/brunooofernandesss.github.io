@@ -432,6 +432,258 @@
     }
 
 
+    
+    /* =========================================================
+       💬 CHATBOT GEMMA 4 (FLUTUANTE / VITRINE FREEMIUM)
+       ========================================================= */
+    #btnFloatingGemmaChat {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        width: 58px;
+        height: 58px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #1d4ed8, #2563eb);
+        color: #ffffff;
+        border: none;
+        box-shadow: 0 8px 24px rgba(37, 99, 235, 0.38);
+        cursor: pointer;
+        z-index: 4500;
+        display: none; /* Exibido universalmente após login no onAuthStateChanged */
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    #btnFloatingGemmaChat:hover {
+        transform: scale(1.07);
+        box-shadow: 0 12px 28px rgba(37, 99, 235, 0.5);
+    }
+
+    #gemmaChatPanel {
+        position: fixed;
+        bottom: 94px;
+        right: 24px;
+        width: 390px;
+        max-width: calc(100vw - 32px);
+        height: 560px;
+        max-height: calc(100dvh - 120px);
+        background: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
+        z-index: 4500;
+        display: none;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .gemma-chat-header {
+        background: linear-gradient(135deg, #1e3a8a, #2563eb);
+        color: #ffffff;
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-shrink: 0;
+    }
+    .gemma-chat-header-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .gemma-chat-context-pill {
+        font-size: 11px;
+        background: rgba(255, 255, 255, 0.18);
+        padding: 2px 8px;
+        border-radius: 12px;
+        max-width: 220px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: none;
+    }
+
+    #gemmaChatMessages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+        background: #f8fafc;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .gemma-msg {
+        max-width: 86%;
+        padding: 10px 14px;
+        border-radius: 12px;
+        font-size: 13.5px;
+        line-height: 1.55;
+        word-wrap: break-word;
+    }
+    .gemma-msg.user {
+        align-self: flex-end;
+        background: #2563eb;
+        color: #ffffff;
+        border-bottom-right-radius: 4px;
+    }
+    .gemma-msg.model {
+        align-self: flex-start;
+        background: #ffffff;
+        color: var(--text-primary);
+        border: 1px solid #e2e8f0;
+        border-bottom-left-radius: 4px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    .gemma-msg.model p { margin-bottom: 8px; }
+    .gemma-msg.model p:last-child { margin-bottom: 0; }
+    .gemma-msg.model ul, .gemma-msg.model ol { margin-left: 18px; margin-bottom: 8px; }
+
+    #gemmaFreemiumBanner {
+        display: none;
+        background: linear-gradient(90deg, #fffbeb, #fef3c7);
+        border-top: 1px solid #fde68a;
+        padding: 10px 14px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        font-size: 12px;
+        color: #92400e;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+    #gemmaFreemiumBanner button {
+        background: #2563eb;
+        color: #ffffff;
+        border: none;
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 11.5px;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .gemma-chat-input-area {
+        padding: 12px;
+        background: #ffffff;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+        flex-shrink: 0;
+    }
+    #gemmaChatInput {
+        flex: 1;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 9px 12px;
+        font-size: 13px;
+        font-family: inherit;
+        resize: none;
+        max-height: 90px;
+        outline: none;
+    }
+    #gemmaChatInput:disabled {
+        background: #f1f5f9;
+        color: #94a3b8;
+        cursor: not-allowed;
+    }
+    #btnSendGemmaChat {
+        background: #2563eb;
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: background 0.2s;
+    }
+    #btnSendGemmaChat:disabled {
+        background: #cbd5e1;
+        cursor: not-allowed;
+    }
+
+    /* =========================================================
+       🎙️ ESTÚDIO HÍBRIDO FEYNMAN NATIVE AUDIO (#modalCorretor)
+       ========================================================= */
+    .feynman-audio-studio {
+        background: linear-gradient(135deg, #fffbf0, #fff3e0);
+        border-bottom: 1px solid #fadbd8;
+        padding: 14px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+        flex-wrap: wrap;
+        flex-shrink: 0;
+    }
+    .feynman-audio-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    #btnIniciarFeynmanAudio {
+        background: linear-gradient(135deg, #16a085, #1abc9c);
+        color: #ffffff;
+        border: none;
+        padding: 11px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(22, 160, 133, 0.28);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    #btnIniciarFeynmanAudio:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(22, 160, 133, 0.38);
+    }
+    #btnEncerrarFeynmanAudio {
+        background: linear-gradient(135deg, #c0392b, #e74c3c);
+        color: #ffffff;
+        border: none;
+        padding: 11px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(231, 76, 60, 0.35);
+    }
+    .feynman-live-status {
+        font-size: 13px;
+        font-weight: 600;
+        color: #7f8c8d;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .feynman-pulse-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #e74c3c;
+        display: none;
+        animation: feynmanPulse 1.2s infinite ease-in-out;
+    }
+    @keyframes feynmanPulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.45); opacity: 0.45; }
+    }
+
     </style>
 
     <!-- =========================================================
@@ -544,9 +796,6 @@
                  </button>
                  <button class="btn-action" onclick="window.exportarParaPDF()" style="color:#d44c47; border-color:#ffe2dd; background:#fff5f5;" title="Salvar como Arquivo PDF">
                     <i class="fas fa-file-pdf"></i> Exportar PDF
-                 </button>
-                 <button class="btn-action" id="btnAdicionarImagens" onclick="window.adicionarImagensApostila()" style="color:#8e44ad; border-color:#e8d5f5; background:#f9f4fc;" title="Buscar e inserir imagens relevantes no texto">
-                    <i class="fas fa-images"></i> Adicionar Imagens
                  </button>
              </div>
              <button class="btn-action" id="btnExcluirEstudo" style="color:#d44c47; border-color: #ffe2dd; background: #fff5f5;">
@@ -733,9 +982,29 @@
         <div class="modal-content" style="max-width: 95%; height: 90vh; display:flex; flex-direction:column; box-shadow: 0 0 50px rgba(0,0,0,0.5);">
             <div class="editor-header">
                 <h3 style="margin:0; color:#e67e22;"><i class="fas fa-check-double"></i> Corretor de Resumos (Feynman)</h3>
-                <button class="btn-action" onclick="document.getElementById('modalCorretor').style.display='none'" style="background:#f0f0f0; border:1px solid #ddd; font-weight:bold; color:#333;">
+                <button class="btn-action" onclick="window.fecharModalCorretor ? window.fecharModalCorretor() : (document.getElementById('modalCorretor').style.display='none')" style="background:#f0f0f0; border:1px solid #ddd; font-weight:bold; color:#333;">
                     <i class="fas fa-times"></i> FECHAR
                 </button>
+            </div>
+
+            <div class="feynman-audio-studio">
+                <div>
+                    <div style="font-size:13px; font-weight:700; color:#d35400;">
+                        <i class="fas fa-headset"></i> Modo Feynman Native Audio (Tempo Real · Gemini 2.5 Flash)
+                    </div>
+                    <div class="feynman-live-status" id="feynmanLiveStatus">
+                        <span class="feynman-pulse-dot" id="feynmanPulseDot"></span>
+                        <span id="feynmanLiveStatusText">Explique o tema em voz alta por até 20 min sem interrupções.</span>
+                    </div>
+                </div>
+                <div class="feynman-audio-controls">
+                    <button type="button" id="btnIniciarFeynmanAudio" onclick="window.iniciarFeynmanAudio()">
+                        🎤 Iniciar Explicação (Áudio)
+                    </button>
+                    <button type="button" id="btnEncerrarFeynmanAudio" onclick="window.encerrarFeynmanAudio()">
+                        ⏹️ Encerrar Explicação
+                    </button>
+                </div>
             </div>
 
             
@@ -840,6 +1109,46 @@
     </div>
 
     
+        <!-- =========================================================
+         💬 WIDGET FLUTUANTE: CHATBOT GEMMA 4 (FREEMIUM / VIP)
+         ========================================================= -->
+    <button id="btnFloatingGemmaChat" onclick="window.toggleGemmaChat()" title="Assistente Médico Gemma 4">
+        <i class="fas fa-brain"></i>
+    </button>
+
+    <div id="gemmaChatPanel">
+        <div class="gemma-chat-header">
+            <div class="gemma-chat-header-info">
+                <i class="fas fa-brain" style="font-size:18px;"></i>
+                <div>
+                    <div style="font-weight:700; font-size:14px;">Assistente Gemma 4</div>
+                    <div id="gemmaContextBadge" class="gemma-chat-context-pill"></div>
+                </div>
+            </div>
+            <button onclick="window.toggleGemmaChat()" style="background:rgba(255,255,255,0.18); border:none; color:white; width:28px; height:28px; border-radius:6px; cursor:pointer;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div id="gemmaChatMessages">
+            <div class="gemma-msg model">
+                Olá! Sou o <strong>Gemma 4</strong>, seu preceptor médico assistente. Abra qualquer estudo ou pergunte sua dúvida clínica abaixo!
+            </div>
+        </div>
+
+        <div id="gemmaFreemiumBanner">
+            <span>✨ O Assistente Gemma é exclusivo do plano Premium</span>
+            <button type="button" onclick="window.mostrarModalUpgrade()">⭐ Fazer Upgrade</button>
+        </div>
+
+        <div class="gemma-chat-input-area">
+            <textarea id="gemmaChatInput" rows="2" placeholder="Digite sua dúvida médica..." onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); window.enviarMensagemGemma(); }"></textarea>
+            <button type="button" id="btnSendGemmaChat" onclick="window.enviarMensagemGemma()" title="Enviar">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
     <div id="statusFeedback">Processando...</div>
 
     <aside class="sidebar">
@@ -1838,26 +2147,49 @@
         setTimeout(() => { pasteEmProcessamento = false; }, PASTE_DEBOUNCE_MS);
 
         // Se o clipboard trouxer HTML real (Word, Docs, outro site) — incluindo
-        // tabelas reais — deixa o Quill 2.x + table-better processar nativamente.
+        // tabelas reais ou imagens — deixa o Quill 2.x + table-better processar nativamente.
         const htmlData = e.clipboardData && e.clipboardData.getData('text/html');
         const textData = e.clipboardData ? e.clipboardData.getData('text/plain') : '';
 
-        const temTabelaHtmlReal = htmlData && /<table/i.test(htmlData);
+        const temTabelaHtmlReal = htmlData && /<(table|img)\b/i.test(htmlData);
         const clipboardDataVazio = !textData && !htmlData;
 
         // ⚠️ CORREÇÃO MOBILE: o botão "Colar" do teclado virtual (Android/iOS),
         // diferente do Ctrl+V físico, às vezes dispara o evento 'paste' com
         // clipboardData VAZIO — getData() retorna string vazia mesmo havendo
         // conteúdo real na área de transferência. Quando detectamos esse caso,
-        // usamos a Clipboard API assíncrona (navigator.clipboard.readText())
-        // como fallback — ela lê a área de transferência diretamente do
-        // sistema, contornando a limitação do evento nativo nesses
-        // navegadores/contextos mobile.
+        // tentamos primeiro ler o HTML rico (para preservar imagens/tabelas do Gemini)
+        // via navigator.clipboard.read(), com fallback para readText().
         if (clipboardDataVazio) {
             e.preventDefault();
             e.stopPropagation();
 
-            if (navigator.clipboard && navigator.clipboard.readText) {
+            if (navigator.clipboard && navigator.clipboard.read) {
+                navigator.clipboard.read().then(async (items) => {
+                    for (const item of items) {
+                        if (item.types.includes('text/html')) {
+                            const blob = await item.getType('text/html');
+                            const htmlLido = await blob.text();
+                            if (/<(table|img)\b/i.test(htmlLido)) {
+                                processarHtmlColado(htmlLido);
+                                return;
+                            }
+                        }
+                    }
+                    if (navigator.clipboard.readText) {
+                        const textoLido = await navigator.clipboard.readText();
+                        if (textoLido) processarTextoColado(textoLido);
+                    }
+                }).catch(() => {
+                    if (navigator.clipboard.readText) {
+                        navigator.clipboard.readText().then((textoLido) => {
+                            if (textoLido) processarTextoColado(textoLido);
+                        }).catch((err) => {
+                            console.warn('Não foi possível ler a área de transferência via Clipboard API:', err);
+                        });
+                    }
+                });
+            } else if (navigator.clipboard && navigator.clipboard.readText) {
                 navigator.clipboard.readText().then((textoLido) => {
                     if (!textoLido) return; // área de transferência realmente vazia
                     processarTextoColado(textoLido);
@@ -1898,13 +2230,16 @@
     // o usuário toca na sugestão da área de transferência acima das teclas.
     // Eles disparam 'beforeinput' e injetam o texto. Isso captura essa injeção.
     quill.root.addEventListener('beforeinput', function(e) {
+        const htmlData = e.dataTransfer ? e.dataTransfer.getData('text/html') : '';
         let texto = e.data;
         if (!texto && e.dataTransfer) {
             texto = e.dataTransfer.getData('text/plain');
         }
 
-        // Se for um bloco grande de texto e tiver formato de Markdown
-        if (texto && texto.length > 15 && pareceMarkdown(texto)) {
+        const temTabelaOuImgHtml = htmlData && /<(table|img)\b/i.test(htmlData);
+
+        // Se trouxer tabela/imagem em HTML ou for um bloco grande de Markdown
+        if (temTabelaOuImgHtml || (texto && texto.length > 15 && pareceMarkdown(texto))) {
             const agora = Date.now();
             
             // Bloqueia duplicação caso o teclado dispare paste E beforeinput juntos
@@ -1920,7 +2255,11 @@
 
             e.preventDefault();
             e.stopPropagation();
-            processarTextoColado(texto);
+            if (temTabelaOuImgHtml) {
+                processarHtmlColado(htmlData);
+            } else {
+                processarTextoColado(texto);
+            }
         }
     }, true);
    
@@ -1962,6 +2301,41 @@
     function processarHtmlColado(htmlBruto) {
         try {
             let htmlLimpo = removerLinhasVaziasDoHTML(htmlBruto);
+
+            // 🖼️ EXTRAÇÃO DE IMAGENS DO GEMINI / CHATGPT:
+            // Desencapsula imagens que vêm dentro de <button>, <a>, <figure> ou <picture>
+            // no DOM do Gemini para que o Quill as reconheça como blocos de imagem reais,
+            // e filtra favicons/ícones base64 de interface para não disparar alertas falsos.
+            if (/<img\b/i.test(htmlLimpo)) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlLimpo;
+                tempDiv.querySelectorAll('img').forEach(img => {
+                    const src = img.getAttribute('src') || img.getAttribute('data-src') || (img.getAttribute('srcset') ? img.getAttribute('srcset').split(/[\s,]+/)[0] : '');
+                    const widthAttr = parseInt(img.getAttribute('width') || '0', 10);
+                    const heightAttr = parseInt(img.getAttribute('height') || '0', 10);
+                    const ehIconeOuFavicon = !src || src.startsWith('data:') || /favicon|gstatic\.com\/kpui|googleusercontent\.com\/s2\/favicons/i.test(src) || (widthAttr > 0 && widthAttr <= 32) || (heightAttr > 0 && heightAttr <= 32);
+                    if (ehIconeOuFavicon) {
+                        img.remove();
+                        return;
+                    }
+                    const novaImg = document.createElement('img');
+                    novaImg.setAttribute('src', src);
+                    if (img.getAttribute('alt')) novaImg.setAttribute('alt', img.getAttribute('alt'));
+                    const pImg = document.createElement('p');
+                    pImg.appendChild(novaImg);
+                    const ancestralInterativo = img.closest('button, a, picture, figure');
+                    if (ancestralInterativo && tempDiv.contains(ancestralInterativo)) {
+                        ancestralInterativo.parentNode.insertBefore(pImg, ancestralInterativo);
+                        img.remove();
+                        if (!ancestralInterativo.textContent.trim() && !ancestralInterativo.querySelector('img')) {
+                            ancestralInterativo.remove();
+                        }
+                    } else {
+                        img.replaceWith(pImg);
+                    }
+                });
+                htmlLimpo = tempDiv.innerHTML;
+            }
 
             // 🛡️ CORREÇÃO DO GAP DA TABELA (Cópia Rica / HTML):
             // Remove espaços invisíveis/quebras de linha entre as tags estruturais
@@ -2291,8 +2665,9 @@
     }
     // ------------------------------------------------
 
-    // Variável global de plano — usada pelos guards de função
+    // Variáveis globais de plano e e-mail — usadas pelos guards de função e rotas VIP
     let isPremium = false;
+    let userEmail = "";
 
     // Flag para proteger requisições longas durante logout por expiração
     let requisicaoEmAndamento = false;
@@ -2303,6 +2678,7 @@
     // ============================================================
     // MODAL DE UPGRADE (criado uma vez, reutilizado)
     // ============================================================
+    window.mostrarModalUpgrade = mostrarModalUpgrade;
     function mostrarModalUpgrade() {
         let modal = document.getElementById('modalUpgradePremium');
         if (!modal) {
@@ -2722,7 +3098,7 @@
     }
 
     let groqKeyAtual = 1; 
-    const TOTAL_CHAVES_GROQ = 2; // ⚠️ Troque para a quantidade exata de Secrets que você criou no Cloudflare
+    const TOTAL_CHAVES_GROQ = 3; // ⚠️ Troque para a quantidade exata de Secrets que você criou no Cloudflare
 
     async function audioEnviarArquivoCompleto(file, keyId) {
         let token;
@@ -2793,6 +3169,447 @@
         }
     }
 
+    // =========================================================
+    // 🔪 EXTRATOR BINÁRIO NO DISCO (ESTILO CHUNKAUDIO - ZERO RAM)
+    // =========================================================
+    function mp4ListarBoxes(view, start, end) {
+        const boxes = [];
+        let pos = start;
+        while (pos + 8 <= end) {
+            let size = view.getUint32(pos);
+            const type = String.fromCharCode(
+                view.getUint8(pos + 4), view.getUint8(pos + 5),
+                view.getUint8(pos + 6), view.getUint8(pos + 7)
+            );
+            let headerSize = 8;
+            if (size === 1) {
+                if (pos + 16 > end) break;
+                size = Number(view.getBigUint64(pos + 8));
+                headerSize = 16;
+            } else if (size === 0) {
+                size = end - pos;
+            }
+            if (size < headerSize || pos + size > end) break;
+            boxes.push({ type, offset: pos, size, contentStart: pos + headerSize, contentEnd: pos + size });
+            pos += size;
+        }
+        return boxes;
+    }
+
+    function mp4ExtrairConfigADTS(view, stsdStart, stsdEnd, fallbackSampleRate, fallbackChannels) {
+        const srMap = [96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350];
+        let profile = 1; // AAC-LC padrão
+        let freqIdx = srMap.indexOf(fallbackSampleRate);
+        if (freqIdx === -1) {
+            freqIdx = 4; // 44100 Hz fallback
+            for (let i = 0; i < srMap.length; i++) {
+                if (Math.abs(srMap[i] - fallbackSampleRate) < 500) { freqIdx = i; break; }
+            }
+        }
+        let chanCfg = fallbackChannels || 1;
+
+        // Procura a assinatura da box 'esds' dentro de stsd
+        for (let p = stsdStart + 8; p + 8 < stsdEnd; p++) {
+            if (
+                view.getUint8(p + 4) === 0x65 && // 'e'
+                view.getUint8(p + 5) === 0x73 && // 's'
+                view.getUint8(p + 6) === 0x64 && // 'd'
+                view.getUint8(p + 7) === 0x73    // 's'
+            ) {
+                const esdsSize = view.getUint32(p);
+                const esdsEnd = Math.min(stsdEnd, p + esdsSize);
+                let q = p + 12; // Pula header (8) + version/flags (4)
+                while (q + 2 < esdsEnd) {
+                    const tag = view.getUint8(q++);
+                    let len = 0;
+                    for (let k = 0; k < 4 && q < esdsEnd; k++) {
+                        const b = view.getUint8(q++);
+                        len = (len << 7) | (b & 0x7F);
+                        if (!(b & 0x80)) break;
+                    }
+                    if (tag === 0x03) {
+                        // ES_Descriptor
+                        if (q + 3 > esdsEnd) break;
+                        const flags = view.getUint8(q + 2);
+                        q += 3;
+                        if (flags & 0x80) q += 2;
+                        if (flags & 0x40) { const uLen = view.getUint8(q); q += 1 + uLen; }
+                        if (flags & 0x20) q += 2;
+                    } else if (tag === 0x04) {
+                        // DecoderConfigDescriptor
+                        q += 13;
+                    } else if (tag === 0x05) {
+                        // DecoderSpecificInfo (AudioSpecificConfig)
+                        if (q + 2 <= esdsEnd) {
+                            const b0 = view.getUint8(q);
+                            const b1 = view.getUint8(q + 1);
+                            const audioObjectType = b0 >> 3;
+                            const fIdx = ((b0 & 0x07) << 1) | (b1 >> 7);
+                            const cCfg = (b1 >> 3) & 0x0F;
+                            if (audioObjectType >= 1 && audioObjectType <= 4) profile = audioObjectType - 1;
+                            if (fIdx >= 0 && fIdx < 13) freqIdx = fIdx;
+                            if (cCfg > 0 && cCfg <= 7) chanCfg = cCfg;
+                        }
+                        break;
+                    } else {
+                        q += len;
+                    }
+                }
+                break;
+            }
+        }
+        return { profile, freqIdx, chanCfg };
+    }
+
+    async function prepararFatiasM4A(file, chunkDurationSecs) {
+        let pos = 0;
+        let moovBuffer = null;
+
+        // 1. Varre o arquivo no disco pulando o 'mdat' gigante para achar só o índice 'moov'
+        while (pos + 8 <= file.size) {
+            const hdrBuf = await file.slice(pos, Math.min(pos + 16, file.size)).arrayBuffer();
+            const hdrView = new DataView(hdrBuf);
+            let size = hdrView.getUint32(0);
+            const type = String.fromCharCode(
+                hdrView.getUint8(4), hdrView.getUint8(5),
+                hdrView.getUint8(6), hdrView.getUint8(7)
+            );
+            let headerSize = 8;
+            if (size === 1) {
+                if (hdrBuf.byteLength < 16) break;
+                size = Number(hdrView.getBigUint64(8));
+                headerSize = 16;
+            } else if (size === 0) {
+                size = file.size - pos;
+            }
+            if (size < headerSize || pos + size > file.size) break;
+
+            if (type === 'moov') {
+                moovBuffer = await file.slice(pos + headerSize, pos + size).arrayBuffer();
+                break;
+            }
+            pos += size;
+        }
+
+        if (!moovBuffer) throw new Error("Índice 'moov' não encontrado no arquivo M4A.");
+        const view = new DataView(moovBuffer);
+        const traks = mp4ListarBoxes(view, 0, moovBuffer.byteLength).filter(b => b.type === 'trak');
+
+        for (const trak of traks) {
+            const mdia = mp4ListarBoxes(view, trak.contentStart, trak.contentEnd).find(b => b.type === 'mdia');
+            if (!mdia) continue;
+            const mdiaBoxes = mp4ListarBoxes(view, mdia.contentStart, mdia.contentEnd);
+            const mdhd = mdiaBoxes.find(b => b.type === 'mdhd');
+            const minf = mdiaBoxes.find(b => b.type === 'minf');
+            if (!mdhd || !minf) continue;
+
+            const minfBoxes = mp4ListarBoxes(view, minf.contentStart, minf.contentEnd);
+            const stbl = minfBoxes.find(b => b.type === 'stbl');
+            if (!stbl) continue;
+
+            const stblBoxes = mp4ListarBoxes(view, stbl.contentStart, stbl.contentEnd);
+            const stsd = stblBoxes.find(b => b.type === 'stsd');
+            const stts = stblBoxes.find(b => b.type === 'stts');
+            const stsc = stblBoxes.find(b => b.type === 'stsc');
+            const stsz = stblBoxes.find(b => b.type === 'stsz');
+            const stco = stblBoxes.find(b => b.type === 'stco');
+            const co64 = stblBoxes.find(b => b.type === 'co64');
+
+            if (!stsd || !stts || !stsc || !stsz || (!stco && !co64)) continue;
+
+            // Verifica o tipo da entrada em stsd
+            const entryType = String.fromCharCode(
+                view.getUint8(stsd.contentStart + 12), view.getUint8(stsd.contentStart + 13),
+                view.getUint8(stsd.contentStart + 14), view.getUint8(stsd.contentStart + 15)
+            );
+            const isSound = minfBoxes.some(b => b.type === 'smhd') || entryType === 'mp4a';
+            if (!isSound) continue;
+
+            const mdhdVer = view.getUint8(mdhd.contentStart);
+            const timescale = mdhdVer === 1
+                ? view.getUint32(mdhd.contentStart + 20)
+                : view.getUint32(mdhd.contentStart + 12);
+            const durationTicks = mdhdVer === 1
+                ? Number(view.getBigUint64(mdhd.contentStart + 24))
+                : view.getUint32(mdhd.contentStart + 16);
+
+            const fallbackChannels = view.getUint16(stsd.contentStart + 8 + 24) || 1;
+            const fallbackSR = view.getUint16(stsd.contentStart + 8 + 32) || timescale || 44100;
+            const adtsCfg = mp4ExtrairConfigADTS(view, stsd.contentStart, stsd.contentEnd, fallbackSR, fallbackChannels);
+
+            // Lê tamanhos dos quadros (stsz)
+            const defaultSampleSize = view.getUint32(stsz.contentStart + 4);
+            const numSamples = view.getUint32(stsz.contentStart + 8);
+            if (numSamples === 0) continue;
+
+            const sampleSizes = new Uint32Array(numSamples);
+            if (defaultSampleSize !== 0) {
+                sampleSizes.fill(defaultSampleSize);
+            } else {
+                let p = stsz.contentStart + 12;
+                for (let i = 0; i < numSamples; i++, p += 4) {
+                    sampleSizes[i] = view.getUint32(p);
+                }
+            }
+
+            // Lê offsets dos blocos (stco / co64)
+            const offsetBox = stco || co64;
+            const is64 = Boolean(co64 && !stco);
+            const numChunks = view.getUint32(offsetBox.contentStart + 4);
+            const chunkOffsets = new Float64Array(numChunks);
+            let pOff = offsetBox.contentStart + 8;
+            for (let i = 0; i < numChunks; i++) {
+                chunkOffsets[i] = is64 ? Number(view.getBigUint64(pOff)) : view.getUint32(pOff);
+                pOff += is64 ? 8 : 4;
+            }
+
+            // Lê mapeamento sample-to-chunk (stsc)
+            const stscCount = view.getUint32(stsc.contentStart + 4);
+            const stscEntries = [];
+            let pStsc = stsc.contentStart + 8;
+            for (let i = 0; i < stscCount; i++, pStsc += 12) {
+                stscEntries.push({
+                    firstChunk: view.getUint32(pStsc),
+                    samplesPerChunk: view.getUint32(pStsc + 4)
+                });
+            }
+
+            // Calcula o byte offset exato de cada quadro AAC no disco
+            const sampleOffsets = new Float64Array(numSamples);
+            let sampleIdx = 0;
+            let stscIdx = 0;
+            for (let chunkIdx = 0; chunkIdx < numChunks && sampleIdx < numSamples; chunkIdx++) {
+                const chunkNum = chunkIdx + 1;
+                while (stscIdx + 1 < stscEntries.length && chunkNum >= stscEntries[stscIdx + 1].firstChunk) {
+                    stscIdx++;
+                }
+                const samplesInChunk = stscEntries[stscIdx].samplesPerChunk;
+                let curByte = chunkOffsets[chunkIdx];
+                for (let s = 0; s < samplesInChunk && sampleIdx < numSamples; s++) {
+                    sampleOffsets[sampleIdx] = curByte;
+                    curByte += sampleSizes[sampleIdx];
+                    sampleIdx++;
+                }
+            }
+            const totalValidSamples = sampleIdx;
+
+            // Lê durações (stts) e agrupa em janelas de 5 minutos (300s)
+            const sttsCount = view.getUint32(stts.contentStart + 4);
+            let pStts = stts.contentStart + 8;
+            const ticksPorFatia = chunkDurationSecs * timescale;
+
+            const fatias = [];
+            let sliceStartSample = 0;
+            let ticksAcumuladosNaFatia = 0;
+            let ticksTotais = 0;
+            let curSample = 0;
+
+            for (let i = 0; i < sttsCount && curSample < totalValidSamples; i++, pStts += 8) {
+                const sCount = view.getUint32(pStts);
+                const sDelta = view.getUint32(pStts + 4);
+                for (let j = 0; j < sCount && curSample < totalValidSamples; j++) {
+                    ticksAcumuladosNaFatia += sDelta;
+                    ticksTotais += sDelta;
+                    curSample++;
+                    if (ticksAcumuladosNaFatia >= ticksPorFatia) {
+                        const durSec = ticksAcumuladosNaFatia / timescale;
+                        const startSec = (ticksTotais - ticksAcumuladosNaFatia) / timescale;
+                        fatias.push({ startSample: sliceStartSample, endSample: curSample, startSec, durationSec: durSec });
+                        sliceStartSample = curSample;
+                        ticksAcumuladosNaFatia = 0;
+                    }
+                }
+            }
+            if (sliceStartSample < totalValidSamples) {
+                const durSec = ticksAcumuladosNaFatia / timescale;
+                const startSec = (ticksTotais - ticksAcumuladosNaFatia) / timescale;
+                fatias.push({ startSample: sliceStartSample, endSample: totalValidSamples, startSec, durationSec: durSec });
+            }
+
+            // Função que monta apenas 1 fatia de 5 minutos em ADTS sob demanda
+            const extrairFatiaBuffer = async (fatia) => {
+                const { startSample, endSample } = fatia;
+                let totalAdtsBytes = 0;
+                let minByte = Infinity;
+                let maxByte = 0;
+
+                for (let s = startSample; s < endSample; s++) {
+                    const sz = sampleSizes[s];
+                    const off = sampleOffsets[s];
+                    totalAdtsBytes += 7 + sz;
+                    if (off < minByte) minByte = off;
+                    if (off + sz > maxByte) maxByte = off + sz;
+                }
+
+                const adtsOut = new Uint8Array(totalAdtsBytes);
+                let writePos = 0;
+                const { profile, freqIdx, chanCfg } = adtsCfg;
+
+                // Se a janela no disco tiver até 35 MB, faz apenas 1 leitura contínua do disco
+                if (maxByte - minByte <= 35 * 1024 * 1024) {
+                    const rawSlice = new Uint8Array(await file.slice(minByte, maxByte).arrayBuffer());
+                    for (let s = startSample; s < endSample; s++) {
+                        const sz = sampleSizes[s];
+                        const frameLen = sz + 7;
+                        const relOff = sampleOffsets[s] - minByte;
+
+                        adtsOut[writePos]     = 0xFF;
+                        adtsOut[writePos + 1] = 0xF1;
+                        adtsOut[writePos + 2] = ((profile & 0x03) << 6) | ((freqIdx & 0x0F) << 2) | ((chanCfg >> 2) & 0x01);
+                        adtsOut[writePos + 3] = ((chanCfg & 0x03) << 6) | ((frameLen >> 11) & 0x03);
+                        adtsOut[writePos + 4] = (frameLen >> 3) & 0xFF;
+                        adtsOut[writePos + 5] = ((frameLen & 0x07) << 5) | 0x1F;
+                        adtsOut[writePos + 6] = 0xFC;
+
+                        adtsOut.set(rawSlice.subarray(relOff, relOff + sz), writePos + 7);
+                        writePos += frameLen;
+                    }
+                } else {
+                    for (let s = startSample; s < endSample; s++) {
+                        const sz = sampleSizes[s];
+                        const frameLen = sz + 7;
+                        const rawFrame = new Uint8Array(await file.slice(sampleOffsets[s], sampleOffsets[s] + sz).arrayBuffer());
+
+                        adtsOut[writePos]     = 0xFF;
+                        adtsOut[writePos + 1] = 0xF1;
+                        adtsOut[writePos + 2] = ((profile & 0x03) << 6) | ((freqIdx & 0x0F) << 2) | ((chanCfg >> 2) & 0x01);
+                        adtsOut[writePos + 3] = ((chanCfg & 0x03) << 6) | ((frameLen >> 11) & 0x03);
+                        adtsOut[writePos + 4] = (frameLen >> 3) & 0xFF;
+                        adtsOut[writePos + 5] = ((frameLen & 0x07) << 5) | 0x1F;
+                        adtsOut[writePos + 6] = 0xFC;
+
+                        adtsOut.set(rawFrame, writePos + 7);
+                        writePos += frameLen;
+                    }
+                }
+                return adtsOut.buffer;
+            };
+
+            return {
+                duracaoTotal: durationTicks / timescale,
+                fatias,
+                extrairFatiaBuffer
+            };
+        }
+        throw new Error("Nenhuma trilha de áudio AAC compatível encontrada no M4A.");
+    }
+
+    async function prepararFatiasWAV(file, chunkDurationSecs) {
+        const hdrBuf = await file.slice(0, Math.min(4096, file.size)).arrayBuffer();
+        const view = new DataView(hdrBuf);
+        let pos = 12;
+        let channels = 1, sampleRate = 16000, bitsPerSample = 16, blockAlign = 2;
+        let dataOffset = 44, dataSize = file.size - 44;
+
+        while (pos + 8 <= hdrBuf.byteLength) {
+            const id = String.fromCharCode(view.getUint8(pos), view.getUint8(pos+1), view.getUint8(pos+2), view.getUint8(pos+3));
+            const sz = view.getUint32(pos + 4, true);
+            if (id === 'fmt ') {
+                channels = view.getUint16(pos + 10, true);
+                sampleRate = view.getUint32(pos + 12, true);
+                blockAlign = view.getUint16(pos + 20, true);
+                bitsPerSample = view.getUint16(pos + 22, true);
+            } else if (id === 'data') {
+                dataOffset = pos + 8;
+                dataSize = sz || (file.size - dataOffset);
+                break;
+            }
+            pos += 8 + sz;
+        }
+
+        const bytesPorSegundo = sampleRate * blockAlign;
+        const bytesPorFatia = Math.floor(chunkDurationSecs * bytesPorSegundo / blockAlign) * blockAlign;
+        const fatias = [];
+        let curOffset = dataOffset;
+        const endOffset = Math.min(file.size, dataOffset + dataSize);
+        let startSec = 0;
+
+        while (curOffset < endOffset) {
+            const nextOffset = Math.min(endOffset, curOffset + bytesPorFatia);
+            const durSec = (nextOffset - curOffset) / bytesPorSegundo;
+            fatias.push({ startByte: curOffset, endByte: nextOffset, startSec, durationSec: durSec });
+            startSec += durSec;
+            curOffset = nextOffset;
+        }
+
+        const extrairFatiaBuffer = async (fatia) => {
+            const pcmSlice = new Uint8Array(await file.slice(fatia.startByte, fatia.endByte).arrayBuffer());
+            const wavBuf = new ArrayBuffer(44 + pcmSlice.byteLength);
+            const v = new DataView(wavBuf);
+            const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) v.setUint8(off + i, s.charCodeAt(i)); };
+            writeStr(0, 'RIFF');
+            v.setUint32(4, 36 + pcmSlice.byteLength, true);
+            writeStr(8, 'WAVE');
+            writeStr(12, 'fmt ');
+            v.setUint32(16, 16, true);
+            v.setUint16(20, 1, true);
+            v.setUint16(22, channels, true);
+            v.setUint32(24, sampleRate, true);
+            v.setUint32(28, sampleRate * blockAlign, true);
+            v.setUint16(32, blockAlign, true);
+            v.setUint16(34, bitsPerSample, true);
+            writeStr(36, 'data');
+            v.setUint32(40, pcmSlice.byteLength, true);
+            new Uint8Array(wavBuf, 44).set(pcmSlice);
+            return wavBuf;
+        };
+
+        return { duracaoTotal: startSec, fatias, extrairFatiaBuffer };
+    }
+
+    async function prepararFatiasMP3(file, chunkDurationSecs) {
+        // Pula tag ID3v2 inicial se existir
+        let audioStart = 0;
+        const id3Buf = new Uint8Array(await file.slice(0, 10).arrayBuffer());
+        if (id3Buf[0] === 0x49 && id3Buf[1] === 0x44 && id3Buf[2] === 0x33) {
+            const id3Size = ((id3Buf[6] & 0x7F) << 21) | ((id3Buf[7] & 0x7F) << 14) | ((id3Buf[8] & 0x7F) << 7) | (id3Buf[9] & 0x7F);
+            audioStart = 10 + id3Size;
+        }
+
+        // Descobre a duração total rapidamente via elemento de áudio sem decodificar PCM na RAM
+        const duracaoEstimada = await new Promise((resolve) => {
+            const tempAudio = document.createElement('audio');
+            tempAudio.preload = 'metadata';
+            const objUrl = URL.createObjectURL(file);
+            const limpar = (val) => { URL.revokeObjectURL(objUrl); resolve(val); };
+            tempAudio.onloadedmetadata = () => limpar(Number.isFinite(tempAudio.duration) && tempAudio.duration > 0 ? tempAudio.duration : 0);
+            tempAudio.onerror = () => limpar(0);
+            setTimeout(() => limpar(0), 4000);
+            tempAudio.src = objUrl;
+        });
+
+        const totalBytesAudio = file.size - audioStart;
+        const bytesPorSegundo = duracaoEstimada > 0 ? (totalBytesAudio / duracaoEstimada) : 16000; // ~128kbps fallback
+        const bytesPorFatia = Math.max(512 * 1024, Math.floor(bytesPorSegundo * chunkDurationSecs));
+
+        const fatias = [];
+        let curOffset = audioStart;
+        let startSec = 0;
+        while (curOffset < file.size) {
+            let nextOffset = Math.min(file.size, curOffset + bytesPorFatia);
+            if (nextOffset < file.size) {
+                // Alinha exatamente no início de um frame MP3 (syncword 0xFF 0xE0)
+                const probe = new Uint8Array(await file.slice(nextOffset, Math.min(file.size, nextOffset + 4096)).arrayBuffer());
+                for (let i = 0; i + 1 < probe.length; i++) {
+                    if (probe[i] === 0xFF && (probe[i + 1] & 0xE0) === 0xE0) {
+                        nextOffset += i;
+                        break;
+                    }
+                }
+            }
+            const durSec = (nextOffset - curOffset) / bytesPorSegundo;
+            fatias.push({ startByte: curOffset, endByte: nextOffset, startSec: null, durationSec: durSec });
+            startSec += durSec;
+            curOffset = nextOffset;
+        }
+
+        const extrairFatiaBuffer = async (fatia) => {
+            return await file.slice(fatia.startByte, fatia.endByte).arrayBuffer();
+        };
+
+        return { duracaoTotal: duracaoEstimada || startSec, fatias, extrairFatiaBuffer };
+    }
+
     async function audioProcessarArquivoCompleto(file) {
         document.getElementById('audioDropArea').style.display = 'none';
         document.getElementById('audioProcessArea').style.display = 'block';
@@ -2801,93 +3618,123 @@
         nomeArquivoAtual = (file.name || 'aula').replace(/\.\w+$/, '');
 
         try {
-            audioAtualizarStatus("Lendo áudio nativamente...", 5);
-            
-            // Decodificação Nativa do Navegador (Ignora problemas de formato)
-            const arrayBuffer = await file.arrayBuffer();
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-            
+            audioAtualizarStatus("Mapeando índice binário do áudio no disco...", 5);
             document.getElementById('audioFileInfo').style.display = 'block';
             document.getElementById('audioFileName').textContent = file.name;
-            document.getElementById('audioFileDuration').textContent = audioFormatarDuracao(audioBuffer.duration);
             document.getElementById('audioFileSize').textContent = audioFormatarTamanho(file.size);
 
-            audioAtualizarStatus("Fatiando, otimizando e removendo silêncios...", 10);
-            
             const targetSampleRate = 16000;
             const chunkDurationSecs = 300; // 5 minutos por lote
-            const totalChunks = Math.ceil(audioBuffer.duration / chunkDurationSecs);
-            const chunksValidos = [];
+            const ext = (file.name.split('.').pop() || '').toLowerCase();
 
+            let planoDisco = null;
+            if (ext === 'm4a' || ext === 'mp4' || ext === 'aac') {
+                planoDisco = await prepararFatiasM4A(file, chunkDurationSecs);
+            } else if (ext === 'wav') {
+                planoDisco = await prepararFatiasWAV(file, chunkDurationSecs);
+            } else if (ext === 'mp3') {
+                planoDisco = await prepararFatiasMP3(file, chunkDurationSecs);
+            } else {
+                // Fallback para formatos diversos (.ogg, .webm, .flac)
+                planoDisco = await prepararFatiasMP3(file, chunkDurationSecs);
+            }
+
+            document.getElementById('audioFileDuration').textContent = audioFormatarDuracao(planoDisco.duracaoTotal);
+
+            const totalChunks = planoDisco.fatias.length;
+            const CONCORRENCIA = 2;
+            const resultados = [];
+            let loteAtual = [];
+            let tempoAcumuladoReal = 0;
+
+            const dispararLoteGroq = async (loteParaEnviar) => {
+                const promessas = loteParaEnviar.map(async (item) => {
+                    const res = await audioEnviarComRetry(item.file);
+                    // Libera a referência do arquivo WAV imediatamente após o envio
+                    item.file = null;
+                    return { index: item.index, startSec: item.startSec, text: res.text, vtt: res.vtt };
+                });
+                const resultadosLote = await Promise.all(promessas);
+                resultados.push(...resultadosLote);
+                if (totalChunks > 2) {
+                    await new Promise(r => setTimeout(r, 500));
+                }
+            };
+
+            // Processa fatia por fatia do disco, mantendo no máximo 2 blocos na RAM por vez
             for (let i = 0; i < totalChunks; i++) {
-                const startSec = i * chunkDurationSecs;
-                const endSec = Math.min((i + 1) * chunkDurationSecs, audioBuffer.duration);
-                const durationSec = endSec - startSec;
+                const progresso = 10 + ((i / totalChunks) * 85);
+                audioAtualizarStatus(`Processando e transcrevendo parte ${i + 1} de ${totalChunks}...`, progresso);
 
-                // 1. CONVERSOR MINÚSCULO (Poupa a RAM do tablet)
-                const offlineCtx = new OfflineAudioContext(1, durationSec * targetSampleRate, targetSampleRate);
+                const fatia = planoDisco.fatias[i];
+                const rawChunkBuffer = await planoDisco.extrairFatiaBuffer(fatia);
+
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                let audioBuffer;
+                try {
+                    audioBuffer = await audioCtx.decodeAudioData(rawChunkBuffer);
+                } finally {
+                    await audioCtx.close().catch(() => {});
+                }
+
+                const startSecDestaFatia = (fatia.startSec !== null && fatia.startSec !== undefined)
+                    ? fatia.startSec
+                    : tempoAcumuladoReal;
+                tempoAcumuladoReal += audioBuffer.duration;
+
+                // 1. CONVERSOR MINÚSCULO DE 5 MINUTOS (Poupa a RAM do tablet)
+                const offlineCtx = new OfflineAudioContext(1, Math.ceil(audioBuffer.duration * targetSampleRate), targetSampleRate);
                 const source = offlineCtx.createBufferSource();
                 source.buffer = audioBuffer;
                 source.connect(offlineCtx.destination);
-                source.start(0, startSec, durationSec);
-                
+                source.start(0);
+
                 const resampledChunk = await offlineCtx.startRendering();
+                audioBuffer = null; // Libera o buffer estéreo original imediatamente
                 const chunkData = resampledChunk.getChannelData(0);
-                
-                // 2. FILTRO DE SILÊNCIO ORIGINAL MANTIDO (Cálculo RMS)
+
+                // 2. FILTRO DE SILÊNCIO ORIGINAL MANTIDO (Cálculo RMS >= 0.015)
                 let sumOfSquares = 0;
                 for (let j = 0; j < chunkData.length; j++) {
                     sumOfSquares += chunkData[j] * chunkData[j];
                 }
                 const rms = Math.sqrt(sumOfSquares / chunkData.length);
-                
-                // Threshold mais rigoroso (1.5%) para evitar que a IA alucine com ruídos do microfone
+
                 if (rms >= 0.015) {
                     const wavBlob = audioBufferToWavBlob(chunkData, targetSampleRate);
                     const chunkFile = new File([wavBlob], `chunk_${i}.wav`, { type: 'audio/wav' });
-                    chunksValidos.push({ index: i, file: chunkFile });
+                    loteAtual.push({ index: i, startSec: startSecDestaFatia, file: chunkFile });
                 }
+
+                // Quando juntar 2 fatias válidas, envia para a Groq e esvazia a RAM antes de continuar!
+                if (loteAtual.length >= CONCORRENCIA) {
+                    audioAtualizarStatus(`Transcrevendo lote na IA da Groq (${i + 1}/${totalChunks})...`, progresso);
+                    await dispararLoteGroq(loteAtual);
+                    loteAtual = [];
+                }
+
+                // Pausa de 25ms para o Garbage Collector do Chrome/Firefox limpar a RAM do tablet
+                await new Promise(r => setTimeout(r, 25));
             }
 
-            let textoCompleto = "";
-            let vttCompleto = "WEBVTT\n\n";
-            const resultados = [];
-            
-            // Plano gratuito Cloudflare Workers AI: 50 RPM.
-            // Com chunks de 30s (vs 10s antes), a taxa natural é 3x menor.
-            // 3 concorrentes + pausa de 1000ms → ~3 req/1s = 180 RPM teórico,
-            // mas latência real de rede (~1-2s/request) mantém em ~30-40 RPM efetivo.
-            const CONCORRENCIA = 2; // Enviando de 2 em 2 blocos pesados
-
-            for (let i = 0; i < chunksValidos.length; i += CONCORRENCIA) {
-                const lote = chunksValidos.slice(i, i + CONCORRENCIA);
-                const progresso = 15 + ((i / chunksValidos.length) * 80);
-                audioAtualizarStatus(`Transcrevendo áudio (${i + lote.length}/${chunksValidos.length}). IA da Groq trabalhando...`, progresso);
-
-                const promessas = lote.map(async (item) => {
-                    const res = await audioEnviarComRetry(item.file);
-                    return { index: item.index, text: res.text, vtt: res.vtt };
-                });
-
-                const resultadosLote = await Promise.all(promessas);
-                resultados.push(...resultadosLote);
-
-                // Pausa minúscula apenas por segurança, Groq é absurdamente rápido
-                if (chunksValidos.length > 2) {
-                    await new Promise(r => setTimeout(r, 500));
-                }
+            // Envia qualquer fatia restante do último lote
+            if (loteAtual.length > 0) {
+                audioAtualizarStatus(`Finalizando último lote na IA da Groq...`, 95);
+                await dispararLoteGroq(loteAtual);
+                loteAtual = [];
             }
-
 
             // 3. Montar transcrição na ordem cronológica correta
             audioAtualizarStatus("Montando texto final...", 98);
-            resultados.sort((a, b) => a.index - b.index); // Ordena pelo index original
+            resultados.sort((a, b) => a.index - b.index);
+
+            let textoCompleto = "";
+            let vttCompleto = "WEBVTT\n\n";
 
             for (const res of resultados) {
                 if (res.text) textoCompleto += res.text + " ";
                 if (res.vtt) {
-                    const offsetSec = res.index * chunkDurationSecs;
+                    const offsetSec = res.startSec !== undefined ? res.startSec : (res.index * chunkDurationSecs);
                     vttCompleto += adjustVttOffsets(res.vtt, offsetSec) + "\n\n";
                 }
             }
@@ -2895,7 +3742,7 @@
             vttFinalGerado = vttCompleto.trim() + "\n";
             textoFinalGerado = textoCompleto.trim();
 
-            // 🛡️ NOVA BLINDAGEM: Verifica se a Groq realmente devolveu palavras
+            // 🛡️ BLINDAGEM MANTIDA: Verifica se a Groq realmente devolveu palavras
             if (textoFinalGerado.length < 50) {
                 throw new Error("A API de transcrição falhou no meio do processo. Por favor, tente novamente.");
             }
@@ -2906,7 +3753,6 @@
             document.getElementById('audioProcessArea').style.display = 'none';
             document.getElementById('audioResultArea').style.display = 'block';
 
-            // Só dispara o download se realmente tiver texto
             if (vttFinalGerado.length > 50) {
                 audioDispararDownloadVtt();
             }
@@ -3267,6 +4113,7 @@
         currentUID = user.uid;
 
         const emailSeguro = user.email ? user.email.toLowerCase() : "";
+        userEmail = emailSeguro;
         const headerName = document.getElementById("headerUserName");
         if (headerName) headerName.textContent = user.displayName || user.email || "Estudante";
 
@@ -3351,6 +4198,9 @@
         }
 
         carregarSimuladosGratuitos();
+        if (typeof window.atualizarEstadoGemmaChat === "function") {
+            window.atualizarEstadoGemmaChat();
+        }
     });
 
         async function loadDataAndInit(dataInicio, dataFim) {
@@ -4067,12 +4917,12 @@
     function renderHybridContent(rawHTML) {
         if (!rawHTML) return "";
 
-        // PROTEÇÃO: se já existe uma <table> HTML real no conteúdo (agora possível
+        // PROTEÇÃO: se já existe uma <table> ou <img> HTML real no conteúdo (agora possível
         // desde que o editor passou a converter Markdown colado via marked.parse()),
         // não processamos com o parser manual de "|" abaixo — ele foi desenhado para
-        // o formato antigo (texto com pipes) e quebraria uma tabela HTML genuína.
+        // o formato antigo (texto com pipes) e quebraria uma tabela ou imagem HTML genuína.
         // Aplicamos a classe .hybrid-table (já estilizada) e devolvemos o HTML.
-        if (/<table[\s>]/i.test(rawHTML)) {
+        if (/<(table|img)[\s>]/i.test(rawHTML)) {
             return rawHTML.replace(/<table(?![^>]*class=)/gi, '<table class="hybrid-table"');
         }
         
@@ -6862,74 +7712,8 @@
             btn.style.opacity = "1";
         }
     };
-
-    // ============================================================
-    // 🖼️ ADICIONAR IMAGENS NA APOSTILA
-    // ============================================================
-    // Divide a nota em blocos (por título ## / ### ou <h1-6>), manda cada
-    // bloco pro Worker, que usa o Gemini com busca na web pra achar imagens
-    // relevantes e já VALIDA cada uma (HEAD check real) antes de devolver —
-    // só URL confirmada entra no texto. Sem confirmação manual: o que passa
-    // na validação é inserido direto.
-
-    window.adicionarImagensApostila = async () => {
-        if (!editingDocId) return;
-
-        const btn = document.getElementById('btnAdicionarImagens');
-        const oldText = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Buscando imagens...';
-        btn.disabled = true;
-
-        try {
-            const refDoc = doc(db, "planners", currentUID, "tasks", editingDocId);
-            const snap = await getDoc(refDoc);
-            if (!snap.exists()) { alert("Documento não encontrado."); return; }
-            const data = snap.data();
-            const contentOriginal = data.contentHTML || "";
-
-            // Divide em blocos por título markdown (#) ou HTML (<h1-6>).
-            // Sem nenhum título no texto, o conteúdo inteiro vira 1 bloco só.
-            const partesBrutas = contentOriginal
-                .split(/(?=^#{1,6}\s+.+$)|(?=<h[1-6][^>]*>)/gm)
-                .filter(p => p.trim());
-            const blocosArray = partesBrutas.length > 0 ? partesBrutas : [contentOriginal];
-
-            const resultado = await callWorker({
-                action: "buscar_imagens_apostila",
-                blocos: blocosArray.map((texto, id) => ({ id, texto }))
-            }, "Adicionar Imagens");
-
-            let totalInseridas = 0;
-            const blocosComImagem = blocosArray.map((texto, id) => {
-                const achado = resultado.blocos.find(b => b.id === id);
-                if (!achado || achado.imagens.length === 0) return texto;
-                totalInseridas += achado.imagens.length;
-                const tagsImg = achado.imagens
-                    .map(url => `\n<img src="${url}" style="max-width:100%; border-radius:8px; margin:10px 0;">\n`)
-                    .join("");
-                return texto.trimEnd() + tagsImg;
-            });
-
-            const contentAtualizado = blocosComImagem.join("");
-            await updateDoc(refDoc, { contentHTML: contentAtualizado });
-
-            if (totalInseridas === 0) {
-                alert("Nenhuma imagem confiável foi encontrada para este conteúdo.");
-            } else {
-                showFeedback(`✅ ${totalInseridas} imagem(ns) adicionada(s)!`, false);
-                renderQuillContent(document.getElementById('viewContainer'), { ...data, contentHTML: contentAtualizado });
-            }
-
-        } catch (e) {
-            console.error(e);
-            alert("Erro ao buscar imagens: " + e.message);
-        } finally {
-            btn.innerHTML = oldText;
-            btn.disabled = false;
-        }
-    };
-
-
+    
+    
         // ============================================================
     // 💀 PROVA DE ANATOMIA EM LOTE (20 QUESTÕES)
     // ============================================================
@@ -7325,11 +8109,547 @@
         }
     };
 
+    // ============================================================
+    // 💬 CHATBOT GEMMA 4 (COM LEITURA DE CONTEXTO ULTRA RÁPIDA)
+    // ============================================================
+    let gemmaChatHistorico = [];
+    let gemmaEnviando = false;
+
+    function usuarioEhVip() {
+        return isPremium === true || (userEmail && userEmail.toLowerCase() === "onurbonecsamad@gmail.com");
+    }
+
+    window.atualizarEstadoGemmaChat = () => {
+        const btnFloat = document.getElementById("btnFloatingGemmaChat");
+        const inputEl = document.getElementById("gemmaChatInput");
+        const btnSend = document.getElementById("btnSendGemmaChat");
+        const bannerEl = document.getElementById("gemmaFreemiumBanner");
+
+        if (btnFloat) btnFloat.style.display = "flex";
+
+        const vip = usuarioEhVip();
+        if (inputEl) {
+            inputEl.disabled = !vip;
+            inputEl.placeholder = vip
+                ? "Digite sua dúvida médica..."
+                : "Recurso exclusivo do plano Premium...";
+        }
+        if (btnSend) btnSend.disabled = !vip;
+        if (bannerEl) bannerEl.style.display = vip ? "none" : "flex";
+    };
+
+    window.toggleGemmaChat = () => {
+        const panel = document.getElementById("gemmaChatPanel");
+        if (!panel) return;
+        const abrindo = panel.style.display !== "flex";
+        panel.style.display = abrindo ? "flex" : "none";
+
+        if (abrindo) {
+            window.atualizarEstadoGemmaChat();
+            atualizarBadgeContextoGemma();
+            const inputEl = document.getElementById("gemmaChatInput");
+            if (inputEl && !inputEl.disabled) {
+                setTimeout(() => inputEl.focus(), 80);
+            }
+        }
+    };
+
+    // Leitura instantânea (usando textContent em vez de innerText para não travar o navegador)
+    function obterContextoAtivo() {
+        let contexto = "";
+        let titulo = document.getElementById("viewTitle")?.textContent.trim() || "";
+        if (titulo) contexto += `O usuário está na aba/estudo: "${titulo}".\n`;
+
+        // 1. Tenta ler o texto de um Card de Anatomia aberto
+        const anatContainer = document.getElementById("quizAnatomiaContainer");
+        if (anatContainer && !anatContainer.classList.contains("hidden")) {
+            const caso = document.getElementById("anatCase")?.textContent || "";
+            const pergunta = document.getElementById("anatQuestion")?.textContent || "";
+            if (caso || pergunta) {
+                contexto += `O usuário está resolvendo uma questão de Anatomia:\nCaso Clínico: ${caso}\nPergunta: ${pergunta}\n`;
+                return contexto; 
+            }
+        }
+
+        // 2. Tenta ler o conteúdo aberto no Modal de Visualização Normal (Resumo de texto)
+        const quillEditor = document.querySelector("#viewContainer .ql-editor");
+        if (quillEditor && quillEditor.textContent && quillEditor.textContent.trim().length > 10) {
+            let textoTela = quillEditor.textContent.trim().replace(/\s+/g, ' ');
+            if (textoTela.length > 2000) textoTela = textoTela.substring(0, 2000) + "..."; 
+            contexto += `Conteúdo visível na tela no momento:\n"""\n${textoTela}\n"""\n`;
+            return contexto;
+        }
+
+        // 3. Leitura de PDF ativo na tela
+        const textLayer = document.getElementById("text-layer");
+        if (textLayer && textLayer.textContent && textLayer.textContent.trim().length > 10) {
+            let textoPdf = textLayer.textContent.trim().replace(/\s+/g, ' ');
+            if (textoPdf.length > 2000) textoPdf = textoPdf.substring(0, 2000) + "...";
+            contexto += `Texto visível na página atual do PDF:\n"""\n${textoPdf}\n"""\n`;
+            return contexto;
+        }
+
+        return contexto;
+    }
+
+    function atualizarBadgeContextoGemma() {
+        const badge = document.getElementById("gemmaContextBadge");
+        if (!badge) return;
+        const titulo = document.getElementById("viewTitle")?.textContent.trim();
+        if (titulo) {
+            badge.textContent = `📖 ${titulo.substring(0, 25)}`;
+            badge.style.display = "inline-block";
+        } else {
+            badge.style.display = "none";
+        }
+    }
+
+    window.enviarMensagemGemma = async () => {
+        if (!usuarioEhVip()) {
+            window.mostrarModalUpgrade();
+            return;
+        }
+
+        const inputEl = document.getElementById("gemmaChatInput");
+        if (!inputEl) return;
+        const texto = inputEl.value.trim();
+        if (!texto || gemmaEnviando) return;
+
+        gemmaEnviando = true;
+        inputEl.value = "";
+        adicionarBalaoGemma("user", texto);
+
+        const chatMsgContainer = document.getElementById("gemmaChatMessages");
+        const loadingId = "gemma-loading-" + Date.now();
+        const loadingDiv = document.createElement("div");
+        loadingDiv.id = loadingId;
+        loadingDiv.className = "gemma-msg model";
+        loadingDiv.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Preceptor pensando...`;
+        chatMsgContainer.appendChild(loadingDiv);
+        chatMsgContainer.scrollTop = chatMsgContainer.scrollHeight;
+
+        try {
+            const dadosContexto = obterContextoAtivo();
+            let mensagensPayload = [...gemmaChatHistorico, { role: "user", content: texto }];
+
+            const sysPrompt = `Você é um preceptor acadêmico sênior focado em medicina. Seja direto, cirúrgico e técnico. Aqui está o contexto do que o aluno está vendo na tela agora para te ajudar a responder dúvidas (ignore se a pergunta não for sobre isso):\n\n${dadosContexto}`;
+            mensagensPayload.unshift({ role: "system", content: sysPrompt });
+
+            const token = await getFirebaseToken();
+            const res = await fetch(WORKER_URL + "chat-gemma", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-firebase-token": token
+                },
+                body: JSON.stringify({ messages: mensagensPayload })
+            });
+
+            document.getElementById(loadingId)?.remove();
+
+            if (!res.ok) {
+                let errText = "Erro ao contatar o assistente.";
+                try { const errJson = await res.json(); errText = errJson.error || errText; } catch(_) {}
+                throw new Error(errText);
+            }
+
+            const data = await res.json();
+            const respostaIA = data.text || data.reply || "Sem resposta do modelo.";
+
+            gemmaChatHistorico.push({ role: "user", content: texto });
+            gemmaChatHistorico.push({ role: "model", content: respostaIA });
+
+            adicionarBalaoGemma("model", respostaIA);
+
+        } catch (e) {
+            document.getElementById(loadingId)?.remove();
+            console.error("❌ [CHAT-GEMMA]", e);
+            adicionarBalaoGemma("model", `⚠️ Ocorreu um erro: ${e.message}`);
+        } finally {
+            gemmaEnviando = false;
+        }
+    };
+
+    function adicionarBalaoGemma(role, texto) {
+        const container = document.getElementById("gemmaChatMessages");
+        if (!container) return;
+        const div = document.createElement("div");
+        div.className = `gemma-msg ${role}`;
+        
+        if (role === "model") {
+            div.innerHTML = marked.parse(texto);
+        } else {
+            div.textContent = texto;
+        }
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    // =========================================================
+    // 🎙️ MODO FEYNMAN NATIVE AUDIO (GEMINI LIVE API WEBSOCKET)
+    // =========================================================
+    let feynmanAudioCtx = null;
+    let feynmanMediaStream = null;
+    let feynmanScriptNode = null;
+    let feynmanWS = null;
+    let feynmanIsRecording = false;
+    let feynmanIsSetupComplete = false;
+    let feynmanPlaybackAudioCtx = null;
+    let feynmanNextPlayTime = 0;
+    let feynmanTranscriptAccumulator = "";
+
+    function downsampleBuffer(buffer, inputSampleRate, outputSampleRate) {
+        if (outputSampleRate === inputSampleRate) {
+            return buffer;
+        }
+        const sampleRateRatio = inputSampleRate / outputSampleRate;
+        const newLength = Math.round(buffer.length / sampleRateRatio);
+        const result = new Float32Array(newLength);
+        let offsetResult = 0;
+        let offsetBuffer = 0;
+        while (offsetResult < result.length) {
+            const nextOffsetBuffer = Math.round((offsetResult + 1) * sampleRateRatio);
+            let accum = 0, count = 0;
+            for (let i = offsetBuffer; i < nextOffsetBuffer && i < buffer.length; i++) {
+                accum += buffer[i];
+                count++;
+            }
+            result[offsetResult] = count > 0 ? accum / count : 0;
+            offsetResult++;
+            offsetBuffer = nextOffsetBuffer;
+        }
+        return result;
+    }
+
+    function floatTo16BitPCM(input) {
+        const output = new Int16Array(input.length);
+        for (let i = 0; i < input.length; i++) {
+            const s = Math.max(-1, Math.min(1, input[i]));
+            output[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        }
+        return output.buffer;
+    }
+
+    function arrayBufferToBase64(buffer) {
+        let binary = "";
+        const bytes = new Uint8Array(buffer);
+        const len = bytes.byteLength;
+        for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return window.btoa(binary);
+    }
+
+    window.iniciarFeynmanAudio = async () => {
+        if (!usuarioEhVip()) {
+            window.mostrarModalUpgrade();
+            return;
+        }
+
+        const btnIniciar = document.getElementById("btnIniciarFeynmanAudio");
+        const btnEncerrar = document.getElementById("btnEncerrarFeynmanAudio");
+        const pulseDot = document.getElementById("feynmanPulseDot");
+        const statusText = document.getElementById("feynmanLiveStatusText");
+
+        try {
+            // Fecha qualquer sessão anterior pendente
+            if (feynmanWS && feynmanWS.readyState === WebSocket.OPEN) {
+                try { feynmanWS.close(1000, "Nova sessão iniciada"); } catch (_) {}
+            }
+
+            btnIniciar.disabled = true;
+            statusText.textContent = "A solicitar acesso ao microfone...";
+
+            feynmanMediaStream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    channelCount: 1,
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                }
+            });
+
+            statusText.textContent = "A ligar ao preceptor de voz...";
+            const token = await getFirebaseToken();
+            const wsUrl = WORKER_URL.replace(/^http/, "ws") + "feynman-live?token=" + encodeURIComponent(token);
+
+            feynmanWS = new WebSocket(wsUrl);
+            feynmanIsSetupComplete = false;
+            feynmanTranscriptAccumulator = "";
+
+            feynmanWS.onopen = () => {
+                const textoRef = (document.getElementById("textoReferencia")?.value || "").trim().substring(0, 12000);
+                const contextoRef = textoRef
+                    ? `\n\nCONTEÚDO DE REFERÊNCIA DA AULA:\n"""\n${textoRef}\n"""`
+                    : "";
+
+                const setupPayload = {
+                    setup: {
+                        model: "models/gemini-2.5-flash-native-audio-preview-09-2025",
+                        generationConfig: {
+                            responseModalities: ["AUDIO"],
+                            speechConfig: {
+                                voiceConfig: {
+                                    prebuiltVoiceConfig: {
+                                        voiceName: "Aoede"
+                                    }
+                                }
+                            }
+                        },
+                        inputAudioTranscription: {},
+                        outputAudioTranscription: {},
+                        systemInstruction: {
+                            parts: [{
+                                text: "Você é um Preceptor Sênior de Medicina avaliando o aluno pelo Método Feynman. " +
+                                      "REGRA ABSOLUTA: Ouça em silêncio absoluto toda a explicação do aluno. NÃO fale nada e NÃO interrompa enquanto o aluno apenas estiver explicando, mesmo que ele faça pausas para respirar ou pensar. " +
+                                      "Só forneça o seu feedback completo, detalhado e falado quando receber o comando final de que o aluno encerrou a explicação. " +
+                                      "No feedback final: 1) Elogie os pontos certos; 2) Corrija com rigor qualquer erro conceitual ou fisiopatológico; 3) Aponte o que faltou mencionar; 4) Dê uma nota de 0 a 10." +
+                                      contextoRef
+                            }]
+                        }
+                    }
+                };
+
+                feynmanWS.send(JSON.stringify(setupPayload));
+                statusText.textContent = "A configurar sala de avaliação...";
+            };
+
+            feynmanWS.onmessage = async (event) => {
+                try {
+                    let rawText = "";
+                    if (typeof event.data === "string") {
+                        rawText = event.data;
+                    } else if (event.data instanceof Blob) {
+                        rawText = await event.data.text();
+                    } else if (event.data instanceof ArrayBuffer) {
+                        rawText = new TextDecoder("utf-8").decode(event.data);
+                    }
+                    if (!rawText) return;
+
+                    const msg = JSON.parse(rawText);
+
+                    if (msg.error) {
+                        console.error("❌ [GEMINI LIVE ERROR]", msg.error);
+                        alert("Erro da API Gemini Live: " + (msg.error.message || JSON.stringify(msg.error)));
+                        window.encerrarFeynmanAudio(true);
+                        return;
+                    }
+
+                    // Assim que o Google confirma o setupComplete, inicia a captura real do microfone
+                    if (msg.setupComplete !== undefined && !feynmanIsSetupComplete) {
+                        feynmanIsSetupComplete = true;
+                        await iniciarCapturaMicrofoneFeynman();
+                        btnIniciar.style.display = "none";
+                        btnIniciar.disabled = false;
+                        btnEncerrar.style.display = "inline-flex";
+                        pulseDot.style.display = "inline-block";
+                        statusText.textContent = "🔴 A gravar: explique o tema em voz alta (clique em Encerrar quando terminar).";
+                        return;
+                    }
+
+                    // Transcrição do que o aluno está a falar (preenche o campo "SEU RESUMO" em tempo real)
+                    const userTranscript = msg.serverContent?.inputTranscription?.text;
+                    if (userTranscript) {
+                        const campoAluno = document.getElementById("textoAluno");
+                        if (campoAluno) {
+                            campoAluno.value += userTranscript;
+                        }
+                    }
+
+                    // Transcrição em texto da avaliação falada pelo Preceptor
+                    const modelTranscript = msg.serverContent?.outputTranscription?.text;
+                    if (modelTranscript) {
+                        feynmanTranscriptAccumulator += modelTranscript;
+                        exibirTextoFeedbackFeynman(feynmanTranscriptAccumulator);
+                    }
+
+                    // Partes de áudio (PCM 24kHz) ou texto enviadas pelo modelo
+                    const parts = msg.serverContent?.modelTurn?.parts || [];
+                    for (const part of parts) {
+                        if (part.text) {
+                            feynmanTranscriptAccumulator += part.text;
+                            exibirTextoFeedbackFeynman(feynmanTranscriptAccumulator);
+                        }
+                        if (part.inlineData && part.inlineData.data) {
+                            reproduzirChunkAudioFeynman(part.inlineData.data);
+                        }
+                    }
+
+                    if (msg.serverContent?.turnComplete && !feynmanIsRecording) {
+                        statusText.textContent = "✅ Avaliação concluída pelo Preceptor.";
+                    }
+                } catch (e) {
+                    console.error("❌ [FEYNMAN WS MESSAGE]", e);
+                }
+            };
+
+            feynmanWS.onerror = (err) => {
+                console.error("❌ [FEYNMAN WS ERROR]", err);
+                statusText.textContent = "Erro na ligação de voz.";
+            };
+
+            feynmanWS.onclose = (event) => {
+                console.log("🔌 [FEYNMAN WS CLOSED]", event.code, event.reason);
+                if (feynmanIsRecording) {
+                    window.encerrarFeynmanAudio(true);
+                    statusText.textContent = `Ligação encerrada (${event.reason || "código " + event.code}).`;
+                }
+            };
+
+        } catch (err) {
+            console.error("❌ [FEYNMAN INIT ERROR]", err);
+            btnIniciar.disabled = false;
+            statusText.textContent = "Permissão de microfone negada ou falha ao iniciar.";
+            alert("Não foi possível aceder ao microfone no tablet: " + (err.message || err));
+            window.encerrarFeynmanAudio(true);
+        }
+    };
+
+    async function iniciarCapturaMicrofoneFeynman() {
+        feynmanAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (feynmanAudioCtx.state === "suspended") {
+            await feynmanAudioCtx.resume();
+        }
+
+        const nativeSampleRate = feynmanAudioCtx.sampleRate;
+        const source = feynmanAudioCtx.createMediaStreamSource(feynmanMediaStream);
+        feynmanScriptNode = feynmanAudioCtx.createScriptProcessor(4096, 1, 1);
+
+        feynmanIsRecording = true;
+
+        feynmanScriptNode.onaudioprocess = (audioProcessingEvent) => {
+            if (!feynmanIsRecording || !feynmanWS || feynmanWS.readyState !== WebSocket.OPEN || !feynmanIsSetupComplete) {
+                return;
+            }
+            const inputBuffer = audioProcessingEvent.inputBuffer.getChannelData(0);
+            const downsampled = downsampleBuffer(inputBuffer, nativeSampleRate, 16000);
+            const pcm16Buffer = floatTo16BitPCM(downsampled);
+            const base64Audio = arrayBufferToBase64(pcm16Buffer);
+
+            feynmanWS.send(JSON.stringify({
+                realtimeInput: {
+                    mediaChunks: [{
+                        mimeType: "audio/pcm;rate=16000",
+                        data: base64Audio
+                    }]
+                }
+            }));
+        };
+
+        source.connect(feynmanScriptNode);
+        feynmanScriptNode.connect(feynmanAudioCtx.destination);
+    }
+
+    function exibirTextoFeedbackFeynman(texto) {
+        const area = document.getElementById("areaFeedbackCorretor");
+        const content = document.getElementById("conteudoFeedback");
+        if (!area || !content) return;
+        area.style.display = "block";
+        document.querySelector("#modalCorretor .editor-body").style.flex = "0 0 50%";
+        content.innerHTML = marked.parse(texto);
+        area.scrollTop = area.scrollHeight;
+    }
+
+    window.encerrarFeynmanAudio = (fromErrorOrClose = false) => {
+        feynmanIsRecording = false;
+
+        if (feynmanScriptNode) {
+            try { feynmanScriptNode.disconnect(); } catch (_) {}
+            feynmanScriptNode = null;
+        }
+        if (feynmanAudioCtx) {
+            try { feynmanAudioCtx.close(); } catch (_) {}
+            feynmanAudioCtx = null;
+        }
+        if (feynmanMediaStream) {
+            try { feynmanMediaStream.getTracks().forEach(track => track.stop()); } catch (_) {}
+            feynmanMediaStream = null;
+        }
+
+        const btnIniciar = document.getElementById("btnIniciarFeynmanAudio");
+        const btnEncerrar = document.getElementById("btnEncerrarFeynmanAudio");
+        const pulseDot = document.getElementById("feynmanPulseDot");
+        const statusText = document.getElementById("feynmanLiveStatusText");
+
+        if (btnIniciar) {
+            btnIniciar.style.display = "inline-flex";
+            btnIniciar.disabled = false;
+        }
+        if (btnEncerrar) btnEncerrar.style.display = "none";
+        if (pulseDot) pulseDot.style.display = "none";
+
+        if (!fromErrorOrClose && feynmanWS && feynmanWS.readyState === WebSocket.OPEN) {
+            statusText.textContent = "🎧 Explicação encerrada. A ouvir a avaliação do Preceptor...";
+            // Envia comando final para o Preceptor avaliar toda a explicação
+            feynmanWS.send(JSON.stringify({
+                clientContent: {
+                    turns: [{
+                        role: "user",
+                        parts: [{
+                            text: "Encerrei a minha explicação. Por favor, faça agora a sua avaliação completa em voz alta seguindo as instruções de sistema."
+                        }]
+                    }],
+                    turnComplete: true
+                }
+            }));
+        } else if (fromErrorOrClose && feynmanWS) {
+            try { feynmanWS.close(1000, "Encerrado"); } catch (_) {}
+            feynmanWS = null;
+        }
+    };
+
+    window.fecharModalCorretor = () => {
+        window.encerrarFeynmanAudio(true);
+        if (feynmanPlaybackAudioCtx) {
+            try { feynmanPlaybackAudioCtx.close(); } catch (_) {}
+            feynmanPlaybackAudioCtx = null;
+        }
+        document.getElementById("modalCorretor").style.display = "none";
+    };
+
+    async function reproduzirChunkAudioFeynman(base64Data) {
+        try {
+            const binaryString = window.atob(base64Data);
+            const len = binaryString.length;
+            const rawBytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                rawBytes[i] = binaryString.charCodeAt(i);
+            }
+
+            if (!feynmanPlaybackAudioCtx) {
+                feynmanPlaybackAudioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+                feynmanNextPlayTime = 0;
+            }
+            if (feynmanPlaybackAudioCtx.state === 'suspended') {
+                await feynmanPlaybackAudioCtx.resume();
+            }
+
+            const pcm16 = new Int16Array(rawBytes.buffer);
+            const float32 = new Float32Array(pcm16.length);
+            for (let i = 0; i < pcm16.length; i++) {
+                float32[i] = pcm16[i] / 32768.0;
+            }
+
+            const buffer = feynmanPlaybackAudioCtx.createBuffer(1, float32.length, 24000);
+            buffer.copyToChannel(float32, 0);
+
+            const source = feynmanPlaybackAudioCtx.createBufferSource();
+            source.buffer = buffer;
+            source.connect(feynmanPlaybackAudioCtx.destination);
+
+            const currentTime = feynmanPlaybackAudioCtx.currentTime;
+            if (feynmanNextPlayTime < currentTime) {
+                feynmanNextPlayTime = currentTime + 0.05;
+            }
+            source.start(feynmanNextPlayTime);
+            feynmanNextPlayTime += buffer.duration;
+        } catch (e) {
+            console.error("❌ [AUDIO PLAYBACK]", e);
+        }
+    }
+
 
     </script>
-
-    
-    
     <script type="module" src="padrao_simulado.js"></script>
 </body>
 </html>
