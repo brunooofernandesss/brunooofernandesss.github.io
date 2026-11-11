@@ -789,10 +789,13 @@
             <div id="viewContainer" style="flex:1; overflow:hidden; display:flex; flex-direction:column;"></div>
             
             <div style="padding: 15px; border-top: 1px solid #eee; display:flex; justify-content: space-between;">
-                 <div style="display:flex; gap:10px;">
+                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
                      <button class="btn-action" id="btnEditarNota">Editar Texto</button>
                  <button class="btn-action" onclick="window.abrirCorretor()" style="color:#e67e22; border-color:#fadbd8; background:#fffbf0;">
                     <i class="fas fa-highlighter"></i> Corretor Feynman
+                 </button>
+                 <button class="btn-action" id="btnAdicionarImagensBlocos" onclick="window.adicionarImagensNosBlocos()" style="color:#2383e2; border-color:#d3e5ef; background:#eef6fc;" title="Buscar e inserir imagens relevantes ao final de cada bloco de 20 min">
+                    <i class="fas fa-images"></i> Adicionar Imagens
                  </button>
                  <button class="btn-action" onclick="window.exportarParaPDF()" style="color:#d44c47; border-color:#ffe2dd; background:#fff5f5;" title="Salvar como Arquivo PDF">
                     <i class="fas fa-file-pdf"></i> Exportar PDF
@@ -1870,13 +1873,12 @@
     function pareceMarkdown(texto) {
         if (!texto || texto.trim().length < 3) return false;
         const sinais = [
-            /\*\*[^*]+\*\*/,                        // **negrito**
-            /^#{1,6}\s+\S/m,                        // # Título / ## Subtítulo
-            /^\s*[-*+]\s+\S/m,                      // - item de lista
-            /^\s*\d+\.\s+\S/m,                      // 1. item numerado
-            /\|.+\|.+\|/,                           // | Col | Col | (tabela)
-            /^>\s+\S/m,                             // > citação
-            /!\[[^\]]*\]\(\s*https?:\/\/[^\s)]+\)/  // ![legenda](https://...) (imagem Markdown)
+            /\*\*[^*]+\*\*/,            // **negrito**
+            /^#{1,6}\s+\S/m,            // # Título / ## Subtítulo
+            /^\s*[-*+]\s+\S/m,          // - item de lista
+            /^\s*\d+\.\s+\S/m,          // 1. item numerado
+            /\|.+\|.+\|/,               // | Col | Col | (tabela)
+            /^>\s+\S/m                  // > citação
         ];
         return sinais.some(re => re.test(texto));
     }
@@ -2152,9 +2154,7 @@
         const htmlData = e.clipboardData && e.clipboardData.getData('text/html');
         const textData = e.clipboardData ? e.clipboardData.getData('text/plain') : '';
 
-        const temPadraoMdImg = /!\[[^\]]*\]\(\s*(?:<a[^>]+href=["'])?https?:\/\/[^\s)<"`]+/i;
-        const temFormatacaoMarkdownCrua = /(\*{2}[^*]+\*{2}|^#{1,6}\s+\S|^\s*[-*+]\s+\S|\|.+\|.+\|)/m.test(textData);
-        const temTabelaHtmlReal = htmlData && (/<(table|img)\b/i.test(htmlData) || (temPadraoMdImg.test(htmlData) && !temFormatacaoMarkdownCrua));
+        const temTabelaHtmlReal = htmlData && /<(table|img)\b/i.test(htmlData);
         const clipboardDataVazio = !textData && !htmlData;
 
         // ⚠️ CORREÇÃO MOBILE: o botão "Colar" do teclado virtual (Android/iOS),
@@ -2169,22 +2169,20 @@
 
             if (navigator.clipboard && navigator.clipboard.read) {
                 navigator.clipboard.read().then(async (items) => {
-                    let textoPlanoLido = '';
-                    if (navigator.clipboard.readText) {
-                        try { textoPlanoLido = await navigator.clipboard.readText(); } catch (_) {}
-                    }
-                    const textoTemMdCru = /(\*{2}[^*]+\*{2}|^#{1,6}\s+\S|^\s*[-*+]\s+\S|\|.+\|.+\|)/m.test(textoPlanoLido);
                     for (const item of items) {
                         if (item.types.includes('text/html')) {
                             const blob = await item.getType('text/html');
                             const htmlLido = await blob.text();
-                            if (/<(table|img)\b/i.test(htmlLido) || (temPadraoMdImg.test(htmlLido) && !textoTemMdCru)) {
+                            if (/<(table|img)\b/i.test(htmlLido)) {
                                 processarHtmlColado(htmlLido);
                                 return;
                             }
                         }
                     }
-                    if (textoPlanoLido) processarTextoColado(textoPlanoLido);
+                    if (navigator.clipboard.readText) {
+                        const textoLido = await navigator.clipboard.readText();
+                        if (textoLido) processarTextoColado(textoLido);
+                    }
                 }).catch(() => {
                     if (navigator.clipboard.readText) {
                         navigator.clipboard.readText().then((textoLido) => {
@@ -2241,9 +2239,7 @@
             texto = e.dataTransfer.getData('text/plain');
         }
 
-        const temPadraoMdImg = /!\[[^\]]*\]\(\s*(?:<a[^>]+href=["'])?https?:\/\/[^\s)<"`]+/i;
-        const temFormatacaoMarkdownCrua = texto && /(\*{2}[^*]+\*{2}|^#{1,6}\s+\S|^\s*[-*+]\s+\S|\|.+\|.+\|)/m.test(texto);
-        const temTabelaOuImgHtml = htmlData && (/<(table|img)\b/i.test(htmlData) || (temPadraoMdImg.test(htmlData) && !temFormatacaoMarkdownCrua));
+        const temTabelaOuImgHtml = htmlData && /<(table|img)\b/i.test(htmlData);
 
         // Se trouxer tabela/imagem em HTML ou for um bloco grande de Markdown
         if (temTabelaOuImgHtml || (texto && texto.length > 15 && pareceMarkdown(texto))) {
@@ -2308,14 +2304,6 @@
     function processarHtmlColado(htmlBruto) {
         try {
             let htmlLimpo = removerLinhasVaziasDoHTML(htmlBruto);
-
-            // Converte padrão Markdown ![legenda](url) presente no HTML (mesmo dentro de <code> ou com <a> interno) em <img> real
-            htmlLimpo = htmlLimpo.replace(/(?:<code[^>]*>\s*)?`*\s*!\[([^\]]*)\]\(\s*(?:<a[^>]+href=["']([^"']+)["'][^>]*>.*?<\/a>|(https?:\/\/[^\s)<"`]+))\s*\)\s*`*(?:\s*<\/code>)?/gi, function(_, alt, urlLink, urlDireta) {
-                const urlFinal = (urlLink || urlDireta || '').replace(/&amp;/g, '&').trim();
-                if (!urlFinal) return _;
-                const altLimpo = (alt || '').replace(/<[^>]+>/g, '').replace(/"/g, '&quot;').trim();
-                return `<p><img src="${urlFinal}" alt="${altLimpo}"></p>`;
-            });
 
             // 🖼️ EXTRAÇÃO DE IMAGENS DO GEMINI / CHATGPT:
             // Desencapsula imagens que vêm dentro de <button>, <a>, <figure> ou <picture>
@@ -2402,15 +2390,12 @@
 
     function processarTextoColado(textoColado) {
         try {
-            // Desencapsula imagens Markdown que vieram entre crases (`![legenda](url)`) do Gemini
-            const textoComImagens = textoColado.replace(/`+\s*(!\[[^\]]*\]\(\s*https?:\/\/[^\s)]+\s*\))\s*`+/g, '\n\n$1\n\n');
-
             // Corrige a fronteira de tabelas (bug observado em respostas do
             // Gemini, que às vezes não deixa linha vazia após a tabela, ou
             // insere uma linha vazia indevida entre cabeçalho e corpo) ANTES
             // de converter para HTML — assim o marked.parse() sempre vê uma
             // fronteira inequívoca entre tabela e texto seguinte.
-            const textoNormalizado = normalizarLimitesDeTabela(textoComImagens);
+            const textoNormalizado = normalizarLimitesDeTabela(textoColado);
             let htmlConvertido = marked.parse(textoNormalizado);
 
             // Rede de segurança final: remove qualquer <tr> vazia que tenha
@@ -7466,6 +7451,207 @@
     };
 
   
+    // ============================================================
+    // 🖼️ ADICIONAR IMAGENS NOS BLOCOS DE 20 MINUTOS (GOOGLE / MULTIFONTES)
+    // ============================================================
+    window.adicionarImagensNosBlocos = async () => {
+        if (!isPremium) { mostrarModalUpgrade(); return; }
+        const editorEl = document.querySelector('#viewContainer .ql-editor');
+        if (!editorEl) {
+            return alert("Abra um resumo em texto primeiro para adicionar imagens.");
+        }
+
+        const btnImg = document.getElementById('btnAdicionarImagensBlocos');
+        const btnOriginalHTML = btnImg ? btnImg.innerHTML : '';
+
+        try {
+            // 1. Identifica os blocos de 20 minutos (headings ou parágrafos com "Bloco... minutos")
+            // Se o texto não tiver marcação explícita de 20 min, divide pelos subtítulos (h2/h3) ou a cada 5 parágrafos
+            const todosElementos = Array.from(editorEl.children);
+            const regexBloco20 = /(bloco\s*\d*\s*[:\-—]?\s*\d+\s*a\s*\d+\s*min|\d+\s*a\s*\d+\s*minutos)/i;
+
+            let indicesInicios = [];
+            todosElementos.forEach((el, idx) => {
+                const txt = (el.innerText || el.textContent || '').trim();
+                if (regexBloco20.test(txt) && txt.length < 140) {
+                    indicesInicios.push(idx);
+                }
+            });
+
+            // Fallback: se não achou cabeçalhos explícitos de "X a Y minutos", usa h2/h3
+            if (indicesInicios.length === 0) {
+                todosElementos.forEach((el, idx) => {
+                    if (/^H[23]$/i.test(el.tagName)) {
+                        indicesInicios.push(idx);
+                    }
+                });
+            }
+
+            // Fallback 2: se ainda não houver divisões, agrupa a cada 5 parágrafos
+            if (indicesInicios.length === 0 && todosElementos.length > 0) {
+                for (let i = 0; i < todosElementos.length; i += 5) {
+                    indicesInicios.push(i);
+                }
+            }
+
+            if (indicesInicios.length === 0) {
+                return alert("Não foi possível identificar blocos de texto neste resumo.");
+            }
+
+            // Monta os blocos com seus respectivos elementos finais para sabermos onde inserir as imagens
+            const blocosMapeados = [];
+            for (let b = 0; b < indicesInicios.length; b++) {
+                const ini = indicesInicios[b];
+                const fim = (b + 1 < indicesInicios.length) ? indicesInicios[b + 1] - 1 : todosElementos.length - 1;
+                let textoAcumulado = "";
+                let ultimoElementoDoBloco = todosElementos[fim];
+
+                for (let k = ini; k <= fim; k++) {
+                    const el = todosElementos[k];
+                    if (el && !el.classList.contains('bloco-imagens-ia')) {
+                        textoAcumulado += (el.innerText || el.textContent || '') + "\n";
+                        ultimoElementoDoBloco = el;
+                    }
+                }
+
+                if (textoAcumulado.trim().length > 40) {
+                    blocosMapeados.push({
+                        id: b,
+                        texto: textoAcumulado.trim().substring(0, 4000),
+                        anchorEl: ultimoElementoDoBloco
+                    });
+                }
+            }
+
+            if (blocosMapeados.length === 0) {
+                return alert("O conteúdo dos blocos é muito curto para buscar imagens.");
+            }
+
+            if (btnImg) {
+                btnImg.disabled = true;
+                btnImg.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Buscando (0/${blocosMapeados.length})...`;
+            }
+
+            let totalImagensInseridas = 0;
+
+            // Processa até 2 blocos por vez para não estourar subrequests do Cloudflare Worker
+            const LOTE_BLOCOS = 2;
+            for (let i = 0; i < blocosMapeados.length; i += LOTE_BLOCOS) {
+                const fatia = blocosMapeados.slice(i, i + LOTE_BLOCOS);
+                showFeedback(`🖼️ Buscando imagens no Google para os blocos ${i + 1} a ${Math.min(i + LOTE_BLOCOS, blocosMapeados.length)} de ${blocosMapeados.length}...`, true);
+                if (btnImg) {
+                    btnImg.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Bloco ${i + 1}/${blocosMapeados.length}...`;
+                }
+
+                const payloadBlocos = fatia.map(item => ({ id: item.id, texto: item.texto }));
+                const resposta = await callWorker({
+                    action: "buscar_imagens_apostila",
+                    blocos: payloadBlocos
+                }, `buscar_imagens_bloco_${i + 1}`);
+
+                if (resposta && Array.isArray(resposta.blocos)) {
+                    resposta.blocos.forEach(resBloco => {
+                        const blocoRef = fatia.find(x => x.id === resBloco.id);
+                        const listaImgs = Array.isArray(resBloco.imagens) ? resBloco.imagens : [];
+                        if (!blocoRef || listaImgs.length === 0) return;
+
+                        // Cria o container visual ao final do bloco de 20 minutos
+                        let elementoReferencia = blocoRef.anchorEl;
+                        listaImgs.forEach(imgItem => {
+                            const urlImg = typeof imgItem === 'string' ? imgItem : (imgItem.url_imagem || imgItem.url);
+                            const legendaImg = typeof imgItem === 'object' && imgItem.conceito ? imgItem.conceito : 'Imagem complementar';
+                            const fonteImg = typeof imgItem === 'object' && imgItem.dominio ? imgItem.dominio : '';
+                            const linkFonte = typeof imgItem === 'object' && imgItem.url_fonte ? imgItem.url_fonte : urlImg;
+                            if (!urlImg) return;
+
+                            const pImg = document.createElement('p');
+                            pImg.className = 'bloco-imagens-ia';
+                            pImg.style.textAlign = 'center';
+                            pImg.style.margin = '18px 0 6px 0';
+
+                            const imgTag = document.createElement('img');
+                            imgTag.src = urlImg;
+                            imgTag.alt = legendaImg;
+                            imgTag.onerror = function() {
+                                // Se o servidor remoto bloquear hotlink, remove a imagem quebrada silenciosamente
+                                if (pLegenda && pLegenda.parentNode) pLegenda.remove();
+                                this.parentElement.remove();
+                            };
+                            pImg.appendChild(imgTag);
+
+                            const pLegenda = document.createElement('p');
+                            pLegenda.className = 'bloco-imagens-ia';
+                            pLegenda.style.cssText = 'text-align:center; font-size:12px; color:#666; margin-bottom:18px; font-style:italic;';
+                            pLegenda.innerHTML = `<strong>${legendaImg}</strong>${fonteImg ? ` — <a href="${linkFonte}" target="_blank" rel="noopener noreferrer" style="color:#2383e2;">${fonteImg}</a>` : ''}`;
+
+                            elementoReferencia.insertAdjacentElement('afterend', pImg);
+                            pImg.insertAdjacentElement('afterend', pLegenda);
+                            elementoReferencia = pLegenda;
+                            totalImagensInseridas++;
+                        });
+                    });
+                }
+            }
+
+            if (totalImagensInseridas === 0) {
+                showFeedback("Nenhuma imagem válida encontrada para os blocos.", false);
+                alert("A busca foi concluída, mas nenhuma imagem direta pôde ser extraída.");
+                return;
+            }
+
+            // 2. Persiste o novo HTML com imagens no Firestore (Tarefa + Biblioteca + Cache Local)
+            const novoHTML = editorEl.innerHTML;
+            const tituloBase = (document.getElementById('viewTitle').textContent || '').replace(/\[.*?\]/g, '').trim();
+
+            if (editingDocId) {
+                await updateDoc(doc(db, "planners", currentUID, "tasks", editingDocId), {
+                    contentHTML: novoHTML,
+                    geradoPorIA: false // garante que renderQuillContent use renderHybridContent preservando <img>
+                });
+                const itemCache = allTasksCache.find(t => t.id === editingDocId);
+                if (itemCache) {
+                    itemCache.contentHTML = novoHTML;
+                    itemCache.geradoPorIA = false;
+                }
+            }
+
+            if (viewingLibraryId) {
+                await updateDoc(doc(db, "planners", currentUID, "arquivos", viewingLibraryId), {
+                    contentHTML: novoHTML,
+                    geradoPorIA: false
+                });
+                const arqCache = bibliotecaCache.find(a => a.id === viewingLibraryId);
+                if (arqCache) {
+                    arqCache.contentHTML = novoHTML;
+                    arqCache.geradoPorIA = false;
+                }
+            } else if (tituloBase) {
+                // Se abriu pelo Cronograma, sincroniza também o arquivo correspondente na Biblioteca
+                const qLib = query(collection(db, "planners", currentUID, "arquivos"));
+                const snapLib = await getDocs(qLib);
+                const updatesLib = [];
+                snapLib.forEach(d => {
+                    if ((d.data().nome || '').trim() === tituloBase) {
+                        updatesLib.push(updateDoc(d.ref, { contentHTML: novoHTML, geradoPorIA: false }));
+                    }
+                });
+                if (updatesLib.length > 0) await Promise.all(updatesLib);
+            }
+
+            showFeedback(`✅ ${totalImagensInseridas} imagens adicionadas e salvas nos blocos!`, false);
+
+        } catch (err) {
+            console.error("Erro ao adicionar imagens nos blocos:", err);
+            showFeedback("Erro ao buscar imagens.", false);
+            alert("Erro ao adicionar imagens: " + err.message);
+        } finally {
+            if (btnImg) {
+                btnImg.disabled = false;
+                btnImg.innerHTML = btnOriginalHTML;
+            }
+        }
+    };
+
     // ============================================================
     // 🖨️ EXPORTAR PARA PDF
     // ============================================================
