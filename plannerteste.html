@@ -1870,12 +1870,13 @@
     function pareceMarkdown(texto) {
         if (!texto || texto.trim().length < 3) return false;
         const sinais = [
-            /\*\*[^*]+\*\*/,            // **negrito**
-            /^#{1,6}\s+\S/m,            // # Título / ## Subtítulo
-            /^\s*[-*+]\s+\S/m,          // - item de lista
-            /^\s*\d+\.\s+\S/m,          // 1. item numerado
-            /\|.+\|.+\|/,               // | Col | Col | (tabela)
-            /^>\s+\S/m                  // > citação
+            /\*\*[^*]+\*\*/,                        // **negrito**
+            /^#{1,6}\s+\S/m,                        // # Título / ## Subtítulo
+            /^\s*[-*+]\s+\S/m,                      // - item de lista
+            /^\s*\d+\.\s+\S/m,                      // 1. item numerado
+            /\|.+\|.+\|/,                           // | Col | Col | (tabela)
+            /^>\s+\S/m,                             // > citação
+            /!\[[^\]]*\]\(\s*https?:\/\/[^\s)]+\)/  // ![legenda](https://...) (imagem Markdown)
         ];
         return sinais.some(re => re.test(texto));
     }
@@ -2151,7 +2152,9 @@
         const htmlData = e.clipboardData && e.clipboardData.getData('text/html');
         const textData = e.clipboardData ? e.clipboardData.getData('text/plain') : '';
 
-        const temTabelaHtmlReal = htmlData && /<(table|img)\b/i.test(htmlData);
+        const temPadraoMdImg = /!\[[^\]]*\]\(\s*(?:<a[^>]+href=["'])?https?:\/\/[^\s)<"`]+/i;
+        const temFormatacaoMarkdownCrua = /(\*{2}[^*]+\*{2}|^#{1,6}\s+\S|^\s*[-*+]\s+\S|\|.+\|.+\|)/m.test(textData);
+        const temTabelaHtmlReal = htmlData && (/<(table|img)\b/i.test(htmlData) || (temPadraoMdImg.test(htmlData) && !temFormatacaoMarkdownCrua));
         const clipboardDataVazio = !textData && !htmlData;
 
         // ⚠️ CORREÇÃO MOBILE: o botão "Colar" do teclado virtual (Android/iOS),
@@ -2166,20 +2169,22 @@
 
             if (navigator.clipboard && navigator.clipboard.read) {
                 navigator.clipboard.read().then(async (items) => {
+                    let textoPlanoLido = '';
+                    if (navigator.clipboard.readText) {
+                        try { textoPlanoLido = await navigator.clipboard.readText(); } catch (_) {}
+                    }
+                    const textoTemMdCru = /(\*{2}[^*]+\*{2}|^#{1,6}\s+\S|^\s*[-*+]\s+\S|\|.+\|.+\|)/m.test(textoPlanoLido);
                     for (const item of items) {
                         if (item.types.includes('text/html')) {
                             const blob = await item.getType('text/html');
                             const htmlLido = await blob.text();
-                            if (/<(table|img)\b/i.test(htmlLido)) {
+                            if (/<(table|img)\b/i.test(htmlLido) || (temPadraoMdImg.test(htmlLido) && !textoTemMdCru)) {
                                 processarHtmlColado(htmlLido);
                                 return;
                             }
                         }
                     }
-                    if (navigator.clipboard.readText) {
-                        const textoLido = await navigator.clipboard.readText();
-                        if (textoLido) processarTextoColado(textoLido);
-                    }
+                    if (textoPlanoLido) processarTextoColado(textoPlanoLido);
                 }).catch(() => {
                     if (navigator.clipboard.readText) {
                         navigator.clipboard.readText().then((textoLido) => {
@@ -2236,7 +2241,9 @@
             texto = e.dataTransfer.getData('text/plain');
         }
 
-        const temTabelaOuImgHtml = htmlData && /<(table|img)\b/i.test(htmlData);
+        const temPadraoMdImg = /!\[[^\]]*\]\(\s*(?:<a[^>]+href=["'])?https?:\/\/[^\s)<"`]+/i;
+        const temFormatacaoMarkdownCrua = texto && /(\*{2}[^*]+\*{2}|^#{1,6}\s+\S|^\s*[-*+]\s+\S|\|.+\|.+\|)/m.test(texto);
+        const temTabelaOuImgHtml = htmlData && (/<(table|img)\b/i.test(htmlData) || (temPadraoMdImg.test(htmlData) && !temFormatacaoMarkdownCrua));
 
         // Se trouxer tabela/imagem em HTML ou for um bloco grande de Markdown
         if (temTabelaOuImgHtml || (texto && texto.length > 15 && pareceMarkdown(texto))) {
@@ -2301,6 +2308,14 @@
     function processarHtmlColado(htmlBruto) {
         try {
             let htmlLimpo = removerLinhasVaziasDoHTML(htmlBruto);
+
+            // Converte padrão Markdown ![legenda](url) presente no HTML (mesmo dentro de <code> ou com <a> interno) em <img> real
+            htmlLimpo = htmlLimpo.replace(/(?:<code[^>]*>\s*)?`*\s*!\[([^\]]*)\]\(\s*(?:<a[^>]+href=["']([^"']+)["'][^>]*>.*?<\/a>|(https?:\/\/[^\s)<"`]+))\s*\)\s*`*(?:\s*<\/code>)?/gi, function(_, alt, urlLink, urlDireta) {
+                const urlFinal = (urlLink || urlDireta || '').replace(/&amp;/g, '&').trim();
+                if (!urlFinal) return _;
+                const altLimpo = (alt || '').replace(/<[^>]+>/g, '').replace(/"/g, '&quot;').trim();
+                return `<p><img src="${urlFinal}" alt="${altLimpo}"></p>`;
+            });
 
             // 🖼️ EXTRAÇÃO DE IMAGENS DO GEMINI / CHATGPT:
             // Desencapsula imagens que vêm dentro de <button>, <a>, <figure> ou <picture>
@@ -2387,12 +2402,15 @@
 
     function processarTextoColado(textoColado) {
         try {
+            // Desencapsula imagens Markdown que vieram entre crases (`![legenda](url)`) do Gemini
+            const textoComImagens = textoColado.replace(/`+\s*(!\[[^\]]*\]\(\s*https?:\/\/[^\s)]+\s*\))\s*`+/g, '\n\n$1\n\n');
+
             // Corrige a fronteira de tabelas (bug observado em respostas do
             // Gemini, que às vezes não deixa linha vazia após a tabela, ou
             // insere uma linha vazia indevida entre cabeçalho e corpo) ANTES
             // de converter para HTML — assim o marked.parse() sempre vê uma
             // fronteira inequívoca entre tabela e texto seguinte.
-            const textoNormalizado = normalizarLimitesDeTabela(textoColado);
+            const textoNormalizado = normalizarLimitesDeTabela(textoComImagens);
             let htmlConvertido = marked.parse(textoNormalizado);
 
             // Rede de segurança final: remove qualquer <tr> vazia que tenha
