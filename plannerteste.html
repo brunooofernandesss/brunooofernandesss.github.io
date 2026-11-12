@@ -7452,8 +7452,120 @@
 
   
     // ============================================================
-    // 🖼️ ADICIONAR IMAGENS NOS BLOCOS DE 20 MINUTOS (GOOGLE / MULTIFONTES)
+    // 🖼️ ADICIONAR IMAGENS NOS BLOCOS DE 20 MINUTOS (ARQUITETURA 3.1 + PRANCHA-MOSAICO UNIFICADA + 3.5)
     // ============================================================
+    // Carrega uma miniatura no navegador com CORS para desenhar no Canvas da Prancha-Mosaico
+    async function carregarImagemParaCanvas(urlThumb, urlFallback) {
+        const tentar = (src) => new Promise((resolve) => {
+            if (!src) return resolve(null);
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            const timer = setTimeout(() => { img.src = ""; resolve(null); }, 4500);
+            img.onload = () => { clearTimeout(timer); resolve(img); };
+            img.onerror = () => { clearTimeout(timer); resolve(null); };
+            img.src = src;
+        });
+
+        let carregada = await tentar(urlThumb);
+        if (!carregada && urlFallback && urlFallback !== urlThumb) {
+            carregada = await tentar(urlFallback);
+        }
+        return carregada;
+    }
+
+    // Junta dezenas de miniaturas em um único arquivo JPEG de Prancha-Mosaico (Contact Sheet)
+    // numerando cada célula com `[#0]`, `[#1]`, `[#2]`... e listando os links correspondentes!
+    async function montarPranchasMosaicoEmMassa(listaCandidatos) {
+        const POR_PRANCHA = 16; // Grade 4x4 (1280x1120px) nítida e super leve (~180KB por prancha!)
+        const COLS = 4;
+        const CELL_W = 320;
+        const CELL_H = 260;
+
+        // 1. Baixa todas as miniaturas diretamente no navegador em paralelo (sem gastar 1 único subrequest do Cloudflare Worker!)
+        const carregados = await Promise.all(
+            listaCandidatos.map(async (cand) => {
+                const imgEl = await carregarImagemParaCanvas(cand.url_thumb, cand.url_imagem);
+                return imgEl ? { cand, imgEl } : null;
+            })
+        );
+
+        const validos = carregados.filter(Boolean);
+        if (validos.length === 0) return { mosaicosBase64: [], indiceValidos: [] };
+
+        const mosaicosBase64 = [];
+        const indiceValidos = [];
+
+        for (let inicio = 0; inicio < validos.length; inicio += POR_PRANCHA) {
+            const fatia = validos.slice(inicio, inicio + POR_PRANCHA);
+            const linhas = Math.ceil(fatia.length / COLS);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = COLS * CELL_W;
+            canvas.height = linhas * CELL_H;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = "#1e293b";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            fatia.forEach((item, idxLocal) => {
+                const { cand, imgEl } = item;
+                const col = idxLocal % COLS;
+                const row = Math.floor(idxLocal / COLS);
+                const x = col * CELL_W;
+                const y = row * CELL_H;
+
+                // Fundo branco do quadro para destacar diagramas transparentes
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(x + 6, y + 6, CELL_W - 12, CELL_H - 12);
+
+                // Desenha a miniatura mantendo proporção (object-fit: contain)
+                const areaW = CELL_W - 20;
+                const areaH = CELL_H - 54;
+                const escala = Math.min(areaW / (imgEl.naturalWidth || 1), areaH / (imgEl.naturalHeight || 1));
+                const drawW = Math.max(1, (imgEl.naturalWidth || areaW) * escala);
+                const drawH = Math.max(1, (imgEl.naturalHeight || areaH) * escala);
+                const drawX = x + 10 + (areaW - drawW) / 2;
+                const drawY = y + 40 + (areaH - drawH) / 2;
+
+                try {
+                    ctx.drawImage(imgEl, drawX, drawY, drawW, drawH);
+                } catch (_) {}
+
+                // Faixa superior escura com o código grande `[#ID]` e domínio do link
+                ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
+                ctx.fillRect(x + 6, y + 6, CELL_W - 12, 30);
+
+                ctx.fillStyle = "#facc15";
+                ctx.font = "bold 16px Inter, Arial, sans-serif";
+                ctx.fillText(`[#${cand.id_global}]`, x + 12, y + 27);
+
+                ctx.fillStyle = "#f8fafc";
+                ctx.font = "11px Inter, Arial, sans-serif";
+                const textoDom = (cand.dominio || "").substring(0, 26);
+                ctx.fillText(textoDom, x + 78, y + 26);
+
+                indiceValidos.push({
+                    id_global: cand.id_global,
+                    conceito_alvo: cand.conceito_alvo,
+                    dominio: cand.dominio,
+                    titulo_real: cand.titulo_real,
+                    legenda_real: cand.legenda_real,
+                    url_imagem: cand.url_imagem,
+                    url_thumb: cand.url_thumb,
+                    url_fonte: cand.url_fonte
+                });
+            });
+
+            const dataUrl = canvas.toDataURL("image/jpeg", 0.84);
+            mosaicosBase64.push({
+                mimeType: "image/jpeg",
+                data: dataUrl.split(",")[1]
+            });
+        }
+
+        return { mosaicosBase64, indiceValidos };
+    }
+
     window.adicionarImagensNosBlocos = async () => {
         if (!isPremium) { mostrarModalUpgrade(); return; }
         const editorEl = document.querySelector('#viewContainer .ql-editor');
@@ -7468,8 +7580,7 @@
             // 0. Remove imagens geradas anteriormente por esta função para não duplicar ao rodar de novo
             editorEl.querySelectorAll('.bloco-imagens-ia').forEach(el => el.remove());
 
-            // 1. Achata listas (UL/OL) para que marcadores como "• Bloco: 60 a 80 minutos" (dentro de <li>)
-            //    sejam lidos exatamente no mesmo nível dos parágrafos <p> e cabeçalhos <h1>-<h4>!
+            // 1. Achata listas (UL/OL) para que marcadores como "• Bloco: 60 a 80 minutos" sejam lidos no mesmo nível
             const todosElementos = [];
             Array.from(editorEl.children).forEach(el => {
                 if (el.tagName === 'UL' || el.tagName === 'OL') {
@@ -7479,8 +7590,6 @@
                 }
             });
 
-            // Regex estrito: captura APENAS subtítulos de "Bloco: X a Y minutos"
-            // e IGNORA títulos gerais de 1 hora ("Resumo da Aula: 0 a 60 minutos")
             const regexBloco20 = /^[^a-zA-Z0-9]*bloco\s*\d*\s*[:\-—]?\s*\d+\s*a\s*\d+\s*min/i;
             const regexTitulo1Hora = /resumo\s+da\s+aula\s*:/i;
 
@@ -7492,7 +7601,6 @@
                 }
             });
 
-            // Fallback 1: se for um resumo sem "Bloco: X a Y min", procura qualquer "X a Y minutos" exceto "Resumo da Aula"
             if (indicesInicios.length === 0) {
                 const regexMinutosGenerico = /\b\d+\s*a\s*\d+\s*minutos/i;
                 todosElementos.forEach((el, idx) => {
@@ -7503,7 +7611,6 @@
                 });
             }
 
-            // Fallback 2: se não achou cabeçalhos de minutos, usa h2/h3
             if (indicesInicios.length === 0) {
                 todosElementos.forEach((el, idx) => {
                     if (/^H[23]$/i.test(el.tagName)) {
@@ -7512,7 +7619,6 @@
                 });
             }
 
-            // Fallback 3: se ainda não houver divisões, agrupa a cada 5 parágrafos
             if (indicesInicios.length === 0 && todosElementos.length > 0) {
                 for (let i = 0; i < todosElementos.length; i += 5) {
                     indicesInicios.push(i);
@@ -7523,7 +7629,6 @@
                 return alert("Não foi possível identificar blocos de texto neste resumo.");
             }
 
-            // Monta os blocos de 20 min, parando ANTES de qualquer título "Resumo da Aula: X a Y min"
             const blocosMapeados = [];
             for (let b = 0; b < indicesInicios.length; b++) {
                 const ini = indicesInicios[b];
@@ -7535,7 +7640,6 @@
                     const el = todosElementos[k];
                     if (!el || el.classList.contains('bloco-imagens-ia')) continue;
                     const txtEl = (el.innerText || el.textContent || '').trim();
-                    // Não deixa o cabeçalho da próxima hora ("Resumo da Aula: 60 a 93 minutos") entrar no final do bloco anterior!
                     if (k > ini && regexTitulo1Hora.test(txtEl) && txtEl.length < 120) {
                         continue;
                     }
@@ -7543,11 +7647,10 @@
                     ultimoElementoDoBloco = el;
                 }
 
-                // Se o último elemento do bloco estiver dentro de um <ul>/<ol>, ancora após a lista ou no próprio item
                 if (textoAcumulado.trim().length > 40) {
                     blocosMapeados.push({
                         id: b,
-                        texto: textoAcumulado.trim().substring(0, 4000),
+                        texto: textoAcumulado.trim().substring(0, 14000),
                         anchorEl: ultimoElementoDoBloco
                     });
                 }
@@ -7559,81 +7662,116 @@
 
             if (btnImg) {
                 btnImg.disabled = true;
-                btnImg.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Buscando (0/${blocosMapeados.length})...`;
+                btnImg.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Iniciando (0/${blocosMapeados.length})...`;
             }
 
             let totalImagensInseridas = 0;
-            const relatorioDiagnostico = [];
+            const logDiagnostico = [];
 
-            // Processa 1 bloco de 20 minutos por requisição:
-            // - Evita o limite de 50 subrequests do Cloudflare Worker Free
-            // - Evita rate-limit (429) nas chamadas do Gemini com Google Search
-            // - Garante que os blocos de 20-40, 60-80 e 80-93 recebam imagens normalmente!
+            // Para cada bloco de 20 minutos, executa a sua arquitetura em 2 requisições:
+            // Req 1 (Gemini 3.1 Flash Lite) -> Coleta catálogo de miniaturas + links
+            // Navegador -> Junta tudo em Prancha-Mosaico única (Contact Sheet)
+            // Req 2 (Gemini 3.5 Flash Lite) -> Analisa a Prancha-Mosaico inteira de uma vez e escolhe as melhores!
             for (let i = 0; i < blocosMapeados.length; i++) {
                 const blocoAtual = blocosMapeados[i];
-                showFeedback(`🖼️ Buscando imagens para o bloco ${i + 1} de ${blocosMapeados.length}...`, true);
-                if (btnImg) {
-                    btnImg.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Bloco ${i + 1}/${blocosMapeados.length}...`;
-                }
 
                 try {
-                    const resposta = await callWorker({
-                        action: "buscar_imagens_apostila",
-                        blocos: [{ id: blocoAtual.id, texto: blocoAtual.texto }]
-                    }, `buscar_imagens_bloco_${i + 1}`);
-
-                    if (resposta && Array.isArray(resposta.blocos)) {
-                        resposta.blocos.forEach(resBloco => {
-                            if (resBloco.diagnostico) {
-                                console.log(`[DIAGNÓSTICO BLOCO ${i + 1}]`, resBloco.diagnostico);
-                                relatorioDiagnostico.push(`Bloco ${i + 1}: ${resBloco.diagnostico.motivo_falha || `Aprovadas: ${resBloco.diagnostico.candidatos_aprovados} (Open-i: ${resBloco.diagnostico.candidatos_openi}, Wiki: ${resBloco.diagnostico.candidatos_wikimedia}, Web: ${resBloco.diagnostico.candidatos_web_medica}, Baixadas: ${resBloco.diagnostico.candidatos_inspecionados_visualmente})`}`);
-                            }
-                            const listaImgs = Array.isArray(resBloco.imagens) ? resBloco.imagens : [];
-                            if (listaImgs.length === 0) return;
-
-                            let elementoReferencia = blocoAtual.anchorEl;
-                            // Se por acaso o anchorEl for um <li> solto no meio de um <ul>, insere após o próprio elemento
-                            listaImgs.forEach(imgItem => {
-                                const urlImg = typeof imgItem === 'string' ? imgItem : (imgItem.url_imagem || imgItem.url);
-                                const legendaImg = typeof imgItem === 'object' && imgItem.conceito ? imgItem.conceito : 'Imagem complementar';
-                                const fonteImg = typeof imgItem === 'object' && imgItem.dominio ? imgItem.dominio : '';
-                                const linkFonte = typeof imgItem === 'object' && imgItem.url_fonte ? imgItem.url_fonte : urlImg;
-                                if (!urlImg) return;
-
-                                const pImg = document.createElement('p');
-                                pImg.className = 'bloco-imagens-ia';
-                                pImg.style.textAlign = 'center';
-                                pImg.style.margin = '18px 0 6px 0';
-
-                                const imgTag = document.createElement('img');
-                                imgTag.src = urlImg;
-                                imgTag.alt = legendaImg;
-                                imgTag.onerror = function() {
-                                    if (pLegenda && pLegenda.parentNode) pLegenda.remove();
-                                    this.parentElement.remove();
-                                };
-                                pImg.appendChild(imgTag);
-
-                                const pLegenda = document.createElement('p');
-                                pLegenda.className = 'bloco-imagens-ia';
-                                pLegenda.style.cssText = 'text-align:center; font-size:12px; color:#666; margin-bottom:18px; font-style:italic;';
-                                pLegenda.innerHTML = `<strong>${legendaImg}</strong>${fonteImg ? ` — <a href="${linkFonte}" target="_blank" rel="noopener noreferrer" style="color:#2383e2;">${fonteImg}</a>` : ''}`;
-
-                                elementoReferencia.insertAdjacentElement('afterend', pImg);
-                                pImg.insertAdjacentElement('afterend', pLegenda);
-                                elementoReferencia = pLegenda;
-                                totalImagensInseridas++;
-                            });
-                        });
+                    // 1ª REQUISIÇÃO: Gemini 3.1 Flash Lite planeja e coleta até 36 miniaturas com links
+                    showFeedback(`🤖 [Bloco ${i + 1}/${blocosMapeados.length}] Req 1 (Gemini 3.1): Coletando miniaturas e links...`, true);
+                    if (btnImg) {
+                        btnImg.innerHTML = `<i class="fas fa-spinner fa-spin"></i> B${i + 1} (1/2 Coleta)...`;
                     }
+
+                    const resColeta = await callWorker({
+                        action: "coletar_candidatos_bloco",
+                        idBloco: blocoAtual.id,
+                        textoBloco: blocoAtual.texto
+                    }, `coletar_candidatos_bloco_${i + 1}`);
+
+                    const listaCandidatos = Array.isArray(resColeta?.candidatos) ? resColeta.candidatos : [];
+                    if (listaCandidatos.length === 0) {
+                        logDiagnostico.push(`Bloco ${i + 1}: Nenhum candidato retornado na Req 1.`);
+                        continue;
+                    }
+
+                    // MONTAGEM DO ARQUIVO ÚNICO DE MINIATURAS (PRANCHA-MOSAICO) NO NAVEGADOR
+                    showFeedback(`🖼️ [Bloco ${i + 1}/${blocosMapeados.length}] Montando Prancha-Mosaico com ${listaCandidatos.length} miniaturas...`, true);
+                    const { mosaicosBase64, indiceValidos } = await montarPranchasMosaicoEmMassa(listaCandidatos);
+
+                    if (mosaicosBase64.length === 0) {
+                        logDiagnostico.push(`Bloco ${i + 1}: Não foi possível renderizar miniaturas no Canvas.`);
+                        continue;
+                    }
+
+                    // 2ª REQUISIÇÃO: Gemini 3.5 Flash Lite analisa a Prancha-Mosaico em massa e escolhe os quadros [#N]
+                    showFeedback(`👁️ [Bloco ${i + 1}/${blocosMapeados.length}] Req 2 (Gemini 3.5): Analisando ${indiceValidos.length} miniaturas na Prancha...`, true);
+                    if (btnImg) {
+                        btnImg.innerHTML = `<i class="fas fa-spinner fa-spin"></i> B${i + 1} (2/2 Auditoria)...`;
+                    }
+
+                    const resAuditoria = await callWorker({
+                        action: "auditar_mosaico_bloco",
+                        idBloco: blocoAtual.id,
+                        textoBloco: blocoAtual.texto,
+                        conceitos: resColeta.conceitos || [],
+                        indiceCandidatos: indiceValidos,
+                        mosaicosBase64: mosaicosBase64
+                    }, `auditar_mosaico_bloco_${i + 1}`);
+
+                    const listaImgs = Array.isArray(resAuditoria?.imagens) ? resAuditoria.imagens : [];
+                    if (listaImgs.length === 0) {
+                        logDiagnostico.push(`Bloco ${i + 1}: Inspecionou ${indiceValidos.length} miniaturas na prancha, mas nenhuma foi aprovada.`);
+                        continue;
+                    }
+
+                    let elementoReferencia = blocoAtual.anchorEl;
+                    listaImgs.forEach(imgItem => {
+                        const urlImg = imgItem.url_imagem || imgItem.url_thumb;
+                        const urlFallbackThumb = imgItem.url_thumb || urlImg;
+                        const legendaImg = imgItem.conceito || 'Imagem complementar';
+                        const fonteImg = imgItem.dominio || '';
+                        const linkFonte = imgItem.url_fonte || urlImg;
+                        if (!urlImg) return;
+
+                        const pImg = document.createElement('p');
+                        pImg.className = 'bloco-imagens-ia';
+                        pImg.style.textAlign = 'center';
+                        pImg.style.margin = '18px 0 6px 0';
+
+                        const imgTag = document.createElement('img');
+                        imgTag.src = urlImg;
+                        imgTag.alt = legendaImg;
+                        imgTag.onerror = function() {
+                            // Se o site original bloquear hotlink da imagem alta resolução, usa a miniatura validada que já funcionou na prancha!
+                            if (this.src !== urlFallbackThumb && urlFallbackThumb) {
+                                this.src = urlFallbackThumb;
+                                return;
+                            }
+                            if (pLegenda && pLegenda.parentNode) pLegenda.remove();
+                            this.parentElement.remove();
+                        };
+                        pImg.appendChild(imgTag);
+
+                        const pLegenda = document.createElement('p');
+                        pLegenda.className = 'bloco-imagens-ia';
+                        pLegenda.style.cssText = 'text-align:center; font-size:12px; color:#666; margin-bottom:18px; font-style:italic;';
+                        pLegenda.innerHTML = `<strong>${legendaImg}</strong>${fonteImg ? ` — <a href="${linkFonte}" target="_blank" rel="noopener noreferrer" style="color:#2383e2;">${fonteImg}</a>` : ''}`;
+
+                        elementoReferencia.insertAdjacentElement('afterend', pImg);
+                        pImg.insertAdjacentElement('afterend', pLegenda);
+                        elementoReferencia = pLegenda;
+                        totalImagensInseridas++;
+                    });
+
                 } catch (errBloco) {
-                    console.warn(`Aviso: falha ao buscar imagens do bloco ${i + 1}:`, errBloco);
+                    console.warn(`Aviso: falha no bloco ${i + 1}:`, errBloco);
+                    logDiagnostico.push(`Bloco ${i + 1}: ${errBloco.message}`);
                 }
             }
 
             if (totalImagensInseridas === 0) {
-                showFeedback("Nenhuma imagem aprovada na auditoria visual.", false);
-                alert("A busca foi concluída, mas nenhuma imagem passou na auditoria visual.\n\nDiagnóstico por bloco:\n" + (relatorioDiagnostico.join("\n\n") || "Sem detalhes retornados pelo Worker."));
+                showFeedback("Nenhuma imagem aprovada para os blocos.", false);
+                alert("A busca foi concluída, mas nenhuma imagem passou na auditoria.\n\n" + logDiagnostico.join("\n"));
                 return;
             }
 
@@ -7644,7 +7782,7 @@
             if (editingDocId) {
                 await updateDoc(doc(db, "planners", currentUID, "tasks", editingDocId), {
                     contentHTML: novoHTML,
-                    geradoPorIA: false // garante que renderQuillContent use renderHybridContent preservando <img>
+                    geradoPorIA: false
                 });
                 const itemCache = allTasksCache.find(t => t.id === editingDocId);
                 if (itemCache) {
@@ -7675,7 +7813,7 @@
                 if (updatesLib.length > 0) await Promise.all(updatesLib);
             }
 
-            showFeedback(`✅ ${totalImagensInseridas} imagens adicionadas e salvas em todos os blocos!`, false);
+            showFeedback(`✅ ${totalImagensInseridas} imagens aprovadas pela Prancha-Mosaico e salvas!`, false);
 
         } catch (err) {
             console.error("Erro ao adicionar imagens nos blocos:", err);
