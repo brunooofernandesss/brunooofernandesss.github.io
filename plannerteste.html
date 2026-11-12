@@ -7563,6 +7563,7 @@
             }
 
             let totalImagensInseridas = 0;
+            const relatorioDiagnostico = [];
 
             // Processa 1 bloco de 20 minutos por requisição:
             // - Evita o limite de 50 subrequests do Cloudflare Worker Free
@@ -7583,6 +7584,10 @@
 
                     if (resposta && Array.isArray(resposta.blocos)) {
                         resposta.blocos.forEach(resBloco => {
+                            if (resBloco.diagnostico) {
+                                console.log(`[DIAGNÓSTICO BLOCO ${i + 1}]`, resBloco.diagnostico);
+                                relatorioDiagnostico.push(`Bloco ${i + 1}: ${resBloco.diagnostico.motivo_falha || `Aprovadas: ${resBloco.diagnostico.candidatos_aprovados} (Open-i: ${resBloco.diagnostico.candidatos_openi}, Wiki: ${resBloco.diagnostico.candidatos_wikimedia}, Web: ${resBloco.diagnostico.candidatos_web_medica}, Baixadas: ${resBloco.diagnostico.candidatos_inspecionados_visualmente})`}`);
+                            }
                             const listaImgs = Array.isArray(resBloco.imagens) ? resBloco.imagens : [];
                             if (listaImgs.length === 0) return;
 
@@ -7627,8 +7632,8 @@
             }
 
             if (totalImagensInseridas === 0) {
-                showFeedback("Nenhuma imagem válida encontrada para os blocos.", false);
-                alert("A busca foi concluída, mas nenhuma imagem direta pôde ser extraída.");
+                showFeedback("Nenhuma imagem aprovada na auditoria visual.", false);
+                alert("A busca foi concluída, mas nenhuma imagem passou na auditoria visual.\n\nDiagnóstico por bloco:\n" + (relatorioDiagnostico.join("\n\n") || "Sem detalhes retornados pelo Worker."));
                 return;
             }
 
