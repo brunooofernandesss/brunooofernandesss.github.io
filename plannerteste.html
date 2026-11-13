@@ -7452,9 +7452,8 @@
 
   
     // ============================================================
-    // 🖼️ ADICIONAR IMAGENS NOS BLOCOS DE 20 MINUTOS (MULTI-REQUISIÇÃO 3.1/3.5 + AUDITORIA INDIVIDUAL HIGH-RES)
+    // 🖼️ ADICIONAR IMAGENS NOS BLOCOS DE 20 MINUTOS (ATÉ 8 IMAGENS POR BLOCO — 3.5 + 3.1 + GEMMA 4 EM PARALELO)
     // ============================================================
-    // Último catálogo consolidado de miniaturas + links auditados (permite baixar arquivo único se desejar)
     window.ultimoCatalogoMiniaturasLinks = [];
 
     window.adicionarImagensNosBlocos = async () => {
@@ -7560,19 +7559,19 @@
             let totalImagensInseridas = 0;
             let contadorAlternancia = 0;
             const logDiagnostico = [];
+            const modelosRotacao = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemma-4-31b-it"];
 
             // Para cada bloco de 20 minutos:
-            // 1. Faz 1 requisição para planejar os 4 conceitos clínicos do bloco.
-            // 2. Dispara 4 requisições dedicadas (1 por conceito, em duplas paralelas alternando entre
-            //    gemini-3.1-flash-lite e gemini-3.5-flash-lite!).
-            //    Isso dá a cada conceito seu próprio orçamento de 50 subrequests no Worker e permite
-            //    que a IA enxergue 6 imagens em ALTA RESOLUÇÃO para cada conceito (24 imagens inspecionadas por bloco!).
+            // 1. Planeja 6 conceitos clínicos distintos para o bloco.
+            // 2. Dispara os 6 conceitos em ondas de 3 requisições paralelas (1 no 3.5-flash-lite, 1 no 3.1-flash-lite e 1 no gemma-4-31b-it).
+            //    Cada requisição tem seu próprio limite de 30s e 50 subrequests na Cloudflare, inspeciona 8 imagens e aprova até 2,
+            //    totalizando de 4 a 8 imagens didáticas por bloco de 20 minutos!
             for (let i = 0; i < blocosMapeados.length; i++) {
                 const blocoAtual = blocosMapeados[i];
-                const modPlanejador = (contadorAlternancia++ % 2 === 0) ? "gemini-3.1-flash-lite" : "gemini-3.5-flash-lite";
+                const modPlanejador = modelosRotacao[contadorAlternancia++ % modelosRotacao.length];
 
                 try {
-                    showFeedback(`🧠 [Bloco ${i + 1}/${blocosMapeados.length}] Planejando conceitos visuais (${modPlanejador})...`, true);
+                    showFeedback(`🧠 [Bloco ${i + 1}/${blocosMapeados.length}] Planejando 6 conceitos visuais (${modPlanejador})...`, true);
                     if (btnImg) {
                         btnImg.innerHTML = `<i class="fas fa-spinner fa-spin"></i> B${i + 1}/${blocosMapeados.length} (Planejando)...`;
                     }
@@ -7593,35 +7592,34 @@
                     const imagensAprovadasNoBloco = [];
                     const urlsJaUsadasNoBloco = new Set();
 
-                    // Processa os conceitos em duplas paralelas (1 no gemini-3.5-flash-lite e 1 no gemini-3.1-flash-lite ao mesmo tempo!)
-                    const LOTE_CONCEITOS = 2;
+                    // Processa 3 conceitos em paralelo por vez (cada um em um modelo diferente: 3.5, 3.1 e Gemma 4!)
+                    const LOTE_CONCEITOS = 3;
                     for (let c = 0; c < conceitosDoBloco.length; c += LOTE_CONCEITOS) {
                         const fatiaConceitos = conceitosDoBloco.slice(c, c + LOTE_CONCEITOS);
-                        showFeedback(`👁️ [Bloco ${i + 1}/${blocosMapeados.length}] Auditando imagens dos conceitos ${c + 1} a ${Math.min(c + LOTE_CONCEITOS, conceitosDoBloco.length)} de ${conceitosDoBloco.length} (3.1 + 3.5 em paralelo)...`, true);
+                        showFeedback(`👁️ [Bloco ${i + 1}/${blocosMapeados.length}] Auditando conceitos ${c + 1} a ${Math.min(c + LOTE_CONCEITOS, conceitosDoBloco.length)} de ${conceitosDoBloco.length} (48 imgs/bloco)...`, true);
                         if (btnImg) {
-                            btnImg.innerHTML = `<i class="fas fa-spinner fa-spin"></i> B${i + 1} (C${c + 1}/${conceitosDoBloco.length})...`;
+                            btnImg.innerHTML = `<i class="fas fa-spinner fa-spin"></i> B${i + 1} (C${c + 1}-${Math.min(c + LOTE_CONCEITOS, conceitosDoBloco.length)}/${conceitosDoBloco.length})...`;
                         }
 
-                        const respostasDupla = await Promise.all(
-                            fatiaConceitos.map((concObj, idxNaDupla) => {
-                                // Alterna perfeitamente: conceito par vai para 3.5-flash-lite, conceito ímpar vai para 3.1-flash-lite!
-                                const modAudit = ((c + idxNaDupla) % 2 === 0) ? "gemini-3.5-flash-lite" : "gemini-3.1-flash-lite";
+                        const respostasTrio = await Promise.all(
+                            fatiaConceitos.map((concObj, idxNoTrio) => {
+                                const modAudit = modelosRotacao[(c + idxNoTrio) % modelosRotacao.length];
                                 return callWorker({
                                     action: "buscar_e_auditar_conceito_individual",
                                     conceitoObj: concObj,
                                     resumoBloco: blocoAtual.texto.substring(0, 1200),
                                     modeloPreferido: modAudit
-                                }, `auditar_conceito_${i + 1}_${c + idxNaDupla + 1}`).catch(err => ({ error: err.message, aprovadas: [], catalogoMiniaturas: [] }));
+                                }, `auditar_conceito_${i + 1}_${c + idxNoTrio + 1}`).catch(err => ({ error: err.message, aprovadas: [], catalogoMiniaturas: [] }));
                             })
                         );
 
-                        respostasDupla.forEach(resC => {
+                        respostasTrio.forEach(resC => {
                             if (Array.isArray(resC?.catalogoMiniaturas)) {
                                 window.ultimoCatalogoMiniaturasLinks.push(...resC.catalogoMiniaturas);
                             }
                             if (Array.isArray(resC?.aprovadas)) {
                                 resC.aprovadas.forEach(imgAp => {
-                                    if (imgAp && imgAp.url_imagem && !urlsJaUsadasNoBloco.has(imgAp.url_imagem) && imagensAprovadasNoBloco.length < 5) {
+                                    if (imgAp && imgAp.url_imagem && !urlsJaUsadasNoBloco.has(imgAp.url_imagem) && imagensAprovadasNoBloco.length < 8) {
                                         urlsJaUsadasNoBloco.add(imgAp.url_imagem);
                                         imagensAprovadasNoBloco.push(imgAp);
                                     }
@@ -7631,11 +7629,11 @@
                     }
 
                     if (imagensAprovadasNoBloco.length === 0) {
-                        logDiagnostico.push(`Bloco ${i + 1}: Nenhuma imagem atingiu o grau de confiança médica >= 80%.`);
+                        logDiagnostico.push(`Bloco ${i + 1}: Nenhuma imagem atingiu o grau de confiança médica >= 70%.`);
                         continue;
                     }
 
-                    // Insere as imagens aprovadas ao final do bloco de 20 minutos
+                    // Insere até 8 imagens aprovadas ao final do bloco de 20 minutos
                     let elementoReferencia = blocoAtual.anchorEl;
                     imagensAprovadasNoBloco.forEach(imgItem => {
                         const urlImg = imgItem.url_imagem || imgItem.url_thumb;
@@ -7651,6 +7649,8 @@
                         pImg.style.margin = '18px 0 6px 0';
 
                         const imgTag = document.createElement('img');
+                        // referrerPolicy = "no-referrer" impede que portais médicos bloqueiem a exibição da imagem no navegador (hotlink protection)!
+                        imgTag.referrerPolicy = "no-referrer";
                         imgTag.src = urlImg;
                         imgTag.alt = legendaImg;
                         imgTag.onerror = function() {
@@ -7724,7 +7724,7 @@
                 if (updatesLib.length > 0) await Promise.all(updatesLib);
             }
 
-            showFeedback(`✅ ${totalImagensInseridas} imagens clínicas auditadas (3.1 + 3.5) e salvas!`, false);
+            showFeedback(`✅ ${totalImagensInseridas} imagens clínicas auditadas (3.5 + 3.1 + Gemma 4) e salvas!`, false);
 
         } catch (err) {
             console.error("Erro ao adicionar imagens nos blocos:", err);
