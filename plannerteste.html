@@ -7452,119 +7452,10 @@
 
   
     // ============================================================
-    // 🖼️ ADICIONAR IMAGENS NOS BLOCOS DE 20 MINUTOS (ARQUITETURA 3.1 + PRANCHA-MOSAICO UNIFICADA + 3.5)
+    // 🖼️ ADICIONAR IMAGENS NOS BLOCOS DE 20 MINUTOS (MULTI-REQUISIÇÃO 3.1/3.5 + AUDITORIA INDIVIDUAL HIGH-RES)
     // ============================================================
-    // Carrega uma miniatura no navegador com CORS para desenhar no Canvas da Prancha-Mosaico
-    async function carregarImagemParaCanvas(urlThumb, urlFallback) {
-        const tentar = (src) => new Promise((resolve) => {
-            if (!src) return resolve(null);
-            const img = new Image();
-            img.crossOrigin = "anonymous";
-            const timer = setTimeout(() => { img.src = ""; resolve(null); }, 4500);
-            img.onload = () => { clearTimeout(timer); resolve(img); };
-            img.onerror = () => { clearTimeout(timer); resolve(null); };
-            img.src = src;
-        });
-
-        let carregada = await tentar(urlThumb);
-        if (!carregada && urlFallback && urlFallback !== urlThumb) {
-            carregada = await tentar(urlFallback);
-        }
-        return carregada;
-    }
-
-    // Junta dezenas de miniaturas em um único arquivo JPEG de Prancha-Mosaico (Contact Sheet)
-    // numerando cada célula com `[#0]`, `[#1]`, `[#2]`... e listando os links correspondentes!
-    async function montarPranchasMosaicoEmMassa(listaCandidatos) {
-        const POR_PRANCHA = 16; // Grade 4x4 (1280x1120px) nítida e super leve (~180KB por prancha!)
-        const COLS = 4;
-        const CELL_W = 320;
-        const CELL_H = 260;
-
-        // 1. Baixa todas as miniaturas diretamente no navegador em paralelo (sem gastar 1 único subrequest do Cloudflare Worker!)
-        const carregados = await Promise.all(
-            listaCandidatos.map(async (cand) => {
-                const imgEl = await carregarImagemParaCanvas(cand.url_thumb, cand.url_imagem);
-                return imgEl ? { cand, imgEl } : null;
-            })
-        );
-
-        const validos = carregados.filter(Boolean);
-        if (validos.length === 0) return { mosaicosBase64: [], indiceValidos: [] };
-
-        const mosaicosBase64 = [];
-        const indiceValidos = [];
-
-        for (let inicio = 0; inicio < validos.length; inicio += POR_PRANCHA) {
-            const fatia = validos.slice(inicio, inicio + POR_PRANCHA);
-            const linhas = Math.ceil(fatia.length / COLS);
-
-            const canvas = document.createElement('canvas');
-            canvas.width = COLS * CELL_W;
-            canvas.height = linhas * CELL_H;
-            const ctx = canvas.getContext('2d');
-
-            ctx.fillStyle = "#1e293b";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            fatia.forEach((item, idxLocal) => {
-                const { cand, imgEl } = item;
-                const col = idxLocal % COLS;
-                const row = Math.floor(idxLocal / COLS);
-                const x = col * CELL_W;
-                const y = row * CELL_H;
-
-                // Fundo branco do quadro para destacar diagramas transparentes
-                ctx.fillStyle = "#ffffff";
-                ctx.fillRect(x + 6, y + 6, CELL_W - 12, CELL_H - 12);
-
-                // Desenha a miniatura mantendo proporção (object-fit: contain)
-                const areaW = CELL_W - 20;
-                const areaH = CELL_H - 54;
-                const escala = Math.min(areaW / (imgEl.naturalWidth || 1), areaH / (imgEl.naturalHeight || 1));
-                const drawW = Math.max(1, (imgEl.naturalWidth || areaW) * escala);
-                const drawH = Math.max(1, (imgEl.naturalHeight || areaH) * escala);
-                const drawX = x + 10 + (areaW - drawW) / 2;
-                const drawY = y + 40 + (areaH - drawH) / 2;
-
-                try {
-                    ctx.drawImage(imgEl, drawX, drawY, drawW, drawH);
-                } catch (_) {}
-
-                // Faixa superior escura com o código grande `[#ID]` e domínio do link
-                ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
-                ctx.fillRect(x + 6, y + 6, CELL_W - 12, 30);
-
-                ctx.fillStyle = "#facc15";
-                ctx.font = "bold 16px Inter, Arial, sans-serif";
-                ctx.fillText(`[#${cand.id_global}]`, x + 12, y + 27);
-
-                ctx.fillStyle = "#f8fafc";
-                ctx.font = "11px Inter, Arial, sans-serif";
-                const textoDom = (cand.dominio || "").substring(0, 26);
-                ctx.fillText(textoDom, x + 78, y + 26);
-
-                indiceValidos.push({
-                    id_global: cand.id_global,
-                    conceito_alvo: cand.conceito_alvo,
-                    dominio: cand.dominio,
-                    titulo_real: cand.titulo_real,
-                    legenda_real: cand.legenda_real,
-                    url_imagem: cand.url_imagem,
-                    url_thumb: cand.url_thumb,
-                    url_fonte: cand.url_fonte
-                });
-            });
-
-            const dataUrl = canvas.toDataURL("image/jpeg", 0.84);
-            mosaicosBase64.push({
-                mimeType: "image/jpeg",
-                data: dataUrl.split(",")[1]
-            });
-        }
-
-        return { mosaicosBase64, indiceValidos };
-    }
+    // Último catálogo consolidado de miniaturas + links auditados (permite baixar arquivo único se desejar)
+    window.ultimoCatalogoMiniaturasLinks = [];
 
     window.adicionarImagensNosBlocos = async () => {
         if (!isPremium) { mostrarModalUpgrade(); return; }
@@ -7579,6 +7470,7 @@
         try {
             // 0. Remove imagens geradas anteriormente por esta função para não duplicar ao rodar de novo
             editorEl.querySelectorAll('.bloco-imagens-ia').forEach(el => el.remove());
+            window.ultimoCatalogoMiniaturasLinks = [];
 
             // 1. Achata listas (UL/OL) para que marcadores como "• Bloco: 60 a 80 minutos" sejam lidos no mesmo nível
             const todosElementos = [];
@@ -7666,66 +7558,86 @@
             }
 
             let totalImagensInseridas = 0;
+            let contadorAlternancia = 0;
             const logDiagnostico = [];
 
-            // Para cada bloco de 20 minutos, executa a sua arquitetura em 2 requisições:
-            // Req 1 (Gemini 3.1 Flash Lite) -> Coleta catálogo de miniaturas + links
-            // Navegador -> Junta tudo em Prancha-Mosaico única (Contact Sheet)
-            // Req 2 (Gemini 3.5 Flash Lite) -> Analisa a Prancha-Mosaico inteira de uma vez e escolhe as melhores!
+            // Para cada bloco de 20 minutos:
+            // 1. Faz 1 requisição para planejar os 4 conceitos clínicos do bloco.
+            // 2. Dispara 4 requisições dedicadas (1 por conceito, em duplas paralelas alternando entre
+            //    gemini-3.1-flash-lite e gemini-3.5-flash-lite!).
+            //    Isso dá a cada conceito seu próprio orçamento de 50 subrequests no Worker e permite
+            //    que a IA enxergue 6 imagens em ALTA RESOLUÇÃO para cada conceito (24 imagens inspecionadas por bloco!).
             for (let i = 0; i < blocosMapeados.length; i++) {
                 const blocoAtual = blocosMapeados[i];
+                const modPlanejador = (contadorAlternancia++ % 2 === 0) ? "gemini-3.1-flash-lite" : "gemini-3.5-flash-lite";
 
                 try {
-                    // 1ª REQUISIÇÃO: Gemini 3.1 Flash Lite planeja e coleta até 36 miniaturas com links
-                    showFeedback(`🤖 [Bloco ${i + 1}/${blocosMapeados.length}] Req 1 (Gemini 3.1): Coletando miniaturas e links...`, true);
+                    showFeedback(`🧠 [Bloco ${i + 1}/${blocosMapeados.length}] Planejando conceitos visuais (${modPlanejador})...`, true);
                     if (btnImg) {
-                        btnImg.innerHTML = `<i class="fas fa-spinner fa-spin"></i> B${i + 1} (1/2 Coleta)...`;
+                        btnImg.innerHTML = `<i class="fas fa-spinner fa-spin"></i> B${i + 1}/${blocosMapeados.length} (Planejando)...`;
                     }
 
-                    const resColeta = await callWorker({
-                        action: "coletar_candidatos_bloco",
-                        idBloco: blocoAtual.id,
-                        textoBloco: blocoAtual.texto
-                    }, `coletar_candidatos_bloco_${i + 1}`);
-
-                    const listaCandidatos = Array.isArray(resColeta?.candidatos) ? resColeta.candidatos : [];
-                    if (listaCandidatos.length === 0) {
-                        logDiagnostico.push(`Bloco ${i + 1}: Nenhum candidato retornado na Req 1.`);
-                        continue;
-                    }
-
-                    // MONTAGEM DO ARQUIVO ÚNICO DE MINIATURAS (PRANCHA-MOSAICO) NO NAVEGADOR
-                    showFeedback(`🖼️ [Bloco ${i + 1}/${blocosMapeados.length}] Montando Prancha-Mosaico com ${listaCandidatos.length} miniaturas...`, true);
-                    const { mosaicosBase64, indiceValidos } = await montarPranchasMosaicoEmMassa(listaCandidatos);
-
-                    if (mosaicosBase64.length === 0) {
-                        logDiagnostico.push(`Bloco ${i + 1}: Não foi possível renderizar miniaturas no Canvas.`);
-                        continue;
-                    }
-
-                    // 2ª REQUISIÇÃO: Gemini 3.5 Flash Lite analisa a Prancha-Mosaico em massa e escolhe os quadros [#N]
-                    showFeedback(`👁️ [Bloco ${i + 1}/${blocosMapeados.length}] Req 2 (Gemini 3.5): Analisando ${indiceValidos.length} miniaturas na Prancha...`, true);
-                    if (btnImg) {
-                        btnImg.innerHTML = `<i class="fas fa-spinner fa-spin"></i> B${i + 1} (2/2 Auditoria)...`;
-                    }
-
-                    const resAuditoria = await callWorker({
-                        action: "auditar_mosaico_bloco",
+                    const resPlano = await callWorker({
+                        action: "planejar_conceitos_bloco",
                         idBloco: blocoAtual.id,
                         textoBloco: blocoAtual.texto,
-                        conceitos: resColeta.conceitos || [],
-                        indiceCandidatos: indiceValidos,
-                        mosaicosBase64: mosaicosBase64
-                    }, `auditar_mosaico_bloco_${i + 1}`);
+                        modeloPreferido: modPlanejador
+                    }, `planejar_bloco_${i + 1}`);
 
-                    const listaImgs = Array.isArray(resAuditoria?.imagens) ? resAuditoria.imagens : [];
-                    if (listaImgs.length === 0) {
-                        logDiagnostico.push(`Bloco ${i + 1}: Inspecionou ${indiceValidos.length} miniaturas na prancha, mas nenhuma foi aprovada.`);
+                    const conceitosDoBloco = Array.isArray(resPlano?.conceitos) ? resPlano.conceitos : [];
+                    if (conceitosDoBloco.length === 0) {
+                        logDiagnostico.push(`Bloco ${i + 1}: Nenhum conceito planejado.`);
                         continue;
                     }
 
+                    const imagensAprovadasNoBloco = [];
+                    const urlsJaUsadasNoBloco = new Set();
+
+                    // Processa os conceitos em duplas paralelas (1 no gemini-3.5-flash-lite e 1 no gemini-3.1-flash-lite ao mesmo tempo!)
+                    const LOTE_CONCEITOS = 2;
+                    for (let c = 0; c < conceitosDoBloco.length; c += LOTE_CONCEITOS) {
+                        const fatiaConceitos = conceitosDoBloco.slice(c, c + LOTE_CONCEITOS);
+                        showFeedback(`👁️ [Bloco ${i + 1}/${blocosMapeados.length}] Auditando imagens dos conceitos ${c + 1} a ${Math.min(c + LOTE_CONCEITOS, conceitosDoBloco.length)} de ${conceitosDoBloco.length} (3.1 + 3.5 em paralelo)...`, true);
+                        if (btnImg) {
+                            btnImg.innerHTML = `<i class="fas fa-spinner fa-spin"></i> B${i + 1} (C${c + 1}/${conceitosDoBloco.length})...`;
+                        }
+
+                        const respostasDupla = await Promise.all(
+                            fatiaConceitos.map((concObj, idxNaDupla) => {
+                                // Alterna perfeitamente: conceito par vai para 3.5-flash-lite, conceito ímpar vai para 3.1-flash-lite!
+                                const modAudit = ((c + idxNaDupla) % 2 === 0) ? "gemini-3.5-flash-lite" : "gemini-3.1-flash-lite";
+                                return callWorker({
+                                    action: "buscar_e_auditar_conceito_individual",
+                                    conceitoObj: concObj,
+                                    resumoBloco: blocoAtual.texto.substring(0, 1200),
+                                    modeloPreferido: modAudit
+                                }, `auditar_conceito_${i + 1}_${c + idxNaDupla + 1}`).catch(err => ({ error: err.message, aprovadas: [], catalogoMiniaturas: [] }));
+                            })
+                        );
+
+                        respostasDupla.forEach(resC => {
+                            if (Array.isArray(resC?.catalogoMiniaturas)) {
+                                window.ultimoCatalogoMiniaturasLinks.push(...resC.catalogoMiniaturas);
+                            }
+                            if (Array.isArray(resC?.aprovadas)) {
+                                resC.aprovadas.forEach(imgAp => {
+                                    if (imgAp && imgAp.url_imagem && !urlsJaUsadasNoBloco.has(imgAp.url_imagem) && imagensAprovadasNoBloco.length < 5) {
+                                        urlsJaUsadasNoBloco.add(imgAp.url_imagem);
+                                        imagensAprovadasNoBloco.push(imgAp);
+                                    }
+                                });
+                            }
+                        });
+                    }
+
+                    if (imagensAprovadasNoBloco.length === 0) {
+                        logDiagnostico.push(`Bloco ${i + 1}: Nenhuma imagem atingiu o grau de confiança médica >= 80%.`);
+                        continue;
+                    }
+
+                    // Insere as imagens aprovadas ao final do bloco de 20 minutos
                     let elementoReferencia = blocoAtual.anchorEl;
-                    listaImgs.forEach(imgItem => {
+                    imagensAprovadasNoBloco.forEach(imgItem => {
                         const urlImg = imgItem.url_imagem || imgItem.url_thumb;
                         const urlFallbackThumb = imgItem.url_thumb || urlImg;
                         const legendaImg = imgItem.conceito || 'Imagem complementar';
@@ -7742,7 +7654,6 @@
                         imgTag.src = urlImg;
                         imgTag.alt = legendaImg;
                         imgTag.onerror = function() {
-                            // Se o site original bloquear hotlink da imagem alta resolução, usa a miniatura validada que já funcionou na prancha!
                             if (this.src !== urlFallbackThumb && urlFallbackThumb) {
                                 this.src = urlFallbackThumb;
                                 return;
@@ -7813,7 +7724,7 @@
                 if (updatesLib.length > 0) await Promise.all(updatesLib);
             }
 
-            showFeedback(`✅ ${totalImagensInseridas} imagens aprovadas pela Prancha-Mosaico e salvas!`, false);
+            showFeedback(`✅ ${totalImagensInseridas} imagens clínicas auditadas (3.1 + 3.5) e salvas!`, false);
 
         } catch (err) {
             console.error("Erro ao adicionar imagens nos blocos:", err);
