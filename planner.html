@@ -789,10 +789,13 @@
             <div id="viewContainer" style="flex:1; overflow:hidden; display:flex; flex-direction:column;"></div>
             
             <div style="padding: 15px; border-top: 1px solid #eee; display:flex; justify-content: space-between;">
-                 <div style="display:flex; gap:10px;">
+                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
                      <button class="btn-action" id="btnEditarNota">Editar Texto</button>
                  <button class="btn-action" onclick="window.abrirCorretor()" style="color:#e67e22; border-color:#fadbd8; background:#fffbf0;">
                     <i class="fas fa-highlighter"></i> Corretor Feynman
+                 </button>
+                 <button class="btn-action" id="btnAdicionarImagensBlocos" onclick="window.adicionarImagensNosBlocos()" style="color:#2383e2; border-color:#d3e5ef; background:#eef6fc;" title="Buscar e inserir imagens relevantes ao final de cada bloco de 20 min">
+                    <i class="fas fa-images"></i> Adicionar Imagens
                  </button>
                  <button class="btn-action" onclick="window.exportarParaPDF()" style="color:#d44c47; border-color:#ffe2dd; background:#fff5f5;" title="Salvar como Arquivo PDF">
                     <i class="fas fa-file-pdf"></i> Exportar PDF
@@ -2147,26 +2150,49 @@
         setTimeout(() => { pasteEmProcessamento = false; }, PASTE_DEBOUNCE_MS);
 
         // Se o clipboard trouxer HTML real (Word, Docs, outro site) — incluindo
-        // tabelas reais — deixa o Quill 2.x + table-better processar nativamente.
+        // tabelas reais ou imagens — deixa o Quill 2.x + table-better processar nativamente.
         const htmlData = e.clipboardData && e.clipboardData.getData('text/html');
         const textData = e.clipboardData ? e.clipboardData.getData('text/plain') : '';
 
-        const temTabelaHtmlReal = htmlData && /<table/i.test(htmlData);
+        const temTabelaHtmlReal = htmlData && /<(table|img)\b/i.test(htmlData);
         const clipboardDataVazio = !textData && !htmlData;
 
         // ⚠️ CORREÇÃO MOBILE: o botão "Colar" do teclado virtual (Android/iOS),
         // diferente do Ctrl+V físico, às vezes dispara o evento 'paste' com
         // clipboardData VAZIO — getData() retorna string vazia mesmo havendo
         // conteúdo real na área de transferência. Quando detectamos esse caso,
-        // usamos a Clipboard API assíncrona (navigator.clipboard.readText())
-        // como fallback — ela lê a área de transferência diretamente do
-        // sistema, contornando a limitação do evento nativo nesses
-        // navegadores/contextos mobile.
+        // tentamos primeiro ler o HTML rico (para preservar imagens/tabelas do Gemini)
+        // via navigator.clipboard.read(), com fallback para readText().
         if (clipboardDataVazio) {
             e.preventDefault();
             e.stopPropagation();
 
-            if (navigator.clipboard && navigator.clipboard.readText) {
+            if (navigator.clipboard && navigator.clipboard.read) {
+                navigator.clipboard.read().then(async (items) => {
+                    for (const item of items) {
+                        if (item.types.includes('text/html')) {
+                            const blob = await item.getType('text/html');
+                            const htmlLido = await blob.text();
+                            if (/<(table|img)\b/i.test(htmlLido)) {
+                                processarHtmlColado(htmlLido);
+                                return;
+                            }
+                        }
+                    }
+                    if (navigator.clipboard.readText) {
+                        const textoLido = await navigator.clipboard.readText();
+                        if (textoLido) processarTextoColado(textoLido);
+                    }
+                }).catch(() => {
+                    if (navigator.clipboard.readText) {
+                        navigator.clipboard.readText().then((textoLido) => {
+                            if (textoLido) processarTextoColado(textoLido);
+                        }).catch((err) => {
+                            console.warn('Não foi possível ler a área de transferência via Clipboard API:', err);
+                        });
+                    }
+                });
+            } else if (navigator.clipboard && navigator.clipboard.readText) {
                 navigator.clipboard.readText().then((textoLido) => {
                     if (!textoLido) return; // área de transferência realmente vazia
                     processarTextoColado(textoLido);
@@ -2207,13 +2233,16 @@
     // o usuário toca na sugestão da área de transferência acima das teclas.
     // Eles disparam 'beforeinput' e injetam o texto. Isso captura essa injeção.
     quill.root.addEventListener('beforeinput', function(e) {
+        const htmlData = e.dataTransfer ? e.dataTransfer.getData('text/html') : '';
         let texto = e.data;
         if (!texto && e.dataTransfer) {
             texto = e.dataTransfer.getData('text/plain');
         }
 
-        // Se for um bloco grande de texto e tiver formato de Markdown
-        if (texto && texto.length > 15 && pareceMarkdown(texto)) {
+        const temTabelaOuImgHtml = htmlData && /<(table|img)\b/i.test(htmlData);
+
+        // Se trouxer tabela/imagem em HTML ou for um bloco grande de Markdown
+        if (temTabelaOuImgHtml || (texto && texto.length > 15 && pareceMarkdown(texto))) {
             const agora = Date.now();
             
             // Bloqueia duplicação caso o teclado dispare paste E beforeinput juntos
@@ -2229,7 +2258,11 @@
 
             e.preventDefault();
             e.stopPropagation();
-            processarTextoColado(texto);
+            if (temTabelaOuImgHtml) {
+                processarHtmlColado(htmlData);
+            } else {
+                processarTextoColado(texto);
+            }
         }
     }, true);
    
@@ -2271,6 +2304,41 @@
     function processarHtmlColado(htmlBruto) {
         try {
             let htmlLimpo = removerLinhasVaziasDoHTML(htmlBruto);
+
+            // 🖼️ EXTRAÇÃO DE IMAGENS DO GEMINI / CHATGPT:
+            // Desencapsula imagens que vêm dentro de <button>, <a>, <figure> ou <picture>
+            // no DOM do Gemini para que o Quill as reconheça como blocos de imagem reais,
+            // e filtra favicons/ícones base64 de interface para não disparar alertas falsos.
+            if (/<img\b/i.test(htmlLimpo)) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlLimpo;
+                tempDiv.querySelectorAll('img').forEach(img => {
+                    const src = img.getAttribute('src') || img.getAttribute('data-src') || (img.getAttribute('srcset') ? img.getAttribute('srcset').split(/[\s,]+/)[0] : '');
+                    const widthAttr = parseInt(img.getAttribute('width') || '0', 10);
+                    const heightAttr = parseInt(img.getAttribute('height') || '0', 10);
+                    const ehIconeOuFavicon = !src || src.startsWith('data:') || /favicon|gstatic\.com\/kpui|googleusercontent\.com\/s2\/favicons/i.test(src) || (widthAttr > 0 && widthAttr <= 32) || (heightAttr > 0 && heightAttr <= 32);
+                    if (ehIconeOuFavicon) {
+                        img.remove();
+                        return;
+                    }
+                    const novaImg = document.createElement('img');
+                    novaImg.setAttribute('src', src);
+                    if (img.getAttribute('alt')) novaImg.setAttribute('alt', img.getAttribute('alt'));
+                    const pImg = document.createElement('p');
+                    pImg.appendChild(novaImg);
+                    const ancestralInterativo = img.closest('button, a, picture, figure');
+                    if (ancestralInterativo && tempDiv.contains(ancestralInterativo)) {
+                        ancestralInterativo.parentNode.insertBefore(pImg, ancestralInterativo);
+                        img.remove();
+                        if (!ancestralInterativo.textContent.trim() && !ancestralInterativo.querySelector('img')) {
+                            ancestralInterativo.remove();
+                        }
+                    } else {
+                        img.replaceWith(pImg);
+                    }
+                });
+                htmlLimpo = tempDiv.innerHTML;
+            }
 
             // 🛡️ CORREÇÃO DO GAP DA TABELA (Cópia Rica / HTML):
             // Remove espaços invisíveis/quebras de linha entre as tags estruturais
@@ -4852,12 +4920,12 @@
     function renderHybridContent(rawHTML) {
         if (!rawHTML) return "";
 
-        // PROTEÇÃO: se já existe uma <table> HTML real no conteúdo (agora possível
+        // PROTEÇÃO: se já existe uma <table> ou <img> HTML real no conteúdo (agora possível
         // desde que o editor passou a converter Markdown colado via marked.parse()),
         // não processamos com o parser manual de "|" abaixo — ele foi desenhado para
-        // o formato antigo (texto com pipes) e quebraria uma tabela HTML genuína.
+        // o formato antigo (texto com pipes) e quebraria uma tabela ou imagem HTML genuína.
         // Aplicamos a classe .hybrid-table (já estilizada) e devolvemos o HTML.
-        if (/<table[\s>]/i.test(rawHTML)) {
+        if (/<(table|img)[\s>]/i.test(rawHTML)) {
             return rawHTML.replace(/<table(?![^>]*class=)/gi, '<table class="hybrid-table"');
         }
         
@@ -7383,6 +7451,293 @@
     };
 
   
+    // ============================================================
+    // 🖼️ ADICIONAR IMAGENS NOS BLOCOS DE 20 MINUTOS (ATÉ 8 IMAGENS POR BLOCO — 3.5 + 3.1 + GEMMA 4 EM PARALELO)
+    // ============================================================
+    window.ultimoCatalogoMiniaturasLinks = [];
+
+    window.adicionarImagensNosBlocos = async () => {
+        if (!isPremium) { mostrarModalUpgrade(); return; }
+        const editorEl = document.querySelector('#viewContainer .ql-editor');
+        if (!editorEl) {
+            return alert("Abra um resumo em texto primeiro para adicionar imagens.");
+        }
+
+        const btnImg = document.getElementById('btnAdicionarImagensBlocos');
+        const btnOriginalHTML = btnImg ? btnImg.innerHTML : '';
+
+        try {
+            // 0. Remove imagens geradas anteriormente por esta função para não duplicar ao rodar de novo
+            editorEl.querySelectorAll('.bloco-imagens-ia').forEach(el => el.remove());
+            window.ultimoCatalogoMiniaturasLinks = [];
+
+            // 1. Achata listas (UL/OL) para que marcadores como "• Bloco: 60 a 80 minutos" sejam lidos no mesmo nível
+            const todosElementos = [];
+            Array.from(editorEl.children).forEach(el => {
+                if (el.tagName === 'UL' || el.tagName === 'OL') {
+                    Array.from(el.children).forEach(li => todosElementos.push(li));
+                } else {
+                    todosElementos.push(el);
+                }
+            });
+
+            const regexBloco20 = /^[^a-zA-Z0-9]*bloco\s*\d*\s*[:\-—]?\s*\d+\s*a\s*\d+\s*min/i;
+            const regexTitulo1Hora = /resumo\s+da\s+aula\s*:/i;
+
+            let indicesInicios = [];
+            todosElementos.forEach((el, idx) => {
+                const txt = (el.innerText || el.textContent || '').trim();
+                if (regexBloco20.test(txt) && !regexTitulo1Hora.test(txt) && txt.length < 140) {
+                    indicesInicios.push(idx);
+                }
+            });
+
+            if (indicesInicios.length === 0) {
+                const regexMinutosGenerico = /\b\d+\s*a\s*\d+\s*minutos/i;
+                todosElementos.forEach((el, idx) => {
+                    const txt = (el.innerText || el.textContent || '').trim();
+                    if (regexMinutosGenerico.test(txt) && !regexTitulo1Hora.test(txt) && txt.length < 140) {
+                        indicesInicios.push(idx);
+                    }
+                });
+            }
+
+            if (indicesInicios.length === 0) {
+                todosElementos.forEach((el, idx) => {
+                    if (/^H[23]$/i.test(el.tagName)) {
+                        indicesInicios.push(idx);
+                    }
+                });
+            }
+
+            if (indicesInicios.length === 0 && todosElementos.length > 0) {
+                for (let i = 0; i < todosElementos.length; i += 5) {
+                    indicesInicios.push(i);
+                }
+            }
+
+            if (indicesInicios.length === 0) {
+                return alert("Não foi possível identificar blocos de texto neste resumo.");
+            }
+
+            const blocosMapeados = [];
+            for (let b = 0; b < indicesInicios.length; b++) {
+                const ini = indicesInicios[b];
+                const fimBruto = (b + 1 < indicesInicios.length) ? indicesInicios[b + 1] - 1 : todosElementos.length - 1;
+                let textoAcumulado = "";
+                let ultimoElementoDoBloco = todosElementos[ini];
+
+                for (let k = ini; k <= fimBruto; k++) {
+                    const el = todosElementos[k];
+                    if (!el || el.classList.contains('bloco-imagens-ia')) continue;
+                    const txtEl = (el.innerText || el.textContent || '').trim();
+                    if (k > ini && regexTitulo1Hora.test(txtEl) && txtEl.length < 120) {
+                        continue;
+                    }
+                    textoAcumulado += txtEl + "\n";
+                    ultimoElementoDoBloco = el;
+                }
+
+                if (textoAcumulado.trim().length > 40) {
+                    blocosMapeados.push({
+                        id: b,
+                        texto: textoAcumulado.trim().substring(0, 14000),
+                        anchorEl: ultimoElementoDoBloco
+                    });
+                }
+            }
+
+            if (blocosMapeados.length === 0) {
+                return alert("O conteúdo dos blocos é muito curto para buscar imagens.");
+            }
+
+            if (btnImg) {
+                btnImg.disabled = true;
+                btnImg.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Iniciando (0/${blocosMapeados.length})...`;
+            }
+
+            let totalImagensInseridas = 0;
+            let contadorAlternancia = 0;
+            const logDiagnostico = [];
+            const modelosRotacao = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemma-4-31b-it"];
+
+            // Para cada bloco de 20 minutos:
+            // 1. Planeja 6 conceitos clínicos distintos para o bloco.
+            // 2. Dispara os 6 conceitos em ondas de 3 requisições paralelas (1 no 3.5-flash-lite, 1 no 3.1-flash-lite e 1 no gemma-4-31b-it).
+            //    Cada requisição tem seu próprio limite de 30s e 50 subrequests na Cloudflare, inspeciona 8 imagens e aprova até 2,
+            //    totalizando de 4 a 8 imagens didáticas por bloco de 20 minutos!
+            for (let i = 0; i < blocosMapeados.length; i++) {
+                const blocoAtual = blocosMapeados[i];
+                const modPlanejador = modelosRotacao[contadorAlternancia++ % modelosRotacao.length];
+
+                try {
+                    showFeedback(`🧠 [Bloco ${i + 1}/${blocosMapeados.length}] Planejando 6 conceitos visuais (${modPlanejador})...`, true);
+                    if (btnImg) {
+                        btnImg.innerHTML = `<i class="fas fa-spinner fa-spin"></i> B${i + 1}/${blocosMapeados.length} (Planejando)...`;
+                    }
+
+                    const resPlano = await callWorker({
+                        action: "planejar_conceitos_bloco",
+                        idBloco: blocoAtual.id,
+                        textoBloco: blocoAtual.texto,
+                        modeloPreferido: modPlanejador
+                    }, `planejar_bloco_${i + 1}`);
+
+                    const conceitosDoBloco = Array.isArray(resPlano?.conceitos) ? resPlano.conceitos : [];
+                    if (conceitosDoBloco.length === 0) {
+                        logDiagnostico.push(`Bloco ${i + 1}: Nenhum conceito planejado.`);
+                        continue;
+                    }
+
+                    const imagensAprovadasNoBloco = [];
+                    const urlsJaUsadasNoBloco = new Set();
+
+                    // Processa 3 conceitos em paralelo por vez (cada um em um modelo diferente: 3.5, 3.1 e Gemma 4!)
+                    const LOTE_CONCEITOS = 3;
+                    for (let c = 0; c < conceitosDoBloco.length; c += LOTE_CONCEITOS) {
+                        const fatiaConceitos = conceitosDoBloco.slice(c, c + LOTE_CONCEITOS);
+                        showFeedback(`👁️ [Bloco ${i + 1}/${blocosMapeados.length}] Auditando conceitos ${c + 1} a ${Math.min(c + LOTE_CONCEITOS, conceitosDoBloco.length)} de ${conceitosDoBloco.length} (48 imgs/bloco)...`, true);
+                        if (btnImg) {
+                            btnImg.innerHTML = `<i class="fas fa-spinner fa-spin"></i> B${i + 1} (C${c + 1}-${Math.min(c + LOTE_CONCEITOS, conceitosDoBloco.length)}/${conceitosDoBloco.length})...`;
+                        }
+
+                        const respostasTrio = await Promise.all(
+                            fatiaConceitos.map((concObj, idxNoTrio) => {
+                                const modAudit = modelosRotacao[(c + idxNoTrio) % modelosRotacao.length];
+                                return callWorker({
+                                    action: "buscar_e_auditar_conceito_individual",
+                                    conceitoObj: concObj,
+                                    resumoBloco: blocoAtual.texto.substring(0, 1200),
+                                    modeloPreferido: modAudit
+                                }, `auditar_conceito_${i + 1}_${c + idxNoTrio + 1}`).catch(err => ({ error: err.message, aprovadas: [], catalogoMiniaturas: [] }));
+                            })
+                        );
+
+                        respostasTrio.forEach(resC => {
+                            if (Array.isArray(resC?.catalogoMiniaturas)) {
+                                window.ultimoCatalogoMiniaturasLinks.push(...resC.catalogoMiniaturas);
+                            }
+                            if (Array.isArray(resC?.aprovadas)) {
+                                resC.aprovadas.forEach(imgAp => {
+                                    if (imgAp && imgAp.url_imagem && !urlsJaUsadasNoBloco.has(imgAp.url_imagem) && imagensAprovadasNoBloco.length < 8) {
+                                        urlsJaUsadasNoBloco.add(imgAp.url_imagem);
+                                        imagensAprovadasNoBloco.push(imgAp);
+                                    }
+                                });
+                            }
+                        });
+                    }
+
+                    if (imagensAprovadasNoBloco.length === 0) {
+                        logDiagnostico.push(`Bloco ${i + 1}: Nenhuma imagem atingiu o grau de confiança médica >= 70%.`);
+                        continue;
+                    }
+
+                    // Insere até 8 imagens aprovadas ao final do bloco de 20 minutos
+                    let elementoReferencia = blocoAtual.anchorEl;
+                    imagensAprovadasNoBloco.forEach(imgItem => {
+                        const urlImg = imgItem.url_imagem || imgItem.url_thumb;
+                        const urlFallbackThumb = imgItem.url_thumb || urlImg;
+                        const legendaImg = imgItem.conceito || 'Imagem complementar';
+                        const fonteImg = imgItem.dominio || '';
+                        const linkFonte = imgItem.url_fonte || urlImg;
+                        if (!urlImg) return;
+
+                        const pImg = document.createElement('p');
+                        pImg.className = 'bloco-imagens-ia';
+                        pImg.style.textAlign = 'center';
+                        pImg.style.margin = '18px 0 6px 0';
+
+                        const imgTag = document.createElement('img');
+                        // referrerPolicy = "no-referrer" impede que portais médicos bloqueiem a exibição da imagem no navegador (hotlink protection)!
+                        imgTag.referrerPolicy = "no-referrer";
+                        imgTag.src = urlImg;
+                        imgTag.alt = legendaImg;
+                        imgTag.onerror = function() {
+                            if (this.src !== urlFallbackThumb && urlFallbackThumb) {
+                                this.src = urlFallbackThumb;
+                                return;
+                            }
+                            if (pLegenda && pLegenda.parentNode) pLegenda.remove();
+                            this.parentElement.remove();
+                        };
+                        pImg.appendChild(imgTag);
+
+                        const pLegenda = document.createElement('p');
+                        pLegenda.className = 'bloco-imagens-ia';
+                        pLegenda.style.cssText = 'text-align:center; font-size:12px; color:#666; margin-bottom:18px; font-style:italic;';
+                        pLegenda.innerHTML = `<strong>${legendaImg}</strong>${fonteImg ? ` — <a href="${linkFonte}" target="_blank" rel="noopener noreferrer" style="color:#2383e2;">${fonteImg}</a>` : ''}`;
+
+                        elementoReferencia.insertAdjacentElement('afterend', pImg);
+                        pImg.insertAdjacentElement('afterend', pLegenda);
+                        elementoReferencia = pLegenda;
+                        totalImagensInseridas++;
+                    });
+
+                } catch (errBloco) {
+                    console.warn(`Aviso: falha no bloco ${i + 1}:`, errBloco);
+                    logDiagnostico.push(`Bloco ${i + 1}: ${errBloco.message}`);
+                }
+            }
+
+            if (totalImagensInseridas === 0) {
+                showFeedback("Nenhuma imagem aprovada para os blocos.", false);
+                alert("A busca foi concluída, mas nenhuma imagem passou na auditoria.\n\n" + logDiagnostico.join("\n"));
+                return;
+            }
+
+            // 2. Persiste o novo HTML com imagens no Firestore (Tarefa + Biblioteca + Cache Local)
+            const novoHTML = editorEl.innerHTML;
+            const tituloBase = (document.getElementById('viewTitle').textContent || '').replace(/\[.*?\]/g, '').trim();
+
+            if (editingDocId) {
+                await updateDoc(doc(db, "planners", currentUID, "tasks", editingDocId), {
+                    contentHTML: novoHTML,
+                    geradoPorIA: false
+                });
+                const itemCache = allTasksCache.find(t => t.id === editingDocId);
+                if (itemCache) {
+                    itemCache.contentHTML = novoHTML;
+                    itemCache.geradoPorIA = false;
+                }
+            }
+
+            if (viewingLibraryId) {
+                await updateDoc(doc(db, "planners", currentUID, "arquivos", viewingLibraryId), {
+                    contentHTML: novoHTML,
+                    geradoPorIA: false
+                });
+                const arqCache = bibliotecaCache.find(a => a.id === viewingLibraryId);
+                if (arqCache) {
+                    arqCache.contentHTML = novoHTML;
+                    arqCache.geradoPorIA = false;
+                }
+            } else if (tituloBase) {
+                const qLib = query(collection(db, "planners", currentUID, "arquivos"));
+                const snapLib = await getDocs(qLib);
+                const updatesLib = [];
+                snapLib.forEach(d => {
+                    if ((d.data().nome || '').trim() === tituloBase) {
+                        updatesLib.push(updateDoc(d.ref, { contentHTML: novoHTML, geradoPorIA: false }));
+                    }
+                });
+                if (updatesLib.length > 0) await Promise.all(updatesLib);
+            }
+
+            showFeedback(`✅ ${totalImagensInseridas} imagens clínicas auditadas (3.5 + 3.1 + Gemma 4) e salvas!`, false);
+
+        } catch (err) {
+            console.error("Erro ao adicionar imagens nos blocos:", err);
+            showFeedback("Erro ao buscar imagens.", false);
+            alert("Erro ao adicionar imagens: " + err.message);
+        } finally {
+            if (btnImg) {
+                btnImg.disabled = false;
+                btnImg.innerHTML = btnOriginalHTML;
+            }
+        }
+    };
+
     // ============================================================
     // 🖨️ EXPORTAR PARA PDF
     // ============================================================
