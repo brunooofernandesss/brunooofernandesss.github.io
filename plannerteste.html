@@ -2514,7 +2514,7 @@
 
     // --- LIGHTBOX ---
     document.addEventListener('click', (e) => {
-        if (e.target.tagName === 'IMG' && e.target.closest('.ql-editor')) {
+        if (e.target.tagName === 'IMG' && (e.target.closest('.ql-editor') || e.target.closest('.quiz-card'))) {
             const modal = document.getElementById('imageModal');
             const img = document.getElementById('imageModalImg');
             img.src = e.target.src;
@@ -4686,21 +4686,114 @@
     }
 
     // ─────────────────────────────────────────────────────────────
+    // 🖼️ Extrator de Imagens do Resumo para os Simulados de 40 Questões
+    // Localiza o HTML original do resumo (no cache ou no Firestore) e extrai
+    // todas as imagens geradas para a aula com suas respectivas legendas.
+    // ─────────────────────────────────────────────────────────────
+    async function obterHtmlEImagensDoResumo(arquivoId, titulo, htmlFallback) {
+        const tituloBase = (titulo || "").replace(/\[.*?\]/g, "").trim();
+        const fontesHTML = [];
+
+        if (arquivoId) {
+            const tDir = allTasksCache.find(t => t.id === arquivoId);
+            if (tDir && tDir.contentHTML) fontesHTML.push(tDir.contentHTML);
+            const aDir = bibliotecaCache.find(a => a.id === arquivoId);
+            if (aDir && aDir.contentHTML) fontesHTML.push(aDir.contentHTML);
+        }
+
+        if (tituloBase) {
+            allTasksCache.forEach(t => {
+                if (t.tipo !== 'quiz' && (t.titulo || "").replace(/\[.*?\]/g, "").trim() === tituloBase && t.contentHTML) {
+                    fontesHTML.push(t.contentHTML);
+                }
+            });
+            bibliotecaCache.forEach(a => {
+                if ((a.nome || "").trim() === tituloBase && a.contentHTML) {
+                    fontesHTML.push(a.contentHTML);
+                }
+            });
+        }
+
+        if (htmlFallback) fontesHTML.push(htmlFallback);
+
+        // Se nenhuma fonte em memória tiver <img> (ex: aba Biblioteca ainda não foi aberta na sessão),
+        // consulta o documento no Firestore para resgatar as imagens salvas no resumo
+        const jaTemImgNaMemoria = fontesHTML.some(h => /<img\b/i.test(h));
+        if (!jaTemImgNaMemoria && currentUID) {
+            try {
+                if (arquivoId) {
+                    const snapT = await getDoc(doc(db, "planners", currentUID, "tasks", arquivoId));
+                    if (snapT.exists() && snapT.data().contentHTML) fontesHTML.unshift(snapT.data().contentHTML);
+                    const snapA = await getDoc(doc(db, "planners", currentUID, "arquivos", arquivoId));
+                    if (snapA.exists() && snapA.data().contentHTML) fontesHTML.unshift(snapA.data().contentHTML);
+                }
+                if (tituloBase && !fontesHTML.some(h => /<img\b/i.test(h))) {
+                    const qArq = query(collection(db, "planners", currentUID, "arquivos"), where("nome", "==", tituloBase));
+                    const snapArq = await getDocs(qArq);
+                    snapArq.forEach(d => {
+                        if (d.data().contentHTML) fontesHTML.unshift(d.data().contentHTML);
+                    });
+                }
+            } catch (e) {
+                console.warn("Aviso ao buscar imagens do resumo no Firestore:", e);
+            }
+        }
+
+        const imagensResumo = [];
+        const urlsVistas = new Set();
+
+        fontesHTML.forEach(htmlStr => {
+            if (!htmlStr || !/<img\b/i.test(htmlStr)) return;
+            const tempDiv = document.createElement("div");
+            tempDiv.innerHTML = htmlStr;
+            tempDiv.querySelectorAll("img").forEach(img => {
+                const src = (img.getAttribute("src") || "").trim();
+                if (!src || src.startsWith("data:") || urlsVistas.has(src)) return;
+
+                let desc = (img.getAttribute("alt") || "").trim();
+                const blocoPai = img.closest("p, div") || img;
+                if (!desc && blocoPai.nextElementSibling) {
+                    const txtProx = (blocoPai.nextElementSibling.innerText || blocoPai.nextElementSibling.textContent || "").trim();
+                    if (txtProx && txtProx.length < 300) {
+                        desc = txtProx.split("—")[0].trim();
+                    }
+                }
+                if (!desc && blocoPai.previousElementSibling) {
+                    const txtAnt = (blocoPai.previousElementSibling.innerText || blocoPai.previousElementSibling.textContent || "").trim();
+                    if (txtAnt) desc = txtAnt.substring(0, 180);
+                }
+
+                urlsVistas.add(src);
+                imagensResumo.push({
+                    url: src,
+                    descricao: desc || "Figura clínica/didática da aula"
+                });
+            });
+        });
+
+        const htmlParaTexto = fontesHTML[0] || htmlFallback || "";
+        return { htmlParaTexto, imagensResumo };
+    }
+
+    // ─────────────────────────────────────────────────────────────
     // 🧠 Simulado automático — chamado internamente pelo D+21
     // Mesma lógica de window.gerarQuiz, mas sem confirm() e sem
     // depender de clique manual. Usa o conteúdo original (texto puro).
     // ─────────────────────────────────────────────────────────────
     async function gerarQuizAutomatico(titulo, tag, contentOriginal, targetDate) {
+        const { htmlParaTexto, imagensResumo } = await obterHtmlEImagensDoResumo(null, titulo, contentOriginal);
+
         // Limpa tags HTML do conteúdo original para economizar tokens
         const tmp = document.createElement("DIV");
-        tmp.innerHTML = contentOriginal || "";
+        tmp.innerHTML = htmlParaTexto || contentOriginal || "";
         let promptText = tmp.textContent || tmp.innerText || "";
         if (promptText.length > 12000) promptText = promptText.substring(0, 12000);
 
         const data = await callWorker({
             action: "gerar_quiz_arquivo",
             textoOriginal: promptText,
-            label: titulo
+            label: titulo,
+            imagensResumo: imagensResumo
         }, "gerar_quiz_arquivo (auto D+21)");
 
         const quizHTML = data.html;
@@ -6157,16 +6250,20 @@
         const confirmacao = confirm(`Gerar simulado sobre: "${titulo}"?`);
         if(!confirmacao) return;
 
-        showFeedback("🧠 [1/3] Preparando conteúdo para o simulado...", true);
+        showFeedback("🧠 [1/3] Preparando conteúdo e imagens para o simulado...", true);
 
-        // Prepara o contexto para a IA
+        // Prepara o contexto e resgata as imagens geradas para o resumo da aula
         let promptText = "";
         let promptLabel = titulo;
+        let imagensResumo = [];
 
         if (tipo === 'texto') {
+            const extraido = await obterHtmlEImagensDoResumo(arquivoId, titulo, textoContexto);
+            imagensResumo = extraido.imagensResumo;
+
             // Limpa tags HTML para economizar tokens
             const tmp = document.createElement("DIV");
-            tmp.innerHTML = textoContexto;
+            tmp.innerHTML = extraido.htmlParaTexto || textoContexto;
             promptText = tmp.textContent || tmp.innerText || "";
             // Limite de segurança
             if(promptText.length > 12000) promptText = promptText.substring(0, 12000);
@@ -6176,11 +6273,12 @@
         }
 
         try {
-            showFeedback("🧠 [2/3] IA gerando questões (pode levar 30s)...", true);
+            showFeedback(`🧠 [2/3] IA gerando 40 questões${imagensResumo.length > 0 ? ` (com ${imagensResumo.length} imagens da aula)` : ''}...`, true);
             const data = await callWorker({ 
                     action: "gerar_quiz_arquivo", 
                     textoOriginal: promptText, 
-                    label: promptLabel 
+                    label: promptLabel,
+                    imagensResumo: imagensResumo
                 }, "gerar_quiz_arquivo");
             showFeedback("💾 [3/3] Salvando simulado...", true);
             const quizHTML = data.html;
